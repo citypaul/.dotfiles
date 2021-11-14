@@ -1,2 +1,4 @@
 eval "$(starship init zsh)"
 eval "$(thefuck --alias f)"
+
+alias c="code ."
