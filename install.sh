@@ -1,3 +1,5 @@
 #!/bin/bash
 
-stow --adopt zsh
+mv ~/.zshrc ~/.zshrc.old
+
+stow zsh
