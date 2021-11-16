@@ -1,4 +1,4 @@
-. $("brew --prefix")/etc/profile.d/z.sh
+. $(brew --prefix)/etc/profile.d/z.sh
 
 eval "$(starship init zsh)"
 eval "$(thefuck --alias f)"
