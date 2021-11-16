@@ -3,6 +3,8 @@
 eval "$(starship init zsh)"
 eval "$(thefuck --alias f)"
 
+alias lvim=~/.local/bin/lvim
+
 alias c="code ."
 
 # enable vim mode
