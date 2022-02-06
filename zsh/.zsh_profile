@@ -7,6 +7,7 @@ alias lvim=~/.local/bin/lvim
 
 alias c="code ."
 alias lg="lazygit"
+alias ld="lazydocker"
 # enable vim mode
 # bindkey -v
 # removed for now, because it messes up with CTRL+R - need to look into this
