@@ -12,6 +12,4 @@ alias ld="lazydocker"
 # bindkey -v
 # removed for now, because it messes up with CTRL+R - need to look into this
 
- export NVM_DIR="$HOME/.nvm"
-    [ -s "$(brew --prefix)/opt/nvm/nvm.sh" ] && \. "$(brew --prefix)/opt/nvm/nvm.sh" # This loads nvm
-    [ -s "$(brew --prefix)/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$(brew --prefix)/opt/nvm/etc/bash_completion.d/nvm" # This loads nvm bash_completion
+source $HOME/.nvm_setup
