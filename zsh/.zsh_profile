@@ -10,7 +10,7 @@ alias lg="lazygit"
 alias ld="lazydocker"
 alias ghc="gh pr create --web"
 alias ghv="gh pr view --web"
-alias gb="git checkout $(git branch | fzf)"
+alias gbb="git checkout $(git branch | fzf)"
 # enable vim mode
 # bindkey -v
 # removed for now, because it messes up with CTRL+R - need to look into this
