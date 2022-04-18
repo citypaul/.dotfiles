@@ -13,6 +13,10 @@ alias ghv='gh pr view --web'
 alias ghd='gh dash'
 alias gb='git checkout $(git branch | fzf)'
 alias gbd='git branch -D $(git branch | fzf -m)'
+
+# alias python to python 3
+alias python=/opt/homebrew/bin/python3
+
 # enable vim mode
 # bindkey -v
 # removed for now, because it messes up with CTRL+R - need to look into this
