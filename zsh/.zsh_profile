@@ -16,6 +16,7 @@ alias gbd='git branch -D $(git branch | fzf -m)'
 alias ls="exa"
 alias ll="exa --long --header --git"
 alias tree="exa --tree"
+alias cat="bat"
 
 # alias python to python 3
 alias python=/opt/homebrew/bin/python3
