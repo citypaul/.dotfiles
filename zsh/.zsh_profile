@@ -27,3 +27,7 @@ alias python=/opt/homebrew/bin/python3
 # removed for now, because it messes up with CTRL+R - need to look into this
 
 source $HOME/.nvm_setup
+
+# Required so gpg signing of git commits works properly
+# See: https://samuelsson.dev/sign-git-commits-on-github-with-gpg-in-macos/
+export GPG_TTY=$(tty)
