@@ -2,4 +2,4 @@
 
 mv ~/.zshrc ~/.zshrc.old
 
-stow zsh tmux
+stow zsh tmux gnupg
