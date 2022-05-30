@@ -22,6 +22,11 @@ alias cat="bat --theme='ansi'"
 # alias python to python 3
 alias python=/opt/homebrew/bin/python3
 
+
+git_main_branch () {
+  git branch -rl "*/HEAD" | rev | cut -d/ -f1 | rev
+}
+
 # enable vim mode
 # bindkey -v
 # removed for now, because it messes up with CTRL+R - need to look into this
