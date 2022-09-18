@@ -19,6 +19,8 @@ alias ll="exa -al --icons --git"
 alias tree="exa --tree"
 alias cat="bat --theme='ansi'"
 
+alias yt="youtube-dl"
+
 alias dcs='docker container stop $(docker container ps -aq)'
 # alias python to python 3
 alias python=/opt/homebrew/bin/python3
