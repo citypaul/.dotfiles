@@ -102,6 +102,8 @@ source $ZSH/oh-my-zsh.sh
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
+fpath=(~/.zsh_autocomplete $fpath)
+
 source $HOME/.zsh_profile
 
 
