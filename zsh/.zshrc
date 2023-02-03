@@ -103,5 +103,5 @@ source $ZSH/oh-my-zsh.sh
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 source $HOME/.zsh_profile
-
+source $HOME/.zellij-completion
 
