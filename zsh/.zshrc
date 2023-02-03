@@ -104,4 +104,4 @@ source $ZSH/oh-my-zsh.sh
 
 source $HOME/.zsh_profile
 
-
+FPATH=$FPATH:~/.zsh_autocomplete
