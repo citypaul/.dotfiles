@@ -11,7 +11,7 @@ echo pinentry-program $(which pinentry-mac) >> $GPG_AGENT_CONF
 FPATH=$FPATH:~/.zsh_autocomplete
 
 mkdir -p ~/.zsh_autocomplete
-zellij setup --generate-completion zsh >> ~/.zsh_autocomplete/.zellij-completion
+zellij setup --generate-completion zsh >> ~/.zsh_autocomplete/_zellij-completion
 
 mv ~/.zshrc ~/.zshrc.old
 
