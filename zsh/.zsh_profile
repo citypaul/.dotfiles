@@ -41,3 +41,6 @@ source $HOME/.nvm_setup
 export GPG_TTY=$(tty)
 
 fpath=(~/.zsh_autocomplete $fpath)
+
+export PNPM_HOME="$HOME/Library/pnpm"
+export PATH="$PNPM_HOME:$PATH"
