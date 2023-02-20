@@ -27,6 +27,7 @@ alias dcs='docker container stop $(docker container ps -aq)'
 alias python=/opt/homebrew/bin/python3
 
 alias p="pnpm"
+alias y="yarn"
 
 git_main_branch () {
   git branch -rl "*/HEAD" | rev | cut -d/ -f1 | rev
