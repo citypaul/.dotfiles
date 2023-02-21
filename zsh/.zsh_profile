@@ -21,6 +21,7 @@ alias tree="exa --tree"
 alias cat="bat --theme='ansi'"
 
 alias yt="youtube-dl"
+alias zl="zellij"
 
 alias dcs='docker container stop $(docker container ps -aq)'
 # alias python to python 3
