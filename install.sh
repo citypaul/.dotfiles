@@ -15,4 +15,4 @@ zellij setup --generate-completion zsh >> ~/.zsh_autocomplete/_zellij-completion
 
 mv ~/.zshrc ~/.zshrc.old
 
-stow zsh tmux gnupg
+stow zsh tmux gnupg alacritty
