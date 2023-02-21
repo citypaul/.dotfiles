@@ -15,7 +15,6 @@ alias ghr='gh repo view --web'
 alias ghd='gh dash'
 alias gb='git checkout $(git branch | fzf)'
 alias gbd='git branch -D $(git branch | fzf -m)'
-alias gba='git checkout $(git branch -a | fzf)'
 alias ls="exa -al --icons --git"
 alias ll="exa -al --icons --git"
 alias tree="exa --tree"
