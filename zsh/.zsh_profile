@@ -14,13 +14,12 @@ alias ghv='gh pr view --web'
 alias ghr='gh repo view --web'
 alias ghd='gh dash'
 alias gb='git branch | fzf | xargs git checkout'
-alias gbr='git checkout $(git branch -r | sed '\''s/^[[:space:]]*[[:alnum:]_-]*\///'\'' | grep -v "HEAD ->" | fzf)'
+alias gbr='git branch -r | sed "s/^[[:space:]]*[[:alnum:]_-]*\\///" | grep -v "HEAD ->" | fzf | xargs git checkout'
 alias gbd='git branch | fzf -m | xargs git branch -D'
 alias ls="exa -al --icons --git"
 alias ll="exa -al --icons --git"
 alias tree="exa --tree"
 alias cat="bat --theme='ansi'"
-
 alias yt="youtube-dl"
 alias zl="zellij"
 
