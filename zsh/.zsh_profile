@@ -14,6 +14,7 @@ alias ghv='gh pr view --web'
 alias ghr='gh repo view --web'
 alias ghd='gh dash'
 alias gb='git checkout $(git branch | fzf)'
+alias gbr='git checkout $(git branch -r | sed '\''s/^[[:space:]]*[[:alnum:]_-]*\///'\'' | grep -v "HEAD ->" | fzf)'
 alias gbd='git branch -D $(git branch | fzf -m)'
 alias ls="exa -al --icons --git"
 alias ll="exa -al --icons --git"
