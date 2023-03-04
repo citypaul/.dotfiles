@@ -44,6 +44,8 @@ alias ys="s | xargs yarn run"  # Run selected script with Yarn
 alias ns="s | xargs npm run"   # Run selected script with npm
 alias pns="s | xargs pnpm run"  # Run selected script with pnpm
 
+alias zz="source ~/.zshrc"  # Reload Zsh configuration
+
 git_main_branch () {  # Helper function to get the main branch name in Git
   git branch -rl "*/HEAD" | rev | cut -d/ -f1 | rev
 }
