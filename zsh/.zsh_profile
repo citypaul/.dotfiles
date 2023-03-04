@@ -26,6 +26,7 @@ alias tree="exa --tree"  # Display directory tree (using exa)
 alias cat="bat --theme='ansi'"  # Display file contents (using bat with syntax highlighting and paging)
 alias yt="youtube-dl"  # Download a YouTube video or playlist (using youtube-dl)
 alias zl="zellij"  # Open Zellij (terminal-based terminal multiplexer)
+alias t="tree --git-ignore"  # Display directory tree (using exa) and ignore files in .gitignore
 
 alias dcs='docker container stop $(docker container ps -aq)'  # Stop all Docker containers
 
