@@ -3,53 +3,63 @@
 eval "$(starship init zsh)"
 eval "$(thefuck --alias f)"
 
-alias lvim=~/.local/bin/lvim  # Create an alias for lvim
+alias lvim=~/.local/bin/lvim # Create an alias for lvim
 
-alias c='code'  # Open Visual Studio Code
-alias c.='c .'  # Open Visual Studio Code in current directory
+alias c='code' # Open Visual Studio Code
+alias c.='c .' # Open Visual Studio Code in current directory
 
-alias lg='lazygit'  # Open Lazygit (terminal-based Git UI)
-alias ld='lazydocker'  # Open Lazydocker (terminal-based Docker UI)
+alias lg='lazygit'    # Open Lazygit (terminal-based Git UI)
+alias ld='lazydocker' # Open Lazydocker (terminal-based Docker UI)
 
-alias ghc='gh pr create --web'  # Create a new GitHub pull request (using GitHub CLI)
-alias ghv='gh pr view --web'  # View a GitHub pull request (using GitHub CLI)
-alias ghr='gh repo view --web'  # View a GitHub repository (using GitHub CLI)
-alias ghd='gh dash'  # Open the GitHub dashboard (using GitHub CLI)
+alias ghc='gh pr create --web' # Create a new GitHub pull request (using GitHub CLI)
+alias ghv='gh pr view --web'   # View a GitHub pull request (using GitHub CLI)
+alias ghr='gh repo view --web' # View a GitHub repository (using GitHub CLI)
+alias ghd='gh dash'            # Open the GitHub dashboard (using GitHub CLI)
 
-alias gb='git branch | fzf | xargs git checkout'  # Checkout a Git branch (using fzf to select the branch interactively)
-alias gbr='git branch -r | sed "s/^[[:space:]]*[[:alnum:]_-]*\\///" | grep -v "HEAD ->" | fzf | xargs git checkout'  # Checkout a remote Git branch (using fzf to select the branch interactively)
-alias gbd='git branch | fzf -m | xargs git branch -D'  # Delete a Git branch (using fzf to select the branch interactively)
-alias gt='git tag | fzf | xargs git checkout'  # Checkout a Git tag (using fzf to select the tag interactively)
+alias gb='git branch | fzf | xargs git checkout'                                                                    # Checkout a Git branch (using fzf to select the branch interactively)
+alias gbr='git branch -r | sed "s/^[[:space:]]*[[:alnum:]_-]*\\///" | grep -v "HEAD ->" | fzf | xargs git checkout' # Checkout a remote Git branch (using fzf to select the branch interactively)
+alias gbd='git branch | fzf -m | xargs git branch -D'                                                               # Delete a Git branch (using fzf to select the branch interactively)
+alias gt='git tag | fzf | xargs git checkout'                                                                       # Checkout a Git tag (using fzf to select the tag interactively)
 
-alias ls="exa -al --icons --git"  # List directory contents (using exa with icons and Git integration)
-alias ll="exa -al --icons --git"  # List directory contents (using exa with icons and Git integration)
-alias tree="exa --tree"  # Display directory tree (using exa)
-alias cat="bat --theme='ansi'"  # Display file contents (using bat with syntax highlighting and paging)
-alias yt="youtube-dl"  # Download a YouTube video or playlist (using youtube-dl)
-alias zl="zellij"  # Open Zellij (terminal-based terminal multiplexer)
-alias t="tree --git-ignore"  # Display directory tree (using exa) and ignore files in .gitignore
+alias ls="exa -al --icons --git" # List directory contents (using exa with icons and Git integration)
+alias ll="exa -al --icons --git" # List directory contents (using exa with icons and Git integration)
+alias tree="exa --tree"          # Display directory tree (using exa)
+alias cat="bat --theme='ansi'"   # Display file contents (using bat with syntax highlighting and paging)
+alias yt="youtube-dl"            # Download a YouTube video or playlist (using youtube-dl)
+alias zl="zellij"                # Open Zellij (terminal-based terminal multiplexer)
+alias t="tree --git-ignore"      # Display directory tree (using exa) and ignore files in .gitignore
 
-alias dcs='docker container stop $(docker container ps -aq)'  # Stop all Docker containers
+alias dcs='docker container stop $(docker container ps -aq)' # Stop all Docker containers
 
 # Use Homebrew-installed Python 3 as default Python
-alias python=/opt/homebrew/bin/python3  
+alias python=/opt/homebrew/bin/python3
 
 # Shortcut aliases for package managers
-alias pn="pnpm"  # Shortcut alias for pnpm
-alias y="yarn"   # Shortcut alias for yarn
-alias n="npm"    # Shortcut alias for npm
+alias pn="pnpm" # Shortcut alias for pnpm
+alias y="yarn"  # Shortcut alias for yarn
+alias n="npm"   # Shortcut alias for npm
 
 # Interactive script selector with fzf and package manager runners
-alias s="cat package.json | jq -r '.scripts | keys[]' | sort -r | fzf"  
+alias s="cat package.json | jq -r '.scripts | keys[]' | sort -r | fzf"
 alias ys="s | xargs yarn run"  # Run selected script with Yarn
 alias ns="s | xargs npm run"   # Run selected script with npm
-alias pns="s | xargs pnpm run"  # Run selected script with pnpm
+alias pns="s | xargs pnpm run" # Run selected script with pnpm
 
-alias zz="source ~/.zshrc"  # Reload Zsh configuration
+alias zz="source ~/.zshrc" # Reload Zsh configuration
 
-git_main_branch () {  # Helper function to get the main branch name in Git
+git_main_branch() { # Helper function to get the main branch name in Git
   git branch -rl "*/HEAD" | rev | cut -d/ -f1 | rev
 }
+
+unalias gcf 2>/dev/null # Unalias gcf if it's already aliased - this is required for the function to work
+
+gcf() {
+  local commit_hash
+  commit_hash=$(git log --color=always --oneline | fzf --ansi | cut -d ' ' -f1)
+  git checkout "$commit_hash"
+}
+
+alias gcf="gcf" # Checkout a Git commit using fzf to select the commit interactively
 
 # Load NVM automatically when opening a new terminal
 source $HOME/.nvm_setup
