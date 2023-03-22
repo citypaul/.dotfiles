@@ -31,6 +31,7 @@ alias zl="zellij"                # Open Zellij (terminal-based terminal multiple
 alias t="tree --git-ignore"      # Display directory tree (using exa) and ignore files in .gitignore
 
 alias dcs='docker container stop $(docker container ps -aq)' # Stop all Docker containers
+alias dcd='docker container rm $(docker container ps -aq)'   # Delete all Docker containers
 
 # Use Homebrew-installed Python 3 as default Python
 alias python=/opt/homebrew/bin/python3
