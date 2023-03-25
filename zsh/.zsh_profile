@@ -21,6 +21,7 @@ alias gbr='git branch -r | sed "s/^[[:space:]]*[[:alnum:]_-]*\\///" | grep -v "H
 alias gbd='git branch | fzf -m | xargs git branch -D'                                                               # Delete a Git branch (using fzf to select the branch interactively)
 alias gbdm="git branch --merged origin/main | grep -v 'main' | xargs git branch -d"                                 # Delete merged Git branches (except main)
 alias gt='git tag | fzf | xargs git checkout'                                                                       # Checkout a Git tag (using fzf to select the tag interactively)
+alias gtd='git tag | fzf -m | xargs git tag -d'                                                                     # Delete Git tag(s) (using fzf to select the tag interactively)
 
 alias ls="exa -al --icons --git" # List directory contents (using exa with icons and Git integration)
 alias ll="exa -al --icons --git" # List directory contents (using exa with icons and Git integration)
