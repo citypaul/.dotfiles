@@ -8,6 +8,9 @@ alias lvim=~/.local/bin/lvim # Create an alias for lvim
 alias c='code' # Open Visual Studio Code
 alias c.='c .' # Open Visual Studio Code in current directory
 
+alias ci='code-insiders'
+alias ci.='ci .'
+
 alias lg='lazygit'    # Open Lazygit (terminal-based Git UI)
 alias ld='lazydocker' # Open Lazydocker (terminal-based Docker UI)
 
