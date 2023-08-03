@@ -1,7 +1,7 @@
 . $(brew --prefix)/etc/profile.d/z.sh
 
 eval "$(starship init zsh)"
-eval "$(thefuck --alias f)"
+eval "$(zoxide init zsh)"
 
 alias lvim=~/.local/bin/lvim # Create an alias for lvim
 
