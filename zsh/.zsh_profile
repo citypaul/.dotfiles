@@ -61,6 +61,7 @@ alias tfd="terraform destroy"
 alias tfi="terraform init"
 alias tfp="terraform plan"
 
+alias z="zoxide"           # Open Zoxide (terminal-based directory jumper)
 alias zz="source ~/.zshrc" # Reload Zsh configuration
 
 git_main_branch() { # Helper function to get the main branch name in Git
