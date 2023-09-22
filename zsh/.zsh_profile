@@ -14,6 +14,8 @@ alias ci.='ci .'
 alias lg='lazygit'    # Open Lazygit (terminal-based Git UI)
 alias ld='lazydocker' # Open Lazydocker (terminal-based Docker UI)
 
+alias nocors='open /Applications/Google\ Chrome.app --args --user-data-dir="/var/tmp/chrome-dev-disabled-security" --disable-web-security --disable-site-isolation-trials' # Open Google Chrome with CORS disabled
+
 alias ghc='gh pr create --web' # Create a new GitHub pull request (using GitHub CLI)
 alias ghv='gh pr view --web'   # View a GitHub pull request (using GitHub CLI)
 alias ghr='gh repo view --web' # View a GitHub repository (using GitHub CLI)
