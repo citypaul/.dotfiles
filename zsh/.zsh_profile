@@ -1,5 +1,6 @@
 . $(brew --prefix)/etc/profile.d/z.sh
 
+export STARSHIP_LOG="error"
 eval "$(starship init zsh)"
 eval "$(zoxide init zsh)"
 
