@@ -13,6 +13,7 @@ env:
   TERM: xterm-256color
 
 window:
+  option_as_alt: Both
   # Window dimensions (changes require restart)
   #
   # Specified in number of columns/lines, not pixels.
