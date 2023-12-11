@@ -73,6 +73,19 @@ git_main_branch() { # Helper function to get the main branch name in Git
 
 unalias gcf 2>/dev/null # Unalias gcf if it's already aliased - this is required for the function to work
 
+glc() {
+  ## git log compare. Choose two commits by sha and then output the difference between them
+  local commit1 commit2
+  commit1=$(git log --color=always --oneline | fzf --ansi | cut -d ' ' -f1)
+  commit2=$(git log --color=always --oneline | fzf --ansi | cut -d ' ' -f1)
+
+  if [[ -n "$commit1" && -n "$commit2" ]]; then
+    git log --oneline "$commit1..$commit2"
+  else
+    echo "Invalid commits selected"
+  fi
+}
+
 gcf() {
   local commit_hash
   commit_hash=$(git log --color=always --oneline | fzf --ansi | cut -d ' ' -f1)
