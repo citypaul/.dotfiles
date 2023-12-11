@@ -80,7 +80,7 @@ glc() {
   commit2=$(git log --color=always --oneline | fzf --ansi | cut -d ' ' -f1)
 
   if [[ -n "$commit1" && -n "$commit2" ]]; then
-    git log --oneline "$commit1..$commit2"
+    git log --pretty=format:"%s" "$commit1..$commit2"
   else
     echo "Invalid commits selected"
   fi
