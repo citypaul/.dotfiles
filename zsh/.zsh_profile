@@ -94,6 +94,41 @@ gcf() {
 
 alias gcf="gcf" # Checkout a Git commit using fzf to select the commit interactively
 
+sync_dirs() {
+  # Function: sync_dirs
+  # Description: Synchronizes two directories in real-time. It monitors changes in the source directory
+  # and reflects them in the target directory using 'rsync' and 'fswatch'.
+  # Usage: sync_dirs [source_directory] [target_directory]
+  # Note: Press Ctrl+C to gracefully terminate the sync process.
+
+  local SOURCE_DIR=$1
+  local DEST_DIR=$2
+
+  if [[ -z "$SOURCE_DIR" || -z "$DEST_DIR" ]]; then
+    echo "Usage: sync_dirs source_directory target_directory"
+    return 1
+  fi
+
+  if [[ ! -d "$SOURCE_DIR" ]]; then
+    echo "Source directory does not exist."
+    return 1
+  fi
+
+  if [[ ! -d "$DEST_DIR" ]]; then
+    echo "Target directory does not exist."
+    return 1
+  fi
+
+  # Signal trap for graceful exit
+  trap 'echo "Sync process interrupted"; exit 0' SIGINT
+
+  echo "Starting to sync from $SOURCE_DIR to $DEST_DIR"
+
+  fswatch -o "$SOURCE_DIR" | while read f; do
+    rsync -av --delete "$SOURCE_DIR" "$DEST_DIR"
+  done
+}
+
 # Load NVM automatically when opening a new terminal
 source $HOME/.nvm_setup
 
