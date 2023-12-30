@@ -1,0 +1,130 @@
+colors.draw_bold_text_with_bright_colors = true
+import = [ "~/.config/alacritty/catppuccin/catppuccin-mocha.yml" ]
+
+[env]
+TERM = "xterm-256color"
+
+[window]
+option_as_alt = "Both"
+dynamic_padding = false
+opacity = 0.98
+decorations = "buttonless"
+title = "Alacritty"
+
+  [window.padding]
+  x = 6
+  y = 6
+
+  [window.class]
+  instance = "Alacritty"
+  general = "Alacritty"
+
+[scrolling]
+history = 5_000
+
+[font]
+size = 18
+
+  [font.normal]
+  family = "Hack Nerd Font"
+  style = "Regular"
+
+  [font.bold]
+  family = "Hack Nerd Font"
+  style = "Bold"
+
+  [font.italic]
+  family = "Hack Nerd Font"
+  style = "Italic"
+
+  [font.bold_italic]
+  family = "Hack Nerd Font"
+  style = "Bold Italic"
+
+  [font.offset]
+  x = 0
+  y = 1
+
+[[keyboard.bindings]]
+key = "V"
+mods = "Control|Shift"
+action = "Paste"
+
+[[keyboard.bindings]]
+key = "C"
+mods = "Control|Shift"
+action = "Copy"
+
+[[keyboard.bindings]]
+key = "Insert"
+mods = "Shift"
+action = "PasteSelection"
+
+[[keyboard.bindings]]
+key = "Key0"
+mods = "Control"
+action = "ResetFontSize"
+
+[[keyboard.bindings]]
+key = "Equals"
+mods = "Control"
+action = "IncreaseFontSize"
+
+[[keyboard.bindings]]
+key = "Plus"
+mods = "Control"
+action = "IncreaseFontSize"
+
+[[keyboard.bindings]]
+key = "Minus"
+mods = "Control"
+action = "DecreaseFontSize"
+
+[[keyboard.bindings]]
+key = "F11"
+mods = "None"
+action = "ToggleFullscreen"
+
+[[keyboard.bindings]]
+key = "Paste"
+mods = "None"
+action = "Paste"
+
+[[keyboard.bindings]]
+key = "Copy"
+mods = "None"
+action = "Copy"
+
+[[keyboard.bindings]]
+key = "L"
+mods = "Control"
+action = "ClearLogNotice"
+
+[[keyboard.bindings]]
+key = "L"
+mods = "Control"
+chars = "\f"
+
+[[keyboard.bindings]]
+key = "PageUp"
+mods = "None"
+action = "ScrollPageUp"
+mode = "~Alt"
+
+[[keyboard.bindings]]
+key = "PageDown"
+mods = "None"
+action = "ScrollPageDown"
+mode = "~Alt"
+
+[[keyboard.bindings]]
+key = "Home"
+mods = "Shift"
+action = "ScrollToTop"
+mode = "~Alt"
+
+[[keyboard.bindings]]
+key = "End"
+mods = "Shift"
+action = "ScrollToBottom"
+mode = "~Alt"
