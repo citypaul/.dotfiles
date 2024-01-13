@@ -18,9 +18,10 @@ alias ld='lazydocker' # Open Lazydocker (terminal-based Docker UI)
 alias nocors='open /Applications/Google\ Chrome.app --args --user-data-dir="/var/tmp/chrome-dev-disabled-security" --disable-web-security --disable-site-isolation-trials' # Open Google Chrome with CORS disabled
 
 alias ghc='gh pr create --web' # Create a new GitHub pull request (using GitHub CLI)
+alias ghd='gh pr create -d'    # Create a new draft GitHub pull request (using GitHub CLI)
 alias ghv='gh pr view --web'   # View a GitHub pull request (using GitHub CLI)
 alias ghr='gh repo view --web' # View a GitHub repository (using GitHub CLI)
-alias ghd='gh dash'            # Open the GitHub dashboard (using GitHub CLI)
+alias ghdb='gh dash'           # Open the GitHub dashboard (using GitHub CLI)
 
 alias gb="git branch --sort=-committerdate | fzf | xargs git checkout"                                             # Checkout a Git branch (using fzf to select the branch interactively)
 alias gbr="git branch -r | sed 's/^[[:space:]]*[[:alnum:]_-]*\///' | grep -v 'HEAD ->' | fzf | xargs git checkout" # Checkout a remote Git branch (using fzf to select the branch interactively)
