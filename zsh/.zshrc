@@ -104,7 +104,5 @@ source $ZSH/oh-my-zsh.sh
 
 fpath=(~/.zsh_autocomplete $fpath)
 
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source $HOME/.zsh_profile
-
-
-
