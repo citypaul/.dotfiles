@@ -1,5 +1,5 @@
 colors.draw_bold_text_with_bright_colors = true
-import = [ "~/.config/alacritty/themes/night_owl.toml" ]
+import = [ "~/.config/alacritty/themes/themes/night_owl.toml" ]
 
 [env]
 TERM = "xterm-256color"
