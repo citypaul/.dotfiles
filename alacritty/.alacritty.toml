@@ -24,7 +24,7 @@ title = "Alacritty"
 history = 5_000
 
 [font]
-size = 18
+size = 20
 
   [font.normal]
   family = "Hack Nerd Font"
