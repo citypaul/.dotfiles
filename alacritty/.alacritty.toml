@@ -1,5 +1,5 @@
 colors.draw_bold_text_with_bright_colors = true
-import = [ "~/.config/alacritty/catppuccin/catppuccin-mocha.yml" ]
+import = [ "~/.config/alacritty/themes/night_owl.toml" ]
 
 [env]
 TERM = "xterm-256color"
@@ -7,7 +7,7 @@ TERM = "xterm-256color"
 [window]
 option_as_alt = "Both"
 dynamic_padding = false
-opacity = 0.6
+opacity = 0.75
 blur = true
 decorations = "buttonless"
 title = "Alacritty"
