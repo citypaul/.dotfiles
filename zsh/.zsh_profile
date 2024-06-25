@@ -28,6 +28,15 @@ alias gbr="git branch -r | sed 's/^[[:space:]]*[[:alnum:]_-]*\///' | grep -v 'HE
 alias gbd="git branch | fzf -m | xargs git branch -D"                                                              # Delete a Git branch (using fzf to select the branch interactively)
 alias gbdm="git branch --merged origin/main | grep -v 'main' | xargs git branch -d"                                # Delete a Git branch that is merged to main (using fzf to select the branch interactively)
 
+# work project directory aliases
+alias w='cd ~/workspace'
+alias wa='cd ~/workspace/NewDay.Web.Acquisition'
+alias wui='cd ~/workspace/NewDay.Web.UI'
+alias wm='cd ~/workspace/Acquisition.Web.Monorepo'
+
+# personal project directory aliases
+alias p='cd ~/personal'
+
 alias "??"='gh copilot suggest'  # gh copilot cl
 alias "???"='gh copilot explain' # gh copilot cl --no-annotations
 
