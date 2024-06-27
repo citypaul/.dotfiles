@@ -44,8 +44,8 @@ alias "???"='gh copilot explain' # gh copilot cl --no-annotations
 alias gt='git tag | fzf | xargs git checkout'   # Checkout a Git tag (using fzf to select the tag interactively)
 alias gtd='git tag | fzf -m | xargs git tag -d' # Delete Git tag(s) (using fzf to select the tag interactively)
 
-alias ls="exa -al --icons --git" # List directory contents (using exa with icons and Git integration)
-alias ll="exa -al --icons --git" # List directory contents (using exa with icons and Git integration)
+alias ls="eza -al --icons --git" # List directory contents (using eza with icons and Git integration)
+alias ll="eza -al --icons --git" # List directory contents (using eza with icons and Git integration)
 alias tree="broot"               # Display directory tree (using broot)
 alias cat="bat --theme='ansi'"   # Display file contents (using bat with syntax highlighting and paging)
 alias yt="yt-dlp"                # Download a YouTube video or playlist (using yt-dlp)
