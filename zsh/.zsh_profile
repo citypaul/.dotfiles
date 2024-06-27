@@ -30,7 +30,7 @@ alias gbdm="git branch --merged origin/main | grep -v 'main' | xargs git branch 
 
 # work project directory aliases
 alias w='cd ~/workspace'
-alias wa='cd ~/workspace/NewDay.Web.Acquisition'
+alias wa='cd ~/workspace/Acquisition.Web'
 alias wui='cd ~/workspace/NewDay.Web.UI'
 alias wm='cd ~/workspace/Acquisition.Web.Monorepo'
 
