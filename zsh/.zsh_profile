@@ -47,7 +47,7 @@ alias gtd='git tag | fzf -m | xargs git tag -d' # Delete Git tag(s) (using fzf t
 alias ls="eza -al --icons --git" # List directory contents (using eza with icons and Git integration)
 alias ll="eza -al --icons --git" # List directory contents (using eza with icons and Git integration)
 alias cat="bat --theme='ansi'"   # Display file contents (using bat with syntax highlighting and paging)
-alias yt="yt-dlp"                # Download a YouTube video or playlist (using yt-dlp)
+alias ytd="yt-dlp"               # Download a YouTube video or playlist (using yt-dlp)
 alias zl="zellij"                # Open Zellij (terminal-based terminal multiplexer)
 alias t="tree"                   # Display directory tree (using tree)
 
