@@ -1,4 +1,9 @@
-. $(brew --prefix)/etc/profile.d/z.sh
+if type brew &>/dev/null; then
+  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+
+  autoload -Uz compinit
+  compinit
+fi
 
 export STARSHIP_LOG="error"
 eval "$(starship init zsh)"
