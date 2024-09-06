@@ -180,3 +180,6 @@ fpath=(~/.zsh_autocomplete $fpath)
 # Set custom PNPM home directory and add to PATH
 export PNPM_HOME="$HOME/Library/pnpm"
 export PATH="$PNPM_HOME:$PATH"
+
+# Setup Python virtual environment
+source $HOME/.pyenv_setup.sh
