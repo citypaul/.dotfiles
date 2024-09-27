@@ -1,0 +1,170 @@
+#!/usr/bin/env zunit
+
+@setup {
+    load "../you-should-use.plugin.zsh"
+    # Simplify format for tests
+    YSU_MESSAGE_FORMAT='Found existing %alias_type for "%command". You should use: "%alias"'
+    unset YSU_MESSAGE_POSITION
+}
+
+@teardown {
+}
+
+@test 'aliases no match' {
+    export YSU_MODE="ALL"
+    alias ls="less -R"
+    run _check_aliases "less"
+
+    assert "$output" is_empty
+    assert $state equals 0
+}
+
+@test 'aliases longer or the same length as their commands are ignored' {
+    export YSU_MODE="ALL"
+    alias longalias='ls -lA'
+    alias ls_-lA='ls -lA'
+    run _check_aliases "ls -lA"
+
+    assert "$output" is_empty
+    assert $state equals 0
+}
+
+@test 'aliases match - all with alphabetical ordering' {
+    export YSU_MODE="ALL"
+    alias c="git status -v"
+    alias a="git status"
+    alias b="git"
+    run _check_aliases "git status -v"
+
+    assert $lines[1] contains 'Found existing alias for "git status". You should use: "a"'
+    assert $lines[2] contains 'Found existing alias for "git". You should use: "b"'
+    assert $lines[3] contains 'Found existing alias for "git status -v". You should use: "c"'
+    assert $state equals 0
+}
+
+@test 'aliases bestmatch default' {
+    unset YSU_MODE
+    alias gs="git status"
+    alias g="git"
+    run _check_aliases "git status -v"
+
+    assert "$output" contains 'Found existing alias for "git status". You should use: "gs"'
+    assert $state equals 0
+}
+
+@test 'aliases bestmatch - chooses longest matching alias value' {
+    export YSU_MODE="BESTMATCH"
+    alias gs="git status"
+    alias g="git"
+    alias gsv="git status -v"
+    run _check_aliases "git status -v"
+
+    assert "$output" contains 'Found existing alias for "git status -v". You should use: "gsv"'
+    assert $state equals 0
+}
+
+@test 'aliases bestmatch - chooses longest matching alias value case 2' {
+    export YSU_MODE="BESTMATCH"
+    alias gco="git checkout"
+    alias gcom="git checkout master"
+    run _check_aliases "git checkout master"
+
+    assert "$output" contains 'Found existing alias for "git checkout master". You should use: "gcom"'
+    assert $state equals 0
+}
+
+@test 'aliases bestmatch - chooses shortest alias key on equal value lengths' {
+    export YSU_MODE="BESTMATCH"
+    alias v="vim"
+    alias nvim="vim"
+
+    run _check_aliases "vim"
+
+    assert "$output" contains 'Found existing alias for "vim". You should use: "v"'
+    assert $state equals 0
+}
+
+@test 'aliases ignore if sudo' {
+    unset YSU_MODE
+    alias gs="git status"
+    run _check_aliases "sudo git status -v"
+
+    assert "$output" is_empty
+    assert $state equals 0
+}
+
+@test 'aliases exact match' {
+    export YSU_MODE="ALL"
+    alias hu='hg update'
+    run _check_aliases 'hg update'
+
+    assert "$output" contains 'Found existing alias for "hg update". You should use: "hu"'
+    assert $state equals 0
+}
+
+@test 'aliases substring match' {
+    export YSU_MODE="ALL"
+    alias hu='hg update'
+    run _check_aliases 'hg update -all'
+
+    assert "$output" contains 'Found existing alias for "hg update". You should use: "hu"'
+    assert $state equals 0
+}
+
+@test 'aliases ignores - does not report an ignored alias' {
+    export YSU_MODE="ALL"
+    export YSU_IGNORED_ALIASES=("something" "e" "else")
+    alias e="echo"
+    alias l="ls"
+    run _check_aliases "echo hello"
+
+    assert $output is_empty
+    assert $state equals 0
+}
+
+@test 'aliases ignores only - only ignores specified aliases' {
+    export YSU_MODE="ALL"
+    export YSU_IGNORED_ALIASES=("something" "else")
+    alias e="echo"
+    alias l="ls"
+    run _check_aliases "echo hello"
+
+    assert $output contains 'Found existing alias for "echo"'
+    assert $state equals 0
+}
+
+@test 'dont display recommendations for an alias if it is used' {
+    alias hu='hg update'
+    run _check_aliases 'hu' 'hg update'
+
+    assert "$output" is_empty
+    assert $state equals 0
+}
+
+@test 'dont display recommendations for an alias if it is used - 2' {
+    alias eh='echo hello'
+    run _check_aliases 'eh world' 'echo hello world'
+
+    assert "$output" is_empty
+    assert $state equals 0
+}
+
+@test 'dont display recommendations for an alias if it is used - 4' {
+    alias ..='cd ..'
+    alias cd..='cd ..'
+
+    run _check_aliases '..' 'cd ..'
+
+    assert "$output" is_empty
+    assert $state equals 0
+}
+
+@test 'dont display recommendations for an alias if it is used - 3' {
+    alias ls='ls --color=auto'
+    alias ll='ls -lh --group-directories-first'
+
+    run _check_aliases 'll' 'ls --color=auto -lh --group-directories-first'
+
+    assert "$output" is_empty
+    assert $state equals 0
+}

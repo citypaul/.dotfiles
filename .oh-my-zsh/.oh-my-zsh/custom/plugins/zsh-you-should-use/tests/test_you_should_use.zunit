@@ -1,0 +1,107 @@
+#!/usr/bin/env zunit
+
+@setup {
+    load "../you-should-use.plugin.zsh"
+    unset YSU_MESSAGE_POSITION
+}
+
+@test 'ysu version exported' {
+    git_version="$(git tag --list | sort | tail -1)"
+    git tag --list
+
+    assert "$YSU_VERSION" is_not_empty
+    assert "$YSU_VERSION" same_as "$git_version"
+}
+
+@test 'ysu preexec functions are loaded by default' {
+    assert '_check_aliases' in $preexec_functions
+    assert '_check_git_aliases' in $preexec_functions
+    assert '_check_global_aliases' in $preexec_functions
+    assert '_flush_ysu_buffer' in $precmd_functions
+}
+
+@test 'ysu disable/enable functions' {
+    disable_you_should_use
+    assert '_check_aliases' not_in $preexec_functions
+    assert '_check_git_aliases' not_in $preexec_functions
+    assert '_check_global_aliases' not_in $preexec_functions
+    assert '_flush_ysu_buffer' not_in $precmd_functions
+    enable_you_should_use
+    assert '_check_aliases' in $preexec_functions
+    assert '_check_git_aliases' in $preexec_functions
+    assert '_check_global_aliases' in $preexec_functions
+    assert '_flush_ysu_buffer' in $precmd_functions
+}
+
+@test 'ysu message correct output' {
+    unset YSU_MESSAGE_FORMAT
+    run ysu_message "alias" "ls -l" "ll"
+
+    assert $state equals 0
+
+    expected="$(tput bold)$(tput setaf 3)Found existing alias for $(tput setaf 5)\"ls -l\"$(tput setaf 3). "
+    expected+="You should use: $(tput setaf 5)\"ll\"$(tput sgr0)"
+
+    assert "$output" same_as "$expected"
+}
+
+@test 'ysu message correct output 2' {
+    unset YSU_MESSAGE_FORMAT
+    run ysu_message "foobar" "2>/dev/null" "NE"
+
+    assert $state equals 0
+
+    expected="$(tput bold)$(tput setaf 3)Found existing foobar for $(tput setaf 5)\"2>/dev/null\"$(tput setaf 3). "
+    expected+="You should use: $(tput setaf 5)\"NE\"$(tput sgr0)"
+
+    assert "$output" same_as "$expected"
+}
+
+@test 'escapes \ and % correctly' {
+    unset YSU_MESSAGE_FORMAT
+    run ysu_message "alias" "printf '%s\\n'" "pf"
+
+    assert $state equals 0
+
+    expected="$(tput bold)$(tput setaf 3)Found existing alias for $(tput setaf 5)\"printf '%s\\n'\"$(tput setaf 3). "
+    expected+="You should use: $(tput setaf 5)\"pf\"$(tput sgr0)"
+
+    assert "$output" same_as "$expected"
+}
+
+@test 'ysu - _write_ysu_buffer after' {
+    unset YSU_MESSAGE_FORMAT
+    YSU_MESSAGE_POSITION="after"
+    _YSU_BUFFER=""
+
+    _write_ysu_buffer "hello world"
+
+    assert $state equals 0
+
+    assert "$output" is_empty
+    assert "$_YSU_BUFFER" same_as "hello world"
+}
+
+@test 'ysu message - custom message' {
+    export YSU_MESSAGE_FORMAT="Hi there %alias_type! %command <=> %alias"
+    run ysu_message "git alias" "tig" "t"
+
+    assert $state equals 0
+    assert "$output" same_as "Hi there git alias! tig <=> t"
+}
+
+@test 'ysu message - custom message 2' {
+    export YSU_MESSAGE_FORMAT="%alias is a %alias_type for %command"
+    run ysu_message "alias" "xdg-open" "xopen"
+
+    assert $state equals 0
+    assert "$output" same_as "xopen is a alias for xdg-open"
+}
+
+@test 'ysu message - custom message multiple usages' {
+    export YSU_MESSAGE_FORMAT="%alias %alias %command %command %alias_type %alias_type"
+    run ysu_message 'git alias' 'xpaste' 'xp'
+
+    assert $state equals 0
+    assert "$output" same_as "xp xp xpaste xpaste git alias git alias"
+}
