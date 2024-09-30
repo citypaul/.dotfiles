@@ -32,10 +32,10 @@ alias ghv='gh pr view --web'   # View a GitHub pull request (using GitHub CLI)
 alias ghr='gh repo view --web' # View a GitHub repository (using GitHub CLI)
 alias ghdb='gh dash'           # Open the GitHub dashboard (using GitHub CLI)
 
-alias gb="git branch --sort=-committerdate | fzf | xargs git checkout"                                             # Checkout a Git branch (using fzf to select the branch interactively)
-alias gbr="git branch -r | sed 's/^[[:space:]]*[[:alnum:]_-]*\///' | grep -v 'HEAD ->' | fzf | xargs git checkout" # Checkout a remote Git branch (using fzf to select the branch interactively)
-alias gbd="git branch | fzf -m | xargs git branch -D"                                                              # Delete a Git branch (using fzf to select the branch interactively)
-alias gbdm="git branch --merged origin/main | grep -v 'main' | xargs git branch -d"                                # Delete a Git branch that is merged to main (using fzf to select the branch interactively)
+alias gb="git branch --sort=-committerdate | fzf | xargs git checkout"                                                                  # Checkout a Git branch (using fzf to select the branch interactively)
+alias gbr="git branch -r --sort=committerdate | sed 's/^[[:space:]]*[[:alnum:]_-]*\///' | grep -v 'HEAD ->' | fzf | xargs git checkout" # Checkout a remote Git branch (using fzf to select the branch interactively)
+alias gbd="git branch | fzf -m | xargs git branch -D"                                                                                   # Delete a Git branch (using fzf to select the branch interactively)
+alias gbdm="git branch --merged origin/main | grep -v 'main' | xargs git branch -d"                                                     # Delete a Git branch that is merged to main (using fzf to select the branch interactively)
 
 # work project directory aliases
 alias w='cd ~/workspace'
