@@ -1,0 +1,153 @@
+{
+  "global": {
+    "check_for_updates_on_startup": true,
+    "show_in_menu_bar": false,
+    "ask_for_confirmation_before_quitting": false
+  },
+  "profiles": [
+    {
+      "name": "Default profile",
+      "selected": true,
+      "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" },
+      "parameters": {
+        "basic.to_if_alone_timeout_milliseconds": 200,
+        "basic.to_if_held_down_threshold_milliseconds": 200
+      },
+      "complex_modifications": {
+        "rules": [
+          {
+            "description": "Remap caps lock to Ctrl key when held, escape when tapped",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "caps_lock",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "key_code": "left_control" }],
+                "to_if_alone": [{ "key_code": "escape" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Remap Tab to Hyper key when held, Tab key when tapped",
+            "manipulators": [
+              {
+                "from": { "key_code": "tab" },
+                "to": [
+                  {
+                    "set_variable": {
+                      "name": "hyper",
+                      "value": 1
+                    }
+                  }
+                ],
+                "to_after_key_up": [
+                  {
+                    "set_variable": {
+                      "name": "hyper",
+                      "value": 0
+                    }
+                  }
+                ],
+                "to_if_alone": [{ "key_code": "tab" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Hyper key sublayer e",
+            "manipulators": [
+              {
+                "description": "Toggle Hyper sublayer e",
+                "conditions": [
+                  {
+                    "type": "variable_if",
+                    "name": "hyper",
+                    "value": 1
+                  },
+                  {
+                    "name": "hyper_sublayer_w",
+                    "type": "variable_if",
+                    "value": 0
+                  }
+                ],
+                "from": {
+                  "key_code": "e",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [
+                  { "set_variable": { "name": "hyper_sublayer_e", "value": 1 } }
+                ],
+                "to_after_key_up": [
+                  { "set_variable": { "name": "hyper_sublayer_e", "value": 0 } }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Open firefox",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "type": "variable_if",
+                    "name": "hyper_sublayer_e",
+                    "value": 1
+                  }
+                ],
+                "from": { "key_code": "f" },
+                "to": [{ "shell_command": "open -a Firefox" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Open Chrome",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "type": "variable_if",
+                    "name": "hyper_sublayer_e",
+                    "value": 1
+                  }
+                ],
+                "from": { "key_code": "c" },
+                "to": [{ "shell_command": "open -a 'Google Chrome'" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Open alacritty with escape+tab",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "escape",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -a Alacritty"
+                  }
+                ],
+                "conditions": [
+                  {
+                    "type": "variable_if",
+                    "name": "hyper",
+                    "value": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

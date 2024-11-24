@@ -15,4 +15,4 @@ zellij setup --generate-completion zsh >>~/.zsh_autocomplete/_zellij-completion
 
 mv ~/.zshrc ~/.zshrc.old
 
-stow zsh tmux gnupg alacritty zellij .oh-my-zsh
+stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner
