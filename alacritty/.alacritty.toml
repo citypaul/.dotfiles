@@ -1,5 +1,5 @@
-colors.draw_bold_text_with_bright_colors = true
-general.import = [ "~/.config/alacritty/themes/themes/tomorrow_night.toml" ]
+colors.draw_bold_text_with_bright_colors = false
+general.import = [ "~/.config/alacritty/themes/themes/night_owl.toml" ]
 
 [env]
 TERM = "xterm-256color"
@@ -7,8 +7,8 @@ TERM = "xterm-256color"
 [window]
 option_as_alt = "Both"
 dynamic_padding = false
-opacity = 0.9
-blur = true
+opacity = 1
+blur = false
 decorations = "buttonless"
 title = "Alacritty"
 
