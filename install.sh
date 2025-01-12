@@ -15,4 +15,8 @@ zellij setup --generate-completion zsh >>~/.zsh_autocomplete/_zellij-completion
 
 mv ~/.zshrc ~/.zshrc.old
 
-stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner
+# Remove store old ghostty config, has to be done because opening the app will create a new config file
+# and stow will not allow us to overwrite it.
+mv "$HOME"/ghostty/Library/Application\ Support/com.mitchellh.ghostty/config "$HOME"/ghostty/Library/Application\ Support/com.mitchellh.ghostty/config.old
+
+stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner ghostty
