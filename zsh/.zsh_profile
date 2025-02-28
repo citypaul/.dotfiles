@@ -22,6 +22,8 @@ alias cc='cursor'
 alias cc.='cc .'
 alias ccw='cc "$(eza --absolute ~/workspace | fzf)"'
 alias ccp='cc "$(eza --absolute ~/personal | fzf)"'
+alias cdw='cd "$(eza --absolute ~/workspace | fzf)"'
+alias cdp='cd "$(eza --absolute ~/personal | fzf)"'
 
 alias lg='lazygit'    # Open Lazygit (terminal-based Git UI)
 alias ld='lazydocker' # Open Lazydocker (terminal-based Docker UI)
