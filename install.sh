@@ -25,4 +25,4 @@ move_with_backup ~/.zshrc
 
 move_with_backup "$HOME/Library/Application Support/com.mitchellh.ghostty/config"
 
-stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner ghostty
+stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner ghostty claude
