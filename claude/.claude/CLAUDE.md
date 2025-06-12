@@ -20,7 +20,6 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - **Language**: TypeScript (strict mode)
 - **Testing**: Jest/Vitest + React Testing Library
 - **State Management**: Prefer immutable patterns
-- **Build Tools**: [Add your preferences here]
 
 ## Testing Principles
 
@@ -280,6 +279,240 @@ const chainPaymentOperations = (
 - **Constants**: `UPPER_SNAKE_CASE` for true constants, `camelCase` for configuration
 - **Files**: `kebab-case.ts` for all TypeScript files
 - **Test files**: `*.test.ts` or `*.spec.ts`
+
+### No Comments in Code
+
+Code should be self-documenting through clear naming and structure. Comments indicate that the code itself is not clear enough.
+
+```typescript
+// Avoid: Comments explaining what the code does
+const calculateDiscount = (price: number, customer: Customer): number => {
+  // Check if customer is premium
+  if (customer.tier === "premium") {
+    // Apply 20% discount for premium customers
+    return price * 0.8;
+  }
+  // Regular customers get 10% discount
+  return price * 0.9;
+};
+
+// Good: Self-documenting code with clear names
+const PREMIUM_DISCOUNT_MULTIPLIER = 0.8;
+const STANDARD_DISCOUNT_MULTIPLIER = 0.9;
+
+const isPremiumCustomer = (customer: Customer): boolean => {
+  return customer.tier === "premium";
+};
+
+const calculateDiscount = (price: number, customer: Customer): number => {
+  const discountMultiplier = isPremiumCustomer(customer)
+    ? PREMIUM_DISCOUNT_MULTIPLIER
+    : STANDARD_DISCOUNT_MULTIPLIER;
+
+  return price * discountMultiplier;
+};
+
+// Avoid: Complex logic with comments
+const processPayment = (payment: Payment): ProcessedPayment => {
+  // First validate the payment
+  if (!validatePayment(payment)) {
+    throw new Error("Invalid payment");
+  }
+
+  // Check if we need to apply 3D secure
+  if (payment.amount > 100 && payment.card.type === "credit") {
+    // Apply 3D secure for credit cards over £100
+    const securePayment = apply3DSecure(payment);
+    // Process the secure payment
+    return executePayment(securePayment);
+  }
+
+  // Process the payment
+  return executePayment(payment);
+};
+
+// Good: Extract to well-named functions
+const requires3DSecure = (payment: Payment): boolean => {
+  const SECURE_PAYMENT_THRESHOLD = 100;
+  return (
+    payment.amount > SECURE_PAYMENT_THRESHOLD && payment.card.type === "credit"
+  );
+};
+
+const processPayment = (payment: Payment): ProcessedPayment => {
+  if (!validatePayment(payment)) {
+    throw new PaymentValidationError("Invalid payment");
+  }
+
+  const securedPayment = requires3DSecure(payment)
+    ? apply3DSecure(payment)
+    : payment;
+
+  return executePayment(securedPayment);
+};
+```
+
+**Exception**: JSDoc comments for public APIs are acceptable when generating documentation, but the code should still be self-explanatory without them.
+
+### Prefer Options Objects
+
+Use options objects for function parameters as the default pattern. Only use positional parameters when there's a clear, compelling reason (e.g., single-parameter pure functions, well-established conventions like `map(item => item.value)`).
+
+```typescript
+// Avoid: Multiple positional parameters
+const createPayment = (
+  amount: number,
+  currency: string,
+  cardId: string,
+  customerId: string,
+  description?: string,
+  metadata?: Record<string, unknown>,
+  idempotencyKey?: string
+): Payment => {
+  // implementation
+};
+
+// Calling it is unclear
+const payment = createPayment(
+  100,
+  "GBP",
+  "card_123",
+  "cust_456",
+  undefined,
+  { orderId: "order_789" },
+  "key_123"
+);
+
+// Good: Options object with clear property names
+type CreatePaymentOptions = {
+  amount: number;
+  currency: string;
+  cardId: string;
+  customerId: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  idempotencyKey?: string;
+};
+
+const createPayment = (options: CreatePaymentOptions): Payment => {
+  const {
+    amount,
+    currency,
+    cardId,
+    customerId,
+    description,
+    metadata,
+    idempotencyKey,
+  } = options;
+
+  // implementation
+};
+
+// Clear and readable at call site
+const payment = createPayment({
+  amount: 100,
+  currency: "GBP",
+  cardId: "card_123",
+  customerId: "cust_456",
+  metadata: { orderId: "order_789" },
+  idempotencyKey: "key_123",
+});
+
+// Avoid: Boolean flags as parameters
+const fetchCustomers = (
+  includeInactive: boolean,
+  includePending: boolean,
+  includeDeleted: boolean,
+  sortByDate: boolean
+): Customer[] => {
+  // implementation
+};
+
+// Confusing at call site
+const customers = fetchCustomers(true, false, false, true);
+
+// Good: Options object with clear intent
+type FetchCustomersOptions = {
+  includeInactive?: boolean;
+  includePending?: boolean;
+  includeDeleted?: boolean;
+  sortBy?: "date" | "name" | "value";
+};
+
+const fetchCustomers = (options: FetchCustomersOptions = {}): Customer[] => {
+  const {
+    includeInactive = false,
+    includePending = false,
+    includeDeleted = false,
+    sortBy = "name",
+  } = options;
+
+  // implementation
+};
+
+// Self-documenting at call site
+const customers = fetchCustomers({
+  includeInactive: true,
+  sortBy: "date",
+});
+
+// Good: Configuration objects for complex operations
+type ProcessOrderOptions = {
+  order: Order;
+  shipping: {
+    method: "standard" | "express" | "overnight";
+    address: Address;
+  };
+  payment: {
+    method: PaymentMethod;
+    saveForFuture?: boolean;
+  };
+  promotions?: {
+    codes?: string[];
+    autoApply?: boolean;
+  };
+};
+
+const processOrder = (options: ProcessOrderOptions): ProcessedOrder => {
+  const { order, shipping, payment, promotions = {} } = options;
+
+  // Clear access to nested options
+  const orderWithPromotions = promotions.autoApply
+    ? applyAvailablePromotions(order)
+    : order;
+
+  return executeOrder({
+    ...orderWithPromotions,
+    shippingMethod: shipping.method,
+    paymentMethod: payment.method,
+  });
+};
+
+// Acceptable: Single parameter for simple transforms
+const double = (n: number): number => n * 2;
+const getName = (user: User): string => user.name;
+
+// Acceptable: Well-established patterns
+const numbers = [1, 2, 3];
+const doubled = numbers.map((n) => n * 2);
+const users = fetchUsers();
+const names = users.map((user) => user.name);
+```
+
+**Guidelines for options objects:**
+
+- Default to options objects unless there's a specific reason not to
+- Always use for functions with optional parameters
+- Destructure options at the start of the function for clarity
+- Provide sensible defaults using destructuring
+- Keep related options grouped (e.g., all shipping options together)
+- Consider breaking very large options objects into nested groups
+
+**When positional parameters are acceptable:**
+
+- Single-parameter pure functions
+- Well-established functional patterns (map, filter, reduce callbacks)
+- Mathematical operations where order is conventional
 
 ## Development Workflow
 
