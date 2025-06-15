@@ -664,6 +664,7 @@ When working with my code:
 3. **Ask clarifying questions** when requirements are ambiguous
 4. **Think from first principles** - don't make assumptions
 5. **Follow TDD** - always write or modify tests first
+6. **Keep project docs current** - update them whenever you introduce meaningful changes.
 
 ### Code Changes
 
