@@ -14,6 +14,7 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - Immutable data only
 - Small, pure functions
 - TypeScript strict mode always
+- Use real schemas/types in tests, never redefine them
 
 **Preferred Tools:**
 
@@ -202,6 +203,60 @@ const CustomerSchema = BaseEntitySchema.extend({
 });
 
 type Customer = z.infer<typeof CustomerSchema>;
+```
+
+#### Schema Usage in Tests
+
+**CRITICAL**: Tests must use real schemas and types from the main project, not redefine their own.
+
+```typescript
+// ❌ WRONG - Defining schemas in test files
+const ProjectSchema = z.object({
+  id: z.string(),
+  workspaceId: z.string(),
+  ownerId: z.string().nullable(),
+  name: z.string(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+// ✅ CORRECT - Import schemas from the shared schema package
+import { ProjectSchema, type Project } from "@your-org/schemas";
+```
+
+**Why this matters:**
+
+- **Type Safety**: Ensures tests use the same types as production code
+- **Consistency**: Changes to schemas automatically propagate to tests
+- **Maintainability**: Single source of truth for data structures
+- **Prevents Drift**: Tests can't accidentally diverge from real schemas
+
+**Implementation:**
+
+- All domain schemas should be exported from a shared schema package or module
+- Test files should import schemas from the shared location
+- If a schema isn't exported yet, add it to the exports rather than duplicating it
+- Mock data factories should use the real types derived from real schemas
+
+```typescript
+// ✅ CORRECT - Test factories using real schemas
+import { ProjectSchema, type Project } from "@your-org/schemas";
+
+const getMockProject = (overrides?: Partial<Project>): Project => {
+  const baseProject = {
+    id: "proj_123",
+    workspaceId: "ws_456",
+    ownerId: "user_789",
+    name: "Test Project",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const projectData = { ...baseProject, ...overrides };
+
+  // Validate against real schema to catch type mismatches
+  return ProjectSchema.parse(projectData);
+};
 ```
 
 ## Code Style
