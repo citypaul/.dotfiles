@@ -581,14 +581,14 @@ Follow Red-Green-Refactor strictly:
 
 1. **Red**: Write a failing test for the desired behavior. NO PRODUCTION CODE until you have a failing test.
 2. **Green**: Write the MINIMUM code to make the test pass. Resist the urge to write more than needed.
-3. **Refactor**: Clean up the code while keeping tests green.
+3. **Refactor**: Assess the code for improvement opportunities. If refactoring would add value, clean up the code while keeping tests green. If the code is already clean and expressive, move on.
 
 **Common TDD Violations to Avoid:**
 
 - Writing production code without a failing test first
 - Writing multiple tests before making the first one pass
 - Writing more production code than needed to pass the current test
-- Skipping the refactor step when code could be improved
+- Skipping the refactor assessment step when code could be improved
 - Adding functionality "while you're there" without a test driving it
 
 **Remember**: If you're typing production code and there isn't a failing test demanding that code, you're not doing TDD.
@@ -704,19 +704,21 @@ const processOrder = (order: Order): ProcessedOrder => {
 
 ### Refactoring - The Critical Third Step
 
-Refactoring is not optional - it's the third step in the TDD cycle. After achieving a green state and committing your work, you MUST evaluate opportunities for improvement.
+Evaluating refactoring opportunities is not optional - it's the third step in the TDD cycle. After achieving a green state and committing your work, you MUST assess whether the code can be improved. However, only refactor if there's clear value - if the code is already clean and expresses intent well, move on to the next test.
 
 #### What is Refactoring?
 
-Refactoring means changing the internal structure of code without changing its external behavior. The public API remains unchanged, all tests continue to pass, but the code becomes cleaner, more maintainable, or more efficient.
+Refactoring means changing the internal structure of code without changing its external behavior. The public API remains unchanged, all tests continue to pass, but the code becomes cleaner, more maintainable, or more efficient. Remember: only refactor when it genuinely improves the code - not all code needs refactoring.
 
 #### When to Refactor
 
-- **Always after green**: Once tests pass, before moving to the next test, look for refactoring opportunities
+- **Always assess after green**: Once tests pass, before moving to the next test, evaluate if refactoring would add value
 - **When you see duplication**: But understand what duplication really means (see DRY below)
 - **When names could be clearer**: Variable names, function names, or type names that don't clearly express intent
 - **When structure could be simpler**: Complex conditional logic, deeply nested code, or long functions
 - **When patterns emerge**: After implementing several similar features, useful abstractions may become apparent
+
+**Remember**: Not all code needs refactoring. If the code is already clean, expressive, and well-structured, commit and move on. Refactoring should improve the code - don't change things just for the sake of change.
 
 #### Refactoring Guidelines
 
@@ -951,6 +953,7 @@ git commit -m "refactor: extract payment validation helpers"
 
 Before considering refactoring complete, verify:
 
+- [ ] The refactoring actually improves the code (if not, don't refactor)
 - [ ] All tests still pass without modification
 - [ ] All static analysis tools pass (linting, type checking)
 - [ ] No new public APIs were added (only internal ones)
@@ -985,7 +988,12 @@ const calculateOrderTotal = (order: Order): number => {
 // Commit the working version
 // git commit -m "feat: implement order total calculation with free shipping"
 
-// Now refactor for clarity:
+// Assess refactoring opportunities:
+// - The variable names could be clearer
+// - The free shipping threshold is a magic number
+// - The calculation logic could be extracted for clarity
+// These improvements would add value, so proceed with refactoring:
+
 const FREE_SHIPPING_THRESHOLD = 50;
 
 const calculateItemsTotal = (items: OrderItem[]): number => {
@@ -1011,6 +1019,34 @@ const calculateOrderTotal = (order: Order): number => {
 
 // Now commit the refactoring
 // git commit -m "refactor: extract order total calculation helpers"
+```
+
+##### Example: When NOT to Refactor
+
+```typescript
+// After getting this test green:
+describe("Discount calculation", () => {
+  it("should apply 10% discount", () => {
+    const originalPrice = 100;
+    const discountedPrice = applyDiscount(originalPrice, 0.1);
+    expect(discountedPrice).toBe(90);
+  });
+});
+
+// Green implementation:
+const applyDiscount = (price: number, discountRate: number): number => {
+  return price * (1 - discountRate);
+};
+
+// Assess refactoring opportunities:
+// - Code is already simple and clear
+// - Function name clearly expresses intent
+// - Implementation is a straightforward calculation
+// - No magic numbers or unclear logic
+// Conclusion: No refactoring needed. This is fine as-is.
+
+// Commit and move to the next test
+// git commit -m "feat: add discount calculation"
 ```
 
 ### Commit Guidelines
@@ -1044,7 +1080,7 @@ When working with my code:
 3. **Understand the full context** of the code and requirements
 4. **Ask clarifying questions** when requirements are ambiguous
 5. **Think from first principles** - don't make assumptions
-6. **Refactor after every green** - Look for opportunities to improve code structure
+6. **Assess refactoring after every green** - Look for opportunities to improve code structure, but only refactor if it adds value
 7. **Keep project docs current** - update them whenever you introduce meaningful changes
 
 ### Code Changes
@@ -1052,7 +1088,7 @@ When working with my code:
 When suggesting or making changes:
 
 - **Start with a failing test** - always. No exceptions.
-- After making tests pass, always consider refactoring opportunities
+- After making tests pass, always assess refactoring opportunities (but only refactor if it adds value)
 - After refactoring, verify all tests and static analysis pass, then commit
 - Respect the existing patterns and conventions
 - Maintain test coverage for all behavior changes
