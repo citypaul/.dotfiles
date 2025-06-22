@@ -2,6 +2,8 @@
 
 ## Core Philosophy
 
+**TEST-DRIVEN DEVELOPMENT IS NON-NEGOTIABLE.** Every single line of production code must be written in response to a failing test. No exceptions. This is not a suggestion or a preference - it is the fundamental practice that enables all other principles in this document.
+
 I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven testing and functional programming principles. All work should be done in small, incremental changes that maintain a working state throughout development.
 
 ## Quick Reference
@@ -571,13 +573,25 @@ const names = users.map((user) => user.name);
 
 ## Development Workflow
 
-### TDD Process
+### TDD Process - THE FUNDAMENTAL PRACTICE
+
+**CRITICAL**: TDD is not optional. Every feature, every bug fix, every change MUST follow this process:
 
 Follow Red-Green-Refactor strictly:
 
-1. **Red**: Write a failing test for the desired behavior
-2. **Green**: Write the minimum code to make the test pass
-3. **Refactor**: Clean up the code while keeping tests green
+1. **Red**: Write a failing test for the desired behavior. NO PRODUCTION CODE until you have a failing test.
+2. **Green**: Write the MINIMUM code to make the test pass. Resist the urge to write more than needed.
+3. **Refactor**: Clean up the code while keeping tests green.
+
+**Common TDD Violations to Avoid:**
+
+- Writing production code without a failing test first
+- Writing multiple tests before making the first one pass
+- Writing more production code than needed to pass the current test
+- Skipping the refactor step when code could be improved
+- Adding functionality "while you're there" without a test driving it
+
+**Remember**: If you're typing production code and there isn't a failing test demanding that code, you're not doing TDD.
 
 #### TDD Example Workflow
 
@@ -688,6 +702,317 @@ const processOrder = (order: Order): ProcessedOrder => {
 };
 ```
 
+### Refactoring - The Critical Third Step
+
+Refactoring is not optional - it's the third step in the TDD cycle. After achieving a green state and committing your work, you MUST evaluate opportunities for improvement.
+
+#### What is Refactoring?
+
+Refactoring means changing the internal structure of code without changing its external behavior. The public API remains unchanged, all tests continue to pass, but the code becomes cleaner, more maintainable, or more efficient.
+
+#### When to Refactor
+
+- **Always after green**: Once tests pass, before moving to the next test, look for refactoring opportunities
+- **When you see duplication**: But understand what duplication really means (see DRY below)
+- **When names could be clearer**: Variable names, function names, or type names that don't clearly express intent
+- **When structure could be simpler**: Complex conditional logic, deeply nested code, or long functions
+- **When patterns emerge**: After implementing several similar features, useful abstractions may become apparent
+
+#### Refactoring Guidelines
+
+##### 1. Commit Before Refactoring
+
+Always commit your working code before starting any refactoring. This gives you a safe point to return to:
+
+```bash
+git add .
+git commit -m "feat: add payment validation"
+# Now safe to refactor
+```
+
+##### 2. Look for Useful Abstractions Based on Semantic Meaning
+
+Create abstractions only when code shares the same semantic meaning and purpose. Don't abstract based on structural similarity alone - **duplicate code is far cheaper than the wrong abstraction**.
+
+```typescript
+// Similar structure, DIFFERENT semantic meaning - DO NOT ABSTRACT
+const validatePaymentAmount = (amount: number): boolean => {
+  return amount > 0 && amount <= 10000;
+};
+
+const validateTransferAmount = (amount: number): boolean => {
+  return amount > 0 && amount <= 10000;
+};
+
+// These might have the same structure today, but they represent different
+// business concepts that will likely evolve independently.
+// Payment limits might change based on fraud rules.
+// Transfer limits might change based on account type.
+// Abstracting them couples unrelated business rules.
+
+// Similar structure, SAME semantic meaning - SAFE TO ABSTRACT
+const formatUserDisplayName = (firstName: string, lastName: string): string => {
+  return `${firstName} ${lastName}`.trim();
+};
+
+const formatCustomerDisplayName = (
+  firstName: string,
+  lastName: string
+): string => {
+  return `${firstName} ${lastName}`.trim();
+};
+
+const formatEmployeeDisplayName = (
+  firstName: string,
+  lastName: string
+): string => {
+  return `${firstName} ${lastName}`.trim();
+};
+
+// These all represent the same concept: "how we format a person's name for display"
+// They share semantic meaning, not just structure
+const formatPersonDisplayName = (
+  firstName: string,
+  lastName: string
+): string => {
+  return `${firstName} ${lastName}`.trim();
+};
+
+// Replace all call sites throughout the codebase:
+// Before:
+// const userLabel = formatUserDisplayName(user.firstName, user.lastName);
+// const customerName = formatCustomerDisplayName(customer.firstName, customer.lastName);
+// const employeeTag = formatEmployeeDisplayName(employee.firstName, employee.lastName);
+
+// After:
+// const userLabel = formatPersonDisplayName(user.firstName, user.lastName);
+// const customerName = formatPersonDisplayName(customer.firstName, customer.lastName);
+// const employeeTag = formatPersonDisplayName(employee.firstName, employee.lastName);
+
+// Then remove the original functions as they're no longer needed
+```
+
+**Questions to ask before abstracting:**
+
+- Do these code blocks represent the same concept or different concepts that happen to look similar?
+- If the business rules for one change, should the others change too?
+- Would a developer reading this abstraction understand why these things are grouped together?
+- Am I abstracting based on what the code IS (structure) or what it MEANS (semantics)?
+
+**Remember**: It's much easier to create an abstraction later when the semantic relationship becomes clear than to undo a bad abstraction that couples unrelated concepts.
+
+##### 3. Understanding DRY - It's About Knowledge, Not Code
+
+DRY (Don't Repeat Yourself) is about not duplicating **knowledge** in the system, not about eliminating all code that looks similar.
+
+```typescript
+// This is NOT a DRY violation - different knowledge despite similar code
+const validateUserAge = (age: number): boolean => {
+  return age >= 18 && age <= 100;
+};
+
+const validateProductRating = (rating: number): boolean => {
+  return rating >= 1 && rating <= 5;
+};
+
+const validateYearsOfExperience = (years: number): boolean => {
+  return years >= 0 && years <= 50;
+};
+
+// These functions have similar structure (checking numeric ranges), but they
+// represent completely different business rules:
+// - User age has legal requirements (18+) and practical limits (100)
+// - Product ratings follow a 1-5 star system
+// - Years of experience starts at 0 with a reasonable upper bound
+// Abstracting them would couple unrelated business concepts and make future
+// changes harder. What if ratings change to 1-10? What if legal age changes?
+
+// Another example of code that looks similar but represents different knowledge:
+const formatUserDisplayName = (user: User): string => {
+  return `${user.firstName} ${user.lastName}`.trim();
+};
+
+const formatAddressLine = (address: Address): string => {
+  return `${address.street} ${address.number}`.trim();
+};
+
+const formatCreditCardLabel = (card: CreditCard): string => {
+  return `${card.type} ${card.lastFourDigits}`.trim();
+};
+
+// Despite the pattern "combine two strings with space and trim", these represent
+// different domain concepts with different future evolution paths
+
+// This IS a DRY violation - same knowledge in multiple places
+class Order {
+  calculateTotal(): number {
+    const itemsTotal = this.items.reduce((sum, item) => sum + item.price, 0);
+    const shippingCost = itemsTotal > 50 ? 0 : 5.99; // Knowledge duplicated!
+    return itemsTotal + shippingCost;
+  }
+}
+
+class OrderSummary {
+  getShippingCost(itemsTotal: number): number {
+    return itemsTotal > 50 ? 0 : 5.99; // Same knowledge!
+  }
+}
+
+class ShippingCalculator {
+  calculate(orderAmount: number): number {
+    if (orderAmount > 50) return 0; // Same knowledge again!
+    return 5.99;
+  }
+}
+
+// Refactored - knowledge in one place
+const FREE_SHIPPING_THRESHOLD = 50;
+const STANDARD_SHIPPING_COST = 5.99;
+
+const calculateShippingCost = (itemsTotal: number): number => {
+  return itemsTotal > FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_COST;
+};
+
+// Now all classes use the single source of truth
+class Order {
+  calculateTotal(): number {
+    const itemsTotal = this.items.reduce((sum, item) => sum + item.price, 0);
+    return itemsTotal + calculateShippingCost(itemsTotal);
+  }
+}
+```
+
+##### 4. Maintain External APIs During Refactoring
+
+Refactoring must never break existing consumers of your code:
+
+```typescript
+// Original implementation
+export const processPayment = (payment: Payment): ProcessedPayment => {
+  // Complex logic all in one function
+  if (payment.amount <= 0) {
+    throw new Error("Invalid amount");
+  }
+
+  if (payment.amount > 10000) {
+    throw new Error("Amount too large");
+  }
+
+  // ... 50 more lines of validation and processing
+
+  return result;
+};
+
+// Refactored - external API unchanged, internals improved
+export const processPayment = (payment: Payment): ProcessedPayment => {
+  validatePaymentAmount(payment.amount);
+  validatePaymentMethod(payment.method);
+
+  const authorizedPayment = authorizePayment(payment);
+  const capturedPayment = capturePayment(authorizedPayment);
+
+  return generateReceipt(capturedPayment);
+};
+
+// New internal functions - not exported
+const validatePaymentAmount = (amount: number): void => {
+  if (amount <= 0) {
+    throw new Error("Invalid amount");
+  }
+
+  if (amount > 10000) {
+    throw new Error("Amount too large");
+  }
+};
+
+// Tests continue to pass without modification because external API unchanged
+```
+
+##### 5. Verify and Commit After Refactoring
+
+**CRITICAL**: After every refactoring:
+
+1. Run all tests - they must pass without modification
+2. Run static analysis (linting, type checking) - must pass
+3. Commit the refactoring separately from feature changes
+
+```bash
+# After refactoring
+npm test          # All tests must pass
+npm run lint      # All linting must pass
+npm run typecheck # TypeScript must be happy
+
+# Only then commit
+git add .
+git commit -m "refactor: extract payment validation helpers"
+```
+
+#### Refactoring Checklist
+
+Before considering refactoring complete, verify:
+
+- [ ] All tests still pass without modification
+- [ ] All static analysis tools pass (linting, type checking)
+- [ ] No new public APIs were added (only internal ones)
+- [ ] Code is more readable than before
+- [ ] Any duplication removed was duplication of knowledge, not just code
+- [ ] No speculative abstractions were created
+- [ ] The refactoring is committed separately from feature changes
+
+#### Example Refactoring Session
+
+```typescript
+// After getting tests green with minimal implementation:
+describe("Order processing", () => {
+  it("calculates total with items and shipping", () => {
+    const order = { items: [{ price: 30 }, { price: 20 }], shipping: 5 };
+    expect(calculateOrderTotal(order)).toBe(55);
+  });
+
+  it("applies free shipping over £50", () => {
+    const order = { items: [{ price: 30 }, { price: 25 }], shipping: 5 };
+    expect(calculateOrderTotal(order)).toBe(55);
+  });
+});
+
+// Green implementation (minimal):
+const calculateOrderTotal = (order: Order): number => {
+  const itemsTotal = order.items.reduce((sum, item) => sum + item.price, 0);
+  const shipping = itemsTotal > 50 ? 0 : order.shipping;
+  return itemsTotal + shipping;
+};
+
+// Commit the working version
+// git commit -m "feat: implement order total calculation with free shipping"
+
+// Now refactor for clarity:
+const FREE_SHIPPING_THRESHOLD = 50;
+
+const calculateItemsTotal = (items: OrderItem[]): number => {
+  return items.reduce((sum, item) => sum + item.price, 0);
+};
+
+const calculateShipping = (
+  baseShipping: number,
+  itemsTotal: number
+): number => {
+  return itemsTotal > FREE_SHIPPING_THRESHOLD ? 0 : baseShipping;
+};
+
+const calculateOrderTotal = (order: Order): number => {
+  const itemsTotal = calculateItemsTotal(order.items);
+  const shipping = calculateShipping(order.shipping, itemsTotal);
+  return itemsTotal + shipping;
+};
+
+// Run tests - they still pass!
+// Run linting - all clean!
+// Run type checking - no errors!
+
+// Now commit the refactoring
+// git commit -m "refactor: extract order total calculation helpers"
+```
+
 ### Commit Guidelines
 
 - Each commit should represent a complete, working change
@@ -714,23 +1039,28 @@ const processOrder = (order: Order): ProcessedOrder => {
 
 When working with my code:
 
-1. **Think deeply** before making any edits
-2. **Understand the full context** of the code and requirements
-3. **Ask clarifying questions** when requirements are ambiguous
-4. **Think from first principles** - don't make assumptions
-5. **Follow TDD** - always write or modify tests first
-6. **Keep project docs current** - update them whenever you introduce meaningful changes.
+1. **ALWAYS FOLLOW TDD** - No production code without a failing test. This is not negotiable.
+2. **Think deeply** before making any edits
+3. **Understand the full context** of the code and requirements
+4. **Ask clarifying questions** when requirements are ambiguous
+5. **Think from first principles** - don't make assumptions
+6. **Refactor after every green** - Look for opportunities to improve code structure
+7. **Keep project docs current** - update them whenever you introduce meaningful changes
 
 ### Code Changes
 
 When suggesting or making changes:
 
+- **Start with a failing test** - always. No exceptions.
+- After making tests pass, always consider refactoring opportunities
+- After refactoring, verify all tests and static analysis pass, then commit
 - Respect the existing patterns and conventions
 - Maintain test coverage for all behavior changes
-- Follow TDD - write or modify tests first
 - Keep changes small and incremental
 - Ensure all TypeScript strict mode requirements are met
 - Provide rationale for significant design decisions
+
+**If you find yourself writing production code without a failing test, STOP immediately and write the test first.**
 
 ### Communication
 
