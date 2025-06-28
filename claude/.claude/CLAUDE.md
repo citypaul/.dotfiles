@@ -6,6 +6,10 @@
 
 I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven testing and functional programming principles. All work should be done in small, incremental changes that maintain a working state throughout development.
 
+## Security and Permissions
+
+**COMMAND LINE ACCESS**: Claude may NEVER run commands on the command line without explicit permission. Always ask before executing any bash commands, running tests, building projects, or making any system changes.
+
 ## Quick Reference
 
 **Key Principles:**
