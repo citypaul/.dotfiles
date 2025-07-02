@@ -1082,6 +1082,8 @@ When working with my code:
 5. **Think from first principles** - don't make assumptions
 6. **Assess refactoring after every green** - Look for opportunities to improve code structure, but only refactor if it adds value
 7. **Keep project docs current** - update them whenever you introduce meaningful changes
+   **At the end of every change, update CLAUDE.md with anything useful you wished you'd known at the start**.
+   This is CRITICAL - Claude should capture learnings, gotchas, patterns discovered, or any context that would have made the task easier if known upfront. This continuous documentation ensures future work benefits from accumulated knowledge
 
 ### Code Changes
 
