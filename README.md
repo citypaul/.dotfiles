@@ -23,6 +23,6 @@ This repo also includes custom Claude Code slash commands that enforce the devel
 - `/refactor-scan` - Identifies valuable refactoring opportunities after tests pass
 - `/learn` - Captures learnings and updates CLAUDE.md documentation
 
-[Read the full command documentation](claude/.claude/commands/README.md)
+[Read the full command documentation](claude/.claude/README.md)
 
 You can also [contact me on LinkedIn](https://www.linkedin.com/in/paul-hammond-bb5b78251/) if you want. Add me if you want. I'm always happy to discuss this stuff on there!
