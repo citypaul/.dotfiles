@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.0.1
+
+### Patch Changes
+
+- e5b9d00: Add node_modules to .gitignore
+
+  The changesets action accidentally committed node_modules/ directory in PR #21.
+  This adds node_modules/ to .gitignore to prevent this from happening.
+
+- 004d570: Fix GitHub Actions workflow pnpm version incompatibility
+
+  The release workflow failed again after adding pnpm-lock.yaml because the
+  lockfile was generated with pnpm v10 but the workflow used pnpm v8, causing:
+
+  WARN Ignoring not compatible lockfile at pnpm-lock.yaml
+  ERR_PNPM_NO_LOCKFILE Cannot install with "frozen-lockfile"
+
+  This updates the GitHub Actions workflow to use pnpm v10 to match the lockfile.
+
+- 039e448: Fix GitHub Actions workflow to correctly run changesets versioning
+
+  The workflow was failing with "No commits between main and changeset-release/main"
+  because the version command was configured as `pnpm version` (which just prints
+  version info) instead of `pnpm changeset version` (which actually bumps versions).
+
+  This also simplifies the workflow to use a single changesets action call that
+  handles both creating the Version Packages PR and creating GitHub releases.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -14,11 +42,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Modular CLAUDE.md Structure**
 
 CLAUDE.md has been split from a single 1,818-line file into a modular structure:
+
 - Main CLAUDE.md reduced to 156 lines (core philosophy + quick reference)
 - Detailed content extracted to 6 separate files in `docs/` directory
 - **All imports use absolute paths** (`@~/.claude/docs/...`) for dotfiles compatibility
 
 **Why this is breaking:**
+
 - If you manually created symlinks or custom imports, you'll need to update paths
 - The file structure has changed (though the monolithic version still works if you have it)
 
@@ -27,6 +57,7 @@ CLAUDE.md has been split from a single 1,818-line file into a modular structure:
 ### Added
 
 **Modular Documentation Structure:**
+
 - `docs/testing.md` (238 lines) - Testing principles and behavior-driven development
 - `docs/typescript.md` (305 lines) - TypeScript guidelines and schema-first approach
 - `docs/code-style.md` (370 lines) - Functional programming and immutability patterns
@@ -35,6 +66,7 @@ CLAUDE.md has been split from a single 1,818-line file into a modular structure:
 - `docs/working-with-claude.md` (74 lines) - Expectations and learning capture
 
 **Versioning Infrastructure:**
+
 - `package.json` - Version tracking (not an npm package, just for semver)
 - `CHANGELOG.md` - This file
 - `MIGRATION.md` - Upgrade guide from v1.x to v2.x
@@ -58,10 +90,12 @@ CLAUDE.md has been split from a single 1,818-line file into a modular structure:
 **CLAUDE.md Development Framework (1,818 lines):**
 
 **📄 View the v1.0.0 monolithic file:**
+
 - GitHub: https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
 - Raw download: https://github.com/citypaul/.dotfiles/raw/v1.0.0/claude/.claude/CLAUDE.md
 
 **Content:**
+
 - Core philosophy: TDD is non-negotiable
 - Testing principles: Behavior-driven testing with 100% coverage
 - TypeScript guidelines: Strict mode with schema-first approach
@@ -71,12 +105,14 @@ CLAUDE.md has been split from a single 1,818-line file into a modular structure:
 - Working with Claude: Expectations and learning documentation
 
 **Claude Code Agents:**
+
 - `tdd-guardian` - Proactive TDD coaching and reactive compliance verification
 - `ts-enforcer` - TypeScript best practices and schema-first enforcement
 - `learn` - Proactive learning capture and CLAUDE.md documentation
 - `refactor-scan` - Refactoring assessment and semantic analysis
 
 **Documentation:**
+
 - Comprehensive README with agent documentation
 - Git aliases documentation (30+ aliases)
 - Personal dotfiles for shell and git configuration
