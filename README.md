@@ -8,15 +8,34 @@
 
 ---
 
+## Table of Contents
+
+- [What This Is](#what-this-is)
+- [CLAUDE.md: The Development Framework](#-claudemd-the-development-framework)
+- [Claude Code Agents: Automated Enforcement](#-claude-code-agents-automated-enforcement)
+- [How to Use This in Your Projects](#-how-to-use-this-in-your-projects)
+- [Documentation](#-documentation)
+- [Who This Is For](#-who-this-is-for)
+- [Philosophy](#-philosophy)
+- [Continuous Improvement](#-continuous-improvement)
+- [Personal Dotfiles](#-personal-dotfiles-the-original-purpose)
+- [Contributing](#-contributing)
+- [Contact](#-contact)
+
+---
+
 ## What This Is
 
-This repository contains **battle-tested development guidelines** designed for AI-assisted programming with Claude Code (or any AI coding assistant). It includes:
+**This is my personal dotfiles repository.** I use it to manage my shell configurations, git aliases, and development environment setup.
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** - A comprehensive development philosophy and decision-making framework
-2. **[Four specialized agents](claude/.claude/agents/)** - Automated enforcers that ensure guidelines are followed
-3. **Personal dotfiles** - My own configuration (less interesting, but you might find something useful)
+It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude/CLAUDE.md) - development guidelines I wrote for AI-assisted programming. That's likely why you're here.
 
-**Most people are here for CLAUDE.md and the agents.** This README focuses on those.
+This repository now serves two purposes:
+
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Four enforcement agents](claude/.claude/agents/)** - Development guidelines and automated quality enforcement (what most visitors want)
+2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
+
+**Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
 
 ---
 
@@ -323,15 +342,155 @@ This creates a **self-improving system** where each project session makes future
 
 ---
 
-## 📦 This Repo Is Also My Personal Dotfiles
+## 📦 Personal Dotfiles (The Original Purpose)
 
-If you're interested in the dotfiles themselves:
+While most visitors are here for CLAUDE.md, this repository's **original purpose** is managing my personal development environment. If you're interested in dotfiles, here's what's included and how to use them.
 
-- `install.sh` - GNU Stow-based installation script
-- Various configuration files for tools I use
-- Not the main attraction, but feel free to browse
+### Git Aliases
 
-The dotfiles setup uses [GNU Stow](https://www.gnu.org/software/stow/) for symlink management.
+I have an extensive collection of git aliases that speed up common workflows. These are in `git/.gitconfig`.
+
+**Most useful aliases:**
+
+```bash
+# Pretty log with graph
+git lg          # One-line log with graph
+git lga         # All branches log with graph
+git lgp         # Log with patch (shows changes)
+
+# Status and diff shortcuts
+git st          # git status
+git di          # git diff
+git dc          # git diff --cached
+git ds          # git diff --stat
+
+# Commit shortcuts
+git ci          # git commit
+git ca          # git commit --amend
+git cane        # git commit --amend --no-edit
+
+# Branch management
+git co          # git checkout
+git cob         # git checkout -b (new branch)
+git br          # git branch
+git brd         # git branch -d (delete branch)
+
+# Working with remotes
+git pu          # git push
+git puf         # git push --force-with-lease (safer force push)
+git pl          # git pull
+git plo         # git pull origin
+
+# Stash shortcuts
+git sl          # git stash list
+git ss          # git stash save
+git sp          # git stash pop
+
+# Undo shortcuts
+git undo        # Undo last commit (keeps changes)
+git unstage     # Unstage files
+git uncommit    # Undo commit and unstage
+
+# Advanced workflows
+git wip         # Quick "work in progress" commit
+git unwip       # Undo WIP commit
+git squash      # Interactive rebase to squash commits
+```
+
+**Installation:**
+
+```bash
+# Install just the git config
+cd ~/.dotfiles
+stow git
+
+# Or manually copy specific aliases you want
+cat git/.gitconfig >> ~/.gitconfig
+```
+
+### Shell Configuration
+
+My shell setup (for bash/zsh) includes:
+
+- **Prompt customization** - Git status in prompt
+- **Useful functions** - Project navigation helpers
+- **PATH management** - Tool directories
+- **Environment variables** - Editor, pager, etc.
+
+**Files:**
+- `bash/.bashrc` - Bash configuration
+- `bash/.bash_profile` - Bash login shell
+- `zsh/.zshrc` - Zsh configuration (if you use zsh)
+
+**Installation:**
+
+```bash
+cd ~/.dotfiles
+stow bash  # or stow zsh
+```
+
+### Development Tools Configuration
+
+Configuration files for various development tools:
+
+- **`vim/.vimrc`** - Vim editor configuration
+- **`tmux/.tmux.conf`** - Terminal multiplexer settings
+- **`npm/.npmrc`** - npm configuration
+
+### Installing Everything
+
+To install all dotfiles:
+
+```bash
+# Clone the repository
+git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
+
+# Run the installation script
+./install.sh
+
+# This uses GNU Stow to create symlinks for all configurations
+```
+
+### Installing Specific Dotfiles
+
+Only want certain configurations? Install them individually:
+
+```bash
+cd ~/.dotfiles
+
+# Install just git config
+stow git
+
+# Install just bash config
+stow bash
+
+# Install vim config
+stow vim
+
+# Install multiple at once
+stow git bash vim
+```
+
+### How Stow Works
+
+This repository uses [GNU Stow](https://www.gnu.org/software/stow/) for dotfile management:
+
+1. Each directory (`git/`, `bash/`, etc.) represents a "package"
+2. Files inside mirror your home directory structure
+3. `stow git` creates symlinks from `~/.gitconfig` → `~/.dotfiles/git/.gitconfig`
+4. Changes to files in `~/.dotfiles` are instantly reflected
+5. Uninstall with `stow -D git`
+
+### Browsing the Dotfiles
+
+Feel free to browse the repository and cherry-pick what's useful:
+
+- **[git/.gitconfig](git/.gitconfig)** - Git aliases and configuration
+- **[bash/.bashrc](bash/.bashrc)** - Bash shell configuration
+- **[vim/.vimrc](vim/.vimrc)** - Vim editor setup
+
+**Note:** These are my personal preferences. Review before installing - you may want to customize them for your workflow.
 
 ---
 
