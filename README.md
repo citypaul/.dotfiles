@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Four enforcement agents](claude/.claude/agents/)** - Development guidelines and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Five enforcement agents](claude/.claude/agents/)** - Development guidelines and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -66,14 +66,290 @@ Unlike typical style guides, CLAUDE.md provides:
 
 ### Key Sections
 
-| Section | What It Provides |
-|---------|-----------------|
-| **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns |
-| **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns |
-| **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns, git verification |
-| **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree |
-| **Functional Programming** | Immutability violations catalog, pure functions, composition patterns |
-| **Working with Claude** | Learning capture guidance, documentation templates, quality criteria |
+| Section | What It Provides | Detailed Docs |
+|---------|-----------------|---------------|
+| **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ testing.md](claude/.claude/docs/testing.md) |
+| **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ typescript.md](claude/.claude/docs/typescript.md) |
+| **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns, git verification | [→ workflow.md](claude/.claude/docs/workflow.md) |
+| **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ workflow.md](claude/.claude/docs/workflow.md) |
+| **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ code-style.md](claude/.claude/docs/code-style.md) |
+| **Working with Claude** | Learning capture guidance, documentation templates, quality criteria | [→ working-with-claude.md](claude/.claude/docs/working-with-claude.md) |
+
+---
+
+## 📖 Detailed Documentation Guide
+
+**These docs are the core value of this project.** Each file contains battle-tested decision frameworks, concrete examples, and anti-pattern catalogs that transform abstract principles into actionable practices.
+
+### Quick Navigation by Problem
+
+**"I'm struggling with..."** → **Go here:**
+
+| Problem | Documentation | Key Insight |
+|---------|--------------|-------------|
+| Tests that break when I refactor | [testing.md](claude/.claude/docs/testing.md) | Test behavior through public APIs, not implementation |
+| Don't know when to use schemas vs types | [typescript.md](claude/.claude/docs/typescript.md) | 5-question decision framework |
+| Code that "looks the same" - should I abstract it? | [workflow.md](claude/.claude/docs/workflow.md) | Semantic vs structural abstraction guide |
+| Refactoring everything vs nothing | [workflow.md](claude/.claude/docs/workflow.md) | Priority classification (Critical/High/Nice/Skip) |
+| Understanding what "DRY" really means | [workflow.md](claude/.claude/docs/workflow.md) | DRY = knowledge, not code structure |
+| Accidental mutations breaking things | [code-style.md](claude/.claude/docs/code-style.md) | Complete immutability violations catalog |
+| Writing code before tests | [workflow.md](claude/.claude/docs/workflow.md) | TDD quality gates + git verification |
+| Losing context on complex features | [working-with-claude.md](claude/.claude/docs/working-with-claude.md) | Learning capture framework (7 criteria) |
+
+---
+
+### 🧪 Testing Principles → [testing.md](claude/.claude/docs/testing.md)
+
+**Problem it solves:** Tests that break on every refactor, unclear what to test, low coverage despite many tests
+
+**What's inside:**
+- Behavior-driven testing principles with anti-patterns
+- Factory function patterns for test data (no `let`/`beforeEach`)
+- Achieving 100% coverage through business behavior (not implementation)
+- React component testing strategies
+- Validating test data with schemas
+
+**Concrete example from the docs:**
+
+```typescript
+// ❌ BAD - Implementation-focused test (breaks on refactor)
+it("should call validateAmount", () => {
+  const spy = jest.spyOn(validator, 'validateAmount');
+  processPayment(payment);
+  expect(spy).toHaveBeenCalled(); // Will break if we rename or restructure
+});
+
+// ✅ GOOD - Behavior-focused test (refactor-safe)
+it("should reject payments with negative amounts", () => {
+  const payment = getMockPayment({ amount: -100 });
+  const result = processPayment(payment);
+  expect(result.success).toBe(false);
+  expect(result.error.message).toBe("Invalid amount");
+});
+```
+
+**Why this matters:** The first test will fail if you refactor `validateAmount` into a different structure. The second test only cares about behavior - refactor all you want, as long as negative amounts are rejected.
+
+**Key insight:** A separate `payment-validator.ts` file gets 100% coverage without dedicated tests - it's fully tested through `payment-processor` behavior tests. No 1:1 file mapping needed.
+
+---
+
+### 🔷 TypeScript Guidelines → [typescript.md](claude/.claude/docs/typescript.md)
+
+**Problem it solves:** Overusing schemas everywhere, or not using them when needed; confusion about `type` vs `interface`
+
+**What's inside:**
+- Strict mode requirements and tsconfig setup
+- **Type vs interface distinction** (data vs behavior contracts)
+- **5-question decision framework**: When schemas ARE vs AREN'T required
+- Schema-first development with Zod
+- Schema usage in tests (import from shared locations, never redefine)
+- Branded types for type safety
+
+**The 5-question framework from the docs:**
+
+Ask these in order:
+1. **Does data cross a trust boundary?** (external → internal) → ✅ Schema required
+2. **Does type have validation rules?** (format, constraints) → ✅ Schema required
+3. **Is this a shared data contract?** (between systems) → ✅ Schema required
+4. **Used in test factories?** → ✅ Schema required (for validation)
+5. **Pure internal type?** (utility, state, behavior) → ❌ Type is fine
+
+**Concrete example from the docs:**
+
+```typescript
+// ❌ Schema NOT needed - pure internal type
+type Point = { readonly x: number; readonly y: number };
+type CartTotal = { subtotal: number; tax: number; total: number };
+
+// ✅ Schema REQUIRED - API response (trust boundary + validation)
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  role: z.enum(["admin", "user", "guest"]),
+});
+const user = UserSchema.parse(apiResponse);
+```
+
+**Key insight:** Not all types need schemas. Use schemas at trust boundaries and for validation. For internal types and utilities, plain TypeScript types are sufficient.
+
+**Critical rule:** Tests must import real schemas from shared locations, never redefine them. This prevents type drift between tests and production.
+
+---
+
+### 🔄 Development Workflow (TDD + Refactoring) → [workflow.md](claude/.claude/docs/workflow.md)
+
+**Problem it solves:** Writing code before tests, refactoring too much/too little, not knowing when to abstract
+
+**What's inside:**
+- **TDD process with quality gates** (what to verify before each commit)
+- **RED-GREEN-REFACTOR** cycle with complete examples
+- **Refactoring priority classification** (Critical/High/Nice/Skip)
+- **Semantic vs structural abstraction** (the most important refactoring rule)
+- **Understanding DRY** - knowledge vs code duplication
+- **4-question decision framework** for abstraction
+- Git verification methods (audit TDD compliance retrospectively)
+- Commit guidelines and PR standards
+
+**The refactoring priority system from the docs:**
+
+🔴 **Critical (Fix Now):** Immutability violations, semantic knowledge duplication, deep nesting (>3 levels)
+
+⚠️ **High Value (Fix This Session):** Unclear names, magic numbers, long functions (>30 lines)
+
+💡 **Nice to Have:** Minor improvements
+
+✅ **Skip:** Code that's already clean, structural similarity without semantic relationship
+
+**The semantic vs structural rule (THE BIG ONE):**
+
+```typescript
+// ❌ DO NOT ABSTRACT - Structural similarity, DIFFERENT semantics
+const validatePaymentAmount = (amount: number): boolean => {
+  return amount > 0 && amount <= 10000; // Fraud rules
+};
+
+const validateTransferAmount = (amount: number): boolean => {
+  return amount > 0 && amount <= 10000; // Account type rules
+};
+// They'll evolve independently - abstracting couples unrelated business rules
+
+// ✅ SAFE TO ABSTRACT - Same semantic meaning
+const formatUserDisplayName = (first: string, last: string) => `${first} ${last}`.trim();
+const formatCustomerDisplayName = (first: string, last: string) => `${first} ${last}`.trim();
+const formatEmployeeDisplayName = (first: string, last: string) => `${first} ${last}`.trim();
+// All represent "how we display person names" - same business concept
+
+const formatPersonDisplayName = (first: string, last: string) => `${first} ${last}`.trim();
+```
+
+**Key insight:** "Duplicate code is far cheaper than the wrong abstraction." Only abstract code that shares the same **semantic meaning**, not just similar structure.
+
+**DRY revelation:** DRY means "Don't Repeat Knowledge" not "Don't Repeat Code Structure". The shipping threshold example in the docs shows this perfectly.
+
+---
+
+### 🎨 Code Style (Functional Programming) → [code-style.md](claude/.claude/docs/code-style.md)
+
+**Problem it solves:** Accidental mutations, nested conditionals, unclear code, when to use FP abstractions
+
+**What's inside:**
+- **Complete immutability violations catalog** (arrays, objects, nested structures)
+- Functional programming patterns and when to use heavy FP abstractions
+- Code structure principles (max 2 levels nesting)
+- Self-documenting code patterns (no comments)
+- Naming conventions (functions, types, constants, files)
+- **Options objects pattern** (vs positional parameters)
+
+**The immutability catalog from the docs:**
+
+```typescript
+// ❌ WRONG - Array mutations
+items.push(newItem);        // → [...items, newItem]
+items.pop();                // → items.slice(0, -1)
+items[0] = updatedItem;     // → items.map((item, i) => i === 0 ? updatedItem : item)
+items.sort();               // → [...items].sort()
+
+// ❌ WRONG - Object mutations
+user.name = "New Name";     // → { ...user, name: "New Name" }
+delete user.email;          // → const { email, ...rest } = user; rest
+
+// ❌ WRONG - Nested mutations
+cart.items[0].quantity = 5; // → { ...cart, items: cart.items.map((item, i) => i === 0 ? { ...item, quantity: 5 } : item) }
+```
+
+**Options objects pattern:**
+
+```typescript
+// Avoid: Unclear at call site
+const payment = createPayment(100, "GBP", "card_123", "cust_456", undefined, { orderId: "789" });
+
+// Good: Self-documenting
+const payment = createPayment({
+  amount: 100,
+  currency: "GBP",
+  cardId: "card_123",
+  customerId: "cust_456",
+  metadata: { orderId: "789" },
+});
+```
+
+**Key insight:** Immutability eliminates entire classes of bugs. The catalog provides the immutable alternative for every common mutation pattern.
+
+---
+
+### 🤝 Working with Claude → [working-with-claude.md](claude/.claude/docs/working-with-claude.md)
+
+**Problem it solves:** Losing context after complex features, forgetting gotchas, unclear expectations
+
+**What's inside:**
+- Complete expectations checklist for Claude
+- **Learning documentation framework** (7 criteria for what to document)
+- Types of learnings to capture (gotchas, patterns, anti-patterns, decisions, edge cases)
+- Documentation format templates
+- "What do I wish I'd known at the start?" prompts
+
+**The 7 criteria for documenting learnings:**
+
+Document if ANY of these are true:
+- ✅ Would save future developers >30 minutes
+- ✅ Prevents a class of bugs or errors
+- ✅ Reveals non-obvious behavior or constraints
+- ✅ Captures architectural rationale or trade-offs
+- ✅ Documents domain-specific knowledge
+- ✅ Identifies effective patterns or anti-patterns
+- ✅ Clarifies tool setup or configuration gotchas
+
+**Documentation template from the docs:**
+
+```markdown
+#### Gotcha: [Descriptive Title]
+
+**Context**: When this occurs
+**Issue**: What goes wrong
+**Solution**: How to handle it
+
+```typescript
+// ✅ CORRECT
+const example = "correct approach";
+
+// ❌ WRONG
+const wrong = "incorrect approach";
+```
+```
+
+**Key insight:** Capture learnings while context is fresh, not during retrospectives when details are lost. Ask "What do I wish I'd known at the start?" after every significant change.
+
+---
+
+### 📝 Example Patterns → [examples.md](claude/.claude/docs/examples.md)
+
+**Problem it solves:** Need quick reference for common patterns and anti-patterns
+
+**What's inside:**
+- Error handling patterns (Result types, early returns)
+- Testing behavior through public APIs (complete examples)
+- Common anti-patterns to avoid (mutations, nested conditionals, large functions)
+- Side-by-side good/bad comparisons
+
+**Quick reference for copy-paste patterns** when you need them.
+
+---
+
+## 🎯 Why These Docs Are Different
+
+Unlike typical style guides, these docs provide:
+
+1. **Decision frameworks** - Concrete questions to answer before taking action (not vague principles)
+2. **Priority classifications** - Objective severity levels to prevent over/under-engineering
+3. **Anti-pattern catalogs** - Side-by-side good/bad examples showing exactly what to avoid
+4. **Git verification methods** - How to audit compliance after the fact
+5. **Quality gates** - Verifiable checklists before commits
+6. **Problem-oriented** - Organized by the problems you face, not abstract concepts
+
+**Most valuable insight across all docs:** Abstract based on **semantic meaning** (what code represents), not **structural similarity** (what code looks like). This single principle prevents most bad abstractions.
+
+---
 
 ### Schema-First Decision Framework Example
 
@@ -101,7 +377,7 @@ Ask yourself:
 
 [**→ Read the agents documentation**](claude/.claude/agents/README.md)
 
-Four specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles:
+Five specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles:
 
 ### 1. `tdd-guardian` - TDD Compliance Enforcer
 
@@ -190,7 +466,45 @@ Claude Code: [Launches refactor-scan agent]
 
 ---
 
-### 4. `learn` - CLAUDE.md Learning Integrator
+### 4. `docs-guardian` - Documentation Quality Guardian
+
+**Use proactively** when creating documentation or **reactively** to review and improve existing docs.
+
+**What it ensures:**
+- ✅ Value-first approach (why before how)
+- ✅ Scannable structure (visual hierarchy, clear headings)
+- ✅ Progressive disclosure (quick start before deep dive)
+- ✅ Problem-oriented navigation (organized by user problems)
+- ✅ Concrete examples showing value (not just descriptions)
+- ✅ Cross-references and multiple entry points
+- ✅ Actionable next steps in every section
+
+**What it checks:**
+- ❌ Wall of text without visual breaks
+- ❌ Feature lists without value demonstrations
+- ❌ Installation-first (before showing what it does)
+- ❌ Missing navigation aids
+- ❌ Broken links or outdated information
+
+**Example invocation:**
+```
+You: "I need to write a README for this feature."
+Claude Code: [Launches docs-guardian agent]
+
+You: "Can you review the documentation I just wrote?"
+Claude Code: [Launches docs-guardian agent]
+```
+
+**Output:**
+- Assessment against 7 pillars of world-class documentation
+- Critical issues (must fix) vs nice-to-haves
+- Specific improvement recommendations with examples
+- Proposed restructuring for better discoverability
+- Templates for common documentation types (README, guides, API docs)
+
+---
+
+### 5. `learn` - CLAUDE.md Learning Integrator
 
 **Use proactively** when discovering gotchas, or **reactively** after completing complex features.
 
@@ -245,6 +559,7 @@ curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/m
 curl -o .claude/agents/tdd-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/tdd-guardian.md
 curl -o .claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/ts-enforcer.md
 curl -o .claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
+curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/docs-guardian.md
 curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
 
 # Download agents README
@@ -290,7 +605,7 @@ chmod +x install-claude.sh
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (156 lines - main guidelines)
 - ✅ `~/.claude/docs/` (6 detailed documentation files)
-- ✅ `~/.claude/agents/` (4 automated enforcement agents)
+- ✅ `~/.claude/agents/` (5 automated enforcement agents)
 
 **Benefits:**
 - ✅ Applies to ALL your projects automatically
@@ -317,7 +632,7 @@ chmod +x install-claude.sh
 3. **Implement**: Get GREEN (minimal code to pass)
 4. **Refactor**: Run refactor-scan to assess opportunities
 5. **Review**: Run ts-enforcer and tdd-guardian before commit
-6. **Document**: Use learn agent to capture insights
+6. **Document**: Use learn agent to capture insights, docs-guardian for user-facing docs
 7. **Commit**: Follow conventional commits format
 
 ### Agent Invocation Examples
