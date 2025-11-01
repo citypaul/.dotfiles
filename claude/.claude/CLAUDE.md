@@ -100,6 +100,39 @@ Key principles:
 - Compose factories for complex objects
 - Consider using a test data builder pattern for very complex objects
 
+**Validating Test Data:**
+
+When schemas exist, validate factory output to catch test data issues early:
+
+```typescript
+import { PaymentSchema, type Payment } from '../schemas/payment.schema';
+
+const getMockPayment = (overrides?: Partial<Payment>): Payment => {
+  const basePayment = {
+    amount: 100,
+    currency: "GBP",
+    cardId: "card_123",
+    customerId: "cust_456",
+  };
+
+  const paymentData = { ...basePayment, ...overrides };
+
+  // Validate against real schema to catch type mismatches
+  return PaymentSchema.parse(paymentData);
+};
+
+// This catches errors in test setup:
+const payment = getMockPayment({
+  amount: -100  // ❌ Schema validation fails: amount must be positive
+});
+```
+
+**Why validate test data:**
+- Ensures test factories produce valid data that matches production schemas
+- Catches test data bugs immediately rather than in test assertions
+- Documents constraints (e.g., "amount must be positive") in schema, not in every test
+- Prevents tests from passing with invalid data that would fail in production
+
 ## TypeScript Guidelines
 
 ### Strict Mode Requirements
@@ -131,18 +164,56 @@ Key principles:
 
 ### Type Definitions
 
-- **Prefer `type` over `interface`** in all cases
+- **Prefer `type` over `interface`** - Use `type` for data structures and shapes. Reserve `interface` ONLY for behavior contracts (ports, adapters, dependency injection):
+
+```typescript
+// ✅ CORRECT - type for data structures
+type User = {
+  readonly id: string;
+  readonly email: string;
+  readonly role: UserRole;
+};
+
+type PaymentRequest = {
+  amount: number;
+  currency: string;
+};
+
+// ✅ CORRECT - interface for behavior contracts
+interface Logger {
+  log(message: string): void;
+  error(message: string, error: Error): void;
+}
+
+interface PaymentGateway {
+  processPayment(payment: Payment): Promise<PaymentResult>;
+  refund(transactionId: string): Promise<RefundResult>;
+}
+
+// ❌ WRONG - interface for data structure
+interface User {
+  id: string;
+  email: string;
+}
+```
+
+**Why this distinction?**
+- **Types** describe what data IS (structure, shape)
+- **Interfaces** describe what code DOES (behavior, contracts)
+- Interfaces support declaration merging and extension, useful for dependency injection and plugin systems
+- Types are more flexible for complex type operations (unions, intersections, mapped types)
+
 - Use explicit typing where it aids clarity, but leverage inference where appropriate
 - Utilize utility types effectively (`Pick`, `Omit`, `Partial`, `Required`, etc.)
 - Create domain-specific types (e.g., `UserId`, `PaymentId`) for type safety
 - Use Zod or any other [Standard Schema](https://standardschema.dev/) compliant schema library to create types, by creating schemas first
 
 ```typescript
-// Good
+// Good - Branded types for type safety
 type UserId = string & { readonly brand: unique symbol };
 type PaymentAmount = number & { readonly brand: unique symbol };
 
-// Avoid
+// Avoid - No type distinction
 type UserId = string;
 type PaymentAmount = number;
 ```
@@ -206,6 +277,113 @@ const CustomerSchema = BaseEntitySchema.extend({
 
 type Customer = z.infer<typeof CustomerSchema>;
 ```
+
+#### When Schemas Are Required vs. Optional
+
+**Not all types need schemas.** Use this decision framework to determine when runtime validation is necessary:
+
+**Decision Framework:**
+
+Ask these questions in order:
+
+1. **Does data cross a trust boundary?** (external → internal)
+   - YES → ✅ Schema required
+   - NO → Continue
+
+2. **Does type have validation rules?** (format, constraints, enums)
+   - YES → ✅ Schema required
+   - NO → Continue
+
+3. **Is this a shared data contract?** (between systems)
+   - YES → ✅ Schema required
+   - NO → Continue
+
+4. **Used in test factories?**
+   - YES → ✅ Schema required (for validation)
+   - NO → Continue
+
+5. **Pure internal type?** (utility, state, behavior)
+   - YES → ❌ Type is fine (no schema needed)
+   - NO → ✅ Schema recommended for safety
+
+**✅ Schema REQUIRED Examples:**
+
+```typescript
+// API responses (trust boundary)
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  role: z.enum(["admin", "user", "guest"]),
+});
+const user = UserSchema.parse(apiResponse);
+
+// Business validation rules
+const PaymentSchema = z.object({
+  amount: z.number().positive().max(10000),
+  email: z.string().email(),
+  cardNumber: z.string().regex(/^\d{16}$/),
+});
+
+// Shared data contracts (events, messages)
+const OrderCreatedEventSchema = z.object({
+  orderId: z.string(),
+  customerId: z.string(),
+  items: z.array(z.object({ sku: z.string(), quantity: z.number() })),
+});
+
+// Test data factories (ensures test data validity)
+const getMockUser = (): User => {
+  return UserSchema.parse({
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    email: "test@example.com",
+    role: "user",
+  });
+};
+```
+
+**❌ Schema OPTIONAL Examples:**
+
+```typescript
+// Pure internal types (no external data, no validation)
+type Point = { readonly x: number; readonly y: number };
+type CartTotal = { subtotal: number; tax: number; total: number };
+
+// Result/Option types (internal logic)
+type Result<T, E = Error> =
+  | { success: true; data: T }
+  | { success: false; error: E };
+
+// TypeScript utilities (compile-time only)
+type UserProfile = Pick<User, 'id' | 'name'>;
+type PartialUser = Partial<User>;
+
+// Branded primitives (compile-time nominal types)
+type UserId = string & { readonly brand: unique symbol };
+type PaymentId = string & { readonly brand: unique symbol };
+
+// Behavior contracts (interface for behavior, not data)
+interface Logger {
+  log(message: string): void;
+  error(message: string, error: Error): void;
+}
+
+// Internal state machines
+type LoadingState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: unknown }
+  | { status: "error"; error: Error };
+
+// Component props (usually - internal to app)
+type ButtonProps = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+};
+// Exception: If props come from URL params or API → schema required
+```
+
+**Summary:** Use schemas at trust boundaries and for validation. For internal types, utilities, and behavior contracts, plain TypeScript types are sufficient.
 
 #### Schema Usage in Tests
 
@@ -321,6 +499,67 @@ const chainPaymentOperations = (
   );
 };
 ```
+
+#### Immutability Violations to Avoid
+
+**Array Mutations:**
+
+```typescript
+// ❌ WRONG - Array mutations
+items.push(newItem);
+items.pop();
+items.splice(0, 1);
+items.shift();
+items.unshift(newItem);
+items[0] = updatedItem;
+items.sort();
+items.reverse();
+
+// ✅ CORRECT - Immutable alternatives
+const withNew = [...items, newItem];
+const withoutLast = items.slice(0, -1);
+const withoutFirst = items.slice(1);
+const withFirst = [newItem, ...items];
+const updated = items.map((item, i) => i === 0 ? updatedItem : item);
+const sorted = [...items].sort();
+const reversed = [...items].reverse();
+```
+
+**Object Mutations:**
+
+```typescript
+// ❌ WRONG - Object mutations
+user.name = "New Name";
+delete user.email;
+Object.assign(user, updates);
+
+// ✅ CORRECT - Immutable alternatives
+const updated = { ...user, name: "New Name" };
+const { email, ...withoutEmail } = user;
+const merged = { ...user, ...updates };
+```
+
+**Nested Structure Updates:**
+
+```typescript
+// ❌ WRONG - Mutating nested structures
+cart.items[0].quantity = 5;
+
+// ✅ CORRECT - Immutable nested update
+const updatedCart = {
+  ...cart,
+  items: cart.items.map((item, i) =>
+    i === 0 ? { ...item, quantity: 5 } : item
+  ),
+};
+```
+
+**Why immutability matters:**
+- **Predictable**: No hidden side effects - function inputs never change
+- **Debuggable**: State changes are explicit and traceable
+- **Testable**: Pure functions are trivial to test
+- **React-friendly**: Reliable re-renders and memoization
+- **Concurrent-safe**: No race conditions from shared mutable state
 
 ### Code Structure
 
@@ -593,6 +832,87 @@ Follow Red-Green-Refactor strictly:
 
 **Remember**: If you're typing production code and there isn't a failing test demanding that code, you're not doing TDD.
 
+#### TDD Quality Gates
+
+Before allowing any commit, verify:
+- ✅ All production code has a test that demanded it
+- ✅ Tests verify behavior, not implementation
+- ✅ Implementation is minimal (only what's needed)
+- ✅ Refactoring assessment completed (if tests green)
+- ✅ All tests pass
+- ✅ TypeScript strict mode satisfied
+- ✅ No `any` types or unjustified assertions
+- ✅ Factory functions used (no `let`/`beforeEach`)
+
+#### Anti-Patterns in Tests
+
+**Avoid these test smells:**
+
+```typescript
+// ❌ BAD - Implementation-focused test
+it("should call validateAmount", () => {
+  const spy = jest.spyOn(validator, 'validateAmount');
+  processPayment(payment);
+  expect(spy).toHaveBeenCalled();
+});
+
+// ✅ GOOD - Behavior-focused test
+it("should reject payments with negative amounts", () => {
+  const payment = getMockPayment({ amount: -100 });
+  const result = processPayment(payment);
+  expect(result.success).toBe(false);
+  expect(result.error.message).toBe("Invalid amount");
+});
+
+// ❌ BAD - Using let and beforeEach (shared mutable state)
+let payment: Payment;
+beforeEach(() => {
+  payment = { amount: 100 };
+});
+it("should process payment", () => {
+  processPayment(payment);
+});
+
+// ✅ GOOD - Factory functions (isolated, immutable)
+it("should process payment", () => {
+  const payment = getMockPayment({ amount: 100 });
+  processPayment(payment);
+});
+```
+
+#### Verifying TDD Compliance Retrospectively
+
+To verify that code was developed test-first, examine git history:
+
+```bash
+# Check if test was written before implementation
+git log -p --follow src/features/payment/payment-processor.ts
+git log -p --follow src/features/payment/payment-processor.test.ts
+
+# Look for:
+# ✅ GOOD: Test commit comes BEFORE implementation commit
+# ❌ BAD: Implementation committed without corresponding test
+# ❌ BAD: Test and implementation in same commit without clear RED phase
+```
+
+**During code review, check:**
+- Was there a failing test before each production code change?
+- Do commit messages indicate RED-GREEN-REFACTOR progression?
+- Are refactoring commits separate from feature commits?
+
+**Example good commit sequence:**
+```
+feat(test): add test for payment validation (RED)
+feat: implement payment validation (GREEN)
+refactor: extract payment validation constants (REFACTOR)
+```
+
+**Example bad commit sequence:**
+```
+feat: add payment validation with tests
+```
+(Combined test+implementation suggests test wasn't written first)
+
 #### TDD Example Workflow
 
 ```typescript
@@ -719,6 +1039,57 @@ Refactoring means changing the internal structure of code without changing its e
 - **When patterns emerge**: After implementing several similar features, useful abstractions may become apparent
 
 **Remember**: Not all code needs refactoring. If the code is already clean, expressive, and well-structured, commit and move on. Refactoring should improve the code - don't change things just for the sake of change.
+
+#### Refactoring Priority Classification
+
+Not all refactoring is equally valuable. Classify issues by severity:
+
+**🔴 Critical (Fix Now Before Commit):**
+- Immutability violations (mutations)
+- Semantic knowledge duplication (same business rule in multiple places)
+- Deeply nested code (>3 levels)
+- Security issues or data leak risks
+
+**⚠️ High Value (Should Fix This Session):**
+- Unclear names affecting comprehension
+- Magic numbers/strings used multiple times
+- Long functions (>30 lines) with multiple responsibilities
+- Missing constants for important business rules
+
+**💡 Nice to Have (Consider Later):**
+- Minor naming improvements
+- Extraction of single-use helper functions
+- Structural reorganization that doesn't improve clarity
+- Cosmetic changes without functional benefit
+
+**✅ Skip Refactoring:**
+- Code that's already clean and expressive
+- Structural similarity without semantic relationship
+- Changes that would make code less clear
+- Abstractions that aren't yet proven necessary
+
+**Example Assessment:**
+
+```typescript
+// After achieving green:
+const processOrder = (order: Order): ProcessedOrder => {
+  const itemsTotal = order.items.reduce((sum, item) => sum + item.price, 0);
+  const shipping = itemsTotal > 50 ? 0 : 5.99;
+  return { ...order, total: itemsTotal + shipping, shippingCost: shipping };
+};
+
+// ASSESSMENT:
+// 🔴 Critical: None
+// ⚠️ High Value:
+//   - Magic number 50 (FREE_SHIPPING_THRESHOLD)
+//   - Magic number 5.99 (STANDARD_SHIPPING_COST)
+// 💡 Nice to Have:
+//   - Could extract calculateItemsTotal helper
+// ✅ Skip:
+//   - Overall structure is clear enough
+
+// DECISION: Fix high-value issues (extract constants), skip nice-to-have
+```
 
 #### Refactoring Guidelines
 
@@ -884,6 +1255,66 @@ class Order {
 }
 ```
 
+**Decision Framework: Should I Abstract This Duplication?**
+
+Questions to ask before abstracting:
+
+1. **Semantic Check**: Do these code blocks represent the **same business concept** or just happen to look similar?
+   - Same concept → Safe to abstract
+   - Different concepts → Keep separate
+
+2. **Evolution Check**: If business rules change for one, should the others change too?
+   - Yes, always together → Safe to abstract
+   - No, independent evolution → Keep separate
+
+3. **Comprehension Check**: Would a developer understand why these are grouped together?
+   - Yes, obvious relationship → Safe to abstract
+   - No, requires explanation → Keep separate
+
+4. **Coupling Check**: Am I abstracting based on what the code MEANS (semantics) or what it IS (structure)?
+   - Based on meaning → Safe to abstract
+   - Based on structure → Keep separate
+
+**Example Application:**
+
+```typescript
+// CASE 1: Structural similarity, different semantics
+const validatePaymentAmount = (amount: number): boolean => {
+  return amount > 0 && amount <= 10000;
+};
+
+const validateTransferAmount = (amount: number): boolean => {
+  return amount > 0 && amount <= 10000;
+};
+
+// ANALYSIS:
+// 1. Semantic: Different concepts (payment limits vs. transfer limits)
+// 2. Evolution: Payment limits driven by fraud; transfers by account type
+// 3. Comprehension: Not obvious why these would be the same
+// 4. Coupling: Based on structure, not meaning
+// DECISION: ❌ DO NOT ABSTRACT - Keep separate
+
+// CASE 2: Structural similarity, same semantics
+const formatUserDisplayName = (first: string, last: string) =>
+  `${first} ${last}`.trim();
+const formatCustomerDisplayName = (first: string, last: string) =>
+  `${first} ${last}`.trim();
+const formatEmployeeDisplayName = (first: string, last: string) =>
+  `${first} ${last}`.trim();
+
+// ANALYSIS:
+// 1. Semantic: Same concept (how we display person names)
+// 2. Evolution: All should change together (e.g., "Last, First" format)
+// 3. Comprehension: Obviously the same thing
+// 4. Coupling: Based on meaning (all represent "person name display")
+// DECISION: ✅ SAFE TO ABSTRACT
+
+const formatPersonDisplayName = (first: string, last: string) =>
+  `${first} ${last}`.trim();
+```
+
+**Remember:** Duplicate code is far cheaper than the wrong abstraction. When in doubt, wait for a third instance to confirm the pattern.
+
 ##### 4. Maintain External APIs During Refactoring
 
 Refactoring must never break existing consumers of your code:
@@ -1023,6 +1454,8 @@ const calculateOrderTotal = (order: Order): number => {
 
 ##### Example: When NOT to Refactor
 
+**Important:** When code doesn't need refactoring, explicitly document this assessment:
+
 ```typescript
 // After getting this test green:
 describe("Discount calculation", () => {
@@ -1038,16 +1471,32 @@ const applyDiscount = (price: number, discountRate: number): number => {
   return price * (1 - discountRate);
 };
 
-// Assess refactoring opportunities:
-// - Code is already simple and clear
-// - Function name clearly expresses intent
-// - Implementation is a straightforward calculation
-// - No magic numbers or unclear logic
+// REFACTORING ASSESSMENT:
+// ✅ Already clean:
+//   - Function name clearly expresses intent
+//   - Implementation is straightforward calculation
+//   - No magic numbers or unclear logic
+//   - Pure function with clear inputs/outputs
+//
 // Conclusion: No refactoring needed. This is fine as-is.
 
 // Commit and move to the next test
 // git commit -m "feat: add discount calculation"
 ```
+
+**Pattern for Refactoring Assessment:**
+
+After every green test, explicitly assess:
+
+1. **Naming**: Are variable/function names clear?
+2. **Magic values**: Are constants extracted where needed?
+3. **Structure**: Is complexity manageable (nesting ≤2, function <30 lines)?
+4. **Duplication**: Is knowledge (not just code) repeated?
+5. **Purity**: Are functions pure where possible?
+
+If all are satisfied → **No refactoring needed, commit and move on**
+
+If issues found → Classify priority and refactor if high value
 
 ### Commit Guidelines
 
@@ -1081,9 +1530,45 @@ When working with my code:
 4. **Ask clarifying questions** when requirements are ambiguous
 5. **Think from first principles** - don't make assumptions
 6. **Assess refactoring after every green** - Look for opportunities to improve code structure, but only refactor if it adds value
-7. **Keep project docs current** - update them whenever you introduce meaningful changes
-   **At the end of every change, update CLAUDE.md with anything useful you wished you'd known at the start**.
-   This is CRITICAL - Claude should capture learnings, gotchas, patterns discovered, or any context that would have made the task easier if known upfront. This continuous documentation ensures future work benefits from accumulated knowledge
+7. **Keep project docs current** - Update CLAUDE.md whenever you introduce meaningful changes.
+
+   **At the end of every significant change, ask: "What do I wish I'd known at the start?"**
+
+   Document if ANY of these are true:
+   - ✅ Would save future developers >30 minutes
+   - ✅ Prevents a class of bugs or errors
+   - ✅ Reveals non-obvious behavior or constraints
+   - ✅ Captures architectural rationale or trade-offs
+   - ✅ Documents domain-specific knowledge
+   - ✅ Identifies effective patterns or anti-patterns
+   - ✅ Clarifies tool setup or configuration gotchas
+
+   **Types of learnings to capture:**
+   - **Gotchas**: Unexpected behavior discovered (e.g., "API returns null instead of empty array")
+   - **Patterns**: Approaches that worked particularly well
+   - **Anti-patterns**: Approaches that seemed good but caused problems
+   - **Decisions**: Architectural choices with rationale and trade-offs
+   - **Edge cases**: Non-obvious scenarios that required special handling
+   - **Tool knowledge**: Setup, configuration, or usage insights
+
+   **Format for documentation:**
+   ```markdown
+   #### Gotcha: [Descriptive Title]
+
+   **Context**: When this occurs
+   **Issue**: What goes wrong
+   **Solution**: How to handle it
+
+   ```typescript
+   // ✅ CORRECT - Solution
+   const example = "correct approach";
+
+   // ❌ WRONG - What causes the problem
+   const wrong = "incorrect approach";
+   ```
+   ```
+
+   This continuous documentation ensures future work benefits from accumulated knowledge. **Don't wait until project end - capture learnings while context is fresh.**
 
 ### Code Changes
 
