@@ -43,7 +43,7 @@ For comprehensive testing guidelines including:
 - Testing tools (Jest, Vitest, React Testing Library)
 - Validating test data with schemas
 
-See @docs/testing.md
+See @~/.claude/docs/testing.md
 
 ## TypeScript Guidelines
 
@@ -65,7 +65,7 @@ For comprehensive TypeScript guidelines including:
 - Schema usage in tests (import from shared locations)
 - Branded types for type safety
 
-See @docs/typescript.md
+See @~/.claude/docs/typescript.md
 
 ## Code Style
 
@@ -87,7 +87,7 @@ For comprehensive code style guidelines including:
 - Self-documenting code patterns (no comments)
 - Options objects pattern with examples
 
-See @docs/code-style.md
+See @~/.claude/docs/code-style.md
 
 ## Development Workflow
 
@@ -112,7 +112,7 @@ For comprehensive workflow guidelines including:
 - Semantic vs structural decision framework
 - Commit guidelines and PR standards
 
-See @docs/workflow.md
+See @~/.claude/docs/workflow.md
 
 ## Example Patterns
 
@@ -121,7 +121,7 @@ For complete examples including:
 - Testing behavior through public APIs
 - Common anti-patterns to avoid (mutations, nested conditionals, large functions)
 
-See @docs/examples.md
+See @~/.claude/docs/examples.md
 
 ## Working with Claude
 
@@ -142,7 +142,7 @@ For comprehensive guidance including:
 - Code change principles
 - Communication guidelines
 
-See @docs/working-with-claude.md
+See @~/.claude/docs/working-with-claude.md
 
 ## Resources and References
 

@@ -15,21 +15,27 @@ Claude Code **officially supports importing other files** using the `@path/to/fi
 **Documentation source**: https://docs.claude.com/en/docs/claude-code/memory
 
 **Key Features:**
-- **Syntax**: `@path/to/file.md` or `@docs/filename.md`
-- **Relative paths**: Work from CLAUDE.md location
-- **Absolute paths**: Support home directory (`@~/.claude/my-file.md`)
+- **Syntax**: `@path/to/file.md` or `@~/.claude/docs/filename.md`
+- **Absolute paths**: Support home directory (`@~/.claude/my-file.md`) - **REQUIRED for dotfiles**
+- **Relative paths**: Behavior from `~/.claude/` is undocumented - use absolute paths for safety
 - **Recursion**: Up to 5 levels of nested imports
 - **Protection**: Imports inside markdown code blocks are ignored (prevents false positives)
 - **Verification**: Use `/memory` command to see what files are loaded
 - **Max depth**: 5 hops of recursive imports
 
+**IMPORTANT for dotfiles installation:**
+When CLAUDE.md is installed to `~/.claude/` via dotfiles, **always use absolute paths** like `@~/.claude/docs/testing.md` instead of relative paths like `@docs/testing.md`. The official documentation explicitly shows `@~/.claude/...` syntax but doesn't document how relative paths resolve from `~/.claude/CLAUDE.md`.
+
 **Example Usage:**
 ```markdown
+# In project CLAUDE.md (can use relative paths)
 See @README for project overview.
-
 For testing guidelines, see @docs/testing.md
 
-# Individual Preferences
+# In ~/.claude/CLAUDE.md (must use absolute paths)
+For testing guidelines, see @~/.claude/docs/testing.md
+
+# Individual Preferences (always use absolute paths)
 @~/.claude/my-project-instructions.md
 ```
 
@@ -149,7 +155,7 @@ For comprehensive [topic] guidance including:
 - [Detailed topic 2]
 - [Detailed topic 3]
 
-See @docs/[section-file].md
+See @~/.claude/docs/[section-file].md
 ```
 
 ### Example: Testing Section
@@ -172,7 +178,7 @@ For comprehensive testing guidelines including:
 - React component testing strategies
 - Testing tools (Jest, Vitest, React Testing Library)
 
-See @docs/testing.md
+See @~/.claude/docs/testing.md
 ```
 
 ---
