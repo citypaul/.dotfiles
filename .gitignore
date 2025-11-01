@@ -1,0 +1,5 @@
+# Claude Code runtime settings (local only, at repository root)
+/.claude/
+
+# macOS
+.DS_Store
