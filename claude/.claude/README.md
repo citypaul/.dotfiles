@@ -1,25 +1,34 @@
-# Claude Code Slash Commands
+# Claude Code Development Agents
 
-This directory contains custom slash commands for Claude Code that enforce development best practices as defined in the project's CLAUDE.md guidelines.
+This directory contains custom sub-agents for Claude Code that enforce development best practices as defined in the project's CLAUDE.md guidelines.
+
+## What are Sub-Agents?
+
+Sub-agents are specialized workers that run in their own isolated context windows, separate from your main conversation with Claude. Unlike slash commands that inject prompts into your main thread, sub-agents:
+
+- Operate independently with their own context
+- Have access to specific tools (Read, Edit, Grep, Bash, etc.)
+- Can perform complex analysis without cluttering your main conversation
+- Return distilled results and recommendations
 
 ## Installation
 
-These commands are automatically installed when you run the dotfiles installation script:
+These agents are automatically installed when you run the dotfiles installation script:
 
 ```bash
 cd ~/.dotfiles
 ./install.sh
 ```
 
-The `stow` command will symlink these files to `~/.claude/commands/`, making them available in Claude Code.
+The `stow` command will symlink these files to `~/.claude/agents/`, making them available in Claude Code.
 
-## Available Commands
+## Available Agents
 
-### `/tdd-guardian` - TDD Compliance Enforcer
+### `tdd-guardian` - TDD Compliance Enforcer
 
 **Purpose**: Enforces strict Test-Driven Development principles.
 
-**When to use**:
+**When to invoke**:
 - After writing code to verify TDD compliance
 - Before committing to catch test-first violations
 - When reviewing code to ensure behavior-driven testing
@@ -33,10 +42,15 @@ The `stow` command will symlink these files to `~/.claude/commands/`, making the
 - ❌ Flags implementation-focused tests
 - ❌ Catches missing edge case tests
 
-**Example usage**:
+**How to invoke**:
 ```
-You: I just implemented a payment validation feature
-Claude Code: /tdd-guardian
+You: I just implemented a payment validation feature. Can you check TDD compliance?
+Claude Code: [Launches tdd-guardian agent]
+```
+
+Or explicitly:
+```
+You: Launch the tdd-guardian agent to check my recent changes
 ```
 
 **Sample output**:
@@ -47,11 +61,11 @@ Claude Code: /tdd-guardian
 
 ---
 
-### `/ts-enforcer` - TypeScript Strict Mode Enforcer
+### `ts-enforcer` - TypeScript Strict Mode Enforcer
 
 **Purpose**: Validates TypeScript code against strict CLAUDE.md guidelines.
 
-**When to use**:
+**When to invoke**:
 - Before committing TypeScript changes
 - After adding new types or schemas
 - To catch type safety violations
@@ -66,10 +80,15 @@ Claude Code: /tdd-guardian
 - ✅ Options objects over positional parameters
 - ✅ Proper naming conventions
 
-**Example usage**:
+**How to invoke**:
 ```
-You: I've added some new TypeScript code
-Claude Code: /ts-enforcer
+You: I've added some new TypeScript code. Can you check for type safety violations?
+Claude Code: [Launches ts-enforcer agent]
+```
+
+Or explicitly:
+```
+You: Launch the ts-enforcer agent on my recent TypeScript changes
 ```
 
 **Sample output**:
@@ -80,11 +99,11 @@ Claude Code: /ts-enforcer
 
 ---
 
-### `/learn` - CLAUDE.md Learning Integrator
+### `learn` - CLAUDE.md Learning Integrator
 
 **Purpose**: Captures learnings and updates CLAUDE.md documentation.
 
-**When to use**:
+**When to invoke**:
 - After completing a complex feature
 - After fixing a tricky bug
 - When you discover a gotcha or edge case
@@ -97,10 +116,15 @@ Claude Code: /ts-enforcer
 - Prevents duplication of existing knowledge
 - Generates well-structured documentation
 
-**Example usage**:
+**How to invoke**:
 ```
-You: I just finished implementing OAuth integration and learned some important things
-Claude Code: /learn
+You: I just finished implementing OAuth integration and learned some important things. Can you help me document them?
+Claude Code: [Launches learn agent]
+```
+
+Or explicitly:
+```
+You: Launch the learn agent to capture my learnings from this session
 ```
 
 **Sample output**:
@@ -111,11 +135,11 @@ Claude Code: /learn
 
 ---
 
-### `/refactor-scan` - Refactoring Opportunity Scanner
+### `refactor-scan` - Refactoring Opportunity Scanner
 
 **Purpose**: Identifies valuable refactoring opportunities after tests pass.
 
-**When to use**:
+**When to invoke**:
 - After achieving green tests (Red-Green-**Refactor**)
 - Before committing to assess code quality
 - When you suspect duplication or complexity
@@ -134,10 +158,15 @@ Claude Code: /learn
 - ❌ Abstracting structurally similar but semantically different code
 - ❌ Cosmetic changes without clear value
 
-**Example usage**:
+**How to invoke**:
 ```
 You: My tests are passing, should I refactor anything?
-Claude Code: /refactor-scan
+Claude Code: [Launches refactor-scan agent]
+```
+
+Or explicitly:
+```
+You: Launch the refactor-scan agent to assess my code quality
 ```
 
 **Sample output**:
@@ -149,56 +178,61 @@ Claude Code: /refactor-scan
 
 ---
 
-## Command Workflow Examples
+## Agent Workflow Examples
 
 ### Complete TDD Cycle
 
 ```
 1. You: I need to add discount calculation to orders
-2. Claude Code: /tdd-guardian
+2. You: Can you verify I haven't written production code yet?
+   Claude Code: [Launches tdd-guardian agent]
    [Verifies no production code exists yet]
 3. You: [Writes failing test]
 4. You: [Implements minimal code to pass test]
-5. Claude Code: /tdd-guardian
+5. You: Check if my implementation follows TDD principles
+   Claude Code: [Launches tdd-guardian agent]
    [Verifies test-first compliance]
-6. Claude Code: /refactor-scan
+6. You: Should I refactor anything?
+   Claude Code: [Launches refactor-scan agent]
    [Suggests extracting discount constants]
 7. You: [Refactors with tests still green]
-8. Claude Code: /ts-enforcer
+8. You: Validate TypeScript compliance
+   Claude Code: [Launches ts-enforcer agent]
    [Validates TypeScript compliance]
 9. You: [Commits changes]
-10. Claude Code: /learn
+10. You: Help me document what I learned
+    Claude Code: [Launches learn agent]
     [Captures learning about discount edge cases]
 ```
 
 ### Code Review Workflow
 
 ```
-1. You: I've finished implementing the feature
-2. Claude Code: /tdd-guardian
+1. You: I've finished implementing the feature. Can you do a full review?
+2. Claude Code: [Launches tdd-guardian agent]
    [Checks TDD compliance]
-3. Claude Code: /ts-enforcer
+3. Claude Code: [Launches ts-enforcer agent]
    [Validates TypeScript standards]
-4. Claude Code: /refactor-scan
+4. Claude Code: [Launches refactor-scan agent]
    [Assesses code quality]
 5. You: [Fixes any violations]
-6. Claude Code: /learn
+6. Claude Code: [Launches learn agent]
    [Documents key learnings]
 ```
 
 ### Quick Quality Check
 
 ```
-You: Quick quality check on my recent changes
-Claude Code: [Runs all checks in sequence]
-/tdd-guardian
-/ts-enforcer
-/refactor-scan
+You: Run all quality checks on my recent changes
+Claude Code: [Launches agents in parallel]
+- tdd-guardian
+- ts-enforcer
+- refactor-scan
 ```
 
 ## Integration with CLAUDE.md
 
-These commands enforce the principles defined in CLAUDE.md:
+These agents enforce the principles defined in CLAUDE.md:
 
 - **TDD Guardian** → Enforces "TEST-DRIVEN DEVELOPMENT IS NON-NEGOTIABLE"
 - **TS Enforcer** → Enforces TypeScript Guidelines and Strict Mode
@@ -207,53 +241,76 @@ These commands enforce the principles defined in CLAUDE.md:
 
 ## Customization
 
-To modify these commands:
+To modify these agents:
 
-1. Edit the markdown files in `~/.dotfiles/claude/.claude/commands/`
+1. Edit the markdown files in `~/.dotfiles/claude/.claude/agents/`
 2. Changes take effect immediately (no restart needed)
 3. Commit changes to your dotfiles repo
-4. Use `/learn` to document any customizations
+4. Use the `learn` agent to document any customizations
 
 ## Tips
 
-**Use liberally**: These commands are designed to be run frequently
-- `/tdd-guardian` - After every feature implementation
-- `/ts-enforcer` - Before every commit
-- `/refactor-scan` - After every green test
-- `/learn` - After every significant learning
+**Use liberally**: These agents are designed to be invoked frequently
+- `tdd-guardian` - After every feature implementation
+- `ts-enforcer` - Before every commit
+- `refactor-scan` - After every green test
+- `learn` - After every significant learning
 
-**Combine commands**: You can invoke multiple commands in one message:
+**Invoke multiple agents**: You can request multiple agents in one message:
 ```
-Run /tdd-guardian and /ts-enforcer on my recent changes
+You: Run TDD, TypeScript, and refactoring checks on my recent changes
+Claude Code: [Launches tdd-guardian, ts-enforcer, and refactor-scan agents in parallel]
 ```
 
-**Context-aware**: Commands automatically examine recent git changes, but you can also specify files:
+**Context-aware**: Agents automatically examine recent git changes, but you can also specify files:
 ```
-Run /ts-enforcer on src/payment/payment-processor.ts
+You: Run TypeScript enforcement on src/payment/payment-processor.ts
 ```
 
 ## Troubleshooting
 
-**Command not found**:
-- Verify installation: `ls -la ~/.claude/commands/`
+**Agent not found**:
+- Verify installation: `ls -la ~/.claude/agents/`
 - Re-run: `cd ~/.dotfiles && ./install.sh`
-- Check symlinks: `ls -la ~/.claude/commands/`
+- Check symlinks: `ls -la ~/.claude/agents/`
 
-**Command not working as expected**:
-- Check the markdown file syntax
-- Ensure Claude Code has access to necessary tools (Grep, Read, Glob, Bash)
-- Review command output for error messages
+**Agent not working as expected**:
+- Check the markdown file has valid YAML frontmatter
+- Verify the `name` and `description` fields are present
+- Ensure the `tools` field lists valid tools (Read, Edit, Grep, Glob, Bash)
+- Review agent output for error messages
+- Use `/agents` command in Claude Code to see available agents
+
+**Agent invocation tips**:
+- Agents can be invoked implicitly: "Can you check my TDD compliance?"
+- Or explicitly: "Launch the tdd-guardian agent"
+- Claude will automatically select appropriate agents based on your request
 
 ## Contributing
 
-To add new commands:
+To add new agents:
 
-1. Create a new `.md` file in `claude/.claude/commands/`
-2. Follow the existing format (clear purpose, process, examples)
-3. Test the command thoroughly
-4. Document it in this README
-5. Use `/learn` to capture why the command is valuable
+1. Create a new `.md` file in `claude/.claude/agents/`
+2. Add YAML frontmatter with `name`, `description`, and optional `tools`/`model`
+3. Write the agent's system prompt in markdown below the frontmatter
+4. Test the agent thoroughly
+5. Document it in this README
+6. Use the `learn` agent to capture why the agent is valuable
+
+Example agent structure:
+```markdown
+---
+name: my-agent
+description: When and why this agent should be invoked
+tools: Read, Grep, Bash
+model: sonnet
+---
+
+# Agent Name
+
+You are [agent description]...
+```
 
 ---
 
-**Remember**: These commands are your development workflow allies. Use them frequently to maintain code quality and capture knowledge!
+**Remember**: These agents are your development workflow allies. Invoke them frequently to maintain code quality and capture knowledge!
