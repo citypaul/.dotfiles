@@ -14,4 +14,15 @@ It's a work in progress that I've been using for my own personal project.
 
 If you're interested in more details, feel free to watch the video above.
 
+## Claude Code Slash Commands
+
+This repo also includes custom Claude Code slash commands that enforce the development practices defined in CLAUDE.md:
+
+- `/tdd-guardian` - Enforces strict TDD compliance and behavior-driven testing
+- `/ts-enforcer` - Validates TypeScript strict mode and immutability patterns
+- `/refactor-scan` - Identifies valuable refactoring opportunities after tests pass
+- `/learn` - Captures learnings and updates CLAUDE.md documentation
+
+[Read the full command documentation](claude/.claude/README.md)
+
 You can also [contact me on LinkedIn](https://www.linkedin.com/in/paul-hammond-bb5b78251/) if you want. Add me if you want. I'm always happy to discuss this stuff on there!
