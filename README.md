@@ -532,55 +532,51 @@ Claude Code: [Launches learn agent]
 
 ## 🚀 How to Use This in Your Projects
 
-### Option 1: Use CLAUDE.md Only
+**Quick navigation by situation:**
 
-The simplest approach - copy CLAUDE.md to your project:
+| Your Situation | Recommended Option |
+|----------------|-------------------|
+| "I want this working in 30 seconds" | [Option 1: Global Install](#option-1-install-to-claude-global-personal-config--recommended) |
+| "I'm setting this up for my team" | [Option 2: Project-specific install](#option-2-use-claudemd--agents-recommended-for-projects) |
+| "I just want to try the guidelines first" | [Option 3: CLAUDE.md only](#option-3-use-claudemd-only-minimal) |
+| "I need to customize for my team's standards" | [Option 4: Fork and customize](#option-4-fork-and-customize-advanced) |
 
-```bash
-# In your project root
-mkdir -p .claude
-curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
-```
+---
 
-This gives Claude (or any AI assistant) context about your development practices.
+### How the Workflow Works (Regardless of Installation Method)
 
-### Option 2: Use CLAUDE.md + Agents (Recommended for Projects)
+Once installed (via any option below), here's the typical development flow:
 
-For full enforcement in a specific project, install both CLAUDE.md and the agents:
+1. **Start feature**: Plan with Claude, let tdd-guardian guide test-first approach
+2. **Write tests**: Get RED (failing test)
+3. **Implement**: Get GREEN (minimal code to pass)
+4. **Refactor**: Run refactor-scan to assess opportunities
+5. **Review**: Run ts-enforcer and tdd-guardian before commit
+6. **Document**: Use learn agent to capture insights, docs-guardian for user-facing docs
+7. **Commit**: Follow conventional commits format
 
-```bash
-# In your project root
-mkdir -p .claude/agents
+**Agent invocation examples:**
 
-# Download CLAUDE.md
-curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
+Agents can be invoked implicitly (Claude detects when to use them) or explicitly:
 
-# Download all agents
-curl -o .claude/agents/tdd-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/tdd-guardian.md
-curl -o .claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/ts-enforcer.md
-curl -o .claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
-curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/docs-guardian.md
-curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
+- **Implicit**: "I just implemented payment processing. Can you verify I followed TDD?" → Claude automatically launches tdd-guardian
+- **Explicit**: "Launch the refactor-scan agent to assess code quality" → Claude launches refactor-scan
+- **Multiple agents**: "Run TDD, TypeScript, and refactoring checks on my recent changes" → Claude launches all three in parallel
 
-# Download agents README
-curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
-```
+**Now choose your installation method:**
 
-### Version Note: v1.0.0 vs v2.0.0+
+---
 
-**Current version (v2.0.0+):** Modular structure with main file (156 lines) + detailed docs loaded on-demand
+### Option 1: Install to ~/.claude/ (Global Personal Config) ⭐ RECOMMENDED
 
-**Legacy version (v1.0.0):** Single monolithic file (1,818 lines, all-in-one)
+**Best for:** Individual developers who want consistent practices across all projects
 
-- **Content is identical** - v2.0.0 reorganized v1.0.0 into modular files with imports
-- **Both versions work** - Use whichever you prefer
-- **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
-
-The installation script below installs v2.0.0+ by default. To install v1.0.0, use `--version v1.0.0`.
-
-### Option 3: Install to ~/.claude/ (Global Personal Config) ⭐ RECOMMENDED
-
-Install CLAUDE.md globally so it applies to ALL your projects:
+**Why choose this:**
+- ✅ One-time setup applies everywhere automatically
+- ✅ No per-project configuration needed
+- ✅ Works with Claude Code immediately
+- ✅ Modular structure loads details on-demand
+- ✅ Easy updates via git pull
 
 **One-liner installation:**
 ```bash
@@ -607,17 +603,73 @@ chmod +x install-claude.sh
 - ✅ `~/.claude/docs/` (6 detailed documentation files)
 - ✅ `~/.claude/agents/` (5 automated enforcement agents)
 
-**Benefits:**
-- ✅ Applies to ALL your projects automatically
-- ✅ Modular structure loads details on-demand
-- ✅ Main file is only 156 lines (fast loading)
-- ✅ No per-project setup needed
-- ✅ Automatic backups of existing files
-- ✅ Version pinning support
+---
 
-**Note:** This uses the v2.0.0 modular structure with absolute imports (`@~/.claude/docs/...`)
+### Option 2: Use CLAUDE.md + Agents (Recommended for Projects)
 
-### Option 4: Fork and Customize
+**Best for:** Team projects where you want full control and project-specific configuration
+
+**Why choose this:**
+- ✅ Full enforcement in a specific project
+- ✅ Team can collaborate on customizations
+- ✅ Version control with your project
+- ✅ Works without global installation
+
+For full enforcement in a specific project, install both CLAUDE.md and the agents:
+
+```bash
+# In your project root
+mkdir -p .claude/agents
+
+# Download CLAUDE.md
+curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
+
+# Download all agents
+curl -o .claude/agents/tdd-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/tdd-guardian.md
+curl -o .claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/ts-enforcer.md
+curl -o .claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
+curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/docs-guardian.md
+curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
+
+# Download agents README
+curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
+```
+
+---
+
+### Option 3: Use CLAUDE.md Only (Minimal)
+
+**Best for:** Quick evaluation or when you only want the guidelines without automated enforcement
+
+**Why choose this:**
+- ✅ Simplest possible setup (one command)
+- ✅ Just the core principles and patterns
+- ✅ No agent overhead
+- ✅ Good starting point before full adoption
+
+The simplest approach - copy CLAUDE.md to your project:
+
+```bash
+# In your project root
+mkdir -p .claude
+curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
+```
+
+This gives Claude (or any AI assistant) context about your development practices.
+
+---
+
+### Option 4: Fork and Customize (Advanced)
+
+**Best for:** Teams with specific standards who need full customization control
+
+**Why choose this:**
+- ✅ Complete control over guidelines and enforcement
+- ✅ Customize for your team's specific tech stack
+- ✅ Modify agent behavior to match your workflow
+- ✅ Maintain team-specific patterns and anti-patterns
+
+**How to customize:**
 
 1. Fork this repository
 2. Modify CLAUDE.md to match your team's preferences
@@ -625,37 +677,19 @@ chmod +x install-claude.sh
 4. Commit to your fork
 5. Pull into your projects
 
-### Typical Workflow
+---
 
-1. **Start feature**: Plan with Claude, let tdd-guardian guide test-first approach
-2. **Write tests**: Get RED (failing test)
-3. **Implement**: Get GREEN (minimal code to pass)
-4. **Refactor**: Run refactor-scan to assess opportunities
-5. **Review**: Run ts-enforcer and tdd-guardian before commit
-6. **Document**: Use learn agent to capture insights, docs-guardian for user-facing docs
-7. **Commit**: Follow conventional commits format
+### Version Note: v1.0.0 vs v2.0.0+
 
-### Agent Invocation Examples
+**Current version (v2.0.0+):** Modular structure with main file (156 lines) + detailed docs loaded on-demand
 
-Agents can be invoked implicitly (Claude detects when to use them) or explicitly:
+**Legacy version (v1.0.0):** Single monolithic file (1,818 lines, all-in-one)
 
-**Implicit:**
-```
-"I just implemented payment processing. Can you verify I followed TDD?"
-→ Claude automatically launches tdd-guardian
-```
+- **Content is identical** - v2.0.0 reorganized v1.0.0 into modular files with imports
+- **Both versions work** - Use whichever you prefer
+- **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
 
-**Explicit:**
-```
-"Launch the refactor-scan agent to assess code quality"
-→ Claude launches refactor-scan
-```
-
-**Multiple agents:**
-```
-"Run TDD, TypeScript, and refactoring checks on my recent changes"
-→ Claude launches tdd-guardian, ts-enforcer, and refactor-scan in parallel
-```
+The installation script installs v2.0.0+ by default. To install v1.0.0, use `--version v1.0.0`.
 
 ---
 
