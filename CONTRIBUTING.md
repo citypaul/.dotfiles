@@ -265,7 +265,6 @@ const goodExample = () => { ... };
 
 - **Questions**: Open a [Discussion](https://github.com/citypaul/.dotfiles/discussions)
 - **Bugs**: Open an [Issue](https://github.com/citypaul/.dotfiles/issues)
-- **Security**: Email paul@example.com (replace with actual email)
 
 ---
 

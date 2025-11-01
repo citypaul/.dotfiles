@@ -1,5 +1,12 @@
 # Development Guidelines for Claude
 
+> **About this file (v2.0.0+):** This is a modular version with detailed documentation loaded on-demand. The main file (this one) provides core principles and quick reference. Detailed guidelines are in separate files imported via `@~/.claude/docs/...`.
+>
+> **Prefer a single file?** The v1.0.0 monolithic version (1,818 lines, all-in-one) is available at:
+> https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
+>
+> **Key differences:** v1.0.0 = single file with everything; v2.0.0+ = modular with imports. Content is identical, just organized differently.
+
 ## Core Philosophy
 
 **TEST-DRIVEN DEVELOPMENT IS NON-NEGOTIABLE.** Every single line of production code must be written in response to a failing test. No exceptions. This is not a suggestion or a preference - it is the fundamental practice that enables all other principles in this document.

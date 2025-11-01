@@ -56,6 +56,12 @@ CLAUDE.md has been split from a single 1,818-line file into a modular structure:
 ### Added
 
 **CLAUDE.md Development Framework (1,818 lines):**
+
+**📄 View the v1.0.0 monolithic file:**
+- GitHub: https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
+- Raw download: https://github.com/citypaul/.dotfiles/raw/v1.0.0/claude/.claude/CLAUDE.md
+
+**Content:**
 - Core philosophy: TDD is non-negotiable
 - Testing principles: Behavior-driven testing with 100% coverage
 - TypeScript guidelines: Strict mode with schema-first approach

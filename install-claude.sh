@@ -91,7 +91,7 @@ done
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║  CLAUDE.md Development Framework Installer       ║${NC}"
-echo -e "${BLUE}║  Version: $VERSION${NC}"
+printf "${BLUE}║  Version: %-40s║${NC}\n" "$VERSION"
 echo -e "${BLUE}╚════════════════════════════════════════════════════╝${NC}"
 echo ""
 

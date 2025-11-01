@@ -251,6 +251,18 @@ curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotf
 curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
 ```
 
+### Version Note: v1.0.0 vs v2.0.0+
+
+**Current version (v2.0.0+):** Modular structure with main file (156 lines) + detailed docs loaded on-demand
+
+**Legacy version (v1.0.0):** Single monolithic file (1,818 lines, all-in-one)
+
+- **Content is identical** - v2.0.0 reorganized v1.0.0 into modular files with imports
+- **Both versions work** - Use whichever you prefer
+- **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
+
+The installation script below installs v2.0.0+ by default. To install v1.0.0, use `--version v1.0.0`.
+
 ### Option 3: Install to ~/.claude/ (Global Personal Config) ⭐ RECOMMENDED
 
 Install CLAUDE.md globally so it applies to ALL your projects:

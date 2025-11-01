@@ -10,6 +10,10 @@ This guide helps you upgrade from the monolithic CLAUDE.md (v1.x) to the modular
 └── CLAUDE.md (1,818 lines - everything in one file)
 ```
 
+**View v1.0.0 monolithic file:**
+- GitHub: https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
+- Raw download: https://github.com/citypaul/.dotfiles/raw/v1.0.0/claude/.claude/CLAUDE.md
+
 ### After (v2.0.0)
 ```
 ~/.claude/
@@ -22,6 +26,8 @@ This guide helps you upgrade from the monolithic CLAUDE.md (v1.x) to the modular
     ├── examples.md (118 lines)
     └── working-with-claude.md (74 lines)
 ```
+
+**Content is identical** - v2.0.0 splits the v1.0.0 monolithic file into modular files with imports. No content was removed or changed, just reorganized.
 
 ## Do You Need to Migrate?
 
