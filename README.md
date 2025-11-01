@@ -230,9 +230,9 @@ curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/m
 
 This gives Claude (or any AI assistant) context about your development practices.
 
-### Option 2: Use CLAUDE.md + Agents (Recommended)
+### Option 2: Use CLAUDE.md + Agents (Recommended for Projects)
 
-For full enforcement, install both CLAUDE.md and the agents:
+For full enforcement in a specific project, install both CLAUDE.md and the agents:
 
 ```bash
 # In your project root
@@ -251,7 +251,58 @@ curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotf
 curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
 ```
 
-### Option 3: Fork and Customize
+### Version Note: v1.0.0 vs v2.0.0+
+
+**Current version (v2.0.0+):** Modular structure with main file (156 lines) + detailed docs loaded on-demand
+
+**Legacy version (v1.0.0):** Single monolithic file (1,818 lines, all-in-one)
+
+- **Content is identical** - v2.0.0 reorganized v1.0.0 into modular files with imports
+- **Both versions work** - Use whichever you prefer
+- **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
+
+The installation script below installs v2.0.0+ by default. To install v1.0.0, use `--version v1.0.0`.
+
+### Option 3: Install to ~/.claude/ (Global Personal Config) ⭐ RECOMMENDED
+
+Install CLAUDE.md globally so it applies to ALL your projects:
+
+**One-liner installation:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
+```
+
+**Or download and run:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh -o install-claude.sh
+chmod +x install-claude.sh
+./install-claude.sh
+```
+
+**Install options:**
+```bash
+./install-claude.sh                    # Install everything (CLAUDE.md + docs + agents)
+./install-claude.sh --claude-only      # Install only CLAUDE.md (no docs/agents)
+./install-claude.sh --no-agents        # Install CLAUDE.md + docs (no agents)
+./install-claude.sh --version v1.0.0   # Install specific version
+```
+
+**What gets installed:**
+- ✅ `~/.claude/CLAUDE.md` (156 lines - main guidelines)
+- ✅ `~/.claude/docs/` (6 detailed documentation files)
+- ✅ `~/.claude/agents/` (4 automated enforcement agents)
+
+**Benefits:**
+- ✅ Applies to ALL your projects automatically
+- ✅ Modular structure loads details on-demand
+- ✅ Main file is only 156 lines (fast loading)
+- ✅ No per-project setup needed
+- ✅ Automatic backups of existing files
+- ✅ Version pinning support
+
+**Note:** This uses the v2.0.0 modular structure with absolute imports (`@~/.claude/docs/...`)
+
+### Option 4: Fork and Customize
 
 1. Fork this repository
 2. Modify CLAUDE.md to match your team's preferences
@@ -439,9 +490,20 @@ Configuration files for various development tools:
 
 ### Installing Everything
 
-To install all dotfiles:
+**⚠️ Important:** This installs ALL personal dotfiles (git, shell, vim, etc.) **NOT just CLAUDE.md**
+
+**⚠️ Requires:** [GNU Stow](https://www.gnu.org/software/stow/) must be installed first
+
+For CLAUDE.md only (no stow needed), see [Option 3](#option-3-install-to-claude-global-personal-config) above.
+
+To install all dotfiles including my personal configurations:
 
 ```bash
+# Install GNU Stow first (if not already installed)
+# macOS: brew install stow
+# Ubuntu/Debian: sudo apt-get install stow
+# Fedora: sudo dnf install stow
+
 # Clone the repository
 git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
@@ -452,7 +514,16 @@ cd ~/.dotfiles
 # This uses GNU Stow to create symlinks for all configurations
 ```
 
+This will install:
+- ✅ CLAUDE.md + agents (development guidelines)
+- ✅ Git aliases and configuration
+- ✅ Shell configuration (bash/zsh)
+- ✅ Vim, tmux, npm configs
+- ✅ All personal preferences
+
 ### Installing Specific Dotfiles
+
+**⚠️ Requires:** GNU Stow (see installation commands above)
 
 Only want certain configurations? Install them individually:
 
