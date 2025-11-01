@@ -35,22 +35,14 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Create Release Pull Request or Tag
+      - name: Create Release Pull Request or Publish to GitHub
         id: changesets
         uses: changesets/action@v1
         with:
-          version: pnpm version
+          version: pnpm changeset version
+          publish: pnpm changeset tag
           commit: 'chore: version packages'
           title: 'chore: version packages'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create GitHub Release
-        if: steps.changesets.outputs.hasChangesets == 'false'
-        uses: changesets/action@v1
-        with:
-          # This creates GitHub releases from git tags
-          # Note: We don't publish to npm since this is a "private" package
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

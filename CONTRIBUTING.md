@@ -126,7 +126,7 @@ If needed, releases can be done manually:
 git status
 
 # 2. Bump versions and update CHANGELOG
-pnpm version
+pnpm changeset version
 
 # 3. Review and commit changes
 git add .
