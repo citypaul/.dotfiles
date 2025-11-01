@@ -35,14 +35,36 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Create Release Pull Request or Publish to GitHub
+      - name: Create Release Pull Request or Tag
         id: changesets
         uses: changesets/action@v1
         with:
           version: pnpm changeset version
-          publish: pnpm changeset tag
           commit: 'chore: version packages'
           title: 'chore: version packages'
-          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Git Tag and GitHub Release
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: |
+          # Get the version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+          TAG_NAME="v${VERSION}"
+
+          # Check if tag already exists
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists, skipping"
+            exit 0
+          fi
+
+          # Create and push tag
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          git push origin "$TAG_NAME"
+
+          # Create GitHub Release
+          gh release create "$TAG_NAME" \
+            --title "$TAG_NAME" \
+            --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
