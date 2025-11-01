@@ -536,7 +536,7 @@ Claude Code: [Launches learn agent]
 
 | Your Situation | Recommended Option |
 |----------------|-------------------|
-| "I want this working in 30 seconds" | [Option 1: Global Install](#option-1-install-to-claude-global-personal-config--recommended) |
+| "I want this on all my personal projects" | [Option 1: Global Install](#option-1-install-to-claude-global-personal-config--recommended) |
 | "I'm setting this up for my team" | [Option 2: Project-specific install](#option-2-use-claudemd--agents-recommended-for-projects) |
 | "I just want to try the guidelines first" | [Option 3: CLAUDE.md only](#option-3-use-claudemd-only-minimal) |
 | "I need to customize for my team's standards" | [Option 4: Fork and customize](#option-4-fork-and-customize-advanced) |
