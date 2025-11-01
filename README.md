@@ -637,25 +637,29 @@ curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dot
 
 ---
 
-### Option 3: Use CLAUDE.md Only (Minimal)
+### Option 3: Use CLAUDE.md Only - Single File (v1.0.0)
 
-**Best for:** Quick evaluation or when you only want the guidelines without automated enforcement
+**Best for:** Quick evaluation or when you want everything in one standalone file
 
 **Why choose this:**
-- ✅ Simplest possible setup (one command)
-- ✅ Just the core principles and patterns
+- ✅ Single command, one file (1,818 lines)
+- ✅ All content included - examples, anti-patterns, decision frameworks
+- ✅ Works standalone (no broken imports)
 - ✅ No agent overhead
-- ✅ Good starting point before full adoption
+- ⚠️ **Tradeoff:** Larger file vs v2.0.0's modular structure (156 lines + separate docs)
+- ⚠️ **Tradeoff:** Uses v1.0.0 structure (content identical to v2.0.0, just organized differently)
 
-The simplest approach - copy CLAUDE.md to your project:
+**Important:** This downloads the v1.0.0 monolithic version because the v2.0.0+ modular version has imports (`@~/.claude/docs/...`) that only work from `~/.claude/` location. If you just download the v2.0.0 main file, the imports won't resolve and you'll miss all the detailed examples.
+
+Download the complete single-file version:
 
 ```bash
 # In your project root
 mkdir -p .claude
-curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
+curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/v1.0.0/claude/.claude/CLAUDE.md
 ```
 
-This gives Claude (or any AI assistant) context about your development practices.
+This gives you the complete guidelines (1,818 lines) in a single standalone file.
 
 ---
 
