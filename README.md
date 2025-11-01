@@ -251,38 +251,42 @@ curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotf
 curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
 ```
 
-### Option 3: Install to ~/.claude/ (Global Personal Config)
+### Option 3: Install to ~/.claude/ (Global Personal Config) ⭐ RECOMMENDED
 
 Install CLAUDE.md globally so it applies to ALL your projects:
 
+**One-liner installation:**
 ```bash
-# Create directories
-mkdir -p ~/.claude/docs ~/.claude/agents
-
-# Download main CLAUDE.md (modular structure)
-curl -o ~/.claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
-
-# Download detailed docs
-curl -o ~/.claude/docs/testing.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/testing.md
-curl -o ~/.claude/docs/typescript.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/typescript.md
-curl -o ~/.claude/docs/code-style.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/code-style.md
-curl -o ~/.claude/docs/workflow.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/workflow.md
-curl -o ~/.claude/docs/examples.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/examples.md
-curl -o ~/.claude/docs/working-with-claude.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/working-with-claude.md
-
-# Download all agents
-curl -o ~/.claude/agents/tdd-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/tdd-guardian.md
-curl -o ~/.claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/ts-enforcer.md
-curl -o ~/.claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
-curl -o ~/.claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
-curl -o ~/.claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
 ```
+
+**Or download and run:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh -o install-claude.sh
+chmod +x install-claude.sh
+./install-claude.sh
+```
+
+**Install options:**
+```bash
+./install-claude.sh                    # Install everything (CLAUDE.md + docs + agents)
+./install-claude.sh --claude-only      # Install only CLAUDE.md (no docs/agents)
+./install-claude.sh --no-agents        # Install CLAUDE.md + docs (no agents)
+./install-claude.sh --version v1.0.0   # Install specific version
+```
+
+**What gets installed:**
+- ✅ `~/.claude/CLAUDE.md` (156 lines - main guidelines)
+- ✅ `~/.claude/docs/` (6 detailed documentation files)
+- ✅ `~/.claude/agents/` (4 automated enforcement agents)
 
 **Benefits:**
 - ✅ Applies to ALL your projects automatically
 - ✅ Modular structure loads details on-demand
 - ✅ Main file is only 156 lines (fast loading)
 - ✅ No per-project setup needed
+- ✅ Automatic backups of existing files
+- ✅ Version pinning support
 
 **Note:** This uses the v2.0.0 modular structure with absolute imports (`@~/.claude/docs/...`)
 
@@ -476,11 +480,18 @@ Configuration files for various development tools:
 
 **⚠️ Important:** This installs ALL personal dotfiles (git, shell, vim, etc.) **NOT just CLAUDE.md**
 
-For CLAUDE.md only, see [Option 3: Install to ~/.claude/](#option-3-install-to-claude-global-personal-config) above.
+**⚠️ Requires:** [GNU Stow](https://www.gnu.org/software/stow/) must be installed first
+
+For CLAUDE.md only (no stow needed), see [Option 3](#option-3-install-to-claude-global-personal-config) above.
 
 To install all dotfiles including my personal configurations:
 
 ```bash
+# Install GNU Stow first (if not already installed)
+# macOS: brew install stow
+# Ubuntu/Debian: sudo apt-get install stow
+# Fedora: sudo dnf install stow
+
 # Clone the repository
 git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
@@ -499,6 +510,8 @@ This will install:
 - ✅ All personal preferences
 
 ### Installing Specific Dotfiles
+
+**⚠️ Requires:** GNU Stow (see installation commands above)
 
 Only want certain configurations? Install them individually:
 
