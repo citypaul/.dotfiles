@@ -2,10 +2,12 @@
 "@paulhammond/dotfiles": patch
 ---
 
-Add missing pnpm-lock.yaml file to fix GitHub Actions workflow
+Fix GitHub Actions workflow pnpm version incompatibility
 
-The release workflow was failing because the Node.js setup action expected
-a pnpm lockfile when using pnpm cache, but we hadn't run pnpm install yet
-to generate the lockfile.
+The release workflow failed again after adding pnpm-lock.yaml because the
+lockfile was generated with pnpm v10 but the workflow used pnpm v8, causing:
 
-This patch adds the pnpm-lock.yaml file to the repository.
+  WARN  Ignoring not compatible lockfile at pnpm-lock.yaml
+  ERR_PNPM_NO_LOCKFILE  Cannot install with "frozen-lockfile"
+
+This updates the GitHub Actions workflow to use pnpm v10 to match the lockfile.
