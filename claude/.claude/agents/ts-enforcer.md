@@ -249,15 +249,17 @@ The following files follow all TypeScript guidelines:
 
 ### User About to Define Type
 ```
-"Let's use schema-first development:
+"Let me help you decide if this needs a schema:
 
-**Instead of defining the type directly:**
-```typescript
-type User = { ... }  // ❌ No runtime validation
-```
+**Questions:**
+1. Will this data come from outside (API, DB, files, user input)?
+2. Does it have validation rules (format, constraints, enums)?
+3. Is it shared between systems as a contract?
+4. Will it be used in test factories?
 
-**Define the schema first:**
+**If YES to any:**
 ```typescript
+// ✅ Schema required - Define schema first
 const UserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
@@ -265,12 +267,20 @@ const UserSchema = z.object({
 });
 type User = z.infer<typeof UserSchema>;
 
-// Now you have both:
-// - Runtime validation: UserSchema.parse(data)
-// - Compile-time types: User type
+// Use at trust boundaries
+const user = UserSchema.parse(apiResponse);
 ```
 
-This ensures type safety at runtime AND compile time."
+**If NO to all (pure internal type):**
+```typescript
+// ✅ Type is fine - No schema needed
+type Point = {
+  readonly x: number;
+  readonly y: number;
+};
+```
+
+This approach gives you type safety where needed without unnecessary overhead."
 ```
 
 ### User Uses `any`
@@ -348,11 +358,152 @@ Let me show you how to fix each one..."
 ### 🔴 CRITICAL (Must Fix Before Commit)
 
 1. **`any` type** → Use `unknown` or specific type
-2. **Missing schemas** → Schema-first development
+2. **Missing schemas at trust boundaries** → Schema-first for external data (see rules below)
 3. **Type assertions without justification** → Use schema validation
 4. **`@ts-ignore` without explanation** → Fix the type issue or document why
-5. **`interface` keyword** → Use `type` instead (unless behavior contract)
+5. **`interface` for data structures** → Use `type` (reserve `interface` for behavior contracts)
 6. **Immutability violations** → Use spread operators
+
+## Schema-First: When Required vs Optional
+
+### ✅ Schema REQUIRED (Must Have Schema)
+
+**1. Trust Boundaries - Data from Outside**
+```typescript
+// ✅ REQUIRED - API response
+const UserSchema = z.object({...});
+type User = z.infer<typeof UserSchema>;
+const user = UserSchema.parse(apiResponse);
+```
+- API responses (REST, GraphQL, WebSocket)
+- Database query results
+- File parsing (JSON, CSV, YAML)
+- User form input / Query params
+- Environment variables (complex objects)
+- External storage (LocalStorage, etc.)
+- Message queue / Event payloads
+
+**2. Business Validation Rules**
+```typescript
+// ✅ REQUIRED - Business constraints
+const PaymentSchema = z.object({
+  amount: z.number().positive().max(10000),
+  email: z.string().email(),
+});
+```
+- Positive/negative constraints
+- Format validation (email, URL, regex)
+- Enum values
+- Length/range constraints
+
+**3. Shared Data Contracts**
+```typescript
+// ✅ REQUIRED - Event contract
+const OrderCreatedSchema = z.object({...});
+```
+- Events (event-driven architecture)
+- API contracts between systems
+- Inter-service messages
+
+**4. Test Data Factories**
+```typescript
+// ✅ REQUIRED - Test factory
+const getMockUser = (): User => {
+  return UserSchema.parse({...});
+};
+```
+
+### ❌ Schema OPTIONAL (Type is Fine)
+
+**1. Pure Internal Types**
+```typescript
+// ✅ OK - No external data, no validation rules
+type Point = { readonly x: number; readonly y: number };
+type CartTotal = { subtotal: number; tax: number; total: number };
+```
+
+**2. Result/Option Types**
+```typescript
+// ✅ OK - Internal logic constructs
+type Result<T, E = Error> =
+  | { success: true; data: T }
+  | { success: false; error: E };
+```
+
+**3. TypeScript Utilities**
+```typescript
+// ✅ OK - Compile-time transformations
+type UserProfile = Pick<User, 'id' | 'name'>;
+type UpdateUser = Partial<User>;
+```
+
+**4. Branded Primitives**
+```typescript
+// ✅ OK - Compile-time nominal types
+type UserId = string & { readonly brand: unique symbol };
+```
+
+**5. Behavior Contracts**
+```typescript
+// ✅ OK - Interface for behavior (not data)
+interface Logger {
+  log(message: string): void;
+}
+```
+
+**6. Internal State Machines**
+```typescript
+// ✅ OK - Discriminated unions
+type LoadingState<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T };
+```
+
+**7. Component Props (Usually)**
+```typescript
+// ✅ OK - Internal to app, TypeScript validates
+type ButtonProps = {
+  label: string;
+  onClick: () => void;
+};
+```
+Exception: If props from URL/API → schema required
+
+**8. Config Defined in Code**
+```typescript
+// ✅ OK - Type-safe at definition
+const CONFIG = {
+  apiUrl: 'https://...',
+  timeout: 5000,
+} as const;
+type Config = typeof CONFIG;
+```
+Exception: If loaded from file/env → schema required
+
+### Decision Framework
+
+Ask these questions in order:
+
+1. **Does data cross a trust boundary?** (external → internal)
+   - YES → ✅ Schema required
+   - NO → Continue
+
+2. **Does type have validation rules?** (format, constraints)
+   - YES → ✅ Schema required
+   - NO → Continue
+
+3. **Is this a shared data contract?** (between systems)
+   - YES → ✅ Schema required
+   - NO → Continue
+
+4. **Used in test factories?**
+   - YES → ✅ Schema required
+   - NO → Continue
+
+5. **Pure internal type?** (utility, state, behavior)
+   - YES → ❌ Type is fine
+   - NO → ✅ Schema recommended for safety
 
 ### ⚠️ HIGH PRIORITY (Should Fix Soon)
 
