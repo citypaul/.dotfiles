@@ -1,0 +1,19 @@
+{
+  "name": "@paulhammond/dotfiles",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Personal dotfiles including CLAUDE.md development framework and Claude Code agents",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/citypaul/.dotfiles.git"
+  },
+  "keywords": [
+    "claude-code",
+    "dotfiles",
+    "tdd",
+    "typescript",
+    "development-guidelines"
+  ],
+  "author": "Paul Hammond",
+  "license": "MIT"
+}

@@ -230,9 +230,9 @@ curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/m
 
 This gives Claude (or any AI assistant) context about your development practices.
 
-### Option 2: Use CLAUDE.md + Agents (Recommended)
+### Option 2: Use CLAUDE.md + Agents (Recommended for Projects)
 
-For full enforcement, install both CLAUDE.md and the agents:
+For full enforcement in a specific project, install both CLAUDE.md and the agents:
 
 ```bash
 # In your project root
@@ -251,7 +251,42 @@ curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotf
 curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
 ```
 
-### Option 3: Fork and Customize
+### Option 3: Install to ~/.claude/ (Global Personal Config)
+
+Install CLAUDE.md globally so it applies to ALL your projects:
+
+```bash
+# Create directories
+mkdir -p ~/.claude/docs ~/.claude/agents
+
+# Download main CLAUDE.md (modular structure)
+curl -o ~/.claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
+
+# Download detailed docs
+curl -o ~/.claude/docs/testing.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/testing.md
+curl -o ~/.claude/docs/typescript.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/typescript.md
+curl -o ~/.claude/docs/code-style.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/code-style.md
+curl -o ~/.claude/docs/workflow.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/workflow.md
+curl -o ~/.claude/docs/examples.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/examples.md
+curl -o ~/.claude/docs/working-with-claude.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/docs/working-with-claude.md
+
+# Download all agents
+curl -o ~/.claude/agents/tdd-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/tdd-guardian.md
+curl -o ~/.claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/ts-enforcer.md
+curl -o ~/.claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
+curl -o ~/.claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
+curl -o ~/.claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
+```
+
+**Benefits:**
+- ✅ Applies to ALL your projects automatically
+- ✅ Modular structure loads details on-demand
+- ✅ Main file is only 156 lines (fast loading)
+- ✅ No per-project setup needed
+
+**Note:** This uses the v2.0.0 modular structure with absolute imports (`@~/.claude/docs/...`)
+
+### Option 4: Fork and Customize
 
 1. Fork this repository
 2. Modify CLAUDE.md to match your team's preferences
@@ -439,7 +474,11 @@ Configuration files for various development tools:
 
 ### Installing Everything
 
-To install all dotfiles:
+**⚠️ Important:** This installs ALL personal dotfiles (git, shell, vim, etc.) **NOT just CLAUDE.md**
+
+For CLAUDE.md only, see [Option 3: Install to ~/.claude/](#option-3-install-to-claude-global-personal-config) above.
+
+To install all dotfiles including my personal configurations:
 
 ```bash
 # Clone the repository
@@ -451,6 +490,13 @@ cd ~/.dotfiles
 
 # This uses GNU Stow to create symlinks for all configurations
 ```
+
+This will install:
+- ✅ CLAUDE.md + agents (development guidelines)
+- ✅ Git aliases and configuration
+- ✅ Shell configuration (bash/zsh)
+- ✅ Vim, tmux, npm configs
+- ✅ All personal preferences
 
 ### Installing Specific Dotfiles
 
