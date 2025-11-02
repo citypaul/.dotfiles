@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Five enforcement agents](claude/.claude/agents/)** - Development guidelines and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Seven enforcement agents](claude/.claude/agents/)** - Development guidelines and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -377,7 +377,7 @@ Ask yourself:
 
 [**→ Read the agents documentation**](claude/.claude/agents/README.md)
 
-Five specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles:
+Seven specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
 
 ### 1. `tdd-guardian` - TDD Compliance Enforcer
 
@@ -530,6 +530,77 @@ Claude Code: [Launches learn agent]
 
 ---
 
+### 6. `wip-guardian` - Work In Progress Guardian
+
+**Use proactively** when starting significant multi-step work, or **reactively** to update progress and handle blockers.
+
+**What it manages:**
+- Creates and maintains living `WIP.md` plan document
+- Tracks current progress, next steps, and blockers
+- Enforces small PRs, incremental work, tests always passing
+- Orchestrates all other agents at appropriate times
+- Updates plan as learning occurs
+- **Deletes `WIP.md` when work completes** (ephemeral, not permanent)
+
+**Example invocation:**
+```
+You: "I need to implement OAuth with JWT tokens and refresh logic"
+Claude Code: [Launches wip-guardian agent to create living plan]
+
+You: "Tests are passing now"
+Claude Code: [Launches wip-guardian to update progress and identify next step]
+```
+
+**Output:**
+- Living `WIP.md` document with current state and plan
+- Agent checkpoint tracking (which agents to invoke when)
+- Session logs for context across work sessions
+- Blocker tracking and workarounds
+- Completion verification and WIP deletion
+
+**Key distinction:** Creates TEMPORARY short-term memory (deleted when done), NOT permanent docs.
+
+---
+
+### 7. `adr` - Architecture Decision Records
+
+**Use proactively** when making significant architectural decisions, or **reactively** to document decisions already made.
+
+**What it documents:**
+- Significant architectural choices with trade-offs
+- Technology/library selections with long-term impact
+- Pattern decisions affecting multiple modules
+- Performance vs maintainability trade-offs
+- Security architecture decisions
+
+**When to use:**
+- ✅ Evaluated multiple alternatives with trade-offs
+- ✅ One-way door decisions (hard to reverse)
+- ✅ Foundational choices affecting future architecture
+- ❌ Trivial implementation choices
+- ❌ Temporary workarounds
+- ❌ Standard patterns already in CLAUDE.md
+
+**Example invocation:**
+```
+You: "Should we use BullMQ or AWS SQS for our job queue?"
+Claude Code: [Launches adr agent to help evaluate and document]
+
+You: "I decided to use PostgreSQL over MongoDB"
+Claude Code: [Launches adr agent to document the rationale]
+```
+
+**Output:**
+- Structured ADR in `docs/adr/` with context and alternatives
+- Honest assessment of pros/cons and trade-offs
+- Clear rationale for decision
+- Consequences (positive, negative, neutral)
+- Updated ADR index
+
+**Key distinction:** Documents WHY architecture chosen (permanent), vs learn agent's HOW to work with it (gotchas, patterns).
+
+---
+
 ## 🚀 How to Use This in Your Projects
 
 **Quick navigation by situation:**
@@ -601,7 +672,7 @@ chmod +x install-claude.sh
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (156 lines - main guidelines)
 - ✅ `~/.claude/docs/` (6 detailed documentation files)
-- ✅ `~/.claude/agents/` (5 automated enforcement agents)
+- ✅ `~/.claude/agents/` (7 automated enforcement agents)
 
 ---
 
@@ -630,6 +701,8 @@ curl -o .claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul
 curl -o .claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
 curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/docs-guardian.md
 curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
+curl -o .claude/agents/wip-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/wip-guardian.md
+curl -o .claude/agents/adr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/adr.md
 
 # Download agents README
 curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
@@ -868,7 +941,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + agents (development guidelines)
+- ✅ CLAUDE.md + 7 agents (development guidelines)
 - ✅ Git aliases and configuration
 - ✅ Shell configuration (bash/zsh)
 - ✅ Vim, tmux, npm configs

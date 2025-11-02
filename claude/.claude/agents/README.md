@@ -1,336 +1,278 @@
-# Claude Code Enforcement Agents
+# Claude Code Agents
 
-This directory contains specialized sub-agents that run in isolated context windows to enforce [CLAUDE.md](../CLAUDE.md) principles.
+This directory contains specifications for specialized Claude Code agents that work together to maintain code quality, documentation, and development workflow.
 
-## Overview
+## Agent Overview
 
-These agents automate quality enforcement and make development practices consistent and reliable. Each agent has a **proactive mode** (guide before work) and a **reactive mode** (verify after work).
+### Development Process Agents
 
----
+#### `tdd-guardian`
+**Purpose**: Ensures strict Test-Driven Development compliance throughout the coding process.
 
-## Available Agents
+**Use proactively when**:
+- Planning to implement a new feature
+- About to write any production code
 
-### 1. 🔴 [tdd-guardian](tdd-guardian.md) - TDD Compliance Enforcer
+**Use reactively when**:
+- Code has been written (verify TDD was followed)
+- Tests are green (assess refactoring opportunities)
 
-**Use proactively** when planning to write code, or **reactively** to verify TDD was followed.
-
-**What it checks:**
-- ✅ Tests were written before production code
-- ✅ Tests verify behavior (not implementation)
-- ✅ All code paths have test coverage
-- ✅ Tests use public APIs only
-- ✅ Factory functions used (no `let`/`beforeEach`)
-- ❌ Flags implementation-focused tests
-- ❌ Catches missing edge case tests
-
-**Example invocation:**
-```
-You: "I just implemented payment validation. Can you check TDD compliance?"
-Claude Code: [Launches tdd-guardian agent]
-```
-
-**Output:**
-- Lists all TDD violations with file locations
-- Identifies implementation-focused tests
-- Suggests missing test cases
-- Provides actionable recommendations
-
-**When to use:**
-- Before writing code (proactive guidance)
-- After writing code (compliance verification)
-- During code review
-- When tests are green (refactoring assessment)
+**Core responsibility**: Enforce RED-GREEN-REFACTOR cycle, verify tests written first.
 
 ---
 
-### 2. 🔷 [ts-enforcer](ts-enforcer.md) - TypeScript Strict Mode Enforcer
+#### `ts-enforcer`
+**Purpose**: Enforces TypeScript strict mode and best practices.
 
-**Use before commits** or **when adding new types/schemas**.
+**Use proactively when**:
+- Defining new types or schemas
+- Planning TypeScript code structure
 
-**What it checks:**
-- ❌ `any` types (must use `unknown` or specific types)
-- ❌ Type assertions without justification
-- ❌ `interface` for data structures (use `type`)
-- ✅ Schema-first development (schemas before types at trust boundaries)
-- ✅ Immutable data patterns
-- ✅ Options objects over positional parameters
+**Use reactively when**:
+- Code written with potential type issues
+- Detecting mutations or `any` types
+- Reviewing TypeScript compliance
 
-**Includes the nuanced schema-first framework:**
-- Schema required: Trust boundaries, validation rules, contracts, test factories
-- Schema optional: Internal types, utilities, state machines, behavior contracts
-
-**Example invocation:**
-```
-You: "I've added new TypeScript code. Check for type safety violations."
-Claude Code: [Launches ts-enforcer agent]
-```
-
-**Output:**
-- Critical violations (any types, missing schemas at boundaries)
-- High priority issues (mutations, poor structure)
-- Style improvements (naming, parameter patterns)
-- Compliance score with specific fixes
-
-**When to use:**
-- When defining new types or schemas
-- Before committing TypeScript changes
-- During code review
-- When refactoring type definitions
+**Core responsibility**: No `any` types, schema-first development, immutability.
 
 ---
 
-### 3. 🟡 [refactor-scan](refactor-scan.md) - Refactoring Opportunity Scanner
+#### `refactor-scan`
+**Purpose**: Assesses refactoring opportunities after tests pass (TDD's third step).
 
-**Use after achieving green tests** (the REFACTOR step in RED-GREEN-REFACTOR).
+**Use proactively when**:
+- Tests just turned green
+- Considering creating abstractions
+- Planning code improvements
 
-**What it analyzes:**
-- 🎯 Knowledge duplication (DRY violations)
-- 🎯 Semantic vs structural similarity
-- 🎯 Complex nested conditionals
-- 🎯 Magic numbers and unclear names
-- 🎯 Immutability violations
+**Use reactively when**:
+- Noticing code duplication
+- Reviewing code quality
+- Evaluating semantic vs structural similarity
 
-**What it doesn't recommend:**
-- ❌ Refactoring code that's already clean
-- ❌ Abstracting structurally similar but semantically different code
-- ❌ Cosmetic changes without clear value
-
-**Example invocation:**
-```
-You: "My tests are passing, should I refactor anything?"
-Claude Code: [Launches refactor-scan agent]
-```
-
-**Output:**
-- 🔴 Critical refactoring needed (must fix)
-- ⚠️ High value opportunities (should fix)
-- 💡 Nice to have improvements (consider)
-- ✅ Correctly separated code (keep as-is)
-- Specific recommendations with code examples
-
-**When to use:**
-- After tests turn green (GREEN → REFACTOR transition)
-- When considering abstracting similar code
-- During code review
-- When code "smells" but you're not sure why
+**Core responsibility**: Identify valuable refactoring (only refactor if adds value), distinguish knowledge duplication from structural similarity.
 
 ---
 
-### 4. 🔵 [learn](learn.md) - CLAUDE.md Learning Integrator
+### Documentation & Knowledge Agents
 
-**Use proactively** when discovering gotchas, or **reactively** after completing complex features.
+#### `docs-guardian`
+**Purpose**: Creates and maintains world-class permanent documentation.
 
-**What it captures:**
-- Gotchas or unexpected behavior discovered
-- "Aha!" moments or breakthroughs
-- Architectural decisions being made
-- Patterns that worked particularly well
-- Anti-patterns encountered
-- Tooling or setup knowledge gained
+**Use proactively when**:
+- Creating new README, guides, or API docs
+- Planning user-facing documentation
 
-**Example invocation:**
-```
-You: "I just fixed a tricky timezone bug. Let me document this gotcha."
-Claude Code: [Launches learn agent]
-```
-
-**Output:**
-- Asks discovery questions about what you learned
-- Reads current CLAUDE.md to check for duplicates
-- Proposes formatted additions to CLAUDE.md
-- Provides rationale for placement and structure
-
-**When to use:**
-- When you discover unexpected behavior
-- After completing a complex feature
-- When making architectural decisions
-- After fixing a tricky bug
-- When you think "I wish I'd known this earlier"
-
----
-
-### 5. 🟣 [docs-guardian](docs-guardian.md) - Documentation Quality Guardian
-
-**Use proactively** when creating documentation or **reactively** to review and improve existing docs.
-
-**What it ensures:**
-- ✅ Value-first approach (why before how)
-- ✅ Scannable structure (visual hierarchy, clear headings)
-- ✅ Progressive disclosure (quick start before deep dive)
-- ✅ Problem-oriented navigation (find by problem, not structure)
-- ✅ Concrete examples showing value
-- ✅ Cross-references and multiple entry points
-- ✅ Actionable next steps
-
-**What it checks:**
-- ❌ Wall of text without visual breaks
-- ❌ Feature lists without examples showing value
-- ❌ Abstract principles without concrete examples
-- ❌ Installation-first (before showing what it does)
-- ❌ Missing navigation aids
-- ❌ Broken links or outdated information
-
-**Example invocation:**
-```
-You: "I need to write a README for this feature."
-Claude Code: [Launches docs-guardian agent]
-
-You: "Can you review the documentation I just wrote?"
-Claude Code: [Launches docs-guardian agent]
-```
-
-**Output:**
-- Assessment against 7 pillars of world-class documentation
-- Critical issues (must fix) vs nice-to-haves
-- Specific improvement recommendations with examples
-- Proposed restructuring for better discoverability
-- Templates for common documentation types
-
-**When to use:**
-- Writing new READMEs, guides, or API docs
+**Use reactively when**:
 - Reviewing existing documentation
-- Users report confusion with docs
-- Setting up new project documentation
-- Improving documentation discoverability
+- Documentation needs improvement
+- Feature complete (update docs)
+
+**Core responsibility**: Permanent, user-facing, professional documentation (README, guides, API docs).
+
+**Key distinction**: Creates PERMANENT docs that live forever in the repository.
 
 ---
 
-## Usage Patterns
+#### `adr`
+**Purpose**: Documents significant architectural decisions with context and trade-offs.
 
-### Proactive Usage (Before Work)
+**Use proactively when**:
+- About to make significant architectural choice
+- Evaluating technology/library options
+- Planning foundational decisions
 
-Invoke agents BEFORE potential violations to guide good practices:
+**Use reactively when**:
+- Just made an architectural decision
+- Discovering undocumented architectural choice
+- Need to explain "why we did it this way"
 
-```
-"I'm about to implement payment validation"
-→ tdd-guardian guides test-first approach
+**Core responsibility**: Create Architecture Decision Records (ADRs) for significant decisions only.
 
-"I need to add new TypeScript types for the API"
-→ ts-enforcer guides schema-first development
-
-"I'm writing the project README"
-→ docs-guardian guides world-class documentation structure
-```
-
-### Reactive Usage (After Work)
-
-Invoke agents AFTER work to verify compliance:
-
-```
-"I just implemented the payment feature"
-→ tdd-guardian verifies TDD compliance
-→ ts-enforcer checks type safety
-→ refactor-scan assesses improvement opportunities
-
-"I just fixed a timezone bug"
-→ learn captures the gotcha for CLAUDE.md
-
-"I wrote the API documentation"
-→ docs-guardian reviews for quality and clarity
-```
-
-### Typical Development Workflow
-
-1. **Planning:** Use `docs-guardian` if documenting, `tdd-guardian` to plan test-first approach
-2. **RED:** Write failing test with `tdd-guardian` guidance
-3. **GREEN:** Implement minimal code to pass
-4. **REFACTOR:** Run `refactor-scan` to assess opportunities, then `ts-enforcer` to verify type safety
-5. **Document:** Use `learn` to capture insights, `docs-guardian` for user-facing docs
-6. **Review:** Run `tdd-guardian` and `ts-enforcer` before commit
+**When to use**:
+- ✅ Significant architectural choices with trade-offs
+- ✅ Technology selections with long-term impact
+- ✅ Pattern decisions affecting multiple modules
+- ❌ Trivial implementation choices
+- ❌ Temporary workarounds
+- ❌ Standard patterns already in CLAUDE.md
 
 ---
 
-## Multiple Agents in Parallel
+#### `learn`
+**Purpose**: Captures learnings, gotchas, and patterns into CLAUDE.md.
 
-Claude Code can run multiple agents concurrently:
+**Use proactively when**:
+- Discovering unexpected behavior
+- Making architectural decisions (rationale)
 
-```
-"Check my code for TDD, TypeScript, and refactoring issues"
-→ Claude launches tdd-guardian, ts-enforcer, and refactor-scan in parallel
-```
+**Use reactively when**:
+- Completing significant features
+- Fixing complex bugs
+- After any significant learning moment
 
-This is efficient when you want comprehensive quality checks.
+**Core responsibility**: Document gotchas, patterns, anti-patterns, decisions while context is fresh.
 
----
-
-## Agent Invocation Examples
-
-### Implicit Invocation
-
-Claude detects when to use agents based on context:
-
-```
-"I just wrote some code, can you check it?"
-→ Claude automatically launches tdd-guardian and ts-enforcer
-
-"Should I refactor this?"
-→ Claude launches refactor-scan
-
-"How do I document this feature?"
-→ Claude launches docs-guardian
-```
-
-### Explicit Invocation
-
-You can explicitly request specific agents:
-
-```
-"Launch the tdd-guardian to check my tests"
-"Run the refactor-scan agent"
-"Use the docs-guardian to review my README"
-"Let's use the learn agent to document this gotcha"
-```
+**Key distinction**: Captures HOW to work with the codebase (gotchas, patterns), not WHY architecture chosen (that's ADRs).
 
 ---
 
-## Agent Files
+### Workflow & Planning Agents
 
-Each agent is defined in its own markdown file with:
+#### `wip-guardian`
+**Purpose**: Maintains living plan document for work in progress to prevent context loss.
 
-- **Name and description** with usage examples
-- **Core principles** it enforces
-- **Proactive guidance** patterns
-- **Reactive analysis** process
-- **Report formats** for findings
-- **Response patterns** for different scenarios
-- **Quality gates** before allowing commits
-- **Commands** the agent can use
+**Use proactively when**:
+- Starting significant multi-step work
+- Beginning feature requiring multiple PRs
+- Starting complex refactoring or investigation
 
-**Files:**
-- [tdd-guardian.md](tdd-guardian.md) - Full TDD enforcer specification
-- [ts-enforcer.md](ts-enforcer.md) - Full TypeScript enforcer specification
-- [refactor-scan.md](refactor-scan.md) - Full refactoring scanner specification
-- [learn.md](learn.md) - Full learning integrator specification
-- [docs-guardian.md](docs-guardian.md) - Full documentation guardian specification
+**Use reactively when**:
+- Completing a step in the plan
+- Learning something that changes the plan
+- Encountering blockers
+- End of work session (checkpoint)
+- Before creating PR (verify completion)
 
----
+**Core responsibility**:
+- Create and maintain temporary `WIP.md` file
+- Enforce small PRs, incremental work, tests passing
+- Orchestrate other agents at appropriate times
+- Update plan as reality unfolds
+- **DELETE `WIP.md` when complete** (not archive, unless instructive)
 
-## Customization
-
-These agents follow the principles in [CLAUDE.md](../CLAUDE.md). To customize:
-
-1. **Fork this repository**
-2. **Modify agent files** to match your team's standards
-3. **Update CLAUDE.md** with your principles
-4. **Agents will enforce your customized guidelines**
+**Key distinction**: Creates TEMPORARY, short-term memory (deleted when done), NOT permanent docs.
 
 ---
 
-## Philosophy
+## Agent Relationships
 
-These agents embody a core insight: **AI needs explicit, detailed context to provide consistent results.**
+### Orchestration Flow
 
-Instead of vague principles ("write good tests"), agents enforce specific, verifiable practices:
-- "Tests must use public APIs only"
-- "Schema required at trust boundaries"
-- "Abstract based on semantic meaning, not structural similarity"
-- "Value proposition in first paragraph of docs"
+```
+wip-guardian (orchestrates)
+    ├─→ tdd-guardian (for each step: RED-GREEN-REFACTOR)
+    ├─→ ts-enforcer (before commits/PRs)
+    ├─→ refactor-scan (after GREEN tests)
+    ├─→ adr (when architectural decision arises)
+    ├─→ learn (when significant learning occurs)
+    └─→ docs-guardian (when feature complete)
+```
 
-This transforms subjective code review into objective quality gates.
+### Typical Workflow
 
----
+1. **Start significant work**
+   - Invoke `wip-guardian`: Creates `WIP.md` with plan
 
-## See Also
+2. **For each step in plan**
+   - Invoke `tdd-guardian`: RED (failing test)
+   - Write minimal code: GREEN (tests pass)
+   - Invoke `refactor-scan`: REFACTOR (assess improvements)
+   - Invoke `wip-guardian`: Update progress
 
-- [CLAUDE.md](../CLAUDE.md) - The complete development guidelines these agents enforce
-- [Detailed Documentation Guide](../../README.md#-detailed-documentation-guide) - In-depth explanation of all principles
+3. **When architectural decision arises**
+   - Invoke `wip-guardian`: Document decision point
+   - Invoke `adr`: Create ADR for significant decisions
+
+4. **Before commits/PRs**
+   - Invoke `ts-enforcer`: Verify TypeScript compliance
+   - Invoke `tdd-guardian`: Verify TDD compliance
+
+5. **When learning occurs**
+   - Invoke `wip-guardian`: Update plan if it changes approach
+   - Invoke `learn`: Document in CLAUDE.md if significant
+
+6. **End of session**
+   - Invoke `wip-guardian`: Session checkpoint
+
+7. **Feature complete**
+   - Invoke `docs-guardian`: Update permanent documentation
+   - Invoke `learn`: Capture final learnings
+   - Invoke `wip-guardian`: Verify completion, **DELETE WIP.md**
+
+## Key Distinctions
+
+### Documentation Types
+
+| Aspect | wip-guardian | adr | learn | docs-guardian |
+|--------|-------------|-----|-------|---------------|
+| **Lifespan** | Temporary (days/weeks) | Permanent | Permanent | Permanent |
+| **Audience** | Current developer | Future developers | AI assistant + developers | Users + developers |
+| **Purpose** | Track progress | Explain "why" decisions | Explain "how" to work | Explain "what" and "how to use" |
+| **Content** | Current state, next steps | Context, decision, consequences | Gotchas, patterns | Features, API, setup |
+| **Updates** | Constantly | Once (rarely updated) | As learning occurs | When features change |
+| **Format** | Informal notes | Structured ADR format | Informal examples | Professional, polished |
+| **End of life** | **DELETED** when done | Lives forever | Lives forever | Lives forever |
+
+### When to Use Which Documentation Agent
+
+**Use `wip-guardian`** for:
+- "What am I working on right now?"
+- "What's the next step?"
+- "Where was I when I stopped yesterday?"
+- → Answer: Temporary `WIP.md` (deleted when done)
+
+**Use `adr`** for:
+- "Why did we choose technology X over Y?"
+- "What were the trade-offs in this architectural decision?"
+- "Why is the system designed this way?"
+- → Answer: Permanent ADR in `docs/adr/`
+
+**Use `learn`** for:
+- "What gotchas should I know about?"
+- "What patterns work well here?"
+- "How do I avoid this common mistake?"
+- → Answer: Permanent entry in `CLAUDE.md`
+
+**Use `docs-guardian`** for:
+- "How do I install this?"
+- "How do I use this API?"
+- "What features does this have?"
+- → Answer: Permanent `README.md`, guides, API docs
+
+## Using These Agents
+
+These agent specifications are designed to be integrated into Claude Code. To use them:
+
+1. **Read the agent specification** to understand when to invoke it
+2. **Invoke the agent** via Claude Code's Task tool with the appropriate `subagent_type`
+3. **Follow the agent's guidance** for your specific situation
+
+Each agent is designed to be:
+- **Proactive**: Used before work begins to guide best practices
+- **Reactive**: Used after work to verify compliance and improvements
+- **Autonomous**: Operates independently with clear responsibilities
+- **Integrated**: Works with other agents as part of a cohesive system
+
+## Agent Design Principles
+
+All agents follow these principles:
+
+1. **Clear Purpose**: Each agent has a specific, well-defined responsibility
+2. **Trigger Patterns**: Explicit proactive and reactive usage patterns
+3. **Integration Points**: Clear handoffs between agents
+4. **Examples-Driven**: Comprehensive examples of good/bad usage
+5. **Anti-Patterns**: Explicit documentation of what NOT to do
+6. **Success Criteria**: Clear metrics for agent effectiveness
+
+## Contributing New Agents
+
+When creating a new agent specification:
+
+1. **Define clear purpose**: What specific problem does it solve?
+2. **Distinguish from existing agents**: How is it different?
+3. **Provide comprehensive examples**: Show proactive and reactive usage
+4. **Document integration points**: How does it work with other agents?
+5. **Include anti-patterns**: What should users avoid?
+6. **Follow the template**: Use existing agents as reference
+
+## Summary
+
+These agents work together to create a comprehensive development workflow:
+
+- **Quality**: tdd-guardian + ts-enforcer ensure code quality
+- **Improvement**: refactor-scan optimizes code after tests pass
+- **Knowledge**: learn + adr + docs-guardian preserve knowledge
+- **Progress**: wip-guardian prevents context loss during development
+
+Each agent is specialized, autonomous, and designed to be invoked at the right time to maintain high standards throughout the development process.
