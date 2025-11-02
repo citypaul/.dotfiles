@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.1
+
+### Patch Changes
+
+- 87aec6a: fix: add correct front matter to agent files
+
+  Updated agent files (adr.md, wip-guardian.md, docs-guardian.md, learn.md, refactor-scan.md, tdd-guardian.md, ts-enforcer.md) to include proper front matter with name, description, tools, model, and color fields required for agent functionality.
+
 ## 2.1.0
 
 ### Minor Changes
