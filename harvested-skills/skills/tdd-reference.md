@@ -1,13 +1,5 @@
 ---
-name: tdd-reference
-description: >
-  On-demand TDD guideline access without loading full documentation into context. Provides targeted guidance for RED-GREEN-REFACTOR phases, refactoring decisions, and test quality patterns.
-tools: Read, Grep
-model: haiku
-category: testing/tdd
-tags: [tdd, guidelines, reference, on-demand]
-version: 1.0.0
-created: 2025-11-17
+description: On-demand TDD guideline access without loading full documentation. Provides quick reference for RED-GREEN-REFACTOR phases, refactoring decisions, and test quality patterns.
 ---
 
 # TDD Reference Skill
