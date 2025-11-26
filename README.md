@@ -1013,6 +1013,14 @@ Please open issues or PRs on GitHub.
 
 ---
 
+## 🙏 Acknowledgments
+
+Special thanks to contributors who have shared their work:
+
+- **[Kieran O'Hara](https://github.com/kieran-ohara)** - The `use-case-data-patterns` agent is adapted from [Kieran's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you for creating and sharing this excellent agent specification.
+
+---
+
 ## 📄 License
 
 This repository is open source and available for use. The CLAUDE.md file and agents are designed to be copied and customized for your projects.
