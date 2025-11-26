@@ -117,6 +117,27 @@ This directory contains specifications for specialized Claude Code agents that w
 
 ---
 
+### Analysis & Architecture Agents
+
+#### `use-case-data-patterns`
+**Purpose**: Analyzes how user-facing use cases map to underlying data access patterns and architectural implementation.
+
+**Use proactively when**:
+- Implementing new features that interact with data
+- Designing API endpoints
+- Planning refactoring of data-heavy systems
+
+**Use reactively when**:
+- Understanding how a feature works end-to-end
+- Identifying gaps in data access patterns
+- Investigating architectural decisions
+
+**Core responsibility**: Create comprehensive analytical reports mapping use cases to data patterns, database interactions, and architectural decisions.
+
+> **Attribution**: Adapted from [Kieran O'Hara's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md).
+
+---
+
 ### Workflow & Planning Agents
 
 #### `wip-guardian`
@@ -151,6 +172,7 @@ This directory contains specifications for specialized Claude Code agents that w
 
 ```
 wip-guardian (orchestrates)
+    ├─→ use-case-data-patterns (when analyzing existing patterns)
     ├─→ tdd-guardian (for each step: RED-GREEN-REFACTOR)
     ├─→ ts-enforcer (before commits/PRs)
     ├─→ refactor-scan (after GREEN tests)
@@ -163,6 +185,7 @@ wip-guardian (orchestrates)
 
 1. **Start significant work**
    - Invoke `wip-guardian`: Creates `WIP.md` with plan
+   - Invoke `use-case-data-patterns`: Analyze existing patterns before implementing
 
 2. **For each step in plan**
    - Invoke `tdd-guardian`: RED (failing test)
@@ -230,6 +253,12 @@ wip-guardian (orchestrates)
 - "What features does this have?"
 - → Answer: Permanent `README.md`, guides, API docs
 
+**Use `use-case-data-patterns`** for:
+- "How does this feature work end-to-end?"
+- "What data patterns support this use case?"
+- "What's missing to implement this feature?"
+- → Answer: Analytical report mapping use cases to data patterns
+
 ## Using These Agents
 
 These agent specifications are designed to be integrated into Claude Code. To use them:
@@ -270,6 +299,7 @@ When creating a new agent specification:
 
 These agents work together to create a comprehensive development workflow:
 
+- **Analysis**: use-case-data-patterns maps use cases to implementation patterns
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
 - **Improvement**: refactor-scan optimizes code after tests pass
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
