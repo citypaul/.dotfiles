@@ -914,6 +914,13 @@ Configuration files for various development tools:
 - **`tmux/.tmux.conf`** - Terminal multiplexer settings
 - **`npm/.npmrc`** - npm configuration
 
+### Claude Code Settings
+
+The `claude/.claude/settings.json` file contains my personal Claude Code configuration including:
+
+- [claude-powerline](https://github.com/Owloops/claude-powerline) - vim-style statusline with usage tracking and git integration
+- [Official Anthropic plugins](https://github.com/anthropics/claude-code/tree/main/plugins) - feature-dev, frontend-design, hookify, learning-output-style, plugin-dev, security-guidance
+
 ### Installing Everything
 
 **⚠️ Important:** This installs ALL personal dotfiles (git, shell, vim, etc.) **NOT just CLAUDE.md**
@@ -942,6 +949,7 @@ cd ~/.dotfiles
 
 This will install:
 - ✅ CLAUDE.md + 7 agents (development guidelines)
+- ✅ Claude Code settings.json (plugins, statusline)
 - ✅ Git aliases and configuration
 - ✅ Shell configuration (bash/zsh)
 - ✅ Vim, tmux, npm configs
