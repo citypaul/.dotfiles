@@ -1,0 +1,16 @@
+{
+  "model": "opus",
+  "enabledPlugins": {
+    "feature-dev@claude-code-plugins": true,
+    "frontend-design@claude-code-plugins": true,
+    "hookify@claude-code-plugins": true,
+    "learning-output-style@claude-code-plugins": true,
+    "plugin-dev@claude-code-plugins": true,
+    "security-guidance@claude-code-plugins": true
+  },
+  "alwaysThinkingEnabled": true,
+  "statusLine": {
+    "type": "command",
+    "command": "npx -y @owloops/claude-powerline --style=powerline"
+  }
+}
