@@ -80,6 +80,9 @@ source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
+# GPG configuration for terminal-based signing
+export GPG_TTY=$(tty)
+
 # export MANPATH="/usr/local/man:$MANPATH"
 
 # You may need to manually set your language environment
