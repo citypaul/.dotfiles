@@ -1,5 +1,62 @@
 # Changelog
 
+## 2.4.0
+
+### Minor Changes
+
+- fd148e9: feat: skills-based architecture with planning workflow (v3.0)
+
+  ## Skills (7 auto-discovered patterns)
+
+  - `tdd` - RED-GREEN-REFACTOR workflow
+  - `testing` - Factory patterns and behavior testing
+  - `typescript-strict` - TypeScript strict mode patterns
+  - `functional` - Functional programming with immutability
+  - `refactoring` - Assessment framework and priorities
+  - `expectations` - Working expectations and documentation practices
+  - `planning` - **NEW** Small increments, three-document model, commit approval
+
+  ## Planning Workflow (NEW)
+
+  Three-document model for significant work:
+
+  - **PLAN.md** - What we're doing (changes require approval)
+  - **WIP.md** - Where we are now (constantly updated)
+  - **LEARNINGS.md** - What we discovered (merged at end, then deleted)
+
+  Key principles:
+
+  - All work in small, known-good increments
+  - TDD non-negotiable (RED-GREEN-REFACTOR)
+  - **Commit approval required** before every commit
+  - Learnings captured as they occur, merged into CLAUDE.md/ADRs at end
+
+  ## Agents
+
+  - Renamed `wip-guardian` → `progress-guardian`
+  - `progress-guardian` now manages three-document model
+
+  ## Commands (1 slash command)
+
+  - `/pr` - Create pull requests (no test plan needed with TDD)
+
+  ## Context Optimization
+
+  - CLAUDE.md reduced to ~100 lines (always loaded)
+  - No @imports - fully self-contained
+  - Detailed patterns loaded on-demand via skills
+
+  ## Breaking Changes from v2.0
+
+  - Removed `docs/` directory entirely
+  - Content migrated to skills (loaded on-demand instead of always)
+  - `wip-guardian` renamed to `progress-guardian` with enhanced functionality
+
+  ## Migration from v2.0
+
+  - Use `--version v2.0.0` with install script to keep modular docs
+  - Skills provide same content but with better context efficiency
+
 ## 2.3.0
 
 ### Minor Changes
@@ -21,6 +78,7 @@
   This agent is adapted from [Kieran O'Hara's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you to Kieran O'Hara for creating and sharing this excellent agent specification.
 
   Key features:
+
   - Creates comprehensive analytical reports mapping use cases to data patterns
   - Traces through architecture layers (endpoints, middleware, business logic, data access)
   - Identifies database patterns, caching strategies, and external integrations
@@ -37,11 +95,13 @@
   parsing errors on GitHub ("mapping values are not allowed in this context").
 
   **Fixed:**
+
   - Removed embedded examples with 'nn' pseudo-newlines from description fields
   - Converted descriptions to YAML folded block scalar (>) format for proper parsing
   - All agent files now have valid YAML frontmatter per Claude Code documentation
 
   **Agents Updated:**
+
   - refactor-scan.md
   - tdd-guardian.md
   - ts-enforcer.md
@@ -71,7 +131,9 @@
   **New Claude Code Agents:**
 
   Added two new specialized agents that integrate with the existing agent system:
+
   1. **`wip-guardian`** - Work In Progress Guardian
+
      - Creates and maintains living `WIP.md` plan documents for complex, multi-step features
      - Tracks current progress, next steps, and blockers
      - Enforces small PRs, incremental work, tests always passing
@@ -91,6 +153,7 @@
      - Clear guidance on when NOT to create ADRs (trivial choices, temporary workarounds, standard patterns)
 
   **Agent System Enhancements:**
+
   - Updated `.claude/agents/README.md` with comprehensive overview of all 7 agents
   - Added clear distinctions between agent purposes and lifespans
   - Added complete workflow integration showing how agents work together
@@ -98,7 +161,9 @@
   - Added documentation type comparison table (wip vs adr vs learn vs docs)
 
   **Key Features:**
+
   - **wip-guardian orchestrates the entire development workflow:**
+
     - Invokes tdd-guardian for RED-GREEN-REFACTOR cycle
     - Invokes ts-enforcer before commits/PRs
     - Invokes refactor-scan after green tests
@@ -113,6 +178,7 @@
     - `docs-guardian`: Permanent "what" (features, API, setup)
 
   **Documentation Updates:**
+
   - Updated README.md agent count from 5 to 7 agents
   - Added comprehensive sections for both new agents in README
   - Updated installation instructions to include new agent download commands
@@ -125,11 +191,13 @@
 - 546c057: Improve installation documentation order and clarity
 
   **Fixed:**
+
   - Option 3 now correctly uses v1.0.0 single-file version (v2.0.0 had broken imports)
   - Installation options now ordered by recommendation (global install first, not third)
   - Navigation table accurately describes each option's purpose
 
   **Added:**
+
   - Quick navigation table by user situation
   - "Best for" and "Why choose this" sections for each option
   - Clear tradeoffs for v1.0.0 vs v2.0.0 choice
@@ -137,6 +205,7 @@
   - Agent invocation examples integrated into workflow section
 
   **Changed:**
+
   - Moved version note to end of section (less critical information)
   - Removed duplicate sections for cleaner structure
   - First navigation row now says "I want this on all my personal projects" instead of misleading "I want this working in 30 seconds"
@@ -153,6 +222,7 @@
   manually create tags and releases.
 
   This adds a new workflow step that:
+
   - Reads the version from package.json after changesets bumps it
   - Creates and pushes a git tag (v2.0.x format)
   - Creates a GitHub Release from that tag
@@ -172,6 +242,7 @@
   manually create tags and releases.
 
   This adds a new workflow step that:
+
   - Reads the version from package.json after changesets bumps it
   - Creates and pushes a git tag (v2.0.x format)
   - Creates a GitHub Release from that tag
