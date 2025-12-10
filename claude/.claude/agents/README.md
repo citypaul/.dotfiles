@@ -140,8 +140,8 @@ This directory contains specifications for specialized Claude Code agents that w
 
 ### Workflow & Planning Agents
 
-#### `wip-guardian`
-**Purpose**: Maintains living plan document for work in progress to prevent context loss.
+#### `progress-guardian`
+**Purpose**: Manages progress through significant work using a three-document system.
 
 **Use proactively when**:
 - Starting significant multi-step work
@@ -149,20 +149,30 @@ This directory contains specifications for specialized Claude Code agents that w
 - Starting complex refactoring or investigation
 
 **Use reactively when**:
-- Completing a step in the plan
-- Learning something that changes the plan
-- Encountering blockers
+- Completing a step (update WIP.md)
+- Discovering something (add to LEARNINGS.md)
+- Plan needs changing (propose changes, get approval)
 - End of work session (checkpoint)
-- Before creating PR (verify completion)
+- Feature complete (merge learnings, delete docs)
 
 **Core responsibility**:
-- Create and maintain temporary `WIP.md` file
-- Enforce small PRs, incremental work, tests passing
-- Orchestrate other agents at appropriate times
-- Update plan as reality unfolds
-- **DELETE `WIP.md` when complete** (not archive, unless instructive)
+- Create and maintain three documents: **PLAN.md**, **WIP.md**, **LEARNINGS.md**
+- Enforce small increments, TDD, commit approval
+- Never modify PLAN.md without explicit user approval
+- Capture learnings as they occur
+- At end: orchestrate learning merge, then **DELETE all three docs**
 
-**Key distinction**: Creates TEMPORARY, short-term memory (deleted when done), NOT permanent docs.
+**Three-Document Model**:
+
+| Document | Purpose | Updates |
+|----------|---------|---------|
+| **PLAN.md** | What we're doing (approved steps) | Only with user approval |
+| **WIP.md** | Where we are now (current state) | Constantly |
+| **LEARNINGS.md** | What we discovered | As discoveries occur |
+
+**Key distinction**: Creates TEMPORARY docs (deleted when done). Learnings merged into CLAUDE.md/ADRs before deletion.
+
+**Related skill**: Load `planning` skill for detailed incremental work principles.
 
 ---
 
@@ -171,69 +181,87 @@ This directory contains specifications for specialized Claude Code agents that w
 ### Orchestration Flow
 
 ```
-wip-guardian (orchestrates)
-    ├─→ use-case-data-patterns (when analyzing existing patterns)
-    ├─→ tdd-guardian (for each step: RED-GREEN-REFACTOR)
-    ├─→ ts-enforcer (before commits/PRs)
-    ├─→ refactor-scan (after GREEN tests)
-    ├─→ adr (when architectural decision arises)
-    ├─→ learn (when significant learning occurs)
-    └─→ docs-guardian (when feature complete)
+progress-guardian (orchestrates)
+    │
+    ├─► Creates: PLAN.md, WIP.md, LEARNINGS.md
+    │
+    ├─► For each step:
+    │   ├─→ tdd-guardian (RED-GREEN-REFACTOR)
+    │   ├─→ ts-enforcer (before commits)
+    │   └─→ refactor-scan (after GREEN)
+    │
+    ├─► When decisions arise:
+    │   └─→ adr (architectural decisions)
+    │
+    ├─► At end:
+    │   ├─→ learn (merge LEARNINGS.md → CLAUDE.md)
+    │   ├─→ docs-guardian (update permanent docs)
+    │   └─→ DELETE all three docs
+    │
+    └─► Related: `planning` skill (incremental work principles)
 ```
 
 ### Typical Workflow
 
 1. **Start significant work**
-   - Invoke `wip-guardian`: Creates `WIP.md` with plan
-   - Invoke `use-case-data-patterns`: Analyze existing patterns before implementing
+   - Load `planning` skill for principles
+   - Invoke `progress-guardian`: Creates PLAN.md, WIP.md, LEARNINGS.md
+   - Get approval for PLAN.md
 
 2. **For each step in plan**
-   - Invoke `tdd-guardian`: RED (failing test)
-   - Write minimal code: GREEN (tests pass)
-   - Invoke `refactor-scan`: REFACTOR (assess improvements)
-   - Invoke `wip-guardian`: Update progress
+   - RED: Write failing test (TDD non-negotiable)
+   - GREEN: Minimal code to pass
+   - REFACTOR: Invoke `refactor-scan` to assess improvements
+   - Update WIP.md with progress
+   - Capture discoveries in LEARNINGS.md
+   - **WAIT FOR COMMIT APPROVAL**
 
-3. **When architectural decision arises**
-   - Invoke `wip-guardian`: Document decision point
-   - Invoke `adr`: Create ADR for significant decisions
+3. **When plan needs changing**
+   - Invoke `progress-guardian`: Propose changes
+   - **Get approval before modifying PLAN.md**
 
-4. **Before commits/PRs**
+4. **When architectural decision arises**
+   - Add to LEARNINGS.md immediately
+   - Invoke `adr` if decision warrants permanent record
+
+5. **Before commits**
    - Invoke `ts-enforcer`: Verify TypeScript compliance
    - Invoke `tdd-guardian`: Verify TDD compliance
-
-5. **When learning occurs**
-   - Invoke `wip-guardian`: Update plan if it changes approach
-   - Invoke `learn`: Document in CLAUDE.md if significant
+   - **Ask for commit approval**
 
 6. **End of session**
-   - Invoke `wip-guardian`: Session checkpoint
+   - Invoke `progress-guardian`: Update WIP.md, session checkpoint
 
 7. **Feature complete**
-   - Invoke `docs-guardian`: Update permanent documentation
-   - Invoke `learn`: Capture final learnings
-   - Invoke `wip-guardian`: Verify completion, **DELETE WIP.md**
+   - Invoke `progress-guardian`: Verify all criteria met
+   - Review LEARNINGS.md for merge destinations
+   - Invoke `learn`: Merge gotchas/patterns → CLAUDE.md
+   - Invoke `adr`: Create ADRs for architectural decisions
+   - Invoke `docs-guardian`: Update permanent docs
+   - **DELETE PLAN.md, WIP.md, LEARNINGS.md**
 
 ## Key Distinctions
 
 ### Documentation Types
 
-| Aspect | wip-guardian | adr | learn | docs-guardian |
-|--------|-------------|-----|-------|---------------|
+| Aspect | progress-guardian | adr | learn | docs-guardian |
+|--------|------------------|-----|-------|---------------|
 | **Lifespan** | Temporary (days/weeks) | Permanent | Permanent | Permanent |
 | **Audience** | Current developer | Future developers | AI assistant + developers | Users + developers |
-| **Purpose** | Track progress | Explain "why" decisions | Explain "how" to work | Explain "what" and "how to use" |
-| **Content** | Current state, next steps | Context, decision, consequences | Gotchas, patterns | Features, API, setup |
-| **Updates** | Constantly | Once (rarely updated) | As learning occurs | When features change |
+| **Purpose** | Track progress, capture learnings | Explain "why" decisions | Explain "how" to work | Explain "what" and "how to use" |
+| **Content** | PLAN + WIP + LEARNINGS | Context, decision, consequences | Gotchas, patterns | Features, API, setup |
+| **Updates** | Constantly (WIP), on approval (PLAN) | Once (rarely updated) | As learning occurs | When features change |
 | **Format** | Informal notes | Structured ADR format | Informal examples | Professional, polished |
 | **End of life** | **DELETED** when done | Lives forever | Lives forever | Lives forever |
 
 ### When to Use Which Documentation Agent
 
-**Use `wip-guardian`** for:
+**Use `progress-guardian`** for:
 - "What am I working on right now?"
 - "What's the next step?"
 - "Where was I when I stopped yesterday?"
-- → Answer: Temporary `WIP.md` (deleted when done)
+- "What have we discovered so far?"
+- → Answer: Temporary PLAN.md, WIP.md, LEARNINGS.md (deleted when done)
 
 **Use `adr`** for:
 - "Why did we choose technology X over Y?"
@@ -303,6 +331,12 @@ These agents work together to create a comprehensive development workflow:
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
 - **Improvement**: refactor-scan optimizes code after tests pass
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
-- **Progress**: wip-guardian prevents context loss during development
+- **Progress**: progress-guardian manages incremental work with three-document model
+
+**Key workflow principles** (see `planning` skill for details):
+- All work in small, known-good increments
+- TDD non-negotiable (RED-GREEN-REFACTOR)
+- Commit approval required before every commit
+- Learnings captured as they occur, merged at end
 
 Each agent is specialized, autonomous, and designed to be invoked at the right time to maintain high standards throughout the development process.

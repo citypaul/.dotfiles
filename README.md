@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Seven enforcement agents](claude/.claude/agents/)** - Development guidelines and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Eight enforcement agents](claude/.claude/agents/)** - Development guidelines, 6 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -66,39 +66,50 @@ Unlike typical style guides, CLAUDE.md provides:
 
 ### Key Sections
 
-| Section | What It Provides | Detailed Docs |
-|---------|-----------------|---------------|
-| **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ testing.md](claude/.claude/docs/testing.md) |
-| **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ typescript.md](claude/.claude/docs/typescript.md) |
-| **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns, git verification | [→ workflow.md](claude/.claude/docs/workflow.md) |
-| **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ workflow.md](claude/.claude/docs/workflow.md) |
-| **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ code-style.md](claude/.claude/docs/code-style.md) |
-| **Working with Claude** | Learning capture guidance, documentation templates, quality criteria | [→ working-with-claude.md](claude/.claude/docs/working-with-claude.md) |
+| Section | What It Provides | Detailed Patterns |
+|---------|-----------------|-------------------|
+| **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
+| **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
+| **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
+| **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
+| **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
+| **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
+| **Planning** | Small increments, three-document model (PLAN/WIP/LEARNINGS), commit approval | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
 
 ---
 
-## 📖 Detailed Documentation Guide
+## 📖 Skills Guide
 
-**These docs are the core value of this project.** Each file contains battle-tested decision frameworks, concrete examples, and anti-pattern catalogs that transform abstract principles into actionable practices.
+**v3.0 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3000+ lines to ~100 lines.
 
 ### Quick Navigation by Problem
 
 **"I'm struggling with..."** → **Go here:**
 
-| Problem | Documentation | Key Insight |
-|---------|--------------|-------------|
-| Tests that break when I refactor | [testing.md](claude/.claude/docs/testing.md) | Test behavior through public APIs, not implementation |
-| Don't know when to use schemas vs types | [typescript.md](claude/.claude/docs/typescript.md) | 5-question decision framework |
-| Code that "looks the same" - should I abstract it? | [workflow.md](claude/.claude/docs/workflow.md) | Semantic vs structural abstraction guide |
-| Refactoring everything vs nothing | [workflow.md](claude/.claude/docs/workflow.md) | Priority classification (Critical/High/Nice/Skip) |
-| Understanding what "DRY" really means | [workflow.md](claude/.claude/docs/workflow.md) | DRY = knowledge, not code structure |
-| Accidental mutations breaking things | [code-style.md](claude/.claude/docs/code-style.md) | Complete immutability violations catalog |
-| Writing code before tests | [workflow.md](claude/.claude/docs/workflow.md) | TDD quality gates + git verification |
-| Losing context on complex features | [working-with-claude.md](claude/.claude/docs/working-with-claude.md) | Learning capture framework (7 criteria) |
+| Problem | Skill | Key Insight |
+|---------|-------|-------------|
+| Tests that break when I refactor | [testing](claude/.claude/skills/testing/SKILL.md) | Test behavior through public APIs, not implementation |
+| Don't know when to use schemas vs types | [typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) | 5-question decision framework |
+| Code that "looks the same" - should I abstract it? | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Semantic vs structural abstraction guide |
+| Refactoring everything vs nothing | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Priority classification (Critical/High/Nice/Skip) |
+| Understanding what "DRY" really means | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | DRY = knowledge, not code structure |
+| Accidental mutations breaking things | [functional](claude/.claude/skills/functional/SKILL.md) | Complete immutability violations catalog |
+| Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
+| Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
+| Planning significant work | [planning](claude/.claude/skills/planning/SKILL.md) | Three-document model (PLAN/WIP/LEARNINGS), commit approval |
+
+### How Skills Work
+
+Skills are **auto-discovered** by Claude when relevant:
+- Writing TypeScript? → `typescript-strict` skill loads automatically
+- Running tests? → `testing` skill provides factory patterns
+- After GREEN tests? → `refactoring` skill assesses opportunities
+
+**No manual invocation needed** - Claude detects when skills apply.
 
 ---
 
-### 🧪 Testing Principles → [testing.md](claude/.claude/docs/testing.md)
+### 🧪 Testing Principles → [skills/testing](claude/.claude/skills/testing/SKILL.md)
 
 **Problem it solves:** Tests that break on every refactor, unclear what to test, low coverage despite many tests
 
@@ -134,7 +145,7 @@ it("should reject payments with negative amounts", () => {
 
 ---
 
-### 🔷 TypeScript Guidelines → [typescript.md](claude/.claude/docs/typescript.md)
+### 🔷 TypeScript Guidelines → [skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md)
 
 **Problem it solves:** Overusing schemas everywhere, or not using them when needed; confusion about `type` vs `interface`
 
@@ -177,7 +188,7 @@ const user = UserSchema.parse(apiResponse);
 
 ---
 
-### 🔄 Development Workflow (TDD + Refactoring) → [workflow.md](claude/.claude/docs/workflow.md)
+### 🔄 Development Workflow (TDD + Refactoring) → [skills/tdd](claude/.claude/skills/tdd/SKILL.md) + [skills/refactoring](claude/.claude/skills/refactoring/SKILL.md)
 
 **Problem it solves:** Writing code before tests, refactoring too much/too little, not knowing when to abstract
 
@@ -229,7 +240,7 @@ const formatPersonDisplayName = (first: string, last: string) => `${first} ${las
 
 ---
 
-### 🎨 Code Style (Functional Programming) → [code-style.md](claude/.claude/docs/code-style.md)
+### 🎨 Code Style (Functional Programming) → [skills/functional](claude/.claude/skills/functional/SKILL.md)
 
 **Problem it solves:** Accidental mutations, nested conditionals, unclear code, when to use FP abstractions
 
@@ -278,7 +289,7 @@ const payment = createPayment({
 
 ---
 
-### 🤝 Working with Claude → [working-with-claude.md](claude/.claude/docs/working-with-claude.md)
+### 🤝 Working with Claude → [skills/expectations](claude/.claude/skills/expectations/SKILL.md)
 
 **Problem it solves:** Losing context after complex features, forgetting gotchas, unclear expectations
 
@@ -322,23 +333,9 @@ const wrong = "incorrect approach";
 
 ---
 
-### 📝 Example Patterns → [examples.md](claude/.claude/docs/examples.md)
+## 🎯 Why These Skills Are Different
 
-**Problem it solves:** Need quick reference for common patterns and anti-patterns
-
-**What's inside:**
-- Error handling patterns (Result types, early returns)
-- Testing behavior through public APIs (complete examples)
-- Common anti-patterns to avoid (mutations, nested conditionals, large functions)
-- Side-by-side good/bad comparisons
-
-**Quick reference for copy-paste patterns** when you need them.
-
----
-
-## 🎯 Why These Docs Are Different
-
-Unlike typical style guides, these docs provide:
+Unlike typical style guides, these skills provide:
 
 1. **Decision frameworks** - Concrete questions to answer before taking action (not vague principles)
 2. **Priority classifications** - Objective severity levels to prevent over/under-engineering
@@ -347,7 +344,7 @@ Unlike typical style guides, these docs provide:
 5. **Quality gates** - Verifiable checklists before commits
 6. **Problem-oriented** - Organized by the problems you face, not abstract concepts
 
-**Most valuable insight across all docs:** Abstract based on **semantic meaning** (what code represents), not **structural similarity** (what code looks like). This single principle prevents most bad abstractions.
+**Most valuable insight across all skills:** Abstract based on **semantic meaning** (what code represents), not **structural similarity** (what code looks like). This single principle prevents most bad abstractions.
 
 ---
 
@@ -530,35 +527,43 @@ Claude Code: [Launches learn agent]
 
 ---
 
-### 6. `wip-guardian` - Work In Progress Guardian
+### 6. `progress-guardian` - Progress Guardian
 
-**Use proactively** when starting significant multi-step work, or **reactively** to update progress and handle blockers.
+**Use proactively** when starting significant multi-step work, or **reactively** to update progress, capture learnings, and handle blockers.
+
+**Three-Document Model:**
+
+| Document | Purpose | Updates |
+|----------|---------|---------|
+| **PLAN.md** | What we're doing (approved steps) | Only with user approval |
+| **WIP.md** | Where we are now (current state) | Constantly |
+| **LEARNINGS.md** | What we discovered | As discoveries occur |
 
 **What it manages:**
-- Creates and maintains living `WIP.md` plan document
-- Tracks current progress, next steps, and blockers
-- Enforces small PRs, incremental work, tests always passing
-- Orchestrates all other agents at appropriate times
-- Updates plan as learning occurs
-- **Deletes `WIP.md` when work completes** (ephemeral, not permanent)
+- Creates and maintains three documents for significant work
+- Enforces small increments, TDD, and **commit approval**
+- Never modifies PLAN.md without explicit user approval
+- Captures learnings as they occur
+- At end: orchestrates learning merge, then **deletes all three docs**
 
 **Example invocation:**
 ```
 You: "I need to implement OAuth with JWT tokens and refresh logic"
-Claude Code: [Launches wip-guardian agent to create living plan]
+Claude Code: [Launches progress-guardian to create PLAN.md, WIP.md, LEARNINGS.md]
 
 You: "Tests are passing now"
-Claude Code: [Launches wip-guardian to update progress and identify next step]
+Claude Code: [Launches progress-guardian to update WIP.md and ask for commit approval]
 ```
 
 **Output:**
-- Living `WIP.md` document with current state and plan
-- Agent checkpoint tracking (which agents to invoke when)
-- Session logs for context across work sessions
-- Blocker tracking and workarounds
-- Completion verification and WIP deletion
+- **PLAN.md** - Approved steps with acceptance criteria
+- **WIP.md** - Current step, status, blockers, next action
+- **LEARNINGS.md** - Gotchas, patterns, decisions discovered
+- At end: learnings merged into CLAUDE.md/ADRs, all docs deleted
 
-**Key distinction:** Creates TEMPORARY short-term memory (deleted when done), NOT permanent docs.
+**Key distinction:** Creates TEMPORARY documents (deleted when done). Learnings merged into permanent knowledge base first.
+
+**Related skill:** Load `planning` skill for detailed incremental work principles.
 
 ---
 
@@ -663,16 +668,58 @@ chmod +x install-claude.sh
 
 **Install options:**
 ```bash
-./install-claude.sh                    # Install everything (CLAUDE.md + docs + agents)
-./install-claude.sh --claude-only      # Install only CLAUDE.md (no docs/agents)
-./install-claude.sh --no-agents        # Install CLAUDE.md + docs (no agents)
-./install-claude.sh --version v1.0.0   # Install specific version
+./install-claude.sh                    # Install everything (CLAUDE.md + skills + commands + agents)
+./install-claude.sh --claude-only      # Install only CLAUDE.md
+./install-claude.sh --skills-only      # Install only skills
+./install-claude.sh --no-agents        # Install without agents
+./install-claude.sh --version v2.0.0   # Install v2.0.0 (modular docs)
+./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
 ```
 
-**What gets installed:**
-- ✅ `~/.claude/CLAUDE.md` (156 lines - main guidelines)
-- ✅ `~/.claude/docs/` (6 detailed documentation files)
-- ✅ `~/.claude/agents/` (7 automated enforcement agents)
+**What gets installed (v3.0.0):**
+- ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
+- ✅ `~/.claude/skills/` (7 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
+- ✅ `~/.claude/commands/` (1 slash command: /pr)
+- ✅ `~/.claude/agents/` (8 automated enforcement agents)
+
+**Optional: Enable GitHub MCP Integration**
+
+For enhanced GitHub workflows with native PR/issue integration:
+
+**Step 1: Create a GitHub Personal Access Token**
+
+Go to https://github.com/settings/tokens and create a token:
+
+**For Fine-grained token (recommended):**
+- Repository access: All repositories (or select specific ones)
+- Permissions required:
+  - **Contents**: Read and write
+  - **Pull requests**: Read and write
+  - **Issues**: Read and write
+  - **Metadata**: Read-only (automatically included)
+
+**For Classic token:**
+- Select the `repo` scope (full control of private repositories)
+
+**Step 2: Add the MCP Server**
+
+```bash
+claude mcp add --transport http --scope user github https://api.githubcopilot.com/mcp/ \
+  --header "Authorization: Bearer YOUR_GITHUB_TOKEN"
+```
+
+Replace `YOUR_GITHUB_TOKEN` with the token you created.
+
+**Step 3: Verify Connection**
+
+Restart Claude Code and run `/mcp` to verify the GitHub server shows as connected.
+
+**What this enables:**
+- Native PR creation, updates, and reviews
+- Issue management without CLI parsing
+- Structured GitHub API access
+- `@github:pr://123` - Reference PRs directly in prompts
+- `@github:issue://45` - Reference issues directly in prompts
 
 ---
 
@@ -701,7 +748,7 @@ curl -o .claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul
 curl -o .claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
 curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/docs-guardian.md
 curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
-curl -o .claude/agents/wip-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/wip-guardian.md
+curl -o .claude/agents/progress-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/progress-guardian.md
 curl -o .claude/agents/adr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/adr.md
 
 # Download agents README
@@ -722,7 +769,7 @@ curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dot
 - ⚠️ **Tradeoff:** Larger file vs v2.0.0's modular structure (156 lines + separate docs)
 - ⚠️ **Tradeoff:** Uses v1.0.0 structure (content identical to v2.0.0, just organized differently)
 
-**Important:** This downloads the v1.0.0 monolithic version because the v2.0.0+ modular version has imports (`@~/.claude/docs/...`) that only work from `~/.claude/` location. If you just download the v2.0.0 main file, the imports won't resolve and you'll miss all the detailed examples.
+**Important:** This downloads the v1.0.0 monolithic version. v3.0.0 no longer has @import issues - CLAUDE.md is fully self-contained with skills loaded on-demand. For project-level use, v3.0.0 is now recommended.
 
 Download the complete single-file version:
 
@@ -756,23 +803,33 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ---
 
-### Version Note: v1.0.0 vs v2.0.0+
+### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v2.0.0+):** Modular structure with main file (156 lines) + detailed docs loaded on-demand
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 7 auto-discovered skills + planning workflow
+
+**Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
 **Legacy version (v1.0.0):** Single monolithic file (1,818 lines, all-in-one)
 
-- **Content is identical** - v2.0.0 reorganized v1.0.0 into modular files with imports
-- **Both versions work** - Use whichever you prefer
+| Version | Architecture | Context Size | Best For |
+|---------|--------------|--------------|----------|
+| **v3.0.0** | Skills (on-demand) | ~100 lines always | Context-efficient, truly lean |
+| **v2.0.0** | @docs/ imports | ~3000 lines always | Full docs always loaded |
+| **v1.0.0** | Single file | ~1800 lines always | Standalone, no dependencies |
+
+- **v3.0.0 (current):** https://github.com/citypaul/.dotfiles/tree/main/claude/.claude
+- **v2.0.0 modular docs:** https://github.com/citypaul/.dotfiles/tree/v2.0.0/claude/.claude
 - **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
 
-The installation script installs v2.0.0+ by default. To install v1.0.0, use `--version v1.0.0`.
+The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `--version v1.0.0` for older versions.
 
 ---
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Complete development guidelines
+- **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (7 skills: tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
+- **[Commands](claude/.claude/commands/)** - Slash commands (/pr)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files
 
@@ -948,8 +1005,9 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 7 agents (development guidelines)
-- ✅ Claude Code settings.json (plugins, statusline)
+- ✅ CLAUDE.md + 6 skills + 8 agents (development guidelines)
+- ✅ Commands (/pr slash command)
+- ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
 - ✅ Shell configuration (bash/zsh)
 - ✅ Vim, tmux, npm configs

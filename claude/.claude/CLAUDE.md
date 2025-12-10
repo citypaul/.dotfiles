@@ -1,11 +1,15 @@
 # Development Guidelines for Claude
 
-> **About this file (v2.0.0+):** This is a modular version with detailed documentation loaded on-demand. The main file (this one) provides core principles and quick reference. Detailed guidelines are in separate files imported via `@~/.claude/docs/...`.
+> **About this file (v3.0.0):** Lean version optimized for context efficiency. Core principles here; detailed patterns loaded on-demand via skills.
 >
-> **Prefer a single file?** The v1.0.0 monolithic version (1,818 lines, all-in-one) is available at:
-> https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
+> **Architecture:**
+> - **CLAUDE.md** (this file): Core philosophy + quick reference (~100 lines, always loaded)
+> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
+> - **Agents**: Specialized subprocesses for verification and analysis
 >
-> **Key differences:** v1.0.0 = single file with everything; v2.0.0+ = modular with imports. Content is identical, just organized differently.
+> **Previous versions:**
+> - v2.0.0: Modular with @docs/ imports (~3000+ lines always loaded)
+> - v1.0.0: Single monolithic file (1,818 lines)
 
 ## Core Philosophy
 
@@ -42,16 +46,6 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - Tests must document expected business behavior
 - No 1:1 mapping between test files and implementation files
 
-For comprehensive testing guidelines including:
-- Behavior-driven testing principles and anti-patterns
-- Test data patterns and factory functions with full examples
-- Achieving 100% coverage through business behavior
-- React component testing strategies
-- Testing tools (Jest, Vitest, React Testing Library)
-- Validating test data with schemas
-
-See @~/.claude/docs/testing.md
-
 ## TypeScript Guidelines
 
 **Core principle**: Strict mode always. Schema-first at trust boundaries, types for internal logic.
@@ -63,16 +57,6 @@ See @~/.claude/docs/testing.md
 - Reserve `interface` for behavior contracts only
 - Define schemas first, derive types from them (Zod/Standard Schema)
 - Use schemas at trust boundaries, plain types for internal logic
-
-For comprehensive TypeScript guidelines including:
-- Strict mode requirements and tsconfig setup
-- Type vs interface distinction with examples
-- Schema-first development with Zod
-- Decision framework: when schemas ARE vs AREN'T required (5-question framework)
-- Schema usage in tests (import from shared locations)
-- Branded types for type safety
-
-See @~/.claude/docs/typescript.md
 
 ## Code Style
 
@@ -86,49 +70,19 @@ See @~/.claude/docs/typescript.md
 - Prefer options objects over positional parameters
 - Use array methods (`map`, `filter`, `reduce`) over loops
 
-For comprehensive code style guidelines including:
-- Functional programming patterns and when to use heavy FP abstractions
-- Complete immutability violations catalog (arrays, objects, nested structures)
-- Code structure principles (max 2 levels nesting)
-- Naming conventions (functions, types, constants, files)
-- Self-documenting code patterns (no comments)
-- Options objects pattern with examples
-
-See @~/.claude/docs/code-style.md
-
 ## Development Workflow
 
-**Core principle**: RED-GREEN-REFACTOR. TDD is the fundamental practice.
+**Core principle**: RED-GREEN-REFACTOR in small, known-good increments. TDD is the fundamental practice.
 
 **Quick reference:**
 - RED: Write failing test first (NO production code without failing test)
 - GREEN: Write MINIMUM code to pass test
 - REFACTOR: Assess improvement opportunities (only refactor if adds value)
-- Always commit before refactoring
-- Semantic abstraction (meaning) over structural similarity (appearance)
-- DRY = Don't repeat knowledge, not code structure
+- **Wait for commit approval** before every commit
+- Each increment leaves codebase in working state
+- Capture learnings as they occur, merge at end
 
-For comprehensive workflow guidelines including:
-- TDD process with quality gates
-- Anti-patterns in tests to avoid
-- Verifying TDD compliance via git history
-- Complete TDD example workflow (RED-GREEN-REFACTOR)
-- Refactoring: the critical third step
-- Refactoring priority classification (Critical/High/Nice/Skip)
-- Understanding DRY - knowledge vs code
-- Semantic vs structural decision framework
-- Commit guidelines and PR standards
-
-See @~/.claude/docs/workflow.md
-
-## Example Patterns
-
-For complete examples including:
-- Error handling (Result types and early returns)
-- Testing behavior through public APIs
-- Common anti-patterns to avoid (mutations, nested conditionals, large functions)
-
-See @~/.claude/docs/examples.md
+For significant work, load the `planning` skill for three-document model (PLAN.md, WIP.md, LEARNINGS.md).
 
 ## Working with Claude
 
@@ -141,15 +95,7 @@ See @~/.claude/docs/examples.md
 - Ask "What do I wish I'd known at the start?" after significant changes
 - Document gotchas, patterns, decisions, edge cases while context is fresh
 
-For comprehensive guidance including:
-- Complete expectations checklist
-- Learning documentation framework (7 criteria for what to document)
-- Types of learnings to capture (gotchas, patterns, anti-patterns, decisions)
-- Documentation format templates
-- Code change principles
-- Communication guidelines
-
-See @~/.claude/docs/working-with-claude.md
+For detailed guidance on expectations and documentation, load the `expectations` skill.
 
 ## Resources and References
 
