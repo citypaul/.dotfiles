@@ -138,7 +138,7 @@ backup_file() {
 echo -e "${BLUE}Creating directories...${NC}"
 mkdir -p ~/.claude/agents ~/.claude/skills ~/.claude/commands
 mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
-mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations
+mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 echo -e "${GREEN}✓${NC} Directories created"
 echo ""
 
@@ -153,7 +153,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
   echo ""
 fi
 
-# Install skills (v3.1: auto-discovered patterns)
+# Install skills (v3.0: auto-discovered patterns)
 if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "${BLUE}Installing skills (auto-discovered patterns)...${NC}"
 
@@ -164,6 +164,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "refactoring/SKILL.md"
     "testing/SKILL.md"
     "expectations/SKILL.md"
+    "planning/SKILL.md"
   )
 
   for skill in "${skills[@]}"; do
@@ -206,7 +207,7 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
     "adr.md"
     "learn.md"
     "use-case-data-patterns.md"
-    "wip-guardian.md"
+    "progress-guardian.md"
     "README.md"
   )
 
@@ -235,7 +236,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (6 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations)"
+  echo -e "  ${GREEN}✓${NC} skills/ (7 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning)"
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
@@ -247,7 +248,7 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
 fi
 
 echo ""
-echo -e "${BLUE}Architecture (v3.1):${NC}"
+echo -e "${BLUE}Architecture (v3.0):${NC}"
 echo ""
 echo -e "  ${YELLOW}CLAUDE.md${NC}  → Core principles (~100 lines, always loaded)"
 echo -e "  ${YELLOW}skills/${NC}    → Detailed patterns (loaded on-demand when relevant)"

@@ -1,14 +1,13 @@
 # Development Guidelines for Claude
 
-> **About this file (v3.1.0):** Lean version optimized for context efficiency. Core principles here; detailed patterns loaded on-demand via skills.
+> **About this file (v3.0.0):** Lean version optimized for context efficiency. Core principles here; detailed patterns loaded on-demand via skills.
 >
 > **Architecture:**
 > - **CLAUDE.md** (this file): Core philosophy + quick reference (~100 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, typescript-strict, functional, refactoring, expectations)
+> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
 > **Previous versions:**
-> - v3.0.0: Skills architecture with @docs/ imports still loading
 > - v2.0.0: Modular with @docs/ imports (~3000+ lines always loaded)
 > - v1.0.0: Single monolithic file (1,818 lines)
 
@@ -73,15 +72,17 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 
 ## Development Workflow
 
-**Core principle**: RED-GREEN-REFACTOR. TDD is the fundamental practice.
+**Core principle**: RED-GREEN-REFACTOR in small, known-good increments. TDD is the fundamental practice.
 
 **Quick reference:**
 - RED: Write failing test first (NO production code without failing test)
 - GREEN: Write MINIMUM code to pass test
 - REFACTOR: Assess improvement opportunities (only refactor if adds value)
-- Always commit before refactoring
-- Semantic abstraction (meaning) over structural similarity (appearance)
-- DRY = Don't repeat knowledge, not code structure
+- **Wait for commit approval** before every commit
+- Each increment leaves codebase in working state
+- Capture learnings as they occur, merge at end
+
+For significant work, load the `planning` skill for three-document model (PLAN.md, WIP.md, LEARNINGS.md).
 
 ## Working with Claude
 

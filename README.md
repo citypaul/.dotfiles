@@ -74,12 +74,13 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
+| **Planning** | Small increments, three-document model (PLAN/WIP/LEARNINGS), commit approval | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
 
 ---
 
 ## 📖 Skills Guide
 
-**v3.1 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3000+ lines to ~100 lines.
+**v3.0 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3000+ lines to ~100 lines.
 
 ### Quick Navigation by Problem
 
@@ -95,6 +96,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Accidental mutations breaking things | [functional](claude/.claude/skills/functional/SKILL.md) | Complete immutability violations catalog |
 | Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
 | Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
+| Planning significant work | [planning](claude/.claude/skills/planning/SKILL.md) | Three-document model (PLAN/WIP/LEARNINGS), commit approval |
 
 ### How Skills Work
 
@@ -525,35 +527,43 @@ Claude Code: [Launches learn agent]
 
 ---
 
-### 6. `wip-guardian` - Work In Progress Guardian
+### 6. `progress-guardian` - Progress Guardian
 
-**Use proactively** when starting significant multi-step work, or **reactively** to update progress and handle blockers.
+**Use proactively** when starting significant multi-step work, or **reactively** to update progress, capture learnings, and handle blockers.
+
+**Three-Document Model:**
+
+| Document | Purpose | Updates |
+|----------|---------|---------|
+| **PLAN.md** | What we're doing (approved steps) | Only with user approval |
+| **WIP.md** | Where we are now (current state) | Constantly |
+| **LEARNINGS.md** | What we discovered | As discoveries occur |
 
 **What it manages:**
-- Creates and maintains living `WIP.md` plan document
-- Tracks current progress, next steps, and blockers
-- Enforces small PRs, incremental work, tests always passing
-- Orchestrates all other agents at appropriate times
-- Updates plan as learning occurs
-- **Deletes `WIP.md` when work completes** (ephemeral, not permanent)
+- Creates and maintains three documents for significant work
+- Enforces small increments, TDD, and **commit approval**
+- Never modifies PLAN.md without explicit user approval
+- Captures learnings as they occur
+- At end: orchestrates learning merge, then **deletes all three docs**
 
 **Example invocation:**
 ```
 You: "I need to implement OAuth with JWT tokens and refresh logic"
-Claude Code: [Launches wip-guardian agent to create living plan]
+Claude Code: [Launches progress-guardian to create PLAN.md, WIP.md, LEARNINGS.md]
 
 You: "Tests are passing now"
-Claude Code: [Launches wip-guardian to update progress and identify next step]
+Claude Code: [Launches progress-guardian to update WIP.md and ask for commit approval]
 ```
 
 **Output:**
-- Living `WIP.md` document with current state and plan
-- Agent checkpoint tracking (which agents to invoke when)
-- Session logs for context across work sessions
-- Blocker tracking and workarounds
-- Completion verification and WIP deletion
+- **PLAN.md** - Approved steps with acceptance criteria
+- **WIP.md** - Current step, status, blockers, next action
+- **LEARNINGS.md** - Gotchas, patterns, decisions discovered
+- At end: learnings merged into CLAUDE.md/ADRs, all docs deleted
 
-**Key distinction:** Creates TEMPORARY short-term memory (deleted when done), NOT permanent docs.
+**Key distinction:** Creates TEMPORARY documents (deleted when done). Learnings merged into permanent knowledge base first.
+
+**Related skill:** Load `planning` skill for detailed incremental work principles.
 
 ---
 
@@ -666,9 +676,9 @@ chmod +x install-claude.sh
 ./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
 ```
 
-**What gets installed (v3.1.0+):**
+**What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (6 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations)
+- ✅ `~/.claude/skills/` (7 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
 - ✅ `~/.claude/commands/` (1 slash command: /pr)
 - ✅ `~/.claude/agents/` (8 automated enforcement agents)
 
@@ -712,7 +722,7 @@ curl -o .claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul
 curl -o .claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
 curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/docs-guardian.md
 curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
-curl -o .claude/agents/wip-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/wip-guardian.md
+curl -o .claude/agents/progress-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/progress-guardian.md
 curl -o .claude/agents/adr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/adr.md
 
 # Download agents README
@@ -733,7 +743,7 @@ curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dot
 - ⚠️ **Tradeoff:** Larger file vs v2.0.0's modular structure (156 lines + separate docs)
 - ⚠️ **Tradeoff:** Uses v1.0.0 structure (content identical to v2.0.0, just organized differently)
 
-**Important:** This downloads the v1.0.0 monolithic version. v3.1.0+ no longer has @import issues - CLAUDE.md is fully self-contained with skills loaded on-demand. For project-level use, v3.1.0+ is now recommended.
+**Important:** This downloads the v1.0.0 monolithic version. v3.0.0 no longer has @import issues - CLAUDE.md is fully self-contained with skills loaded on-demand. For project-level use, v3.0.0 is now recommended.
 
 Download the complete single-file version:
 
@@ -767,11 +777,9 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ---
 
-### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0 vs v3.1.0+
+### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.1.0+):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 6 auto-discovered skills + no @imports
-
-**Previous version (v3.0.0):** Skills architecture with @imports still loading docs (~350 lines always loaded)
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 7 auto-discovered skills + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -779,23 +787,22 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 | Version | Architecture | Context Size | Best For |
 |---------|--------------|--------------|----------|
-| **v3.1.0+** | Skills (no @imports) | ~100 lines always | Context-efficient, truly lean |
-| **v3.0.0** | Skills + @imports | ~350 lines always | Skills but with docs loaded |
+| **v3.0.0** | Skills (on-demand) | ~100 lines always | Context-efficient, truly lean |
 | **v2.0.0** | @docs/ imports | ~3000 lines always | Full docs always loaded |
 | **v1.0.0** | Single file | ~1800 lines always | Standalone, no dependencies |
 
-- **v3.1.0+ (current):** https://github.com/citypaul/.dotfiles/tree/main/claude/.claude
+- **v3.0.0 (current):** https://github.com/citypaul/.dotfiles/tree/main/claude/.claude
 - **v2.0.0 modular docs:** https://github.com/citypaul/.dotfiles/tree/v2.0.0/claude/.claude
 - **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
 
-The installation script installs v3.1.0+ by default. Use `--version v2.0.0` or `--version v1.0.0` for older versions.
+The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `--version v1.0.0` for older versions.
 
 ---
 
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (6 skills: tdd, testing, typescript-strict, functional, refactoring, expectations)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (7 skills: tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
 - **[Commands](claude/.claude/commands/)** - Slash commands (/pr)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files
