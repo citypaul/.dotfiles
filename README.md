@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Eight enforcement agents](claude/.claude/agents/)** - Development guidelines, auto-discovered patterns, and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Eight enforcement agents](claude/.claude/agents/)** - Development guidelines, 6 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -73,28 +73,28 @@ Unlike typical style guides, CLAUDE.md provides:
 | **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
-| **Working with Claude** | Learning capture guidance, documentation templates, quality criteria | [→ docs/working-with-claude.md](claude/.claude/docs/working-with-claude.md) |
+| **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
 
 ---
 
-## 📖 Skills & Documentation Guide
+## 📖 Skills Guide
 
-**v3.0 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3000+ lines to ~120 lines.
+**v3.1 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3000+ lines to ~100 lines.
 
 ### Quick Navigation by Problem
 
 **"I'm struggling with..."** → **Go here:**
 
-| Problem | Skill/Doc | Key Insight |
-|---------|-----------|-------------|
-| Tests that break when I refactor | [skills/testing](claude/.claude/skills/testing/SKILL.md) | Test behavior through public APIs, not implementation |
-| Don't know when to use schemas vs types | [skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) | 5-question decision framework |
-| Code that "looks the same" - should I abstract it? | [skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) | Semantic vs structural abstraction guide |
-| Refactoring everything vs nothing | [skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) | Priority classification (Critical/High/Nice/Skip) |
-| Understanding what "DRY" really means | [skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) | DRY = knowledge, not code structure |
-| Accidental mutations breaking things | [skills/functional](claude/.claude/skills/functional/SKILL.md) | Complete immutability violations catalog |
-| Writing code before tests | [skills/tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
-| Losing context on complex features | [docs/working-with-claude.md](claude/.claude/docs/working-with-claude.md) | Learning capture framework (7 criteria) |
+| Problem | Skill | Key Insight |
+|---------|-------|-------------|
+| Tests that break when I refactor | [testing](claude/.claude/skills/testing/SKILL.md) | Test behavior through public APIs, not implementation |
+| Don't know when to use schemas vs types | [typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) | 5-question decision framework |
+| Code that "looks the same" - should I abstract it? | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Semantic vs structural abstraction guide |
+| Refactoring everything vs nothing | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Priority classification (Critical/High/Nice/Skip) |
+| Understanding what "DRY" really means | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | DRY = knowledge, not code structure |
+| Accidental mutations breaking things | [functional](claude/.claude/skills/functional/SKILL.md) | Complete immutability violations catalog |
+| Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
+| Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
 
 ### How Skills Work
 
@@ -107,7 +107,7 @@ Skills are **auto-discovered** by Claude when relevant:
 
 ---
 
-### 🧪 Testing Principles → [testing.md](claude/.claude/docs/testing.md)
+### 🧪 Testing Principles → [skills/testing](claude/.claude/skills/testing/SKILL.md)
 
 **Problem it solves:** Tests that break on every refactor, unclear what to test, low coverage despite many tests
 
@@ -143,7 +143,7 @@ it("should reject payments with negative amounts", () => {
 
 ---
 
-### 🔷 TypeScript Guidelines → [typescript.md](claude/.claude/docs/typescript.md)
+### 🔷 TypeScript Guidelines → [skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md)
 
 **Problem it solves:** Overusing schemas everywhere, or not using them when needed; confusion about `type` vs `interface`
 
@@ -186,7 +186,7 @@ const user = UserSchema.parse(apiResponse);
 
 ---
 
-### 🔄 Development Workflow (TDD + Refactoring) → [workflow.md](claude/.claude/docs/workflow.md)
+### 🔄 Development Workflow (TDD + Refactoring) → [skills/tdd](claude/.claude/skills/tdd/SKILL.md) + [skills/refactoring](claude/.claude/skills/refactoring/SKILL.md)
 
 **Problem it solves:** Writing code before tests, refactoring too much/too little, not knowing when to abstract
 
@@ -238,7 +238,7 @@ const formatPersonDisplayName = (first: string, last: string) => `${first} ${las
 
 ---
 
-### 🎨 Code Style (Functional Programming) → [code-style.md](claude/.claude/docs/code-style.md)
+### 🎨 Code Style (Functional Programming) → [skills/functional](claude/.claude/skills/functional/SKILL.md)
 
 **Problem it solves:** Accidental mutations, nested conditionals, unclear code, when to use FP abstractions
 
@@ -287,7 +287,7 @@ const payment = createPayment({
 
 ---
 
-### 🤝 Working with Claude → [working-with-claude.md](claude/.claude/docs/working-with-claude.md)
+### 🤝 Working with Claude → [skills/expectations](claude/.claude/skills/expectations/SKILL.md)
 
 **Problem it solves:** Losing context after complex features, forgetting gotchas, unclear expectations
 
@@ -331,23 +331,9 @@ const wrong = "incorrect approach";
 
 ---
 
-### 📝 Example Patterns → [examples.md](claude/.claude/docs/examples.md)
+## 🎯 Why These Skills Are Different
 
-**Problem it solves:** Need quick reference for common patterns and anti-patterns
-
-**What's inside:**
-- Error handling patterns (Result types, early returns)
-- Testing behavior through public APIs (complete examples)
-- Common anti-patterns to avoid (mutations, nested conditionals, large functions)
-- Side-by-side good/bad comparisons
-
-**Quick reference for copy-paste patterns** when you need them.
-
----
-
-## 🎯 Why These Docs Are Different
-
-Unlike typical style guides, these docs provide:
+Unlike typical style guides, these skills provide:
 
 1. **Decision frameworks** - Concrete questions to answer before taking action (not vague principles)
 2. **Priority classifications** - Objective severity levels to prevent over/under-engineering
@@ -356,7 +342,7 @@ Unlike typical style guides, these docs provide:
 5. **Quality gates** - Verifiable checklists before commits
 6. **Problem-oriented** - Organized by the problems you face, not abstract concepts
 
-**Most valuable insight across all docs:** Abstract based on **semantic meaning** (what code represents), not **structural similarity** (what code looks like). This single principle prevents most bad abstractions.
+**Most valuable insight across all skills:** Abstract based on **semantic meaning** (what code represents), not **structural similarity** (what code looks like). This single principle prevents most bad abstractions.
 
 ---
 
@@ -680,11 +666,10 @@ chmod +x install-claude.sh
 ./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
 ```
 
-**What gets installed (v3.0.0+):**
-- ✅ `~/.claude/CLAUDE.md` (~120 lines - lean core principles)
-- ✅ `~/.claude/skills/` (5 auto-discovered patterns: tdd, typescript-strict, functional, refactoring, testing)
+**What gets installed (v3.1.0+):**
+- ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
+- ✅ `~/.claude/skills/` (6 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations)
 - ✅ `~/.claude/commands/` (1 slash command: /pr)
-- ✅ `~/.claude/docs/` (2 reference files: examples, working-with-claude)
 - ✅ `~/.claude/agents/` (8 automated enforcement agents)
 
 **Optional: Enable GitHub MCP Integration**
@@ -748,7 +733,7 @@ curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dot
 - ⚠️ **Tradeoff:** Larger file vs v2.0.0's modular structure (156 lines + separate docs)
 - ⚠️ **Tradeoff:** Uses v1.0.0 structure (content identical to v2.0.0, just organized differently)
 
-**Important:** This downloads the v1.0.0 monolithic version because the v2.0.0+ modular version has imports (`@~/.claude/docs/...`) that only work from `~/.claude/` location. If you just download the v2.0.0 main file, the imports won't resolve and you'll miss all the detailed examples.
+**Important:** This downloads the v1.0.0 monolithic version. v3.1.0+ no longer has @import issues - CLAUDE.md is fully self-contained with skills loaded on-demand. For project-level use, v3.1.0+ is now recommended.
 
 Download the complete single-file version:
 
@@ -782,9 +767,11 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ---
 
-### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0+
+### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0 vs v3.1.0+
 
-**Current version (v3.0.0+):** Skills-based architecture with lean CLAUDE.md (~120 lines) + 5 auto-discovered skills + 1 slash command
+**Current version (v3.1.0+):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 6 auto-discovered skills + no @imports
+
+**Previous version (v3.0.0):** Skills architecture with @imports still loading docs (~350 lines always loaded)
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -792,22 +779,23 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 | Version | Architecture | Context Size | Best For |
 |---------|--------------|--------------|----------|
-| **v3.0.0+** | Skills (auto-discovered) | ~120 lines always | Context-efficient, Claude Code skills |
+| **v3.1.0+** | Skills (no @imports) | ~100 lines always | Context-efficient, truly lean |
+| **v3.0.0** | Skills + @imports | ~350 lines always | Skills but with docs loaded |
 | **v2.0.0** | @docs/ imports | ~3000 lines always | Full docs always loaded |
 | **v1.0.0** | Single file | ~1800 lines always | Standalone, no dependencies |
 
-- **v3.0.0+ (current):** https://github.com/citypaul/.dotfiles/tree/main/claude/.claude
+- **v3.1.0+ (current):** https://github.com/citypaul/.dotfiles/tree/main/claude/.claude
 - **v2.0.0 modular docs:** https://github.com/citypaul/.dotfiles/tree/v2.0.0/claude/.claude
 - **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
 
-The installation script installs v3.0.0+ by default. Use `--version v2.0.0` or `--version v1.0.0` for older versions.
+The installation script installs v3.1.0+ by default. Use `--version v2.0.0` or `--version v1.0.0` for older versions.
 
 ---
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~120 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (5 skills)
+- **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (6 skills: tdd, testing, typescript-strict, functional, refactoring, expectations)
 - **[Commands](claude/.claude/commands/)** - Slash commands (/pr)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files
@@ -984,7 +972,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 5 skills + 8 agents (development guidelines)
+- ✅ CLAUDE.md + 6 skills + 8 agents (development guidelines)
 - ✅ Commands (/pr slash command)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration

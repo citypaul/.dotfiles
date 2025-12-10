@@ -26,18 +26,7 @@ TDD is the fundamental practice. Every line of production code must be written i
 
 ## Test Factory Pattern
 
-Use factory functions with optional overrides:
-
-```typescript
-const getMockPayment = (overrides?: Partial<Payment>): Payment => {
-  return PaymentSchema.parse({
-    amount: 100,
-    currency: "GBP",
-    cardId: "card_123",
-    ...overrides,
-  });
-};
-```
+For test data, use factory functions with optional overrides. See the `testing` skill for detailed patterns.
 
 Key principles:
 - Return complete objects with sensible defaults

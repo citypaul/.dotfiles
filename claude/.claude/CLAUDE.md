@@ -1,13 +1,14 @@
 # Development Guidelines for Claude
 
-> **About this file (v3.0.0+):** This is a lean version optimized for context efficiency. Core principles are here; detailed patterns are loaded on-demand via skills.
+> **About this file (v3.1.0):** Lean version optimized for context efficiency. Core principles here; detailed patterns loaded on-demand via skills.
 >
 > **Architecture:**
-> - **CLAUDE.md** (this file): Core philosophy + quick reference (~160 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand when relevant (tdd, typescript-strict, functional, refactoring, testing)
-> - **Docs**: Reference examples and meta guidelines (examples.md, working-with-claude.md)
+> - **CLAUDE.md** (this file): Core philosophy + quick reference (~100 lines, always loaded)
+> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, typescript-strict, functional, refactoring, expectations)
+> - **Agents**: Specialized subprocesses for verification and analysis
 >
 > **Previous versions:**
+> - v3.0.0: Skills architecture with @docs/ imports still loading
 > - v2.0.0: Modular with @docs/ imports (~3000+ lines always loaded)
 > - v1.0.0: Single monolithic file (1,818 lines)
 
@@ -82,15 +83,6 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - Semantic abstraction (meaning) over structural similarity (appearance)
 - DRY = Don't repeat knowledge, not code structure
 
-## Example Patterns
-
-For complete examples including:
-- Error handling (Result types and early returns)
-- Testing behavior through public APIs
-- Common anti-patterns to avoid (mutations, nested conditionals, large functions)
-
-See @~/.claude/docs/examples.md
-
 ## Working with Claude
 
 **Core principle**: Think deeply, follow TDD strictly, capture learnings while context is fresh.
@@ -102,15 +94,7 @@ See @~/.claude/docs/examples.md
 - Ask "What do I wish I'd known at the start?" after significant changes
 - Document gotchas, patterns, decisions, edge cases while context is fresh
 
-For comprehensive guidance including:
-- Complete expectations checklist
-- Learning documentation framework (7 criteria for what to document)
-- Types of learnings to capture (gotchas, patterns, anti-patterns, decisions)
-- Documentation format templates
-- Code change principles
-- Communication guidelines
-
-See @~/.claude/docs/working-with-claude.md
+For detailed guidance on expectations and documentation, load the `expectations` skill.
 
 ## Resources and References
 

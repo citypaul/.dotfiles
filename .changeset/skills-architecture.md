@@ -2,30 +2,32 @@
 "dotfiles": minor
 ---
 
-feat: migrate to skills-based architecture for on-demand context loading (v3.0)
+feat: truly lean CLAUDE.md with no @imports (v3.1)
 
-## Skills (5 auto-discovered patterns)
+## Skills (6 auto-discovered patterns)
 - `tdd` - RED-GREEN-REFACTOR workflow
+- `testing` - Factory patterns and behavior testing
 - `typescript-strict` - TypeScript strict mode patterns
 - `functional` - Functional programming with immutability
 - `refactoring` - Assessment framework and priorities
-- `testing` - Factory patterns and behavior testing
+- `expectations` - Working expectations and documentation practices (NEW)
 
 ## Commands (1 slash command)
 - `/pr` - Create pull requests (no test plan needed with TDD)
 
-## Hooks
-- PostToolUse hook for Prettier + ESLint auto-formatting on TypeScript files
-
 ## Context Optimization
-- CLAUDE.md reduced from ~3000+ lines (with @docs imports) to ~120 lines
-- Detailed patterns now loaded on-demand via skills when relevant
+- CLAUDE.md reduced from ~350 lines (v3.0 with @imports) to ~100 lines
+- Removed all @imports - CLAUDE.md is now truly self-contained
+- Detailed patterns loaded on-demand via skills only when relevant
 
-## Breaking Changes
-- Removed docs/testing.md, docs/typescript.md, docs/code-style.md, docs/workflow.md
-- Content migrated to skills (loaded on-demand instead of always)
-- Kept docs/examples.md and docs/working-with-claude.md
+## Breaking Changes from v3.0
+- Removed `docs/` directory entirely
+- `docs/examples.md` content now in relevant skills (functional, testing)
+- `docs/working-with-claude.md` converted to `expectations` skill
+- Removed duplicate `.claude/README.md` (consolidated into `agents/README.md`)
+- Test factory pattern deduplicated (in `testing` skill only, referenced from `tdd`)
 
-## Migration
-- Users of v2.0.0 can use `--version v2.0.0` to keep modular docs
-- Skills provide same content but with better context efficiency
+## Migration from v3.0
+- No action needed - install script updated
+- `expectations` skill replaces `docs/working-with-claude.md`
+- Skills now reference each other where appropriate

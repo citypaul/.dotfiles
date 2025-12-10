@@ -25,7 +25,6 @@ NC='\033[0m' # No Color
 # Default settings
 VERSION="${VERSION:-main}"
 INSTALL_CLAUDE=true
-INSTALL_DOCS=true
 INSTALL_SKILLS=true
 INSTALL_COMMANDS=true
 INSTALL_AGENTS=true
@@ -35,7 +34,6 @@ BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --claude-only)
-      INSTALL_DOCS=false
       INSTALL_SKILLS=false
       INSTALL_COMMANDS=false
       INSTALL_AGENTS=false
@@ -47,7 +45,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skills-only)
       INSTALL_CLAUDE=false
-      INSTALL_DOCS=false
       INSTALL_COMMANDS=false
       INSTALL_AGENTS=false
       INSTALL_SKILLS=true
@@ -55,7 +52,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --agents-only)
       INSTALL_CLAUDE=false
-      INSTALL_DOCS=false
       INSTALL_SKILLS=false
       INSTALL_COMMANDS=false
       INSTALL_AGENTS=true
@@ -140,9 +136,9 @@ backup_file() {
 
 # Create directories
 echo -e "${BLUE}Creating directories...${NC}"
-mkdir -p ~/.claude/docs ~/.claude/agents ~/.claude/skills ~/.claude/commands
+mkdir -p ~/.claude/agents ~/.claude/skills ~/.claude/commands
 mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
-mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing
+mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations
 echo -e "${GREEN}✓${NC} Directories created"
 echo ""
 
@@ -157,26 +153,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
   echo ""
 fi
 
-# Install docs (v3.0: only examples.md and working-with-claude.md)
-if [[ "$INSTALL_DOCS" == true ]]; then
-  echo -e "${BLUE}Installing documentation files...${NC}"
-
-  docs=(
-    "examples.md"
-    "working-with-claude.md"
-  )
-
-  for doc in "${docs[@]}"; do
-    backup_file ~/.claude/docs/"$doc"
-    download_file \
-      "$BASE_URL/$VERSION/claude/.claude/docs/$doc" \
-      ~/.claude/docs/"$doc" \
-      "docs/$doc"
-  done
-  echo ""
-fi
-
-# Install skills (v3.0: auto-discovered patterns)
+# Install skills (v3.1: auto-discovered patterns)
 if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "${BLUE}Installing skills (auto-discovered patterns)...${NC}"
 
@@ -186,6 +163,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "functional/SKILL.md"
     "refactoring/SKILL.md"
     "testing/SKILL.md"
+    "expectations/SKILL.md"
   )
 
   for skill in "${skills[@]}"; do
@@ -256,12 +234,8 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
   echo -e "  ${GREEN}✓${NC} CLAUDE.md (lean core principles)"
 fi
 
-if [[ "$INSTALL_DOCS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} docs/ (2 documentation files: examples, working-with-claude)"
-fi
-
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (5 auto-discovered patterns: tdd, typescript-strict, functional, refactoring, testing)"
+  echo -e "  ${GREEN}✓${NC} skills/ (6 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations)"
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
@@ -273,9 +247,9 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
 fi
 
 echo ""
-echo -e "${BLUE}Architecture (v3.0):${NC}"
+echo -e "${BLUE}Architecture (v3.1):${NC}"
 echo ""
-echo -e "  ${YELLOW}CLAUDE.md${NC}  → Core principles (~120 lines, always loaded)"
+echo -e "  ${YELLOW}CLAUDE.md${NC}  → Core principles (~100 lines, always loaded)"
 echo -e "  ${YELLOW}skills/${NC}    → Detailed patterns (loaded on-demand when relevant)"
 echo -e "  ${YELLOW}commands/${NC}  → Slash commands (manually invoked)"
 echo -e "  ${YELLOW}agents/${NC}    → Complex multi-step workflows"
