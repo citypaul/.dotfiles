@@ -1,5 +1,5 @@
 ---
-"dotfiles": minor
+"@paulhammond/dotfiles": minor
 ---
 
 feat: skills-based architecture with planning workflow (v3.0)
