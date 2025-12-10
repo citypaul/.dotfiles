@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Seven enforcement agents](claude/.claude/agents/)** - Development guidelines and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Eight enforcement agents](claude/.claude/agents/)** - Development guidelines, auto-discovered patterns, and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -66,35 +66,44 @@ Unlike typical style guides, CLAUDE.md provides:
 
 ### Key Sections
 
-| Section | What It Provides | Detailed Docs |
-|---------|-----------------|---------------|
-| **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ testing.md](claude/.claude/docs/testing.md) |
-| **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ typescript.md](claude/.claude/docs/typescript.md) |
-| **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns, git verification | [→ workflow.md](claude/.claude/docs/workflow.md) |
-| **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ workflow.md](claude/.claude/docs/workflow.md) |
-| **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ code-style.md](claude/.claude/docs/code-style.md) |
-| **Working with Claude** | Learning capture guidance, documentation templates, quality criteria | [→ working-with-claude.md](claude/.claude/docs/working-with-claude.md) |
+| Section | What It Provides | Detailed Patterns |
+|---------|-----------------|-------------------|
+| **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
+| **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
+| **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
+| **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
+| **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
+| **Working with Claude** | Learning capture guidance, documentation templates, quality criteria | [→ docs/working-with-claude.md](claude/.claude/docs/working-with-claude.md) |
 
 ---
 
-## 📖 Detailed Documentation Guide
+## 📖 Skills & Documentation Guide
 
-**These docs are the core value of this project.** Each file contains battle-tested decision frameworks, concrete examples, and anti-pattern catalogs that transform abstract principles into actionable practices.
+**v3.0 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3000+ lines to ~120 lines.
 
 ### Quick Navigation by Problem
 
 **"I'm struggling with..."** → **Go here:**
 
-| Problem | Documentation | Key Insight |
-|---------|--------------|-------------|
-| Tests that break when I refactor | [testing.md](claude/.claude/docs/testing.md) | Test behavior through public APIs, not implementation |
-| Don't know when to use schemas vs types | [typescript.md](claude/.claude/docs/typescript.md) | 5-question decision framework |
-| Code that "looks the same" - should I abstract it? | [workflow.md](claude/.claude/docs/workflow.md) | Semantic vs structural abstraction guide |
-| Refactoring everything vs nothing | [workflow.md](claude/.claude/docs/workflow.md) | Priority classification (Critical/High/Nice/Skip) |
-| Understanding what "DRY" really means | [workflow.md](claude/.claude/docs/workflow.md) | DRY = knowledge, not code structure |
-| Accidental mutations breaking things | [code-style.md](claude/.claude/docs/code-style.md) | Complete immutability violations catalog |
-| Writing code before tests | [workflow.md](claude/.claude/docs/workflow.md) | TDD quality gates + git verification |
-| Losing context on complex features | [working-with-claude.md](claude/.claude/docs/working-with-claude.md) | Learning capture framework (7 criteria) |
+| Problem | Skill/Doc | Key Insight |
+|---------|-----------|-------------|
+| Tests that break when I refactor | [skills/testing](claude/.claude/skills/testing/SKILL.md) | Test behavior through public APIs, not implementation |
+| Don't know when to use schemas vs types | [skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) | 5-question decision framework |
+| Code that "looks the same" - should I abstract it? | [skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) | Semantic vs structural abstraction guide |
+| Refactoring everything vs nothing | [skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) | Priority classification (Critical/High/Nice/Skip) |
+| Understanding what "DRY" really means | [skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) | DRY = knowledge, not code structure |
+| Accidental mutations breaking things | [skills/functional](claude/.claude/skills/functional/SKILL.md) | Complete immutability violations catalog |
+| Writing code before tests | [skills/tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
+| Losing context on complex features | [docs/working-with-claude.md](claude/.claude/docs/working-with-claude.md) | Learning capture framework (7 criteria) |
+
+### How Skills Work
+
+Skills are **auto-discovered** by Claude when relevant:
+- Writing TypeScript? → `typescript-strict` skill loads automatically
+- Running tests? → `testing` skill provides factory patterns
+- After GREEN tests? → `refactoring` skill assesses opportunities
+
+**No manual invocation needed** - Claude detects when skills apply.
 
 ---
 
@@ -663,16 +672,20 @@ chmod +x install-claude.sh
 
 **Install options:**
 ```bash
-./install-claude.sh                    # Install everything (CLAUDE.md + docs + agents)
-./install-claude.sh --claude-only      # Install only CLAUDE.md (no docs/agents)
-./install-claude.sh --no-agents        # Install CLAUDE.md + docs (no agents)
-./install-claude.sh --version v1.0.0   # Install specific version
+./install-claude.sh                    # Install everything (CLAUDE.md + skills + commands + agents)
+./install-claude.sh --claude-only      # Install only CLAUDE.md
+./install-claude.sh --skills-only      # Install only skills
+./install-claude.sh --no-agents        # Install without agents
+./install-claude.sh --version v2.0.0   # Install v2.0.0 (modular docs)
+./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
 ```
 
-**What gets installed:**
-- ✅ `~/.claude/CLAUDE.md` (156 lines - main guidelines)
-- ✅ `~/.claude/docs/` (6 detailed documentation files)
-- ✅ `~/.claude/agents/` (7 automated enforcement agents)
+**What gets installed (v3.0.0+):**
+- ✅ `~/.claude/CLAUDE.md` (~120 lines - lean core principles)
+- ✅ `~/.claude/skills/` (5 auto-discovered patterns: tdd, typescript-strict, functional, refactoring, testing)
+- ✅ `~/.claude/commands/` (1 slash command: /pr)
+- ✅ `~/.claude/docs/` (2 reference files: examples, working-with-claude)
+- ✅ `~/.claude/agents/` (8 automated enforcement agents)
 
 ---
 
@@ -756,23 +769,33 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ---
 
-### Version Note: v1.0.0 vs v2.0.0+
+### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0+
 
-**Current version (v2.0.0+):** Modular structure with main file (156 lines) + detailed docs loaded on-demand
+**Current version (v3.0.0+):** Skills-based architecture with lean CLAUDE.md (~120 lines) + 5 auto-discovered skills + 1 slash command
+
+**Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
 **Legacy version (v1.0.0):** Single monolithic file (1,818 lines, all-in-one)
 
-- **Content is identical** - v2.0.0 reorganized v1.0.0 into modular files with imports
-- **Both versions work** - Use whichever you prefer
+| Version | Architecture | Context Size | Best For |
+|---------|--------------|--------------|----------|
+| **v3.0.0+** | Skills (auto-discovered) | ~120 lines always | Context-efficient, Claude Code skills |
+| **v2.0.0** | @docs/ imports | ~3000 lines always | Full docs always loaded |
+| **v1.0.0** | Single file | ~1800 lines always | Standalone, no dependencies |
+
+- **v3.0.0+ (current):** https://github.com/citypaul/.dotfiles/tree/main/claude/.claude
+- **v2.0.0 modular docs:** https://github.com/citypaul/.dotfiles/tree/v2.0.0/claude/.claude
 - **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
 
-The installation script installs v2.0.0+ by default. To install v1.0.0, use `--version v1.0.0`.
+The installation script installs v3.0.0+ by default. Use `--version v2.0.0` or `--version v1.0.0` for older versions.
 
 ---
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Complete development guidelines
+- **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~120 lines)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (5 skills)
+- **[Commands](claude/.claude/commands/)** - Slash commands (/pr)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files
 
@@ -948,8 +971,9 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 7 agents (development guidelines)
-- ✅ Claude Code settings.json (plugins, statusline)
+- ✅ CLAUDE.md + 5 skills + 8 agents (development guidelines)
+- ✅ Commands (/pr slash command)
+- ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
 - ✅ Shell configuration (bash/zsh)
 - ✅ Vim, tmux, npm configs

@@ -3,11 +3,11 @@
 # Install CLAUDE.md development framework to ~/.claude/
 #
 # Usage:
-#   ./install-claude.sh                    # Install everything (CLAUDE.md + docs + agents)
-#   ./install-claude.sh --claude-only      # Install only CLAUDE.md (no docs/agents)
-#   ./install-claude.sh --no-agents        # Install CLAUDE.md + docs (no agents)
-#   ./install-claude.sh --agents-only      # Install only agents
-#   ./install-claude.sh --version v1.0.0   # Install specific version
+#   ./install-claude.sh                    # Install everything (CLAUDE.md + skills + commands + agents)
+#   ./install-claude.sh --claude-only      # Install only CLAUDE.md
+#   ./install-claude.sh --no-agents        # Install without agents
+#   ./install-claude.sh --skills-only      # Install only skills
+#   ./install-claude.sh --version v3.0.0   # Install specific version
 #
 # One-liner installation:
 #   curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
@@ -26,6 +26,8 @@ NC='\033[0m' # No Color
 VERSION="${VERSION:-main}"
 INSTALL_CLAUDE=true
 INSTALL_DOCS=true
+INSTALL_SKILLS=true
+INSTALL_COMMANDS=true
 INSTALL_AGENTS=true
 BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 
@@ -34,6 +36,8 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     --claude-only)
       INSTALL_DOCS=false
+      INSTALL_SKILLS=false
+      INSTALL_COMMANDS=false
       INSTALL_AGENTS=false
       shift
       ;;
@@ -41,9 +45,19 @@ while [[ $# -gt 0 ]]; do
       INSTALL_AGENTS=false
       shift
       ;;
+    --skills-only)
+      INSTALL_CLAUDE=false
+      INSTALL_DOCS=false
+      INSTALL_COMMANDS=false
+      INSTALL_AGENTS=false
+      INSTALL_SKILLS=true
+      shift
+      ;;
     --agents-only)
       INSTALL_CLAUDE=false
       INSTALL_DOCS=false
+      INSTALL_SKILLS=false
+      INSTALL_COMMANDS=false
       INSTALL_AGENTS=true
       shift
       ;;
@@ -59,8 +73,9 @@ Usage:
   $0 [OPTIONS]
 
 Options:
-  --claude-only      Install only CLAUDE.md (no docs/agents)
-  --no-agents        Install CLAUDE.md + docs (no agents)
+  --claude-only      Install only CLAUDE.md
+  --no-agents        Install without agents
+  --skills-only      Install only skills
   --agents-only      Install only agents
   --version VERSION  Install specific version (default: main)
   --help, -h         Show this help message
@@ -70,7 +85,7 @@ Examples:
   $0
 
   # Install specific version
-  $0 --version v2.0.0
+  $0 --version v3.0.0
 
   # Install without agents
   $0 --no-agents
@@ -90,7 +105,7 @@ EOF
 done
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  CLAUDE.md Development Framework Installer       ║${NC}"
+echo -e "${BLUE}║  CLAUDE.md Development Framework Installer         ║${NC}"
 printf "${BLUE}║  Version: %-40s║${NC}\n" "$VERSION"
 echo -e "${BLUE}╚════════════════════════════════════════════════════╝${NC}"
 echo ""
@@ -125,7 +140,9 @@ backup_file() {
 
 # Create directories
 echo -e "${BLUE}Creating directories...${NC}"
-mkdir -p ~/.claude/docs ~/.claude/agents
+mkdir -p ~/.claude/docs ~/.claude/agents ~/.claude/skills ~/.claude/commands
+mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
+mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing
 echo -e "${GREEN}✓${NC} Directories created"
 echo ""
 
@@ -140,15 +157,11 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
   echo ""
 fi
 
-# Install docs
+# Install docs (v3.0: only examples.md and working-with-claude.md)
 if [[ "$INSTALL_DOCS" == true ]]; then
   echo -e "${BLUE}Installing documentation files...${NC}"
 
   docs=(
-    "testing.md"
-    "typescript.md"
-    "code-style.md"
-    "workflow.md"
     "examples.md"
     "working-with-claude.md"
   )
@@ -163,6 +176,46 @@ if [[ "$INSTALL_DOCS" == true ]]; then
   echo ""
 fi
 
+# Install skills (v3.0: auto-discovered patterns)
+if [[ "$INSTALL_SKILLS" == true ]]; then
+  echo -e "${BLUE}Installing skills (auto-discovered patterns)...${NC}"
+
+  skills=(
+    "tdd/SKILL.md"
+    "typescript-strict/SKILL.md"
+    "functional/SKILL.md"
+    "refactoring/SKILL.md"
+    "testing/SKILL.md"
+  )
+
+  for skill in "${skills[@]}"; do
+    backup_file ~/.claude/skills/"$skill"
+    download_file \
+      "$BASE_URL/$VERSION/claude/.claude/skills/$skill" \
+      ~/.claude/skills/"$skill" \
+      "skills/$skill"
+  done
+  echo ""
+fi
+
+# Install commands (v3.0: slash commands)
+if [[ "$INSTALL_COMMANDS" == true ]]; then
+  echo -e "${BLUE}Installing commands (slash commands)...${NC}"
+
+  commands=(
+    "pr.md"
+  )
+
+  for cmd in "${commands[@]}"; do
+    backup_file ~/.claude/commands/"$cmd"
+    download_file \
+      "$BASE_URL/$VERSION/claude/.claude/commands/$cmd" \
+      ~/.claude/commands/"$cmd" \
+      "commands/$cmd"
+  done
+  echo ""
+fi
+
 # Install agents
 if [[ "$INSTALL_AGENTS" == true ]]; then
   echo -e "${BLUE}Installing Claude Code agents...${NC}"
@@ -171,7 +224,11 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
     "tdd-guardian.md"
     "ts-enforcer.md"
     "refactor-scan.md"
+    "docs-guardian.md"
+    "adr.md"
     "learn.md"
+    "use-case-data-patterns.md"
+    "wip-guardian.md"
     "README.md"
   )
 
@@ -196,17 +253,32 @@ echo -e "${BLUE}Installed to ~/.claude/${NC}"
 echo ""
 
 if [[ "$INSTALL_CLAUDE" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} CLAUDE.md (main guidelines)"
+  echo -e "  ${GREEN}✓${NC} CLAUDE.md (lean core principles)"
 fi
 
 if [[ "$INSTALL_DOCS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} docs/ (6 detailed documentation files)"
+  echo -e "  ${GREEN}✓${NC} docs/ (2 documentation files: examples, working-with-claude)"
+fi
+
+if [[ "$INSTALL_SKILLS" == true ]]; then
+  echo -e "  ${GREEN}✓${NC} skills/ (5 auto-discovered patterns: tdd, typescript-strict, functional, refactoring, testing)"
+fi
+
+if [[ "$INSTALL_COMMANDS" == true ]]; then
+  echo -e "  ${GREEN}✓${NC} commands/ (1 slash command: /pr)"
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} agents/ (4 Claude Code agents + README)"
+  echo -e "  ${GREEN}✓${NC} agents/ (8 Claude Code agents + README)"
 fi
 
+echo ""
+echo -e "${BLUE}Architecture (v3.0):${NC}"
+echo ""
+echo -e "  ${YELLOW}CLAUDE.md${NC}  → Core principles (~120 lines, always loaded)"
+echo -e "  ${YELLOW}skills/${NC}    → Detailed patterns (loaded on-demand when relevant)"
+echo -e "  ${YELLOW}commands/${NC}  → Slash commands (manually invoked)"
+echo -e "  ${YELLOW}agents/${NC}    → Complex multi-step workflows"
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
 echo ""
@@ -216,8 +288,8 @@ echo ""
 echo -e "  2. Test with Claude Code:"
 echo -e "     Open any project and use: ${YELLOW}/memory${NC}"
 echo ""
-echo -e "  3. Read documentation:"
-echo -e "     ${YELLOW}cat ~/.claude/CLAUDE.md${NC}"
+echo -e "  3. Try the /pr command:"
+echo -e "     ${YELLOW}/pr${NC}"
 echo ""
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
