@@ -686,14 +686,40 @@ chmod +x install-claude.sh
 
 For enhanced GitHub workflows with native PR/issue integration:
 
+**Step 1: Create a GitHub Personal Access Token**
+
+Go to https://github.com/settings/tokens and create a token:
+
+**For Fine-grained token (recommended):**
+- Repository access: All repositories (or select specific ones)
+- Permissions required:
+  - **Contents**: Read and write
+  - **Pull requests**: Read and write
+  - **Issues**: Read and write
+  - **Metadata**: Read-only (automatically included)
+
+**For Classic token:**
+- Select the `repo` scope (full control of private repositories)
+
+**Step 2: Add the MCP Server**
+
 ```bash
-claude mcp add --transport http --scope user github https://api.githubcopilot.com/mcp/
+claude mcp add --transport http --scope user github https://api.githubcopilot.com/mcp/ \
+  --header "Authorization: Bearer YOUR_GITHUB_TOKEN"
 ```
 
-This enables:
+Replace `YOUR_GITHUB_TOKEN` with the token you created.
+
+**Step 3: Verify Connection**
+
+Restart Claude Code and run `/mcp` to verify the GitHub server shows as connected.
+
+**What this enables:**
+- Native PR creation, updates, and reviews
+- Issue management without CLI parsing
+- Structured GitHub API access
 - `@github:pr://123` - Reference PRs directly in prompts
 - `@github:issue://45` - Reference issues directly in prompts
-- Native structured data access (vs parsing `gh` CLI text output)
 
 ---
 
