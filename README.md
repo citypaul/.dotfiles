@@ -687,6 +687,19 @@ chmod +x install-claude.sh
 - ✅ `~/.claude/docs/` (2 reference files: examples, working-with-claude)
 - ✅ `~/.claude/agents/` (8 automated enforcement agents)
 
+**Optional: Enable GitHub MCP Integration**
+
+For enhanced GitHub workflows with native PR/issue integration:
+
+```bash
+claude mcp add --transport http --scope user github https://api.githubcopilot.com/mcp/
+```
+
+This enables:
+- `@github:pr://123` - Reference PRs directly in prompts
+- `@github:issue://45` - Reference issues directly in prompts
+- Native structured data access (vs parsing `gh` CLI text output)
+
 ---
 
 ### Option 2: Use CLAUDE.md + Agents (Recommended for Projects)
