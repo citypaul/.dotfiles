@@ -1,8 +1,8 @@
 # Changelog
 
-## 2.4.0
+## 3.0.0
 
-### Minor Changes
+### Major Changes
 
 - fd148e9: feat: skills-based architecture with planning workflow (v3.0)
 
