@@ -721,6 +721,51 @@ Restart Claude Code and run `/mcp` to verify the GitHub server shows as connecte
 - `@github:pr://123` - Reference PRs directly in prompts
 - `@github:issue://45` - Reference issues directly in prompts
 
+**Optional: Enable OpenCode Support**
+
+These guidelines also work with [OpenCode](https://opencode.ai) - an open source AI coding agent. OpenCode uses `AGENTS.md` for custom instructions (similar to `CLAUDE.md` in Claude Code).
+
+**How OpenCode Integration Works:**
+
+OpenCode doesn't automatically read `~/.claude/` files. Instead, it uses a configuration file to specify which instruction files to load. The `opencode.json` configuration tells OpenCode to load your CLAUDE.md and skills files.
+
+**Installation:**
+
+```bash
+# Install with OpenCode support
+./install-claude.sh --with-opencode
+
+# Or install OpenCode config only (if you already have CLAUDE.md installed)
+./install-claude.sh --opencode-only
+```
+
+**What gets installed:**
+- `~/.config/opencode/opencode.json` - Configuration that loads:
+  - `~/.claude/CLAUDE.md` (core principles)
+  - `~/.claude/skills/*/SKILL.md` (all skill patterns)
+
+**Manual Installation:**
+
+If you prefer to set it up manually:
+
+```bash
+mkdir -p ~/.config/opencode
+cat > ~/.config/opencode/opencode.json << 'EOF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "~/.claude/CLAUDE.md",
+    "~/.claude/skills/*/SKILL.md"
+  ]
+}
+EOF
+```
+
+**Learn more:**
+- [OpenCode Documentation](https://opencode.ai/docs/)
+- [OpenCode Rules Configuration](https://opencode.ai/docs/rules/)
+- [OpenCode GitHub](https://github.com/sst/opencode)
+
 ---
 
 ### Option 2: Use CLAUDE.md + Agents (Recommended for Projects)
