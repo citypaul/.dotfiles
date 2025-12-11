@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Eight enforcement agents](claude/.claude/agents/)** - Development guidelines, 7 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Eight enforcement agents](claude/.claude/agents/)** - Development guidelines, 8 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -69,6 +69,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Section | What It Provides | Detailed Patterns |
 |---------|-----------------|-------------------|
 | **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
+| **Front-End Testing** | React Testing Library patterns, accessibility-first queries, userEvent best practices | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
 | **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
 | **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
@@ -89,6 +90,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Problem | Skill | Key Insight |
 |---------|-------|-------------|
 | Tests that break when I refactor | [testing](claude/.claude/skills/testing/SKILL.md) | Test behavior through public APIs, not implementation |
+| Tests break when refactoring React components | [front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) | Query by role (getByRole), not implementation |
 | Don't know when to use schemas vs types | [typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) | 5-question decision framework |
 | Code that "looks the same" - should I abstract it? | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Semantic vs structural abstraction guide |
 | Refactoring everything vs nothing | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Priority classification (Critical/High/Nice/Skip) |
@@ -678,7 +680,7 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (7 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
+- ✅ `~/.claude/skills/` (8 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing)
 - ✅ `~/.claude/commands/` (1 slash command: /pr)
 - ✅ `~/.claude/agents/` (8 automated enforcement agents)
 
@@ -805,7 +807,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 7 auto-discovered skills + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 8 auto-discovered skills + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
