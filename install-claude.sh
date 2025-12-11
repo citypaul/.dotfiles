@@ -8,6 +8,7 @@
 #   ./install-claude.sh --no-agents        # Install without agents
 #   ./install-claude.sh --skills-only      # Install only skills
 #   ./install-claude.sh --version v3.0.0   # Install specific version
+#   ./install-claude.sh --with-opencode    # Also install OpenCode configuration
 #
 # One-liner installation:
 #   curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
@@ -28,6 +29,7 @@ INSTALL_CLAUDE=true
 INSTALL_SKILLS=true
 INSTALL_COMMANDS=true
 INSTALL_AGENTS=true
+INSTALL_OPENCODE=false
 BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 
 # Parse arguments
@@ -57,6 +59,18 @@ while [[ $# -gt 0 ]]; do
       INSTALL_AGENTS=true
       shift
       ;;
+    --with-opencode)
+      INSTALL_OPENCODE=true
+      shift
+      ;;
+    --opencode-only)
+      INSTALL_CLAUDE=false
+      INSTALL_SKILLS=false
+      INSTALL_COMMANDS=false
+      INSTALL_AGENTS=false
+      INSTALL_OPENCODE=true
+      shift
+      ;;
     --version)
       VERSION="$2"
       shift 2
@@ -73,6 +87,8 @@ Options:
   --no-agents        Install without agents
   --skills-only      Install only skills
   --agents-only      Install only agents
+  --with-opencode    Also install OpenCode configuration
+  --opencode-only    Install only OpenCode configuration
   --version VERSION  Install specific version (default: main)
   --help, -h         Show this help message
 
@@ -221,6 +237,18 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
   echo ""
 fi
 
+# Install OpenCode configuration
+if [[ "$INSTALL_OPENCODE" == true ]]; then
+  echo -e "${BLUE}Installing OpenCode configuration...${NC}"
+  mkdir -p ~/.config/opencode
+  backup_file ~/.config/opencode/opencode.json
+  download_file \
+    "$BASE_URL/$VERSION/opencode/.config/opencode/opencode.json" \
+    ~/.config/opencode/opencode.json \
+    "opencode.json"
+  echo ""
+fi
+
 # Success message
 echo -e "${GREEN}╔════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║  Installation complete! ✓                         ║${NC}"
@@ -245,6 +273,12 @@ fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
   echo -e "  ${GREEN}✓${NC} agents/ (8 Claude Code agents + README)"
+fi
+
+if [[ "$INSTALL_OPENCODE" == true ]]; then
+  echo -e ""
+  echo -e "${BLUE}Installed to ~/.config/opencode/${NC}"
+  echo -e "  ${GREEN}✓${NC} opencode.json (OpenCode rules configuration)"
 fi
 
 echo ""
