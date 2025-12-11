@@ -14,228 +14,165 @@ description: TypeScript strict mode patterns. Use when writing any TypeScript co
 
 ---
 
-## Schema Placement Architecture - CRITICAL
+## Schema Organization
 
-### CRITICAL RULE: Schemas ALWAYS Belong in Core, NEVER in Adapters
+### Organize Schemas by Usage
 
-**Location**: `packages/core/src/schemas/` (or `src/schemas/` in non-monorepo projects)
+**Common patterns:**
+- Centralized: `src/schemas/` for shared schemas
+- Co-located: Near the modules that use them
+- Layered: Separate by architectural layer (if using layered/hexagonal architecture)
 
-**Why schemas belong in core:**
-- Schemas define **domain validation rules** (business logic)
-- Same schema across all adapters → NOT framework-specific
-- Prevents duplication and multiple sources of truth
-- Adapters are thin translation layers, not domain logic containers
+**Key principle:** Avoid duplicating the same validation logic across multiple files.
 
-### Gotcha: Schema Duplication Across Adapters
+### Gotcha: Schema Duplication
 
-**Real Case Study:**
+**Common anti-pattern:**
 
-During development, `scenarioRequestSchema` was duplicated in 3 adapter files:
-- Express adapter had it locally
-- Next.js Pages adapter had it locally
-- Next.js App adapter had it locally
+Defining the same schema in multiple places:
+- Validation logic duplicated across endpoints
+- Same business rules defined in multiple adapters
+- Type definitions not shared
 
-Each with the EXACT same Zod schema defined locally.
-
-**Why This Was WRONG:**
-- ❌ Schema defines domain validation → belongs in CORE, not adapters
+**Why This Is Wrong:**
 - ❌ Duplication creates multiple sources of truth
-- ❌ Changes require updating 3 files instead of 1
-- ❌ Violates hexagonal architecture (domain logic leaking into infrastructure)
+- ❌ Changes require updating multiple files
 - ❌ Breaks DRY principle at the knowledge level
+- ❌ Domain logic leaks into infrastructure code
 
-**What Happened:**
-Schema was moved to `packages/core/src/schemas/scenario-requests.ts` and exported from core. All 3 adapters now import from core:
-
-```typescript
-// ✅ CORRECT - Import from core
-import { ScenarioRequestSchema } from '@scenarist/core';
-```
-
-### Decision Framework: Does This Schema Belong in Core?
-
-Ask these 3 questions:
-
-**1. Is this schema used by multiple adapters?**
-- YES → ✅ Schema belongs in CORE
-
-**2. Does it define domain validation rules?**
-- YES → ✅ Schema belongs in CORE
-
-**3. Is it part of the API contract for your application/library?**
-- YES → ✅ Schema belongs in CORE
-
-**If ANY answer is YES, the schema belongs in core.**
-
-### Red Flags to Watch For
-
-Watch for these patterns that indicate schema should be in core:
-
-1. ❌ Defining Zod schemas in adapter files
-2. ❌ Importing `zod` in adapter code (unless using core-exported schemas)
-3. ❌ Similar validation logic across multiple adapters
-4. ❌ Type definitions not imported from core
-5. ❌ Using `z.object()`, `z.string()`, etc. directly in adapter code
-
-### The Pattern: Schema-First Development in Core
-
-**Step 1: Define schema in core**
+**Solution:**
 
 ```typescript
-// packages/core/src/schemas/scenario-requests.ts
+// ✅ CORRECT - Define schema once, import everywhere
+// src/schemas/user-requests.ts
 import { z } from 'zod';
 
-export const ScenarioRequestSchema = z.object({
-  scenario: z.string().min(1),
-  variant: z.string().optional(),
+export const CreateUserRequestSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1),
 });
 
-export type ScenarioRequest = z.infer<typeof ScenarioRequestSchema>;
+export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
 ```
 
-**Step 2: Export from core barrel**
-
 ```typescript
-// packages/core/src/schemas/index.ts
-export { ScenarioRequestSchema } from './scenario-requests.js';
-export type { ScenarioRequest } from './scenario-requests.js';
-```
+// Use in multiple places
+import { CreateUserRequestSchema } from '../schemas/user-requests.js';
 
-**Step 3: Export from core root**
-
-```typescript
-// packages/core/src/index.ts
-export { ScenarioRequestSchema } from './schemas/index.js';
-export type { ScenarioRequest } from './schemas/index.js';
-```
-
-**Step 4: Use in ALL adapters**
-
-```typescript
-// packages/express-adapter/src/endpoints.ts
-import { ScenarioRequestSchema } from '@scenarist/core';
-
-export const setScenario = (req: Request, res: Response) => {
-  const result = ScenarioRequestSchema.safeParse(req.body);
+// Express endpoint
+app.post('/users', (req, res) => {
+  const result = CreateUserRequestSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({ error: result.error });
   }
   // Use result.data (validated)
+});
+
+// GraphQL resolver
+const createUser = (input: unknown) => {
+  const validated = CreateUserRequestSchema.parse(input);
+  return userService.create(validated);
 };
 ```
 
 **Key Benefits:**
 - ✅ Single source of truth for validation
-- ✅ Schema changes automatically propagate to all adapters
-- ✅ Type safety maintained across all packages
-- ✅ Hexagonal architecture preserved
+- ✅ Schema changes propagate everywhere automatically
+- ✅ Type safety maintained across codebase
 - ✅ DRY principle at knowledge level
 
-**Remember:** If validation logic is duplicated across adapters, it's domain knowledge that belongs in core.
+**Remember:** If validation logic is duplicated, extract it into a shared schema.
 
 ---
 
-## Dependency Injection Pattern - CRITICAL
+## Dependency Injection Pattern
 
-### CRITICAL: Domain Logic Must NEVER Create Port Implementations Internally
+### Inject Dependencies, Don't Create Them
 
 **The Rule:**
-- Ports (interfaces) are always injected as dependencies
-- Never use `new` to create port implementations inside domain logic
-- Factory functions accept ports via parameters
+- Dependencies are always injected via parameters
+- Never use `new` to create dependencies inside functions
+- Factory functions accept dependencies as parameters
 
 ### Why This Matters
 
 Without dependency injection:
-- ❌ Only one implementation possible (breaks hexagonal architecture)
+- ❌ Only one implementation possible
 - ❌ Can't test with mocks (poor testability)
 - ❌ Tight coupling to specific implementations
 - ❌ Violates dependency inversion principle
-- ❌ Can't swap implementations (in-memory → Redis → remote)
+- ❌ Can't swap implementations
 
 With dependency injection:
-- ✅ Any port implementation works (in-memory, Redis, files, remote)
+- ✅ Any implementation works (in-memory, database, remote API)
 - ✅ Fully testable (inject mocks for testing)
-- ✅ True hexagonal architecture
+- ✅ Loose coupling
 - ✅ Follows dependency inversion principle
 - ✅ Runtime flexibility (configure implementation)
 
-### Example: ScenarioManager (Domain Coordinator)
+### Example: Order Processor
 
 **❌ WRONG - Creating implementation internally**
 
 ```typescript
-export const createScenarioManager = ({
-  store,
+export const createOrderProcessor = ({
+  paymentGateway,
 }: {
-  store: ScenarioStore;
-}): ScenarioManager => {
+  paymentGateway: PaymentGateway;
+}): OrderProcessor => {
   // ❌ Hardcoded implementation!
-  const scenarioRegistry = new Map<string, ScenaristScenario>();
+  const orderRepository = new InMemoryOrderRepository();
 
   return {
-    registerScenario(definition) {
-      scenarioRegistry.set(definition.id, definition); // Using hardcoded Map
-    },
-    switchScenario(testId, scenarioId, variantName) {
-      const definition = scenarioRegistry.get(scenarioId); // Hardcoded
-      if (!definition) {
-        return { success: false, error: new Error('Not found') };
+    processOrder(order) {
+      const payment = paymentGateway.charge(order.total);
+      if (!payment.success) {
+        return { success: false, error: payment.error };
       }
-      store.set(testId, { scenarioId, variantName });
-      return { success: true, data: undefined };
+
+      orderRepository.save(order); // Using hardcoded repository
+      return { success: true, data: order };
     },
   };
 };
 ```
 
 **Why this is WRONG:**
-- Only ONE registry implementation possible (in-memory Map)
-- Can't test with mock registry
-- Can't swap to Redis registry or remote registry
-- Breaks hexagonal architecture completely
+- Only ONE repository implementation possible (in-memory)
+- Can't test with mock repository
+- Can't swap to database repository or remote API
+- Tight coupling to specific implementation
 
-**✅ CORRECT - Injecting both ports**
+**✅ CORRECT - Injecting all dependencies**
 
 ```typescript
-export const createScenarioManager = ({
-  registry,  // ✅ Injected - interface, not implementation
-  store,     // ✅ Injected - interface, not implementation
+export const createOrderProcessor = ({
+  paymentGateway,  // ✅ Injected
+  orderRepository, // ✅ Injected
 }: {
-  registry: ScenarioRegistry;
-  store: ScenarioStore;
-}): ScenarioManager => {
+  paymentGateway: PaymentGateway;
+  orderRepository: OrderRepository;
+}): OrderProcessor => {
   return {
-    registerScenario(definition) {
-      registry.register(definition); // Delegate to injected port
-    },
-    switchScenario(testId, scenarioId, variantName) {
-      const definition = registry.get(scenarioId);
-      if (!definition) {
-        return { success: false, error: new Error('Not found') };
+    processOrder(order) {
+      const payment = paymentGateway.charge(order.total);
+      if (!payment.success) {
+        return { success: false, error: payment.error };
       }
-      store.set(testId, { scenarioId, variantName });
-      return { success: true, data: undefined };
+
+      orderRepository.save(order); // Delegate to injected dependency
+      return { success: true, data: order };
     },
-    // All methods delegate to injected ports, never create them
   };
 };
 ```
 
 **Why this is CORRECT:**
-- ✅ Any ScenarioRegistry implementation works (Map, Redis, remote API)
-- ✅ Any ScenarioStore implementation works (Map, localStorage, IndexedDB)
-- ✅ Easy to test (inject mock registry and store)
-- ✅ True hexagonal architecture (domain depends on interfaces, not implementations)
+- ✅ Any OrderRepository implementation works (in-memory, PostgreSQL, MongoDB)
+- ✅ Any PaymentGateway implementation works (Stripe, mock, testing)
+- ✅ Easy to test (inject mocks)
+- ✅ Loose coupling (depends on interfaces, not implementations)
 - ✅ Runtime flexibility (choose implementation at startup)
-
-### ScenarioManager's Role
-
-ScenarioManager is a **coordinator/facade** that:
-- Orchestrates operations between ScenarioRegistry and ScenarioStore
-- Enforces business rules (e.g., can't activate non-existent scenarios)
-- Provides unified API for scenario operations
-- **Delegates to injected ports, never creates them**
 
 ---
 
@@ -243,54 +180,54 @@ ScenarioManager is a **coordinator/facade** that:
 
 The choice between `type` and `interface` is architectural, not stylistic.
 
-### Ports (Behavior Contracts) → Use `interface`
+### Behavior Contracts → Use `interface`
 
-**Location**: `packages/core/src/ports/` (or `src/ports/`)
+**When to use:** Interfaces define contracts that must be implemented.
 
-**Definition**: Interfaces define contracts that adapters must implement.
+**Examples**: `UserRepository`, `PaymentGateway`, `EmailService`, `CacheProvider`
 
-**Examples**: `ScenarioManager`, `ScenarioStore`, `RequestContext`, `ScenarioRegistry`
-
-**Why `interface` for ports?**
+**Why `interface` for behavior contracts?**
 
 1. **Signals implementation contracts clearly**
    - Interface communicates "this must be implemented elsewhere"
    - Type communicates "this is a data structure"
 
 2. **Better TypeScript errors when implementing**
-   - `class X implements ScenarioStore` gives clear errors
+   - `class X implements UserRepository` gives clear errors
    - Types don't have `implements` keyword
 
-3. **Conventional in hexagonal architecture**
-   - Ports & Adapters pattern uses interfaces for ports
-   - Industry standard for dependency inversion
+3. **Conventional for dependency injection**
+   - Standard pattern for dependency inversion
+   - Clear separation between contract and implementation
 
-4. **Class-friendly for adapter implementations**
-   - Adapters often use classes (Express middleware, Next.js API routes)
+4. **Class-friendly for implementations**
+   - Many libraries use classes for services
    - Classes naturally implement interfaces
 
 **Example:**
 
 ```typescript
-// packages/core/src/ports/scenario-manager.ts
-export interface ScenarioManager {
-  registerScenario(definition: ScenaristScenario): void;
-  switchScenario(
-    testId: string,
-    scenarioId: string,
-    variantName?: string,
-  ): ScenaristResult<void>;
-  getActiveScenario(testId: string): ActiveScenario | undefined;
+// Behavior contract
+export interface UserRepository {
+  findById(id: string): Promise<User | undefined>;
+  save(user: User): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+// Concrete implementation
+export class PostgresUserRepository implements UserRepository {
+  async findById(id: string): Promise<User | undefined> {
+    // Implementation
+  }
+  // ... other methods
 }
 ```
 
-### Types (Data Structures) → Use `type`
+### Data Structures → Use `type`
 
-**Location**: `packages/core/src/types/` (or `src/types/`)
+**When to use:** Types define immutable data structures.
 
-**Definition**: Types define immutable data structures.
-
-**Examples**: `Scenario`, `ActiveScenario`, `ScenaristConfig`, `ScenaristMock`
+**Examples**: `User`, `Order`, `Config`, `ApiResponse`
 
 **Why `type` for data?**
 
@@ -313,27 +250,29 @@ export interface ScenarioManager {
 **Example:**
 
 ```typescript
-// packages/core/src/types/scenario.ts
-export type ScenaristScenario = {
+// Data structure
+export type User = {
   readonly id: string;
+  readonly email: string;
   readonly name: string;
-  readonly description: string;
-  readonly mocks: ReadonlyArray<ScenaristMock>;
+  readonly roles: ReadonlyArray<string>;
 };
 
-export type ActiveScenario = {
-  readonly scenarioId: string;
-  readonly variantName?: string;
+export type Order = {
+  readonly id: string;
+  readonly userId: string;
+  readonly items: ReadonlyArray<OrderItem>;
+  readonly total: number;
 };
 ```
 
-### Architectural Connection
+### Architectural Pattern
 
-This pattern supports **hexagonal architecture**:
+This pattern supports clean architecture:
 
-- **Ports** (`interface`) = Behavior contracts at hexagon boundaries
-- **Types** (`type`) = Data flowing through the hexagon
-- **Domain logic** depends on ports (interfaces), not implementations
+- **Behavior contracts** (`interface`) = Boundaries between layers
+- **Data structures** (`type`) = Data flowing through the system
+- **Business logic** depends on interfaces, not implementations
 - **Data** is immutable (types with `readonly`)
 
 ---
@@ -388,7 +327,7 @@ This pattern supports **hexagonal architecture**:
 
 The `noUnusedParameters` rule can reveal architectural problems:
 
-**Example**: During development, `ScenarioManager` was found to have a `config` parameter that wasn't used. This led to discovering that `config` didn't belong in domain logic - it belonged in adapters only. The strict mode rule caught an architectural violation.
+**Example**: A function with an unused parameter often indicates the parameter belongs in a different layer. Strict mode catches these design issues early.
 
 ---
 
@@ -398,25 +337,23 @@ The `noUnusedParameters` rule can reveal architectural problems:
 
 ```typescript
 // ✅ CORRECT - Immutable data structure
-type ScenaristMock = {
+type ApiRequest = {
   readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  readonly url: string | RegExp;
-  readonly response: {
-    readonly status: number;
-    readonly body?: unknown;
-    readonly headers?: Record<string, string>;
-    readonly delay?: number;
+  readonly url: string;
+  readonly headers?: {
+    readonly [key: string]: string;
   };
+  readonly body?: unknown;
 };
 
 // ❌ WRONG - Mutable data structure
-type ScenaristMock = {
+type ApiRequest = {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  url: string | RegExp;
-  response: {
-    status: number;
-    body?: unknown;
+  url: string;
+  headers?: {
+    [key: string]: string;
   };
+  body?: unknown;
 };
 ```
 
@@ -424,39 +361,37 @@ type ScenaristMock = {
 
 ```typescript
 // ✅ CORRECT - Immutable array
-type Scenario = {
+type ShoppingCart = {
   readonly id: string;
-  readonly mocks: ReadonlyArray<ScenaristMock>;
+  readonly items: ReadonlyArray<CartItem>;
 };
 
 // ❌ WRONG - Mutable array
-type Scenario = {
+type ShoppingCart = {
   readonly id: string;
-  readonly mocks: ScenaristMock[];
+  readonly items: CartItem[];
 };
 ```
 
 ### Result Type Pattern for Error Handling
 
-Prefer `ScenaristResult<T, E>` types over exceptions for expected errors:
+Prefer `Result<T, E>` types over exceptions for expected errors:
 
 ```typescript
-export type ScenaristResult<T, E = Error> =
+export type Result<T, E = Error> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false; readonly error: E };
 
 // Usage
-export const switchScenario = (
-  testId: string,
-  scenarioId: string,
-): ScenaristResult<void> => {
-  const definition = registry.get(scenarioId);
-  if (!definition) {
-    return { success: false, error: new Error('Scenario not found') };
+export const findUser = (
+  userId: string,
+): Result<User> => {
+  const user = database.findById(userId);
+  if (!user) {
+    return { success: false, error: new Error('User not found') };
   }
 
-  store.set(testId, { scenarioId });
-  return { success: true, data: undefined };
+  return { success: true, data: user };
 };
 ```
 
@@ -474,29 +409,38 @@ export const switchScenario = (
 
 ```typescript
 // ✅ CORRECT - Factory function
-export const createScenarioManager = (
-  registry: ScenarioRegistry,
-  store: ScenarioStore,
-): ScenarioManager => {
+export const createOrderService = (
+  orderRepository: OrderRepository,
+  paymentGateway: PaymentGateway,
+): OrderService => {
   return {
-    registerScenario(definition) {
-      registry.register(definition);
+    async createOrder(order) {
+      const validation = validateOrder(order);
+      if (!validation.success) {
+        return validation;
+      }
+      await orderRepository.save(order);
+      return { success: true, data: order };
     },
-    switchScenario(testId, scenarioId, variantName) {
-      // Implementation
+    async processPayment(orderId, paymentInfo) {
+      const order = await orderRepository.findById(orderId);
+      if (!order) {
+        return { success: false, error: new Error('Order not found') };
+      }
+      return paymentGateway.charge(order.total, paymentInfo);
     },
   };
 };
 
 // ❌ WRONG - Class-based creation
-export class ScenarioManager {
+export class OrderService {
   constructor(
-    private registry: ScenarioRegistry,
-    private store: ScenarioStore,
+    private orderRepository: OrderRepository,
+    private paymentGateway: PaymentGateway,
   ) {}
 
-  registerScenario(definition: ScenaristScenario) {
-    this.registry.register(definition);
+  async createOrder(order: Order) {
+    // Implementation with `this`
   }
 }
 ```
@@ -512,32 +456,39 @@ export class ScenarioManager {
 
 ## Location Guidance
 
-### Where to Put Each Artifact Type
+### Suggested File Organization
 
-**Ports (Interfaces)**
-- Location: `packages/core/src/ports/` (or `src/ports/`)
-- Examples: `ScenarioManager`, `ScenarioStore`, `RequestContext`
-- Why: Behavior contracts that define hexagon boundaries
+These are common patterns, not strict rules. Adapt to your project's needs.
+
+**Interfaces (Behavior Contracts)**
+- Common locations: `src/interfaces/`, `src/contracts/`, `src/ports/`
+- Examples: `UserRepository`, `PaymentGateway`, `EmailService`
+- Why: Behavior contracts that define boundaries between layers
 
 **Types (Data Structures)**
-- Location: `packages/core/src/types/` (or `src/types/`)
-- Examples: `Scenario`, `ActiveScenario`, `ScenaristConfig`
-- Why: Immutable data flowing through the system
+- Common locations: `src/types/`, `src/models/`, co-located with features
+- Examples: `User`, `Order`, `Config`
+- Why: Immutable data structures used throughout the system
 
 **Schemas (Validation)**
-- Location: `packages/core/src/schemas/` (or `src/schemas/`)
-- Examples: `ScenarioRequestSchema`, `ScenaristConfigSchema`
-- Why: Domain validation rules (business logic)
+- Common locations: `src/schemas/`, `src/validation/`, co-located with features
+- Examples: `UserSchema`, `OrderSchema`, `ConfigSchema`
+- Why: Validation rules (consider avoiding duplication)
 
-**Domain Logic**
-- Location: `packages/core/src/domain/` (or `src/domain/`)
-- Examples: `createScenarioManager`, `buildConfig`
-- Why: Pure business logic with no framework dependencies
+**Business Logic**
+- Common locations: `src/services/`, `src/domain/`, `src/use-cases/`
+- Examples: `createUserService`, `processOrder`, `validatePayment`
+- Why: Core business logic (prefer framework-agnostic when possible)
 
-**Adapters**
-- Location: Separate packages or `src/adapters/`
-- Examples: `express-adapter`, `nextjs-adapter`, `InMemoryStore`
-- Why: Framework-specific implementations, external integrations
+**Implementation Details**
+- Common locations: `src/adapters/`, `src/infrastructure/`, `src/repositories/`
+- Examples: `PostgresUserRepository`, `StripePaymentGateway`, `RedisCache`
+- Why: Framework-specific code, external integrations
+
+**Note:** These are suggestions based on common patterns. Your project may use different conventions. The key principles are:
+- Clear separation of concerns
+- Minimal duplication of validation logic
+- Dependencies point inward (toward business logic)
 
 ---
 
@@ -577,8 +528,8 @@ type Result<T, E> =
   | { success: false; error: E };
 
 // ✅ CORRECT - Interface, no validation
-interface ScenarioManager {
-  registerScenario(definition: Scenario): void;
+interface UserService {
+  createUser(user: User): void;
 }
 ```
 
@@ -596,16 +547,16 @@ These principles support immutability and type safety:
 
 ```typescript
 // ✅ CORRECT - Pure function
-const addScenario = (
-  scenarios: ReadonlyArray<Scenario>,
-  newScenario: Scenario,
-): ReadonlyArray<Scenario> => {
-  return [...scenarios, newScenario]; // Returns new array
+const addItem = (
+  items: ReadonlyArray<Item>,
+  newItem: Item,
+): ReadonlyArray<Item> => {
+  return [...items, newItem]; // Returns new array
 };
 
 // ❌ WRONG - Impure function (mutates)
-const addScenario = (scenarios: Scenario[], newScenario: Scenario): void => {
-  scenarios.push(newScenario); // Mutates input!
+const addItem = (items: Item[], newItem: Item): void => {
+  items.push(newItem); // Mutates input!
 };
 ```
 
@@ -617,16 +568,16 @@ const addScenario = (scenarios: Scenario[], newScenario: Scenario): void => {
 
 ```typescript
 // ✅ CORRECT - Immutable update
-const updateScenario = (
-  scenario: Scenario,
-  updates: Partial<Scenario>,
-): Scenario => {
-  return { ...scenario, ...updates }; // New object
+const updateUser = (
+  user: User,
+  updates: Partial<User>,
+): User => {
+  return { ...user, ...updates }; // New object
 };
 
 // ❌ WRONG - Mutation
-const updateScenario = (scenario: Scenario, updates: Partial<Scenario>): void => {
-  Object.assign(scenario, updates); // Mutates!
+const updateUser = (user: User, updates: Partial<User>): void => {
+  Object.assign(user, updates); // Mutates!
 };
 ```
 
@@ -638,14 +589,14 @@ const updateScenario = (scenario: Scenario, updates: Partial<Scenario>): void =>
 
 ```typescript
 // ✅ CORRECT - Composed functions
-const validate = (input: unknown) => ScenarioSchema.parse(input);
-const register = (scenario: Scenario) => registry.register(scenario);
-const registerScenario = (input: unknown) => register(validate(input));
+const validate = (input: unknown) => UserSchema.parse(input);
+const saveToDatabase = (user: User) => database.save(user);
+const createUser = (input: unknown) => saveToDatabase(validate(input));
 
 // ❌ WRONG - Complex monolithic function
-const registerScenario = (input: unknown) => {
+const createUser = (input: unknown) => {
   if (typeof input !== 'object' || !input) throw new Error('Invalid');
-  if (!('id' in input)) throw new Error('Missing id');
+  if (!('email' in input)) throw new Error('Missing email');
   // ... 50 more lines of validation and registration
 };
 ```
@@ -658,14 +609,14 @@ const registerScenario = (input: unknown) => {
 
 ```typescript
 // ✅ CORRECT - Functional array methods
-const activeScenarios = scenarios.filter(s => s.active);
-const scenarioIds = scenarios.map(s => s.id);
+const activeUsers = users.filter(u => u.active);
+const userEmails = users.map(u => u.email);
 
 // ❌ WRONG - Imperative loops
-const activeScenarios = [];
-for (const s of scenarios) {
-  if (s.active) {
-    activeScenarios.push(s);
+const activeUsers = [];
+for (const u of users) {
+  if (u.active) {
+    activeUsers.push(u);
   }
 }
 ```
