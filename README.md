@@ -659,6 +659,15 @@ Agents can be invoked implicitly (Claude detects when to use them) or explicitly
 curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
 ```
 
+**One-liner with options** (use `bash -s --` to pass arguments):
+```bash
+# Install with OpenCode support
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s -- --with-opencode
+
+# Install specific version
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s -- --version v2.0.0
+```
+
 **Or download and run:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh -o install-claude.sh
@@ -672,6 +681,7 @@ chmod +x install-claude.sh
 ./install-claude.sh --claude-only      # Install only CLAUDE.md
 ./install-claude.sh --skills-only      # Install only skills
 ./install-claude.sh --no-agents        # Install without agents
+./install-claude.sh --with-opencode    # Also install OpenCode configuration
 ./install-claude.sh --version v2.0.0   # Install v2.0.0 (modular docs)
 ./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
 ```
@@ -732,11 +742,16 @@ OpenCode doesn't automatically read `~/.claude/` files. Instead, it uses a confi
 **Installation:**
 
 ```bash
-# Install with OpenCode support
+# One-liner with OpenCode support
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s -- --with-opencode
+
+# Or download and run with options
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh -o install-claude.sh
+chmod +x install-claude.sh
 ./install-claude.sh --with-opencode
 
-# Or install OpenCode config only (if you already have CLAUDE.md installed)
-./install-claude.sh --opencode-only
+# Install OpenCode config only (if you already have CLAUDE.md installed)
+curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s -- --opencode-only
 ```
 
 **What gets installed:**
