@@ -139,7 +139,7 @@ echo -e "${BLUE}Creating directories...${NC}"
 mkdir -p ~/.claude/agents ~/.claude/skills ~/.claude/commands
 mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
-mkdir -p ~/.claude/skills/front-end-testing
+mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing
 echo -e "${GREEN}✓${NC} Directories created"
 echo ""
 
@@ -167,6 +167,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "expectations/SKILL.md"
     "planning/SKILL.md"
     "front-end-testing/SKILL.md"
+    "react-testing/SKILL.md"
   )
 
   for skill in "${skills[@]}"; do
@@ -238,7 +239,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (8 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing)"
+  echo -e "  ${GREEN}✓${NC} skills/ (9 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)"
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then

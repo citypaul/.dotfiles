@@ -1,11 +1,11 @@
 ---
 name: front-end-testing
-description: React Testing Library patterns for behavior-driven UI testing. Use when testing React components.
+description: DOM Testing Library patterns for behavior-driven UI testing. Framework-agnostic patterns for testing user interfaces. Use when testing any front-end application.
 ---
 
-# Front-End Testing with React Testing Library
+# Front-End Testing with DOM Testing Library
 
-This skill focuses exclusively on React and Testing Library specifics. For TDD workflow (RED-GREEN-REFACTOR), load the `tdd` skill. For general testing patterns (factories, public API testing), load the `testing` skill.
+This skill focuses on framework-agnostic DOM Testing Library patterns that work across React, Vue, Svelte, and other frameworks. For React-specific patterns (renderHook, context, components), load the `react-testing` skill. For TDD workflow (RED-GREEN-REFACTOR), load the `tdd` skill. For general testing patterns (factories, public API testing), load the `testing` skill.
 
 ---
 
@@ -17,7 +17,7 @@ Testing Library exists to solve a fundamental problem: tests that break when you
 
 ### Two Types of Users
 
-Your components have two users:
+Your UI components have two users:
 1. **End-users**: Interact through the DOM (clicks, typing, reading text)
 2. **Developers**: You, refactoring implementation
 
@@ -26,47 +26,55 @@ Your components have two users:
 ### Why This Matters
 
 **False negatives** (tests break on refactor):
-```tsx
+```typescript
 // ❌ WRONG - Testing implementation (will break on refactor)
-it('should update state', () => {
-  const { result } = renderHook(() => useState(0));
-  act(() => result.current[1](5));
-  expect(result.current[0]).toBe(5); // Coupled to state implementation
+it('should update internal state', () => {
+  const component = new CounterComponent();
+  component.setState({ count: 5 }); // Coupled to state implementation
+  expect(component.state.count).toBe(5);
 });
 ```
 
 **False positives** (bugs pass tests):
-```tsx
+```typescript
 // ❌ WRONG - Testing wrong thing
 it('should render button', () => {
-  render(<LoginForm />);
+  render('<button data-testid="submit-btn">Submit</button>');
   expect(screen.getByTestId('submit-btn')).toBeInTheDocument();
   // Button exists but onClick is broken - test passes!
 });
 ```
 
 **Correct approach** (behavior-driven):
-```tsx
+```typescript
 // ✅ CORRECT - Testing user-visible behavior
 it('should submit form when user clicks submit', async () => {
   const handleSubmit = vi.fn();
   const user = userEvent.setup();
 
-  render(<LoginForm onSubmit={handleSubmit} />);
+  render(`
+    <form id="login-form">
+      <label>Email: <input name="email" /></label>
+      <label>Password: <input name="password" type="password" /></label>
+      <button type="submit">Submit</button>
+    </form>
+  `);
+
+  document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleSubmit(new FormData(e.target));
+  });
 
   await user.type(screen.getByLabelText(/email/i), 'test@example.com');
   await user.type(screen.getByLabelText(/password/i), 'password123');
   await user.click(screen.getByRole('button', { name: /submit/i }));
 
-  expect(handleSubmit).toHaveBeenCalledWith({
-    email: 'test@example.com',
-    password: 'password123',
-  });
+  expect(handleSubmit).toHaveBeenCalled();
 });
 ```
 
 This test:
-- Survives refactoring (state → reducer → context)
+- Survives refactoring (state → signals → stores)
 - Tests the contract (what users see)
 - Catches real bugs (broken onClick, validation errors)
 
@@ -74,7 +82,7 @@ This test:
 
 ## Query Selection Priority
 
-**Most critical React Testing Library skill: choosing the right query.**
+**Most critical Testing Library skill: choosing the right query.**
 
 ### Priority Order
 
@@ -115,14 +123,14 @@ Use queries in this order (accessibility-first):
 Three variants for every query:
 
 **`getBy*`** - Element must exist (throws if not found)
-```tsx
+```typescript
 // ✅ Use when asserting element EXISTS
 const button = screen.getByRole('button', { name: /submit/i });
 expect(button).toBeDisabled();
 ```
 
 **`queryBy*`** - Returns null if not found
-```tsx
+```typescript
 // ✅ Use when asserting element DOESN'T exist
 expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
@@ -131,7 +139,7 @@ expect(() => screen.getByRole('dialog')).toThrow(); // Ugly!
 ```
 
 **`findBy*`** - Async, waits for element to appear
-```tsx
+```typescript
 // ✅ Use when element appears after async operation
 const message = await screen.findByText(/success/i);
 ```
@@ -139,48 +147,48 @@ const message = await screen.findByText(/success/i);
 ### Common Mistakes
 
 ❌ **Using `container.querySelector`**
-```tsx
+```typescript
 const button = container.querySelector('.submit-button'); // DOM implementation detail
 ```
 
 ✅ **CORRECT - Query by accessible role**
-```tsx
+```typescript
 const button = screen.getByRole('button', { name: /submit/i }); // User-facing
 ```
 
 ---
 
 ❌ **Using `getByTestId` when role available**
-```tsx
+```typescript
 screen.getByTestId('submit-button'); // Not how users find button
 ```
 
 ✅ **CORRECT - Query by role**
-```tsx
+```typescript
 screen.getByRole('button', { name: /submit/i }); // How screen readers find it
 ```
 
 ---
 
 ❌ **Not using accessible names**
-```tsx
+```typescript
 screen.getByRole('button'); // Which button? Multiple on page!
 ```
 
 ✅ **CORRECT - Specify accessible name**
-```tsx
+```typescript
 screen.getByRole('button', { name: /submit/i }); // Specific button
 ```
 
 ---
 
 ❌ **Using getBy to assert non-existence**
-```tsx
+```typescript
 expect(() => screen.getByText(/error/i)).toThrow(); // Awkward
 ```
 
 ✅ **CORRECT - Use queryBy**
-```tsx
+```typescript
 expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
 ```
 
@@ -198,13 +206,13 @@ expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
 - Respects browser timing and order
 - Catches more bugs
 
-```tsx
+```typescript
 // ❌ WRONG - fireEvent (incomplete simulation)
 fireEvent.change(input, { target: { value: 'test' } });
 fireEvent.click(button);
 ```
 
-```tsx
+```typescript
 // ✅ CORRECT - userEvent (realistic simulation)
 const user = userEvent.setup();
 await user.type(input, 'test');
@@ -219,18 +227,17 @@ await user.click(button);
 
 **Modern best practice (2025):**
 
-```tsx
+```typescript
 // ✅ CORRECT - Setup per test
 it('should handle user input', async () => {
   const user = userEvent.setup(); // Fresh instance per test
-  render(<MyComponent />);
+  render('<input aria-label="Email" />');
 
   await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-  await user.click(screen.getByRole('button'));
 });
 ```
 
-```tsx
+```typescript
 // ❌ WRONG - Setup in beforeEach
 let user;
 beforeEach(() => {
@@ -247,24 +254,24 @@ it('test 1', async () => {
 ### Common Interactions
 
 **Clicking:**
-```tsx
+```typescript
 const user = userEvent.setup();
 await user.click(screen.getByRole('button', { name: /submit/i }));
 ```
 
 **Typing:**
-```tsx
+```typescript
 await user.type(screen.getByLabelText(/email/i), 'test@example.com');
 ```
 
 **Keyboard:**
-```tsx
+```typescript
 await user.keyboard('{Enter}'); // Press Enter
 await user.keyboard('{Shift>}A{/Shift}'); // Shift+A
 ```
 
 **Selecting options:**
-```tsx
+```typescript
 await user.selectOptions(
   screen.getByLabelText(/country/i),
   'USA'
@@ -272,7 +279,7 @@ await user.selectOptions(
 ```
 
 **Clearing input:**
-```tsx
+```typescript
 await user.clear(screen.getByLabelText(/search/i));
 ```
 
@@ -280,13 +287,13 @@ await user.clear(screen.getByLabelText(/search/i));
 
 ## Async Testing Patterns
 
-React is async by nature (state updates, API calls, suspense). Testing Library provides utilities for async scenarios.
+UI frameworks are async by nature (state updates, API calls, suspense). Testing Library provides utilities for async scenarios.
 
 ### findBy Queries
 
 **Built-in async queries** (combines `getBy` + `waitFor`):
 
-```tsx
+```typescript
 // ✅ CORRECT - Wait for element to appear
 const message = await screen.findByText(/success/i);
 
@@ -299,7 +306,7 @@ const message = await screen.findByText(/success/i);
 - API responses render content
 
 **Configuration:**
-```tsx
+```typescript
 // Default: 1000ms timeout
 const message = await screen.findByText(/success/i);
 
@@ -311,7 +318,7 @@ const message = await screen.findByText(/success/i, {}, { timeout: 3000 });
 
 **For complex conditions** that `findBy` can't handle:
 
-```tsx
+```typescript
 // ✅ CORRECT - Complex assertion
 await waitFor(() => {
   expect(screen.getByText(/loaded/i)).toBeInTheDocument();
@@ -330,7 +337,7 @@ await waitFor(() => {
 **Common mistakes:**
 
 ❌ **Side effects in waitFor**
-```tsx
+```typescript
 await waitFor(() => {
   fireEvent.click(button); // Side effect! Will click multiple times
   expect(result).toBe(true);
@@ -338,7 +345,7 @@ await waitFor(() => {
 ```
 
 ✅ **CORRECT - Only assertions**
-```tsx
+```typescript
 fireEvent.click(button); // Outside waitFor
 await waitFor(() => {
   expect(result).toBe(true); // Only assertion
@@ -348,32 +355,30 @@ await waitFor(() => {
 ---
 
 ❌ **Multiple assertions**
-```tsx
+```typescript
 await waitFor(() => {
   expect(screen.getByText(/name/i)).toBeInTheDocument();
   expect(screen.getByText(/email/i)).toBeInTheDocument(); // Might not retry both
 });
 ```
 
-✅ **CORRECT - Single assertion**
-```tsx
+✅ **CORRECT - Single assertion per waitFor**
+```typescript
 await waitFor(() => {
   expect(screen.getByText(/name/i)).toBeInTheDocument();
 });
-await waitFor(() => {
-  expect(screen.getByText(/email/i)).toBeInTheDocument();
-});
+expect(screen.getByText(/email/i)).toBeInTheDocument();
 ```
 
 ---
 
 ❌ **Wrapping findBy in waitFor**
-```tsx
+```typescript
 await waitFor(() => screen.findByText(/success/i)); // Redundant!
 ```
 
 ✅ **CORRECT - findBy already waits**
-```tsx
+```typescript
 await screen.findByText(/success/i);
 ```
 
@@ -381,7 +386,7 @@ await screen.findByText(/success/i);
 
 **For disappearance scenarios:**
 
-```tsx
+```typescript
 // ✅ CORRECT - Wait for loading spinner to disappear
 await waitForElementToBeRemoved(() => screen.queryByText(/loading/i));
 
@@ -394,11 +399,20 @@ await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
 ### Common Patterns
 
 **Loading states:**
-```tsx
-render(<UserProfile userId="123" />);
+```typescript
+render('<div id="container"></div>');
+
+// Simulate async data loading
+const container = document.getElementById('container');
+container.innerHTML = '<p>Loading...</p>';
 
 // Initially loading
 expect(screen.getByText(/loading/i)).toBeInTheDocument();
+
+// Simulate data load
+setTimeout(() => {
+  container.innerHTML = '<p>John Doe</p>';
+}, 100);
 
 // Wait for data
 await screen.findByText(/john doe/i);
@@ -408,124 +422,38 @@ expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
 ```
 
 **API responses:**
-```tsx
+```typescript
 const user = userEvent.setup();
-render(<SearchForm />);
+render(`
+  <form>
+    <label>Search: <input name="search" /></label>
+    <button type="submit">Search</button>
+    <ul id="results"></ul>
+  </form>
+`);
 
 await user.type(screen.getByLabelText(/search/i), 'react');
 await user.click(screen.getByRole('button', { name: /search/i }));
 
-// Wait for results
-const results = await screen.findAllByRole('listitem');
-expect(results).toHaveLength(10);
+// Wait for results (after API response)
+await waitFor(() => {
+  expect(screen.getAllByRole('listitem')).toHaveLength(10);
+});
 ```
 
 **Debounced inputs:**
-```tsx
+```typescript
 const user = userEvent.setup();
-render(<AutocompleteInput />);
+render(`
+  <label>Search: <input id="search" /></label>
+  <ul id="suggestions"></ul>
+`);
 
 await user.type(screen.getByLabelText(/search/i), 'react');
 
 // Wait for debounced suggestions
 await screen.findByText(/react testing library/i);
 ```
-
----
-
-## Testing Hooks and Context
-
-### renderHook API
-
-**Built into React Testing Library** (since v13):
-
-```tsx
-import { renderHook } from '@testing-library/react';
-
-it('should toggle value', () => {
-  const { result } = renderHook(() => useToggle(false));
-
-  expect(result.current.value).toBe(false);
-
-  act(() => {
-    result.current.toggle();
-  });
-
-  expect(result.current.value).toBe(true);
-});
-```
-
-**Pattern:**
-- `result.current` - Current return value of hook
-- `act()` - Wrap state updates
-- `rerender()` - Re-run hook with new props
-
-### wrapper Option
-
-**For context providers:**
-
-```tsx
-// ✅ CORRECT - Wrap hook in provider
-const { result } = renderHook(() => useAuth(), {
-  wrapper: ({ children }) => (
-    <AuthProvider>
-      {children}
-    </AuthProvider>
-  ),
-});
-
-expect(result.current.user).toBeNull();
-
-act(() => {
-  result.current.login({ email: 'test@example.com' });
-});
-
-expect(result.current.user).toEqual({ email: 'test@example.com' });
-```
-
-**Multiple providers:**
-```tsx
-const AllProviders = ({ children }) => (
-  <AuthProvider>
-    <ThemeProvider>
-      <RouterProvider>
-        {children}
-      </RouterProvider>
-    </ThemeProvider>
-  </AuthProvider>
-);
-
-const { result } = renderHook(() => useMyHook(), {
-  wrapper: AllProviders,
-});
-```
-
-### act() Warnings
-
-**"When testing, code that causes React state updates should be wrapped in act()"**
-
-**Usually means:** Missing `await`
-
-```tsx
-// ❌ WRONG - Missing await (triggers act warning)
-user.click(button);
-expect(screen.getByText(/clicked/i)).toBeInTheDocument();
-```
-
-```tsx
-// ✅ CORRECT - Await user event
-await user.click(button);
-expect(screen.getByText(/clicked/i)).toBeInTheDocument();
-```
-
-**Modern RTL handles act() automatically.** You rarely need manual `act()`:
-- `userEvent` methods → auto-wrapped
-- `fireEvent` → auto-wrapped
-- `waitFor`, `findBy` → auto-wrapped
-
-**When you DO need manual `act()`:**
-- Custom hook state updates (`renderHook`)
-- Direct state mutations (rare, usually bad practice)
 
 ---
 
@@ -541,14 +469,14 @@ expect(screen.getByText(/clicked/i)).toBeInTheDocument();
 - No client-specific mocking logic
 - Tests real request logic
 
-```tsx
+```typescript
 // ❌ WRONG - Mocking fetch implementation
 vi.spyOn(global, 'fetch').mockResolvedValue({
   json: async () => ({ users: [...] }),
 }); // Tight coupling, won't work in Storybook
 ```
 
-```tsx
+```typescript
 // ✅ CORRECT - MSW intercepts at network level
 // Works in tests, Storybook, dev server
 http.get('/api/users', () => {
@@ -560,7 +488,7 @@ http.get('/api/users', () => {
 
 **In test setup file:**
 
-```tsx
+```typescript
 // test-setup.ts
 import { setupServer } from 'msw/node';
 import { handlers } from './mocks/handlers';
@@ -574,7 +502,7 @@ afterAll(() => server.close());
 
 **In handlers file:**
 
-```tsx
+```typescript
 // mocks/handlers.ts
 import { http, HttpResponse } from 'msw';
 
@@ -594,7 +522,7 @@ export const handlers = [
 
 **Override handlers for specific tests:**
 
-```tsx
+```typescript
 it('should handle API error', async () => {
   // Override for this test only
   server.use(
@@ -606,7 +534,13 @@ it('should handle API error', async () => {
     })
   );
 
-  render(<UserList />);
+  render('<div id="user-list"></div>');
+
+  // Simulate component fetching users
+  fetch('/api/users').then(() => {
+    document.getElementById('user-list').innerHTML =
+      '<p>Failed to load users</p>';
+  });
 
   await screen.findByText(/failed to load users/i);
 });
@@ -626,7 +560,7 @@ it('should handle API error', async () => {
 2. **Improves app accessibility** - Tests force accessible markup
 3. **Refactor-friendly** - Coupled to user experience, not implementation
 
-```tsx
+```typescript
 // ❌ WRONG - Implementation detail
 screen.getByTestId('user-menu');
 
@@ -641,22 +575,24 @@ If accessible query fails, **your app has an accessibility issue.**
 **When to add ARIA:**
 
 ✅ **Custom components** (where semantic HTML unavailable):
-```tsx
+```html
 <div role="dialog" aria-label="Confirmation Dialog">
   <h2>Are you sure?</h2>
   ...
 </div>
+```
 
-// Query
+Query:
+```typescript
 screen.getByRole('dialog', { name: /confirmation/i });
 ```
 
 ❌ **DON'T add to semantic HTML** (redundant):
-```tsx
-// ❌ WRONG - Semantic HTML already has role
+```html
+<!-- ❌ WRONG - Semantic HTML already has role -->
 <button role="button">Submit</button>
 
-// ✅ CORRECT - Semantic HTML is enough
+<!-- ✅ CORRECT - Semantic HTML is enough -->
 <button>Submit</button>
 ```
 
@@ -664,14 +600,14 @@ screen.getByRole('dialog', { name: /confirmation/i });
 
 **Always prefer semantic HTML over ARIA:**
 
-```tsx
-// ❌ WRONG - Custom element + ARIA
-<div role="button" onClick={handleClick} tabIndex={0}>
+```html
+<!-- ❌ WRONG - Custom element + ARIA -->
+<div role="button" onclick="handleClick()" tabindex="0">
   Submit
 </div>
 
-// ✅ CORRECT - Semantic HTML
-<button onClick={handleClick}>
+<!-- ✅ CORRECT - Semantic HTML -->
+<button onclick="handleClick()">
   Submit
 </button>
 ```
@@ -684,19 +620,19 @@ screen.getByRole('dialog', { name: /confirmation/i });
 
 ---
 
-## React Testing Anti-Patterns
+## Testing Library Anti-Patterns
 
 ### 1. Not using `screen` object
 
 ❌ **WRONG - Query from render result**
-```tsx
-const { getByRole } = render(<MyComponent />);
+```typescript
+const { getByRole } = render('<button>Submit</button>');
 const button = getByRole('button');
 ```
 
 ✅ **CORRECT - Use screen**
-```tsx
-render(<MyComponent />);
+```typescript
+render('<button>Submit</button>');
 const button = screen.getByRole('button');
 ```
 
@@ -707,14 +643,14 @@ const button = screen.getByRole('button');
 ### 2. Using querySelector
 
 ❌ **WRONG - DOM implementation**
-```tsx
-const { container } = render(<MyComponent />);
+```typescript
+const { container } = render('<button class="submit-btn">Submit</button>');
 const button = container.querySelector('.submit-btn');
 ```
 
 ✅ **CORRECT - Accessible query**
-```tsx
-render(<MyComponent />);
+```typescript
+render('<button>Submit</button>');
 const button = screen.getByRole('button', { name: /submit/i });
 ```
 
@@ -722,16 +658,16 @@ const button = screen.getByRole('button', { name: /submit/i });
 
 ### 3. Testing implementation details
 
-❌ **WRONG - Component internals**
-```tsx
-const { result } = renderHook(() => useCounter());
-expect(result.current.count).toBe(0); // Internal state
+❌ **WRONG - Internal state**
+```typescript
+const component = new Component();
+expect(component._internalState).toBe('value'); // Private implementation
 ```
 
 ✅ **CORRECT - User-visible behavior**
-```tsx
-render(<Counter />);
-expect(screen.getByText(/count: 0/i)).toBeInTheDocument();
+```typescript
+render('<div id="output"></div>');
+expect(screen.getByText(/value/i)).toBeInTheDocument();
 ```
 
 ---
@@ -739,13 +675,13 @@ expect(screen.getByText(/count: 0/i)).toBeInTheDocument();
 ### 4. Not using jest-dom matchers
 
 ❌ **WRONG - Manual assertions**
-```tsx
+```typescript
 expect(button.disabled).toBe(true);
 expect(element.classList.contains('active')).toBe(true);
 ```
 
 ✅ **CORRECT - jest-dom matchers**
-```tsx
+```typescript
 expect(button).toBeDisabled();
 expect(element).toHaveClass('active');
 ```
@@ -757,14 +693,14 @@ expect(element).toHaveClass('active');
 ### 5. Manual cleanup() calls
 
 ❌ **WRONG - Manual cleanup**
-```tsx
+```typescript
 afterEach(() => {
-  cleanup(); // Automatic since RTL 9!
+  cleanup(); // Automatic in modern Testing Library!
 });
 ```
 
 ✅ **CORRECT - No cleanup needed**
-```tsx
+```typescript
 // Cleanup happens automatically
 ```
 
@@ -773,47 +709,26 @@ afterEach(() => {
 ### 6. Wrong assertion methods
 
 ❌ **WRONG - Property access**
-```tsx
+```typescript
 expect(input.value).toBe('test');
 expect(checkbox.checked).toBe(true);
 ```
 
 ✅ **CORRECT - jest-dom matchers**
-```tsx
+```typescript
 expect(input).toHaveValue('test');
 expect(checkbox).toBeChecked();
 ```
 
 ---
 
-### 7. Unnecessary act() wrapping
-
-❌ **WRONG - Manual act() everywhere**
-```tsx
-act(() => {
-  render(<MyComponent />);
-});
-
-await act(async () => {
-  await user.click(button);
-});
-```
-
-✅ **CORRECT - RTL handles it**
-```tsx
-render(<MyComponent />);
-await user.click(button);
-```
-
----
-
-### 8. beforeEach render pattern
+### 7. beforeEach render pattern
 
 ❌ **WRONG - Shared render in beforeEach**
-```tsx
+```typescript
 let button;
 beforeEach(() => {
-  render(<MyComponent />);
+  render('<button>Submit</button>');
   button = screen.getByRole('button'); // Shared state
 });
 
@@ -823,16 +738,16 @@ it('test 1', () => {
 ```
 
 ✅ **CORRECT - Factory function per test**
-```tsx
-const renderComponent = () => {
-  render(<MyComponent />);
+```typescript
+const renderButton = () => {
+  render('<button>Submit</button>');
   return {
     button: screen.getByRole('button'),
   };
 };
 
 it('test 1', () => {
-  const { button } = renderComponent(); // Fresh state
+  const { button } = renderButton(); // Fresh state
 });
 ```
 
@@ -840,10 +755,10 @@ For factory patterns, see `testing` skill.
 
 ---
 
-### 9. Multiple assertions in waitFor
+### 8. Multiple assertions in waitFor
 
 ❌ **WRONG - Multiple assertions**
-```tsx
+```typescript
 await waitFor(() => {
   expect(screen.getByText(/name/i)).toBeInTheDocument();
   expect(screen.getByText(/email/i)).toBeInTheDocument();
@@ -851,7 +766,7 @@ await waitFor(() => {
 ```
 
 ✅ **CORRECT - Single assertion per waitFor**
-```tsx
+```typescript
 await waitFor(() => {
   expect(screen.getByText(/name/i)).toBeInTheDocument();
 });
@@ -860,10 +775,10 @@ expect(screen.getByText(/email/i)).toBeInTheDocument();
 
 ---
 
-### 10. Side effects in waitFor
+### 9. Side effects in waitFor
 
 ❌ **WRONG - Mutation in callback**
-```tsx
+```typescript
 await waitFor(() => {
   fireEvent.click(button); // Clicks multiple times!
   expect(result).toBe(true);
@@ -871,7 +786,7 @@ await waitFor(() => {
 ```
 
 ✅ **CORRECT - Side effects outside**
-```tsx
+```typescript
 fireEvent.click(button);
 await waitFor(() => {
   expect(result).toBe(true);
@@ -880,63 +795,63 @@ await waitFor(() => {
 
 ---
 
-### 11. Exact string matching
+### 10. Exact string matching
 
 ❌ **WRONG - Fragile exact match**
-```tsx
+```typescript
 screen.getByText('Welcome, John Doe'); // Breaks on whitespace change
 ```
 
 ✅ **CORRECT - Regex for flexibility**
-```tsx
+```typescript
 screen.getByText(/welcome.*john doe/i);
 ```
 
 ---
 
-### 12. Wrong query variant for assertion
+### 11. Wrong query variant for assertion
 
 ❌ **WRONG - getBy for non-existence**
-```tsx
+```typescript
 expect(() => screen.getByText(/error/i)).toThrow();
 ```
 
 ✅ **CORRECT - queryBy**
-```tsx
+```typescript
 expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
 ```
 
 ---
 
-### 13. Wrapping findBy in waitFor
+### 12. Wrapping findBy in waitFor
 
 ❌ **WRONG - Redundant**
-```tsx
+```typescript
 await waitFor(() => screen.findByText(/success/i));
 ```
 
 ✅ **CORRECT - findBy already waits**
-```tsx
+```typescript
 await screen.findByText(/success/i);
 ```
 
 ---
 
-### 14. Using testId when role available
+### 13. Using testId when role available
 
 ❌ **WRONG - testId**
-```tsx
+```typescript
 screen.getByTestId('submit-button');
 ```
 
 ✅ **CORRECT - Role**
-```tsx
+```typescript
 screen.getByRole('button', { name: /submit/i });
 ```
 
 ---
 
-### 15. Not installing ESLint plugins
+### 14. Not installing ESLint plugins
 
 **Install these plugins:**
 ```bash
@@ -944,10 +859,11 @@ npm install -D eslint-plugin-testing-library eslint-plugin-jest-dom
 ```
 
 **.eslintrc.js:**
-```js
+```javascript
 {
   extends: [
-    'plugin:testing-library/react',
+    'plugin:testing-library/dom', // For framework-agnostic
+    // OR 'plugin:testing-library/react' for React
     'plugin:jest-dom/recommended',
   ],
 }
@@ -957,95 +873,9 @@ npm install -D eslint-plugin-testing-library eslint-plugin-jest-dom
 
 ---
 
-## Component Testing Patterns
-
-### Testing Form Submissions
-
-```tsx
-it('should submit form with user input', async () => {
-  const handleSubmit = vi.fn();
-  const user = userEvent.setup();
-
-  render(<LoginForm onSubmit={handleSubmit} />);
-
-  await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-  await user.type(screen.getByLabelText(/password/i), 'password123');
-  await user.click(screen.getByRole('button', { name: /submit/i }));
-
-  expect(handleSubmit).toHaveBeenCalledWith({
-    email: 'test@example.com',
-    password: 'password123',
-  });
-});
-```
-
-### Testing Controlled Inputs
-
-```tsx
-it('should update input value as user types', async () => {
-  const user = userEvent.setup();
-
-  render(<SearchInput />);
-
-  const input = screen.getByLabelText(/search/i);
-
-  await user.type(input, 'react');
-
-  expect(input).toHaveValue('react');
-});
-```
-
-### Testing Conditional Rendering
-
-```tsx
-it('should show error when validation fails', async () => {
-  const user = userEvent.setup();
-
-  render(<RegistrationForm />);
-
-  // Submit empty form
-  await user.click(screen.getByRole('button', { name: /submit/i }));
-
-  // Error appears
-  expect(screen.getByText(/email is required/i)).toBeInTheDocument();
-});
-```
-
-### Testing Error/Loading States
-
-```tsx
-it('should show loading then error state', async () => {
-  server.use(
-    http.get('/api/users', () => {
-      return HttpResponse.json({ error: 'Failed' }, { status: 500 });
-    })
-  );
-
-  render(<UserList />);
-
-  // Loading state
-  expect(screen.getByText(/loading/i)).toBeInTheDocument();
-
-  // Error state (after loading)
-  await screen.findByText(/failed to load users/i);
-
-  // Loading gone
-  expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
-});
-```
-
-**For test factory patterns**, see `testing` skill:
-```tsx
-// Reference: See `testing` skill for factory patterns
-const user = getMockUser({ role: 'admin' });
-render(<Dashboard user={user} />);
-```
-
----
-
 ## Summary Checklist
 
-Before merging component tests, verify:
+Before merging UI tests, verify:
 
 - [ ] Using `getByRole` as first choice for queries
 - [ ] Using `userEvent` with `setup()` (not `fireEvent`)
@@ -1053,9 +883,9 @@ Before merging component tests, verify:
 - [ ] Using `findBy*` for async elements (loading, API responses)
 - [ ] Using `jest-dom` matchers (`toBeInTheDocument`, `toBeDisabled`, etc.)
 - [ ] Testing behavior users see, not implementation details
-- [ ] ESLint plugins installed (`@testing-library/eslint-plugin-testing-library`, `@testing-library/eslint-plugin-jest-dom`)
-- [ ] No manual `cleanup()` calls (automatic since RTL 9)
-- [ ] Context wrapped via `wrapper` option in `renderHook`
+- [ ] ESLint plugins installed (`eslint-plugin-testing-library`, `eslint-plugin-jest-dom`)
+- [ ] No manual `cleanup()` calls (automatic)
 - [ ] MSW for API mocking (not fetch/axios mocks)
 - [ ] Following TDD workflow (see `tdd` skill)
 - [ ] Using test factories for data (see `testing` skill)
+- [ ] For framework-specific patterns (React hooks, context, components), see `react-testing` skill
