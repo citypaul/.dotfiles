@@ -202,6 +202,7 @@ if [[ "$INSTALL_COMMANDS" == true ]]; then
 
   commands=(
     "pr.md"
+    "startup.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -271,7 +272,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} commands/ (1 slash command: /pr)"
+  echo -e "  ${GREEN}✓${NC} commands/ (2 slash commands: /pr, /startup)"
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
@@ -297,8 +298,8 @@ echo ""
 echo -e "  1. Verify installation:"
 echo -e "     ${YELLOW}ls -la ~/.claude/${NC}"
 echo ""
-echo -e "  2. Test with Claude Code:"
-echo -e "     Open any project and use: ${YELLOW}/memory${NC}"
+echo -e "  2. Load all skills and agents at session start:"
+echo -e "     ${YELLOW}/startup${NC}"
 echo ""
 echo -e "  3. Try the /pr command:"
 echo -e "     ${YELLOW}/pr${NC}"

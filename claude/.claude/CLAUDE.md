@@ -7,6 +7,8 @@
 > - **Skills**: Detailed patterns loaded on-demand (tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
+> **Quick Start:** Run `/startup` at the beginning of a session to load all skills and agents into context.
+>
 > **Previous versions:**
 > - v2.0.0: Modular with @docs/ imports (~3000+ lines always loaded)
 > - v1.0.0: Single monolithic file (1,818 lines)
@@ -106,6 +108,51 @@ For significant work, load the `planning` skill for three-document model (PLAN.m
 For detailed TDD workflow, load the `tdd` skill.
 For refactoring methodology, load the `refactoring` skill.
 For detailed guidance on expectations and documentation, load the `expectations` skill.
+
+## Loading Skills and Agents
+
+Skills and agents are loaded on-demand to optimize context efficiency. You have two options:
+
+### Option 1: Load Everything at Once (Recommended for intensive sessions)
+
+Run the `/startup` command at the beginning of your session:
+
+```
+/startup
+```
+
+This loads all skills and agents into context automatically.
+
+### Option 2: Load Specific Skills (Recommended for focused work)
+
+Request specific skills as needed:
+
+```
+Load the tdd and testing skills
+```
+
+**Available Skills:**
+- `tdd` - RED-GREEN-REFACTOR workflow
+- `testing` - Behavior-driven testing patterns
+- `react-testing` - React Testing Library patterns
+- `front-end-testing` - Front-end testing strategies
+- `typescript-strict` - TypeScript strict mode patterns
+- `functional` - Functional programming patterns
+- `refactoring` - Safe refactoring methodology
+- `expectations` - Documentation standards
+- `planning` - Three-document model for significant work
+
+**Available Agents:**
+- `tdd-guardian` - TDD compliance verification
+- `ts-enforcer` - TypeScript strictness enforcement
+- `refactor-scan` - Refactoring opportunity analysis
+- `docs-guardian` - Documentation verification
+- `adr` - Architecture Decision Records
+- `learn` - Learning capture
+- `progress-guardian` - Progress tracking with PLAN/WIP/LEARNINGS
+- `use-case-data-patterns` - Use case to data pattern analysis
+
+See `.claude/agents/README.md` for detailed agent documentation.
 
 ## Resources and References
 
