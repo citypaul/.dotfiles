@@ -16,6 +16,69 @@ description: Functional programming patterns with immutable data. Use when writi
 
 ---
 
+## Why Immutability Matters
+
+Immutable data is the foundation of functional programming. Understanding WHY helps you embrace it:
+
+- **Predictable**: Same input always produces same output (no hidden state changes)
+- **Debuggable**: State doesn't change unexpectedly - easier to trace bugs
+- **Testable**: No hidden mutable state makes tests straightforward
+- **React-friendly**: React's reconciliation and memoization optimizations work correctly
+- **Concurrency-safe**: No race conditions when data can't change
+
+**Example of the problem:**
+```typescript
+// ❌ WRONG - Mutation creates unpredictable behavior
+const user = { name: 'Alice', permissions: ['read'] };
+grantPermission(user, 'write'); // Mutates user.permissions internally
+console.log(user.permissions); // ['read', 'write'] - SURPRISE! user changed
+```
+
+```typescript
+// ✅ CORRECT - Immutable approach is predictable
+const user = { name: 'Alice', permissions: ['read'] };
+const updatedUser = grantPermission(user, 'write'); // Returns new object
+console.log(user.permissions); // ['read'] - original unchanged
+console.log(updatedUser.permissions); // ['read', 'write'] - new version
+```
+
+---
+
+## Functional Light
+
+We follow "Functional Light" principles - practical functional patterns without heavy abstractions:
+
+**What we DO:**
+- Pure functions and immutable data
+- Composition and declarative code
+- Array methods over loops
+- Type safety and readonly
+
+**What we DON'T do:**
+- Category theory or monads
+- Heavy FP libraries (fp-ts, Ramda)
+- Over-engineering with abstractions
+- Functional for the sake of functional
+
+**Why:** The goal is **maintainable, testable code** - not academic purity. If a functional pattern makes code harder to understand, don't use it.
+
+**Example - Keep it simple:**
+```typescript
+// ✅ GOOD - Simple, clear, functional
+const activeUsers = users.filter(u => u.active);
+const userNames = activeUsers.map(u => u.name);
+
+// ❌ OVER-ENGINEERED - Unnecessary abstraction
+const compose = <T>(...fns: Array<(arg: T) => T>) => (x: T) =>
+  fns.reduceRight((v, f) => f(v), x);
+const activeUsers = compose(
+  filter((u: User) => u.active),
+  map((u: User) => u.name)
+)(users);
+```
+
+---
+
 ## No Comments / Self-Documenting Code
 
 Code should be clear through naming and structure. Comments indicate unclear code.
@@ -516,16 +579,50 @@ function canProcessOrder(order: Order): boolean {
 
 ## Immutable Array Operations
 
+**Complete catalog of array mutations and their immutable alternatives:**
+
 ```typescript
 // ❌ WRONG - Mutations
-items.push(newItem);
-items.sort();
-items.splice(0, 1);
+items.push(newItem);        // Add to end
+items.pop();                // Remove last
+items.unshift(newItem);     // Add to start
+items.shift();              // Remove first
+items.splice(index, 1);     // Remove at index
+items.reverse();            // Reverse order
+items.sort();               // Sort
+items[i] = newValue;        // Update at index
 
-// ✅ CORRECT - Immutable
-const withNew = [...items, newItem];
-const sorted = [...items].sort();
-const [first, ...rest] = items;
+// ✅ CORRECT - Immutable alternatives
+const withNew = [...items, newItem];           // Add to end
+const withoutLast = items.slice(0, -1);        // Remove last
+const withFirst = [newItem, ...items];         // Add to start
+const withoutFirst = items.slice(1);           // Remove first
+const removed = [...items.slice(0, index),     // Remove at index
+                 ...items.slice(index + 1)];
+const reversed = [...items].reverse();         // Reverse (copy first!)
+const sorted = [...items].sort();              // Sort (copy first!)
+const updated = items.map((item, idx) =>       // Update at index
+  idx === i ? newValue : item
+);
+```
+
+**Common patterns:**
+
+```typescript
+// Filter out specific item
+const withoutItem = items.filter(item => item.id !== targetId);
+
+// Replace specific item
+const replaced = items.map(item =>
+  item.id === targetId ? newItem : item
+);
+
+// Insert at specific position
+const inserted = [
+  ...items.slice(0, index),
+  newItem,
+  ...items.slice(index)
+];
 ```
 
 ---

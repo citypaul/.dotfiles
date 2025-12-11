@@ -46,6 +46,8 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - Tests must document expected business behavior
 - No 1:1 mapping between test files and implementation files
 
+For detailed testing patterns and examples, load the `testing` skill.
+
 ## TypeScript Guidelines
 
 **Core principle**: Strict mode always. Schema-first at trust boundaries, types for internal logic.
@@ -57,6 +59,8 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - Reserve `interface` for behavior contracts only
 - Define schemas first, derive types from them (Zod/Standard Schema)
 - Use schemas at trust boundaries, plain types for internal logic
+
+For detailed TypeScript patterns and rationale, load the `typescript-strict` skill.
 
 ## Code Style
 

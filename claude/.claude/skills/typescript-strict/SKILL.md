@@ -351,13 +351,19 @@ This pattern supports **hexagonal architecture**:
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowUnusedLabels": false
   }
 }
 ```
 
 ### What Each Setting Does
 
+**Core strict flags:**
 - **`strict: true`** - Enables all strict type checking options
 - **`noImplicitAny`** - Error on expressions/declarations with implied `any` type
 - **`strictNullChecks`** - `null` and `undefined` have their own types (not assignable to everything)
@@ -365,6 +371,13 @@ This pattern supports **hexagonal architecture**:
 - **`noUnusedParameters`** - Error on unused function parameters
 - **`noImplicitReturns`** - Error when not all code paths return a value
 - **`noFallthroughCasesInSwitch`** - Error on fallthrough cases in switch statements
+
+**Additional safety flags (CRITICAL):**
+- **`noUncheckedIndexedAccess`** - Array/object access returns `T | undefined` (prevents runtime errors from assuming elements exist)
+- **`exactOptionalPropertyTypes`** - Distinguishes `property?: T` from `property: T | undefined` (more precise types)
+- **`noPropertyAccessFromIndexSignature`** - Requires bracket notation for index signature properties (forces awareness of dynamic access)
+- **`forceConsistentCasingInFileNames`** - Prevents case sensitivity issues across operating systems
+- **`allowUnusedLabels`** - Error on unused labels (catches accidental labels that do nothing)
 
 ### Additional Rules
 
