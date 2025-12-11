@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.1.0
+
+### Minor Changes
+
+- 36fbd1e: Add OpenCode support for using CLAUDE.md guidelines with opencode.ai
+
+  - Added `opencode/.config/opencode/opencode.json` configuration file that loads CLAUDE.md and skills
+  - Added `--with-opencode` and `--opencode-only` flags to install-claude.sh
+  - Updated README.md with OpenCode integration documentation
+
+  OpenCode (https://opencode.ai) is an open source AI coding agent. This configuration allows OpenCode users to use the same CLAUDE.md guidelines and skills that work with Claude Code.
+
+### Patch Changes
+
+- 5227203: Document how to pass arguments to one-liner installation
+
+  - Add `bash -s --` pattern for passing flags to curl-piped scripts
+  - Add `--with-opencode` to the install options list
+  - Update OpenCode installation section with one-liner examples
+
 ## 3.0.1
 
 ### Patch Changes
