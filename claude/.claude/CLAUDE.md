@@ -70,6 +70,8 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - Prefer options objects over positional parameters
 - Use array methods (`map`, `filter`, `reduce`) over loops
 
+For detailed patterns and examples, load the `functional` skill.
+
 ## Development Workflow
 
 **Core principle**: RED-GREEN-REFACTOR in small, known-good increments. TDD is the fundamental practice.
@@ -82,6 +84,8 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - Each increment leaves codebase in working state
 - Capture learnings as they occur, merge at end
 
+For detailed TDD workflow, load the `tdd` skill.
+For refactoring methodology, load the `refactoring` skill.
 For significant work, load the `planning` skill for three-document model (PLAN.md, WIP.md, LEARNINGS.md).
 
 ## Working with Claude
@@ -95,6 +99,8 @@ For significant work, load the `planning` skill for three-document model (PLAN.m
 - Ask "What do I wish I'd known at the start?" after significant changes
 - Document gotchas, patterns, decisions, edge cases while context is fresh
 
+For detailed TDD workflow, load the `tdd` skill.
+For refactoring methodology, load the `refactoring` skill.
 For detailed guidance on expectations and documentation, load the `expectations` skill.
 
 ## Resources and References
