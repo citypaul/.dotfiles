@@ -2,13 +2,38 @@
 "@paulhammond/dotfiles": patch
 ---
 
-# Global Skills Restoration: v2.0.0 → v3.0.0 Complete Recovery
+# Global Skills Restoration: v2.0.0 → v3.0.0 Complete Recovery + Reorganization
 
 **Context**: The v3.0.0 CLAUDE.md refactor successfully reduced the main file from 4,936 to ~350 lines by moving content to skills, but investigation revealed 1,714 lines (48%) of critical guidance was lost rather than moved.
 
-This patch restores all missing content to the global skills system.
+This patch:
+1. Restores all missing content to the global skills system
+2. Reorganizes testing/tdd skills to eliminate duplication
+3. Removes project-specific content to make skills universally applicable
 
 ## Restoration Summary
+
+### testing skill (+381 lines - Previously Missing!)
+
+**The testing skill was completely missing from the dotfiles repo** (69 lines → 425 lines)
+
+- ✅ Core Principle: Test behavior, not implementation
+- ✅ Test Through Public API Only (with detailed examples)
+- ✅ Coverage Through Behavior (how to achieve coverage without testing implementation)
+- ✅ **Test Factory Pattern** (moved from tdd skill - belongs here)
+- ✅ **Coverage Theater Detection** (4 anti-patterns consolidated from both skills)
+- ✅ No 1:1 Mapping Between Tests and Implementation
+- ✅ All examples now generic (removed scenarist-specific content)
+
+### tdd skill Reorganization (581 → 343 lines)
+
+**Focused on TDD workflow, references testing skill for "how to write good tests"**
+
+- ✅ Opening reference to `testing` skill
+- ✅ Removed Test Factory Pattern (moved to testing)
+- ✅ Removed Coverage Theater Detection (consolidated in testing)
+- ✅ References testing skill for anti-patterns
+- ✅ All examples now generic (removed scenarist-specific content)
 
 ### Critical Restorations
 
