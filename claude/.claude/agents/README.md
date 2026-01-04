@@ -54,6 +54,34 @@ This directory contains specifications for specialized Claude Code agents that w
 
 ---
 
+### Code Review Agents
+
+#### `pr-reviewer`
+**Purpose**: Reviews pull requests for TDD compliance, TypeScript strictness, testing quality, and functional patterns.
+
+**Use proactively when**:
+- About to review a PR
+- Creating a PR (self-review)
+- Want guided review process
+
+**Use reactively when**:
+- PR submitted for review
+- Need to analyze specific code changes
+- Evaluating merge readiness
+
+**Core responsibility**: Ensure PRs meet quality standards before merge.
+
+**Review categories**:
+1. TDD Compliance - Was test-first development followed?
+2. Testing Quality - Are tests behavior-focused?
+3. TypeScript Strictness - No `any`, proper types?
+4. Functional Patterns - Immutability, pure functions?
+5. General Quality - Clean code, security, scope?
+
+**Project-specific extensions**: Use `/generate-pr-review` command to create project-specific review automation that combines global rules with project conventions.
+
+---
+
 ### Documentation & Knowledge Agents
 
 #### `docs-guardian`
@@ -193,6 +221,9 @@ progress-guardian (orchestrates)
     ├─► When decisions arise:
     │   └─→ adr (architectural decisions)
     │
+    ├─► Before merge:
+    │   └─→ pr-reviewer (comprehensive PR review)
+    │
     ├─► At end:
     │   ├─→ learn (merge LEARNINGS.md → CLAUDE.md)
     │   ├─→ docs-guardian (update permanent docs)
@@ -232,7 +263,12 @@ progress-guardian (orchestrates)
 6. **End of session**
    - Invoke `progress-guardian`: Update WIP.md, session checkpoint
 
-7. **Feature complete**
+7. **Before creating PR**
+   - Invoke `pr-reviewer`: Self-review changes
+   - Fix any issues found
+   - Create PR using `/pr` command
+
+8. **Feature complete**
    - Invoke `progress-guardian`: Verify all criteria met
    - Review LEARNINGS.md for merge destinations
    - Invoke `learn`: Merge gotchas/patterns → CLAUDE.md
@@ -330,6 +366,7 @@ These agents work together to create a comprehensive development workflow:
 - **Analysis**: use-case-data-patterns maps use cases to implementation patterns
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
 - **Improvement**: refactor-scan optimizes code after tests pass
+- **Review**: pr-reviewer validates PRs before merge
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
 - **Progress**: progress-guardian manages incremental work with three-document model
 
