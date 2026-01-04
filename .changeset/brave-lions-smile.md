@@ -16,9 +16,13 @@ The pr-reviewer agent reviews PRs across five categories:
 4. Functional Patterns - Immutability, pure functions?
 5. General Quality - Clean code, security, scope?
 
-Usage:
-- Invoke the agent during a Claude Code session to review a PR
-- Reviews are posted directly as PR comments or formal GitHub reviews
-- Supports line-specific review comments for detailed feedback
+Design decisions:
+- **Manual invocation only**: Designed for use during Claude Code sessions rather than automated CI/CD pipelines. This saves significant API costs while still providing comprehensive reviews when needed.
+- **Direct GitHub integration**: Posts reviews as PR comments using GitHub MCP tools (add_issue_comment, pull_request_review_write, add_comment_to_pending_review)
 
-For project-specific customization, use `/generate-pr-review` in any project to analyze its tech stack and create a tailored review configuration that extends global rules.
+The `/generate-pr-review` command analyzes multiple sources to create project-specific reviewers:
+- AI/LLM config files (`.cursorrules`, `CLAUDE.md`, `.github/copilot-instructions.md`, `.aider.conf.yml`)
+- Architecture Decision Records (docs/adr/*.md)
+- Project documentation (CONTRIBUTING.md, DEVELOPMENT.md, CODING_STANDARDS.md)
+- Tech stack (package.json, tsconfig.json, eslint configs)
+- Existing code patterns and conventions

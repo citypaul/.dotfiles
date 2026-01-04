@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Eight enforcement agents](claude/.claude/agents/)** - Development guidelines, 9 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** - Development guidelines, 9 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -378,7 +378,7 @@ Ask yourself:
 
 [**→ Read the agents documentation**](claude/.claude/agents/README.md)
 
-Seven specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
+Nine specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
 
 ### 1. `tdd-guardian` - TDD Compliance Enforcer
 
@@ -610,6 +610,75 @@ Claude Code: [Launches adr agent to document the rationale]
 
 ---
 
+### 8. `pr-reviewer` - Pull Request Quality Reviewer
+
+**Use proactively** when reviewing a PR, or **reactively** to analyze an existing PR and post feedback.
+
+> **Why Manual Invocation?** This agent is designed for manual invocation during Claude Code sessions rather than automated CI/CD pipelines. This approach saves significant API costs while still providing comprehensive PR reviews when needed.
+
+**What it checks (5 categories):**
+
+| Category | What It Validates |
+|----------|------------------|
+| **TDD Compliance** | Tests exist for all production changes, test-first approach |
+| **Testing Quality** | Behavior-focused tests, factory patterns, no `let`/`beforeEach` |
+| **TypeScript Strictness** | No `any` types, proper type usage, schema-first at boundaries |
+| **Functional Patterns** | No mutation, pure functions, early returns, no comments |
+| **General Quality** | Clean code, no debug statements, security, appropriate scope |
+
+**Example invocation:**
+```
+You: "Review PR #123 and post feedback"
+Claude Code: [Launches pr-reviewer agent, analyzes diff, posts structured review to GitHub]
+```
+
+**Output:**
+- Summary table with status per category
+- Critical issues (must fix before merge)
+- High priority issues (should fix)
+- Suggestions (nice to have)
+- What's good about the PR
+- Posts review directly to GitHub as a comment
+
+**Direct GitHub Integration:**
+The agent can post reviews directly to PRs using GitHub MCP tools:
+- General feedback via `add_issue_comment`
+- Formal reviews via `pull_request_review_write`
+- Line-specific comments via `add_comment_to_pending_review`
+
+**Project-Specific Customization:**
+Use the `/generate-pr-review` command to create a project-specific PR reviewer that combines global rules with your project's conventions. The generator analyzes:
+- Existing AI/LLM configs (`.cursorrules`, `CLAUDE.md`, `.github/copilot-instructions.md`)
+- Architecture Decision Records (ADRs)
+- Project documentation (`CONTRIBUTING.md`, `DEVELOPMENT.md`)
+- Tech stack and existing code patterns
+
+---
+
+### 9. `use-case-data-patterns` - Use Case to Data Pattern Analyzer
+
+**Use proactively** when implementing features, or **reactively** to understand how features work end-to-end.
+
+**What it analyzes:**
+- Maps user-facing use cases to underlying data patterns
+- Traces features through system architecture
+- Identifies gaps in data access patterns
+
+**Example invocation:**
+```
+You: "How does the checkout flow work from user click to database?"
+Claude Code: [Launches use-case-data-patterns agent]
+```
+
+**Output:**
+- Comprehensive analytical report mapping use cases to data patterns
+- Database interactions and architectural decisions
+- Missing pieces for feature implementation
+
+> **Attribution**: Adapted from [Kieran O'Hara's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md).
+
+---
+
 ## 🚀 How to Use This in Your Projects
 
 **Quick navigation by situation:**
@@ -693,8 +762,8 @@ chmod +x install-claude.sh
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
 - ✅ `~/.claude/skills/` (9 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
-- ✅ `~/.claude/commands/` (1 slash command: /pr)
-- ✅ `~/.claude/agents/` (8 automated enforcement agents)
+- ✅ `~/.claude/commands/` (2 slash commands: /pr, /generate-pr-review)
+- ✅ `~/.claude/agents/` (9 automated enforcement agents)
 
 **Optional: Enable GitHub MCP Integration**
 
@@ -814,9 +883,16 @@ curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypa
 curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
 curl -o .claude/agents/progress-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/progress-guardian.md
 curl -o .claude/agents/adr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/adr.md
+curl -o .claude/agents/pr-reviewer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/pr-reviewer.md
+curl -o .claude/agents/use-case-data-patterns.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/use-case-data-patterns.md
 
 # Download agents README
 curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
+
+# Download commands
+mkdir -p .claude/commands
+curl -o .claude/commands/pr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/pr.md
+curl -o .claude/commands/generate-pr-review.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/generate-pr-review.md
 ```
 
 ---
@@ -892,10 +968,10 @@ The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `-
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (7 skills: tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
-- **[Commands](claude/.claude/commands/)** - Slash commands (/pr)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (9 skills: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
+- **[Commands](claude/.claude/commands/)** - Slash commands (/pr, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
-- **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files
+- **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (9 agents including pr-reviewer)
 
 ---
 
@@ -1069,8 +1145,8 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 9 skills + 8 agents (development guidelines)
-- ✅ Commands (/pr slash command)
+- ✅ CLAUDE.md + 9 skills + 9 agents (development guidelines)
+- ✅ Commands (/pr, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
 - ✅ Shell configuration (bash/zsh)
