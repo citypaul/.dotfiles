@@ -11,7 +11,68 @@ You are generating a customized PR review configuration for this project. This c
 
 ## Step 1: Analyze the Project
 
-First, discover the project's characteristics:
+First, discover the project's characteristics from multiple sources:
+
+### AI/LLM Configuration Files
+
+**Critical:** Check for existing AI assistant configurations that define project rules:
+
+```bash
+# Claude Code
+.claude/CLAUDE.md
+.claude/settings.json
+.claude/agents/*.md
+.claude/skills/*/SKILL.md
+CLAUDE.md (root level)
+
+# Cursor
+.cursorrules
+.cursor/rules/*.md
+
+# GitHub Copilot
+.github/copilot-instructions.md
+
+# Aider
+.aider.conf.yml
+.aiderignore
+
+# Codeium
+.codeium/config.json
+
+# Other common patterns
+.ai-rules
+.llm-config
+AGENTS.md
+CONTRIBUTING.md (often contains coding standards)
+```
+
+Extract rules, patterns, and conventions from these files - they represent explicit project decisions.
+
+### Project Documentation
+
+Check for documented conventions:
+
+```bash
+# Architecture Decision Records
+docs/adr/*.md
+docs/decisions/*.md
+adr/*.md
+architecture/decisions/*.md
+
+# General documentation
+docs/*.md
+README.md
+CONTRIBUTING.md
+DEVELOPMENT.md
+CODING_STANDARDS.md
+STYLE_GUIDE.md
+
+# API documentation
+docs/api/*.md
+API.md
+```
+
+Parse ADRs for architectural decisions that affect code review (e.g., "We use Zod for all validation").
 
 ### Tech Stack Detection
 
@@ -20,8 +81,8 @@ Check for:
 - `tsconfig.json` - TypeScript configuration
 - `.eslintrc.*` or `eslint.config.*` - Linting rules
 - `jest.config.*` or `vitest.config.*` - Testing setup
-- Existing `.claude/` directory - Existing conventions
-- `README.md` - Project documentation
+- `biome.json` - Biome configuration
+- `.prettierrc*` - Formatting rules
 
 ### Framework/Library Detection
 
@@ -30,9 +91,9 @@ Look for:
 - Express/Fastify/Hono for backend
 - Testing libraries (Jest, Vitest, Testing Library)
 - State management (Redux, Zustand, etc.)
-- Schema libraries (Zod, io-ts, etc.)
+- Schema libraries (Zod, io-ts, Yup, etc.)
 
-### Existing Conventions
+### Existing Code Conventions
 
 Search for:
 - Existing code patterns in `src/`
@@ -102,13 +163,32 @@ This reviewer enforces:
 
 [GENERATED BASED ON PROJECT ANALYSIS]
 
+### Rules from Existing Configuration
+
+[Extract from .cursorrules, CLAUDE.md, .github/copilot-instructions.md, CONTRIBUTING.md, etc.]
+
+**Source files found:**
+- [List files that contained rules]
+
+**Key rules extracted:**
+- [Rule 1 from existing config]
+- [Rule 2 from existing config]
+- [etc.]
+
+### Architecture Decisions (from ADRs)
+
+[Extract relevant decisions from docs/adr/*.md or similar]
+
+- **ADR-001**: [Decision title] - [How it affects code review]
+- **ADR-002**: [Decision title] - [How it affects code review]
+
 ### Tech Stack: [DETECTED]
 - Framework: [e.g., React 18, Next.js 14]
 - Testing: [e.g., Vitest + React Testing Library]
 - Schema: [e.g., Zod]
 
 ### Testing Conventions
-[Based on existing test file analysis]
+[Based on existing test file analysis and documented patterns]
 - Test file location: [e.g., `__tests__/` or `.test.ts` suffix]
 - Factory pattern: [e.g., uses `getMock*` prefix]
 - Import patterns: [e.g., `@/` alias]
@@ -223,18 +303,36 @@ After generation, provide:
 
 1. `.claude/agents/pr-reviewer.md` - Main PR reviewer agent
 
-### Project Analysis
+### Sources Analyzed
 
+**AI/LLM Configuration:**
+- [x] `.cursorrules` - Found/Not found
+- [x] `CLAUDE.md` - Found/Not found
+- [x] `.github/copilot-instructions.md` - Found/Not found
+
+**Documentation:**
+- [x] `docs/adr/*.md` - [N] ADRs found
+- [x] `CONTRIBUTING.md` - Found/Not found
+- [x] `README.md` - Found/Not found
+
+**Tech Stack:**
 - **Framework**: [Detected]
 - **Testing**: [Detected]
 - **Schemas**: [Detected]
-- **Test Pattern**: [Detected]
+- **Linting**: [Detected]
 
 ### Key Project Conventions Discovered
 
-1. [Convention 1]
-2. [Convention 2]
-3. [Convention 3]
+**From existing AI config files:**
+1. [Rule extracted from .cursorrules or similar]
+2. [Rule extracted from CLAUDE.md]
+
+**From ADRs:**
+1. [ADR-001: Decision that affects reviews]
+
+**From code analysis:**
+1. [Pattern discovered in codebase]
+2. [Convention discovered in codebase]
 
 ### How to Use
 
