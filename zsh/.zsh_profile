@@ -1,23 +1,19 @@
-# shellcheck disable=SC2148
+# Additional zsh completions (compinit already called by oh-my-zsh)
 if type brew &>/dev/null; then
-  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
-
-  autoload -Uz compinit
-  compinit
+  FPATH="$HOMEBREW_PREFIX/share/zsh/site-functions:${FPATH}"
 fi
 
+# Prompt and navigation
 export STARSHIP_LOG="error"
 eval "$(starship init zsh)"
 eval "$(zoxide init zsh)"
 
-alias lvim=~/.local/bin/lvim # Create an alias for lvim
-
-alias c='code' # Open Visual Studio Code
-alias c.='c .' # Open Visual Studio Code in current directory
-
+# Editor aliases
+alias lvim=~/.local/bin/lvim
+alias c='code'
+alias c.='c .'
 alias ci='code-insiders'
 alias ci.='ci .'
-
 alias cc='cursor'
 alias cc.='cc .'
 alias ccw='cc "$(eza --absolute ~/workspace | fzf)"'
@@ -25,82 +21,86 @@ alias ccp='cc "$(eza --absolute ~/personal | fzf)"'
 alias cdw='cd "$(eza --absolute ~/workspace | fzf)"'
 alias cdp='cd "$(eza --absolute ~/personal | fzf)"'
 
-alias lg='lazygit'    # Open Lazygit (terminal-based Git UI)
-alias ld='lazydocker' # Open Lazydocker (terminal-based Docker UI)
+# Terminal UI tools
+alias lg='lazygit'
+alias ld='lazydocker'
 
-alias nocors='open /Applications/Google\ Chrome.app --args --user-data-dir="/var/tmp/chrome-dev-disabled-security" --disable-web-security --disable-site-isolation-trials' # Open Google Chrome with CORS disabled
+# Browser
+alias nocors='open /Applications/Google\ Chrome.app --args --user-data-dir="/var/tmp/chrome-dev-disabled-security" --disable-web-security --disable-site-isolation-trials'
 
-alias ghc='gh pr create --web' # Create a new GitHub pull request (using GitHub CLI)
-alias ghd='gh pr create -d'    # Create a new draft GitHub pull request (using GitHub CLI)
-alias ghv='gh pr view --web'   # View a GitHub pull request (using GitHub CLI)
-alias ghr='gh repo view --web' # View a GitHub repository (using GitHub CLI)
-alias ghdb='gh dash'           # Open the GitHub dashboard (using GitHub CLI)
+# GitHub CLI
+alias ghc='gh pr create --web'
+alias ghd='gh pr create -d'
+alias ghv='gh pr view --web'
+alias ghr='gh repo view --web'
+alias ghdb='gh dash'
 
-alias gb="git branch --sort=-committerdate | fzf | xargs git checkout"                                                                  # Checkout a Git branch (using fzf to select the branch interactively)
-alias gbr="git branch -r --sort=committerdate | sed 's/^[[:space:]]*[[:alnum:]_-]*\///' | grep -v 'HEAD ->' | fzf | xargs git checkout" # Checkout a remote Git branch (using fzf to select the branch interactively)
-alias gbd="git branch | fzf -m | xargs git branch -D"                                                                                   # Delete a Git branch (using fzf to select the branch interactively)
-alias gbdm="git branch --merged origin/main | grep -v 'main' | xargs git branch -d"                                                     # Delete a Git branch that is merged to main (using fzf to select the branch interactively)
+# Git branch management with fzf
+alias gb="git branch --sort=-committerdate | fzf | xargs git checkout"
+alias gbr="git branch -r --sort=committerdate | sed 's/^[[:space:]]*[[:alnum:]_-]*\///' | grep -v 'HEAD ->' | fzf | xargs git checkout"
+alias gbd="git branch | fzf -m | xargs git branch -D"
+alias gbdm="git branch --merged origin/main | grep -v 'main' | xargs git branch -d"
 
-# work project directory aliases
+# Git tag management with fzf
+alias gt='git tag | fzf | xargs git checkout'
+alias gtd='git tag | fzf -m | xargs git tag -d'
+
+# Project directory shortcuts
 alias w='cd ~/workspace'
 alias wa='cd ~/workspace/Acquisition.Web'
 alias wui='cd ~/workspace/NewDay.Web.UI'
 alias wm='cd ~/workspace/Acquisition.Web.Monorepo'
-
-# personal project directory aliases
 alias p='cd ~/personal'
 
-alias "??"='gh copilot suggest'  # gh copilot cl
-alias "???"='gh copilot explain' # gh copilot cl --no-annotations
+# GitHub Copilot
+alias "??"='gh copilot suggest'
+alias "???"='gh copilot explain'
 
-# Delete merged Git branches (except main)
-alias gt='git tag | fzf | xargs git checkout'   # Checkout a Git tag (using fzf to select the tag interactively)
-alias gtd='git tag | fzf -m | xargs git tag -d' # Delete Git tag(s) (using fzf to select the tag interactively)
+# File listing (eza)
+alias ls="eza --icons --git"
+alias ll="eza -al --icons --git"
+alias cat="bat --theme='ansi'"
 
-alias ls="eza -al --icons --git" # List directory contents (using eza with icons and Git integration)
-alias ll="eza -al --icons --git" # List directory contents (using eza with icons and Git integration)
-alias cat="bat --theme='ansi'"   # Display file contents (using bat with syntax highlighting and paging)
-alias ytd="yt-dlp"               # Download a YouTube video or playlist (using yt-dlp)
-alias zl="zellij"                # Open Zellij (terminal-based terminal multiplexer)
-alias t="tree"                   # Display directory tree (using tree)
+# Utilities
+alias ytd="yt-dlp"
+alias zl="zellij"
+alias t="tree"
+alias zz="source ~/.zshrc"
 
-alias dcs='docker container stop $(docker container ps -aq)' # Stop all Docker containers
-alias dcd='docker container rm $(docker container ps -aq)'   # Delete all Docker containers
+# Docker shortcuts
+alias dcs='docker container stop $(docker container ps -aq)'
+alias dcd='docker container rm $(docker container ps -aq)'
 
-# Use Homebrew-installed Python 3 as default Python
+# Python (use Homebrew version)
 alias python=/opt/homebrew/bin/python3
 
-# Shortcut aliases for package managers
-alias pn="pnpm" # Shortcut alias for pnpm
-alias y="yarn"  # Shortcut alias for yarn
-alias n="npm"   # Shortcut alias for npm
+# Package manager shortcuts
+alias pn="pnpm"
+alias y="yarn"
+alias n="npm"
 
-# Interactive script selector with fzf and package manager runners
+# Interactive script selector with fzf
 alias s="cat package.json | jq -r '.scripts | keys[]' | sort -r | fzf"
-alias ys="s | xargs yarn run"  # Run selected script with Yarn
-alias ns="s | xargs npm run"   # Run selected script with npm
-alias pns="s | xargs pnpm run" # Run selected script with pnpm
+alias ys="s | xargs yarn run"
+alias ns="s | xargs npm run"
+alias pns="s | xargs pnpm run"
 
+# Terraform
 alias tf="terraform"
 alias tfa="terraform apply"
 alias tfd="terraform destroy"
 alias tfi="terraform init"
 alias tfp="terraform plan"
 
-alias zz="source ~/.zshrc" # Reload Zsh configuration
-
-git_main_branch() { # Helper function to get the main branch name in Git
+# Functions
+git_main_branch() {
   git branch -rl "*/HEAD" | rev | cut -d/ -f1 | rev
 }
 
-unalias gcf 2>/dev/null # Unalias gcf if it's already aliased - this is required for the function to work
-
 glc() {
-  ## git log compare. Choose two commits by sha and then output the difference between them
   local commit1 commit2
   commit1=$(git log --color=always --oneline | fzf --ansi | cut -d ' ' -f1)
   commit2=$(git log --color=always --oneline | fzf --ansi | cut -d ' ' -f1)
-
   if [[ -n "$commit1" && -n "$commit2" ]]; then
     git log --pretty=format:"%s" "$commit1..$commit2"
   else
@@ -108,85 +108,44 @@ glc() {
   fi
 }
 
+unalias gcf 2>/dev/null
 gcf() {
   local commit_hash
   commit_hash=$(git log --color=always --oneline | fzf --ansi | cut -d ' ' -f1)
   git checkout "$commit_hash"
 }
 
-alias gcf="gcf" # Checkout a Git commit using fzf to select the commit interactively
-
 sync_dirs() {
-  # Function: sync_dirs
-  # Description: Synchronizes two directories in real-time. It monitors changes in the source directory
-  # and reflects them in the target directory using 'rsync' and 'fswatch'.
-  # Usage: sync_dirs [source_directory] [target_directory]
-  # Note: Press Ctrl+C to gracefully terminate the sync process.
-
   local SOURCE_DIR=$1
   local DEST_DIR=$2
-
   if [[ -z "$SOURCE_DIR" || -z "$DEST_DIR" ]]; then
     echo "Usage: sync_dirs source_directory target_directory"
     return 1
   fi
-
   if [[ ! -d "$SOURCE_DIR" ]]; then
     echo "Source directory does not exist."
     return 1
   fi
-
   if [[ ! -d "$DEST_DIR" ]]; then
     echo "Target directory does not exist."
     return 1
   fi
-
-  # Signal trap for graceful exit
   trap 'echo "Sync process interrupted"; exit 0' SIGINT
-
   echo "Starting to sync from $SOURCE_DIR to $DEST_DIR"
-
   fswatch -o "$SOURCE_DIR" | while read f; do
     rsync -av --delete "$SOURCE_DIR" "$DEST_DIR"
   done
 }
 
-# Load NVM automatically when opening a new terminal
+# Lazy-load NVM (only initialize when needed)
 source $HOME/.nvm_setup
 
-# Auto load NVM when changing directories
-
-autoload -U add-zsh-hook
-load-nvmrc() {
-  local node_version="$(nvm version)"
-  local nvmrc_path="$(nvm_find_nvmrc)"
-
-  if [ -n "$nvmrc_path" ]; then
-    local nvmrc_node_version=$(nvm version "$(cat "${nvmrc_path}")")
-
-    if [ "$nvmrc_node_version" = "N/A" ]; then
-      nvm install
-    elif [ "$nvmrc_node_version" != "$node_version" ]; then
-      nvm use
-    fi
-  elif [ "$node_version" != "$(nvm version default)" ]; then
-    echo "Reverting to nvm default version"
-    nvm use default
-  fi
-}
-add-zsh-hook chpwd load-nvmrc
-load-nvmrc
-
-# Required for GPG signing of Git commits on macOS
-# See: https://samuelsson.dev/sign-git-commits-on-github-with-gpg-in-macos/
-export GPG_TTY=$(tty)
-
-# Add custom Zsh autocomplete directory to search path
+# Custom completions
 fpath=(~/.zsh_autocomplete $fpath)
 
-# Set custom PNPM home directory and add to PATH
+# PNPM
 export PNPM_HOME="$HOME/Library/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 
-# Setup Python virtual environment
+# Python virtual environment (lazy activation)
 source $HOME/.pyenv_setup.sh
