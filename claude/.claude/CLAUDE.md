@@ -4,7 +4,7 @@
 >
 > **Architecture:**
 > - **CLAUDE.md** (this file): Core philosophy + quick reference (~100 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, typescript-strict, functional, refactoring, expectations, planning)
+> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, expectations, planning)
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
 > **Previous versions:**
@@ -47,6 +47,7 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 - No 1:1 mapping between test files and implementation files
 
 For detailed testing patterns and examples, load the `testing` skill.
+For verifying test effectiveness through mutation analysis, load the `mutation-testing` skill.
 
 ## TypeScript Guidelines
 

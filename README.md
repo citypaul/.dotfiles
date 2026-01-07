@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** - Development guidelines, 9 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** - Development guidelines, 10 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -69,6 +69,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Section | What It Provides | Detailed Patterns |
 |---------|-----------------|-------------------|
 | **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
+| **Mutation Testing** | Test effectiveness verification, mutation operators, weak test detection | [→ skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) |
 | **Front-End Testing** | DOM Testing Library patterns, accessibility-first queries, userEvent best practices (framework-agnostic) | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
 | **React Testing** | React Testing Library patterns for components, hooks, context, and forms | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
 | **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
@@ -91,6 +92,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Problem | Skill | Key Insight |
 |---------|-------|-------------|
 | Tests that break when I refactor | [testing](claude/.claude/skills/testing/SKILL.md) | Test behavior through public APIs, not implementation |
+| 100% coverage but bugs still slip through | [mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) | Coverage measures execution, mutation testing measures detection |
 | Tests break when refactoring UI components | [front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) | Query by role (getByRole), not implementation (framework-agnostic) |
 | Testing React components, hooks, or context | [react-testing](claude/.claude/skills/react-testing/SKILL.md) | renderHook for hooks, wrapper for context, test components as functions |
 | Don't know when to use schemas vs types | [typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) | 5-question decision framework |
@@ -108,6 +110,7 @@ Skills are **auto-discovered** by Claude when relevant:
 - Writing TypeScript? → `typescript-strict` skill loads automatically
 - Running tests? → `testing` skill provides factory patterns
 - After GREEN tests? → `refactoring` skill assesses opportunities
+- Reviewing test effectiveness? → `mutation-testing` skill identifies weak tests
 
 **No manual invocation needed** - Claude detects when skills apply.
 
@@ -146,6 +149,50 @@ it("should reject payments with negative amounts", () => {
 **Why this matters:** The first test will fail if you refactor `validateAmount` into a different structure. The second test only cares about behavior - refactor all you want, as long as negative amounts are rejected.
 
 **Key insight:** A separate `payment-validator.ts` file gets 100% coverage without dedicated tests - it's fully tested through `payment-processor` behavior tests. No 1:1 file mapping needed.
+
+---
+
+### 🧬 Mutation Testing → [skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md)
+
+**Problem it solves:** 100% code coverage but bugs still slip through; tests that don't actually verify behavior; weak assertions that pass regardless of code correctness
+
+**What's inside:**
+- Comprehensive mutation operator reference (arithmetic, conditional, logical, boolean, method expressions)
+- Weak vs strong test examples for each operator type
+- Systematic 4-step branch analysis process
+- Equivalent mutant identification and handling
+- Test strengthening patterns
+- Integration with TDD workflow
+
+**The core insight:**
+
+Code coverage tells you what code your tests *execute*. Mutation testing tells you if your tests would *detect changes* to that code. A test suite with 100% coverage can still miss 40% of potential bugs.
+
+**Concrete example from the docs:**
+
+```typescript
+// Production code
+const calculateTotal = (price: number, quantity: number): number => {
+  return price * quantity;
+};
+
+// Mutant: price / quantity
+// Question: Would tests fail if * became /?
+
+// ❌ WEAK TEST - Would NOT catch mutant
+it('calculates total', () => {
+  expect(calculateTotal(10, 1)).toBe(10); // 10 * 1 = 10, 10 / 1 = 10 (SAME!)
+});
+
+// ✅ STRONG TEST - Would catch mutant
+it('calculates total', () => {
+  expect(calculateTotal(10, 3)).toBe(30); // 10 * 3 = 30, 10 / 3 = 3.33 (DIFFERENT!)
+});
+```
+
+**Why this matters:** The first test uses an identity value (1) that produces the same result for both multiplication and division. The second test uses values that would produce different results, catching the bug.
+
+**Key insight:** Avoid identity values (0 for +/-, 1 for */, empty arrays, all true/false for logical ops) in tests - they let mutants survive.
 
 ---
 
@@ -761,7 +808,7 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (9 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
+- ✅ `~/.claude/skills/` (10 auto-discovered patterns: tdd, testing, mutation-testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
 - ✅ `~/.claude/commands/` (2 slash commands: /pr, /generate-pr-review)
 - ✅ `~/.claude/agents/` (9 automated enforcement agents)
 
@@ -968,7 +1015,7 @@ The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `-
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (9 skills: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (10 skills: tdd, testing, mutation-testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
 - **[Commands](claude/.claude/commands/)** - Slash commands (/pr, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (9 agents including pr-reviewer)
@@ -1145,7 +1192,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 9 skills + 9 agents (development guidelines)
+- ✅ CLAUDE.md + 10 skills + 9 agents (development guidelines)
 - ✅ Commands (/pr, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
