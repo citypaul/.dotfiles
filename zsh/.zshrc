@@ -26,3 +26,6 @@ export GPG_TTY=$(tty)
 eval "$($HOMEBREW_PREFIX/bin/brew shellenv)"
 source $HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source $HOME/.zsh_profile
+
+# Machine-specific configuration (not version controlled)
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local
