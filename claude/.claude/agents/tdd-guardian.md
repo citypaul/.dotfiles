@@ -161,7 +161,7 @@ Test the outcome, not the internal call
 - Focus on business behavior, not implementation
 - Write descriptive test names
 
-**Example:**
+**TypeScript Example:**
 ```typescript
 // ✅ GOOD - Behavior-focused, uses factory
 it("should reject payments with negative amounts", () => {
@@ -181,6 +181,43 @@ it("should call validateAmount", () => {
   processPayment(payment);
   expect(spy).toHaveBeenCalled();
 });
+```
+
+**Go Example:**
+```go
+// ✅ GOOD - Table-driven, behavior-focused
+func TestProcessPayment(t *testing.T) {
+    tests := []struct {
+        name    string
+        payment Payment
+        wantErr bool
+    }{
+        {
+            name:    "rejects negative amounts",
+            payment: newTestPayment(withAmount(-100)),
+            wantErr: true,
+        },
+        {
+            name:    "accepts valid payment",
+            payment: newTestPayment(withAmount(100)),
+            wantErr: false,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := ProcessPayment(ctx, tt.payment)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("ProcessPayment() error = %v, wantErr %v", err, tt.wantErr)
+            }
+        })
+    }
+}
+
+// ❌ BAD - Testing implementation details
+func TestProcessPayment_CallsValidator(t *testing.T) {
+    // Testing HOW, not WHAT
+}
 ```
 
 ### GREEN PHASE (Implementing)
@@ -283,6 +320,8 @@ Before allowing any commit, verify:
 
 From CLAUDE.md:
 
+### TypeScript Projects
+
 **Type System:**
 - Use `type` for data structures (with `readonly`)
 - Use `interface` only for behavior contracts/ports
@@ -295,7 +334,7 @@ From CLAUDE.md:
 - Early returns over nested conditionals
 - Factory functions for test data
 
-**Test Data Pattern:**
+**Test Data Pattern (TypeScript):**
 ```typescript
 // ✅ CORRECT - Factory with optional overrides
 const getMockPayment = (
@@ -313,15 +352,66 @@ const getMockPayment = (
 const payment = getMockPayment({ amount: -100 });
 ```
 
+### Go Projects
+
+**Error Handling:**
+- Always handle errors (never `_, _ := ...`)
+- Wrap errors with context
+
+**Interfaces:**
+- Small interfaces (1-3 methods)
+- Define at consumer, not provider
+
+**Test Data Pattern (Go):**
+```go
+// ✅ CORRECT - Factory with functional options
+func newTestPayment(opts ...func(*Payment)) Payment {
+    p := Payment{
+        Amount:   100,
+        Currency: "GBP",
+        CardID:   "card_123",
+    }
+    for _, opt := range opts {
+        opt(&p)
+    }
+    return p
+}
+
+func withAmount(amount int) func(*Payment) {
+    return func(p *Payment) {
+        p.Amount = amount
+    }
+}
+
+// Usage
+payment := newTestPayment(withAmount(-100))
+```
+
 ## Commands to Use
 
+**Git commands:**
 - `git diff` - See what changed
 - `git status` - See current state
 - `git log --oneline -n 20` - Recent commits
 - `git log -p <file>` - File history to verify test-first
+
+**Search commands:**
 - `Grep` - Search for test patterns
 - `Read` - Examine specific files
 - `Glob` - Find test files
+
+**TypeScript test commands:**
+- `npm test` or `yarn test` - Run tests
+- `npm test -- --coverage` - Run with coverage
+- `npx vitest run` - Run Vitest tests
+
+**Go test commands:**
+- `go test ./...` - Run all tests
+- `go test -v ./...` - Run with verbose output
+- `go test -race ./...` - Run with race detector
+- `go test -coverprofile=coverage.out ./...` - Run with coverage
+- `go tool cover -html=coverage.out` - View coverage report
+- `go test -run TestName ./...` - Run specific test
 
 ## Your Mandate
 

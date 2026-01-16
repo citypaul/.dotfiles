@@ -156,6 +156,7 @@ mkdir -p ~/.claude/agents ~/.claude/skills ~/.claude/commands
 mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing
+mkdir -p ~/.claude/skills/go-strict ~/.claude/skills/go-testing ~/.claude/skills/go-error-handling ~/.claude/skills/go-concurrency
 echo -e "${GREEN}✓${NC} Directories created"
 echo ""
 
@@ -184,6 +185,10 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "planning/SKILL.md"
     "front-end-testing/SKILL.md"
     "react-testing/SKILL.md"
+    "go-strict/SKILL.md"
+    "go-testing/SKILL.md"
+    "go-error-handling/SKILL.md"
+    "go-concurrency/SKILL.md"
   )
 
   for skill in "${skills[@]}"; do
@@ -221,12 +226,14 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
   agents=(
     "tdd-guardian.md"
     "ts-enforcer.md"
+    "go-enforcer.md"
     "refactor-scan.md"
     "docs-guardian.md"
     "adr.md"
     "learn.md"
     "use-case-data-patterns.md"
     "progress-guardian.md"
+    "pr-reviewer.md"
     "README.md"
   )
 
@@ -267,7 +274,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (9 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)"
+  echo -e "  ${GREEN}✓${NC} skills/ (13 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, go-strict, go-testing, go-error-handling, go-concurrency)"
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
@@ -275,7 +282,7 @@ if [[ "$INSTALL_COMMANDS" == true ]]; then
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} agents/ (8 Claude Code agents + README)"
+  echo -e "  ${GREEN}✓${NC} agents/ (10 Claude Code agents + README)"
 fi
 
 if [[ "$INSTALL_OPENCODE" == true ]]; then

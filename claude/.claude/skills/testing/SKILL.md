@@ -76,6 +76,8 @@ it('should process valid payments', () => {
 
 Validation code gets 100% coverage by testing the behavior it protects:
 
+### TypeScript Example
+
 ```typescript
 // Tests covering validation WITHOUT testing validator directly
 describe('processPayment', () => {
@@ -107,6 +109,58 @@ describe('processPayment', () => {
 // ✅ Result: payment-validator.ts has 100% coverage through behavior
 ```
 
+### Go Example
+
+```go
+// Table-driven tests covering validation through behavior
+func TestProcessPayment(t *testing.T) {
+    tests := []struct {
+        name    string
+        payment Payment
+        wantErr bool
+        errMsg  string
+    }{
+        {
+            name:    "rejects negative amounts",
+            payment: newTestPayment(withAmount(-100)),
+            wantErr: true,
+            errMsg:  "invalid amount",
+        },
+        {
+            name:    "rejects amounts over 10000",
+            payment: newTestPayment(withAmount(15000)),
+            wantErr: true,
+            errMsg:  "amount exceeds limit",
+        },
+        {
+            name:    "rejects invalid CVV",
+            payment: newTestPayment(withCVV("12")),
+            wantErr: true,
+            errMsg:  "invalid CVV",
+        },
+        {
+            name:    "processes valid payments",
+            payment: newTestPayment(withAmount(100), withCVV("123")),
+            wantErr: false,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := ProcessPayment(ctx, tt.payment)
+            if tt.wantErr {
+                require.Error(t, err)
+                assert.Contains(t, err.Error(), tt.errMsg)
+            } else {
+                require.NoError(t, err)
+            }
+        })
+    }
+}
+
+// ✅ Result: payment_validator.go has 100% coverage through behavior
+```
+
 **Key insight:** When coverage drops, ask **"What business behavior am I not testing?"** not "What line am I missing?"
 
 ---
@@ -118,11 +172,12 @@ For test data, use factory functions with optional overrides.
 ### Core Principles
 
 1. Return complete objects with sensible defaults
-2. Accept `Partial<T>` overrides for customization
-3. Validate with real schemas (don't redefine)
-4. NO `let`/`beforeEach` - use factories for fresh state
+2. Accept overrides for customization
+3. Validate with real schemas (don't redefine) - TypeScript
+4. Use functional options pattern - Go
+5. NO `let`/`beforeEach` - use factories for fresh state
 
-### Basic Pattern
+### TypeScript Pattern
 
 ```typescript
 const getMockUser = (overrides?: Partial<User>): User => {
@@ -141,6 +196,44 @@ it('creates user with custom email', () => {
   const result = createUser(user);
   expect(result.success).toBe(true);
 });
+```
+
+### Go Pattern
+
+```go
+// Factory with functional options
+func newTestUser(opts ...func(*User)) User {
+    u := User{
+        ID:    "user-123",
+        Name:  "Test User",
+        Email: "test@example.com",
+        Role:  RoleUser,
+    }
+    for _, opt := range opts {
+        opt(&u)
+    }
+    return u
+}
+
+// Option functions
+func withEmail(email string) func(*User) {
+    return func(u *User) {
+        u.Email = email
+    }
+}
+
+func withRole(role Role) func(*User) {
+    return func(u *User) {
+        u.Role = role
+    }
+}
+
+// Usage
+func TestCreateUser(t *testing.T) {
+    user := newTestUser(withEmail("custom@example.com"))
+    err := CreateUser(ctx, user)
+    require.NoError(t, err)
+}
 ```
 
 ### Complete Factory Example

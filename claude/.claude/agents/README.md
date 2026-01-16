@@ -37,6 +37,31 @@ This directory contains specifications for specialized Claude Code agents that w
 
 ---
 
+#### `go-enforcer`
+**Purpose**: Enforces Go best practices and idiomatic patterns.
+
+**Use proactively when**:
+- Writing error handling code
+- Defining interfaces
+- Designing package structure
+
+**Use reactively when**:
+- Code written with potential Go violations
+- Detecting ignored errors or panic usage
+- Reviewing Go compliance
+
+**Core responsibility**: Explicit error handling, small interfaces, context propagation.
+
+**Key checks**:
+- No ignored errors (never `_, _ :=`)
+- Errors wrapped with context (`%w`)
+- Context as first parameter, never in struct
+- Small interfaces (1-3 methods), defined at consumer
+- No Get prefix on getters
+- Dependencies injected, not created internally
+
+---
+
 #### `refactor-scan`
 **Purpose**: Assesses refactoring opportunities after tests pass (TDD's third step).
 
@@ -364,11 +389,15 @@ When creating a new agent specification:
 These agents work together to create a comprehensive development workflow:
 
 - **Analysis**: use-case-data-patterns maps use cases to implementation patterns
-- **Quality**: tdd-guardian + ts-enforcer ensure code quality
+- **Quality**: tdd-guardian + ts-enforcer (TypeScript) + go-enforcer (Go) ensure code quality
 - **Improvement**: refactor-scan optimizes code after tests pass
-- **Review**: pr-reviewer validates PRs before merge
+- **Review**: pr-reviewer validates PRs before merge (supports both TypeScript and Go)
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
 - **Progress**: progress-guardian manages incremental work with three-document model
+
+**Language Support**:
+- **TypeScript projects**: Use ts-enforcer for type safety, schema-first development
+- **Go projects**: Use go-enforcer for error handling, interface design, context propagation
 
 **Key workflow principles** (see `planning` skill for details):
 - All work in small, known-good increments

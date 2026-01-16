@@ -1,15 +1,25 @@
 # Development Guidelines for Claude
 
-> **About this file (v3.0.0):** Lean version optimized for context efficiency. Core principles here; detailed patterns loaded on-demand via skills.
+> **About this file (v3.1.0):** Lean version optimized for context efficiency. Core principles here; detailed patterns loaded on-demand via skills.
 >
 > **Architecture:**
-> - **CLAUDE.md** (this file): Core philosophy + quick reference (~100 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, expectations, planning)
+> - **CLAUDE.md** (this file): Core philosophy + quick reference (~150 lines, always loaded)
+> - **Skills**: Detailed patterns loaded on-demand (language-agnostic + language-specific)
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
 > **Previous versions:**
+> - v3.0.0: TypeScript-only focus
 > - v2.0.0: Modular with @docs/ imports (~3000+ lines always loaded)
 > - v1.0.0: Single monolithic file (1,818 lines)
+
+## Language Mode
+
+**Auto-detection** at session start:
+- `go.mod` present → **Go mode** (load: go-strict, go-testing, go-error-handling, go-concurrency)
+- `package.json` or `tsconfig.json` present → **TypeScript mode** (load: typescript-strict, react-testing, front-end-testing)
+- Neither found → **Ask user**: "What language is this project using? (Go / TypeScript)"
+
+Language mode determines which skills are automatically relevant and which enforcer agent to use.
 
 ## Core Philosophy
 
@@ -19,21 +29,27 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 
 ## Quick Reference
 
-**Key Principles:**
+**Universal Principles (All Languages):**
 
-- Write tests first (TDD)
+- Write tests first (TDD non-negotiable)
 - Test behavior, not implementation
-- No `any` types or type assertions
-- Immutable data only
+- Immutable data patterns
 - Small, pure functions
-- TypeScript strict mode always
 - Use real schemas/types in tests, never redefine them
 
-**Preferred Tools:**
+**TypeScript Mode:**
+- No `any` types - use `unknown` if type truly unknown
+- No type assertions without justification
+- Schema-first at trust boundaries (Zod)
+- `type` for data, `interface` for behavior contracts
+- Tools: Jest/Vitest + React Testing Library
 
-- **Language**: TypeScript (strict mode)
-- **Testing**: Jest/Vitest + React Testing Library
-- **State Management**: Prefer immutable patterns
+**Go Mode:**
+- No ignored errors (never `_, _ := ...` for error)
+- Context as first parameter, never in structs
+- Small interfaces, defined at consumer
+- Errors wrapped with context (`fmt.Errorf("%w", err)`)
+- Tools: Go 1.21+, testing package, testify/assert
 
 ## Testing Principles
 
@@ -62,6 +78,22 @@ For verifying test effectiveness through mutation analysis, load the `mutation-t
 - Use schemas at trust boundaries, plain types for internal logic
 
 For detailed TypeScript patterns and rationale, load the `typescript-strict` skill.
+
+## Go Guidelines
+
+**Core principle**: Explicit error handling. Small interfaces. Context propagation.
+
+**Quick reference:**
+- Always handle errors (never `_, _ := ...` to ignore)
+- Wrap errors with context: `fmt.Errorf("operation failed: %w", err)`
+- Context is always first parameter, never stored in structs
+- Small interfaces (1-3 methods), defined at consumer not provider
+- No `Get` prefix on getters (`user.Name()` not `user.GetName()`)
+- Constructor functions: `NewService(deps) *Service`
+
+For detailed Go patterns, load the `go-strict` skill.
+For error handling patterns, load the `go-error-handling` skill.
+For concurrency patterns, load the `go-concurrency` skill.
 
 ## Code Style
 
@@ -110,10 +142,17 @@ For detailed guidance on expectations and documentation, load the `expectations`
 
 ## Resources and References
 
+**TypeScript:**
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
 - [Testing Library Principles](https://testing-library.com/docs/guiding-principles)
 - [Kent C. Dodds Testing JavaScript](https://testingjavascript.com/)
 - [Functional Programming in TypeScript](https://gcanti.github.io/fp-ts/)
+
+**Go:**
+- [Effective Go](https://go.dev/doc/effective_go)
+- [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+- [Standard Go Project Layout](https://github.com/golang-standards/project-layout)
+- [Go Proverbs](https://go-proverbs.github.io/)
 
 ## Summary
 

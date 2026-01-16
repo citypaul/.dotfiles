@@ -97,6 +97,16 @@ For each category, analyze the diff thoroughly.
 
 ---
 
+## Language Detection
+
+**Auto-detect the project language:**
+- `.go` files present → Go project
+- `.ts`/`.tsx` files present → TypeScript project
+
+Apply language-specific review criteria accordingly.
+
+---
+
 ## Review Criteria
 
 ### Category 1: TDD Compliance
@@ -245,6 +255,62 @@ gh pr diff <number> | grep -E "^\+\s*interface\s+[A-Z]"
 ✅ **Good patterns:**
 - Schema-first: `const UserSchema = z.object({ ... })`
 - Type derived: `type User = z.infer<typeof UserSchema>`
+```
+
+---
+
+### Category 3b: Go Best Practices (For Go Projects)
+
+**Principle:** Explicit error handling, small interfaces, context propagation.
+
+**Check for:**
+
+✅ **Good Go patterns:**
+- All errors handled (no `_, _ :=` patterns)
+- Errors wrapped with context (`fmt.Errorf("...: %w", err)`)
+- Context as first parameter
+- Small interfaces (1-3 methods)
+- Interfaces defined at consumer
+- No Get prefix on getters
+
+❌ **Violations:**
+- Ignored errors (`result, _ := operation()`)
+- Context stored in struct
+- Large interfaces (5+ methods)
+- Panic in library code
+- Get prefix on methods
+
+**Detection patterns:**
+```bash
+# Find ignored errors
+gh pr diff <number> | grep -E "^\+.*, _ :="
+
+# Find context in struct
+gh pr diff <number> | grep -E "^\+.*ctx.*context\.Context"
+
+# Find panic
+gh pr diff <number> | grep -E "^\+.*panic\("
+
+# Find Get prefix
+gh pr diff <number> | grep -E "^\+.*func.*Get[A-Z]"
+```
+
+**Report format:**
+```
+### Go Best Practices
+
+❌ **Ignored errors:**
+- Line 45: `result, _ := db.Query()` - Must handle error
+
+❌ **Context in struct:**
+- Line 12: `ctx context.Context` stored in struct - Pass as parameter
+
+⚠️ **Large interface:**
+- Line 30-50: `UserService` has 7 methods - Split into smaller interfaces
+
+✅ **Good patterns:**
+- Error wrapping with context
+- Small `UserReader` interface
 ```
 
 ---
@@ -487,20 +553,29 @@ Analyzing..."
 - Tests come BEFORE implementation (test-first)
 - Tests verify behavior, not that code was called
 
-### Testing Rules
+### Testing Rules (All Languages)
 - Test through public API only
-- No `let`/`beforeEach` - use factory functions
-- No spying on internal methods
 - No mocking the function being tested
-- Factory functions validate with real schemas
+- Factory functions for test data
 - No 1:1 mapping between test files and implementation
 
-### TypeScript Rules
+### TypeScript-Specific Rules
+- No `let`/`beforeEach` - use factory functions
+- Factory functions validate with real schemas
 - No `any` - ever
 - No type assertions without justification
 - `type` for data, `interface` for behavior contracts
 - Schema-first at trust boundaries
 - `readonly` on data structure properties
+
+### Go-Specific Rules
+- No ignored errors (never `_, _ :=`)
+- Errors wrapped with context (`%w`)
+- Context as first parameter, never in struct
+- Small interfaces (1-3 methods)
+- Interfaces defined at consumer
+- No Get prefix on getters
+- Table-driven tests for multiple cases
 
 ### Functional Rules
 - No data mutation (no `.push()`, no property assignment)
@@ -512,7 +587,7 @@ Analyzing..."
 
 ### General Rules
 - Small, focused PRs
-- No console.log/debug statements
+- No console.log/debug statements (or fmt.Println in Go)
 - No TODO comments without issues
 - No hardcoded secrets
 - No over-engineering
