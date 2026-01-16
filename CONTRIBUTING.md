@@ -69,7 +69,7 @@ Running `pnpm changeset` creates a file like `.changeset/fuzzy-pandas-dance.md`:
 
 ```markdown
 ---
-"@paulhammond/dotfiles": minor
+"@intinig/claude.md": minor
 ---
 
 Add new refactoring assessment agent
@@ -263,8 +263,8 @@ const goodExample = () => { ... };
 
 ## Questions or Issues?
 
-- **Questions**: Open a [Discussion](https://github.com/citypaul/.dotfiles/discussions)
-- **Bugs**: Open an [Issue](https://github.com/citypaul/.dotfiles/issues)
+- **Questions**: Open a [Discussion](https://github.com/intinig/claude.md/discussions)
+- **Bugs**: Open an [Issue](https://github.com/intinig/claude.md/issues)
 
 ---
 

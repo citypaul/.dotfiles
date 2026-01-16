@@ -1,20 +1,19 @@
 {
-  "name": "@paulhammond/dotfiles",
+  "name": "@intinig/claude.md",
   "version": "3.4.0",
   "private": true,
-  "description": "Personal dotfiles including CLAUDE.md development framework and Claude Code agents",
+  "description": "CLAUDE.md development framework and Claude Code agents",
   "repository": {
     "type": "git",
-    "url": "https://github.com/citypaul/.dotfiles.git"
+    "url": "https://github.com/intinig/claude.md.git"
   },
   "keywords": [
     "claude-code",
-    "dotfiles",
     "tdd",
     "typescript",
     "development-guidelines"
   ],
-  "author": "Paul Hammond",
+  "author": "Giovanni Intini",
   "license": "MIT",
   "scripts": {
     "changeset": "changeset",

@@ -11,7 +11,7 @@
 #   ./install-claude.sh --with-opencode    # Also install OpenCode configuration
 #
 # One-liner installation:
-#   curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/intinig/claude.md/main/install-claude.sh | bash
 #
 
 set -e  # Exit on error
@@ -30,7 +30,7 @@ INSTALL_SKILLS=true
 INSTALL_COMMANDS=true
 INSTALL_AGENTS=true
 INSTALL_OPENCODE=false
-BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
+BASE_URL="https://raw.githubusercontent.com/intinig/claude.md"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -103,7 +103,7 @@ Examples:
   $0 --no-agents
 
   # One-liner installation
-  curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/intinig/claude.md/main/install-claude.sh | bash
 
 EOF
       exit 0
@@ -311,5 +311,5 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
 fi
 
 echo -e "${BLUE}For help or issues:${NC}"
-echo -e "  ${YELLOW}https://github.com/citypaul/.dotfiles${NC}"
+echo -e "  ${YELLOW}https://github.com/intinig/claude.md${NC}"
 echo ""

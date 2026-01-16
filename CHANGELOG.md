@@ -828,8 +828,8 @@ CLAUDE.md has been split from a single 1,818-line file into a modular structure:
 
 **📄 View the v1.0.0 monolithic file:**
 
-- GitHub: https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
-- Raw download: https://github.com/citypaul/.dotfiles/raw/v1.0.0/claude/.claude/CLAUDE.md
+- GitHub: https://github.com/intinig/claude.md/blob/v1.0.0/claude/.claude/CLAUDE.md
+- Raw download: https://github.com/intinig/claude.md/raw/v1.0.0/claude/.claude/CLAUDE.md
 
 **Content:**
 
@@ -865,6 +865,6 @@ This release represents the state of the repository before the modular split. Al
 - [2.0.0] - Modular CLAUDE.md structure with absolute imports
 - [1.0.0] - Initial release with monolithic CLAUDE.md
 
-[Unreleased]: https://github.com/citypaul/.dotfiles/compare/v2.0.0...HEAD
-[2.0.0]: https://github.com/citypaul/.dotfiles/compare/v1.0.0...v2.0.0
-[1.0.0]: https://github.com/citypaul/.dotfiles/releases/tag/v1.0.0
+[Unreleased]: https://github.com/intinig/claude.md/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/intinig/claude.md/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/intinig/claude.md/releases/tag/v1.0.0

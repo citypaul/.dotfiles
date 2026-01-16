@@ -11,8 +11,8 @@ This guide helps you upgrade from the monolithic CLAUDE.md (v1.x) to the modular
 ```
 
 **View v1.0.0 monolithic file:**
-- GitHub: https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
-- Raw download: https://github.com/citypaul/.dotfiles/raw/v1.0.0/claude/.claude/CLAUDE.md
+- GitHub: https://github.com/intinig/claude.md/blob/v1.0.0/claude/.claude/CLAUDE.md
+- Raw download: https://github.com/intinig/claude.md/raw/v1.0.0/claude/.claude/CLAUDE.md
 
 ### After (v2.0.0)
 ```
@@ -75,7 +75,7 @@ cp ~/.claude/CLAUDE.md ~/.claude/CLAUDE.md.v1.backup
 
 # 2. Install new structure
 cd /tmp
-git clone https://github.com/citypaul/.dotfiles.git
+git clone https://github.com/intinig/claude.md.git
 cd .dotfiles
 
 # 3. Copy all files
@@ -96,7 +96,7 @@ cd ~/.dotfiles
 git checkout v1.0.0
 
 # Or download the specific version
-curl -L https://github.com/citypaul/.dotfiles/raw/v1.0.0/claude/.claude/CLAUDE.md \
+curl -L https://github.com/intinig/claude.md/raw/v1.0.0/claude/.claude/CLAUDE.md \
   -o ~/.claude/CLAUDE.md
 ```
 
@@ -242,7 +242,7 @@ git checkout v1.0.0
 stow -R -t ~ claude
 
 # Or download directly
-curl -L https://github.com/citypaul/.dotfiles/raw/v1.0.0/claude/.claude/CLAUDE.md \
+curl -L https://github.com/intinig/claude.md/raw/v1.0.0/claude/.claude/CLAUDE.md \
   -o ~/.claude/CLAUDE.md
 
 # Remove docs directory if you don't want it
@@ -251,9 +251,9 @@ rm -rf ~/.claude/docs
 
 ## Getting Help
 
-- **Issues**: https://github.com/citypaul/.dotfiles/issues
-- **Discussions**: https://github.com/citypaul/.dotfiles/discussions
-- **Compare versions**: https://github.com/citypaul/.dotfiles/compare/v1.0.0...v2.0.0
+- **Issues**: https://github.com/intinig/claude.md/issues
+- **Discussions**: https://github.com/intinig/claude.md/discussions
+- **Compare versions**: https://github.com/intinig/claude.md/compare/v1.0.0...v2.0.0
 
 ## What's Next
 

@@ -43,7 +43,7 @@ Based on our README:
 
 ```bash
 # Method 1: Manual download - CLAUDE.md only
-curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
+curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/intinig/claude.md/main/claude/.claude/CLAUDE.md
 
 # Method 2: Manual download - Full package (6 separate curl commands)
 curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/...
@@ -55,7 +55,7 @@ curl -o .claude/agents/ts-enforcer.md https://raw.githubusercontent.com/...
 # Users fork the repo, modify to taste, pull into their projects
 
 # Method 4: Clone and stow (for dotfiles)
-git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
+git clone https://github.com/intinig/claude.md.git ~/.dotfiles
 cd ~/.dotfiles
 ./install.sh
 ```
@@ -126,7 +126,7 @@ git tag v1.0.0
 git push --tags
 
 # Users download from tag
-curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/v1.0.0/claude/.claude/CLAUDE.md
+curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/intinig/claude.md/v1.0.0/claude/.claude/CLAUDE.md
 ```
 
 **Pros:**
@@ -263,11 +263,11 @@ INSTALL_DIR="${3:-.claude}"
 
 # Fetch latest release if not specified
 if [ "$VERSION" = "latest" ]; then
-  VERSION=$(curl -s https://api.github.com/repos/citypaul/.dotfiles/releases/latest | jq -r .tag_name)
+  VERSION=$(curl -s https://api.github.com/repos/intinig/claude.md/releases/latest | jq -r .tag_name)
 fi
 
 # Download files from release
-BASE_URL="https://github.com/citypaul/.dotfiles/releases/download/$VERSION"
+BASE_URL="https://github.com/intinig/claude.md/releases/download/$VERSION"
 
 if [[ $PACKAGES == *"guidelines"* ]]; then
   mkdir -p "$INSTALL_DIR/docs"
@@ -342,7 +342,7 @@ echo "✅ Claude guidelines $VERSION installed to $INSTALL_DIR/"
   "version": "0.0.0",
   "private": true,
   "description": "Development guidelines for AI-assisted programming",
-  "repository": "github:citypaul/.dotfiles",
+  "repository": "github:intinig/claude.md",
   "author": "Paul Hammond",
   "license": "MIT"
 }
@@ -459,7 +459,7 @@ console.log(`✅ Released v${version}`);
 set -euo pipefail
 
 # Configuration
-REPO="citypaul/.dotfiles"
+REPO="intinig/claude.md"
 VERSION="${1:-latest}"
 INSTALL_DIR="${CLAUDE_INSTALL_DIR:-.claude}"
 
@@ -527,10 +527,10 @@ log_info "  - agents/*.md (4 files)"
 **Usage:**
 ```bash
 # Latest version
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
+curl -fsSL https://raw.githubusercontent.com/intinig/claude.md/main/install-claude.sh | bash
 
 # Specific version
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s v2.0.0
+curl -fsSL https://raw.githubusercontent.com/intinig/claude.md/main/install-claude.sh | bash -s v2.0.0
 
 # Custom directory
 CLAUDE_INSTALL_DIR=.config/claude curl -fsSL https://raw.githubusercontent.com/.../install-claude.sh | bash
@@ -548,31 +548,31 @@ Add versioning section:
 Install the latest version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
+curl -fsSL https://raw.githubusercontent.com/intinig/claude.md/main/install-claude.sh | bash
 ```
 
 Install a specific version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s v2.0.0
+curl -fsSL https://raw.githubusercontent.com/intinig/claude.md/main/install-claude.sh | bash -s v2.0.0
 ```
 
 ### Option 2: Manual Installation
 
-Download specific version from [releases](https://github.com/citypaul/.dotfiles/releases):
+Download specific version from [releases](https://github.com/intinig/claude.md/releases):
 
 ```bash
 VERSION=v2.0.0
 
 # Download CLAUDE.md
 curl -o .claude/CLAUDE.md \
-  https://github.com/citypaul/.dotfiles/releases/download/$VERSION/CLAUDE.md
+  https://github.com/intinig/claude.md/releases/download/$VERSION/CLAUDE.md
 
 # Download agents
 mkdir -p .claude/agents
 for agent in tdd-guardian ts-enforcer refactor-scan learn; do
   curl -o .claude/agents/${agent}.md \
-    https://github.com/citypaul/.dotfiles/releases/download/$VERSION/agents/${agent}.md
+    https://github.com/intinig/claude.md/releases/download/$VERSION/agents/${agent}.md
 done
 ```
 
@@ -581,7 +581,7 @@ done
 ```bash
 # Gets latest from main branch (no version pinning)
 curl -o .claude/CLAUDE.md \
-  https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
+  https://raw.githubusercontent.com/intinig/claude.md/main/claude/.claude/CLAUDE.md
 ```
 
 ## Versioning
@@ -596,7 +596,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ### Upgrading
 
-Check the [releases page](https://github.com/citypaul/.dotfiles/releases) for:
+Check the [releases page](https://github.com/intinig/claude.md/releases) for:
 - 📝 Changelog
 - ⚠️ Breaking changes
 - 📖 Migration guides
