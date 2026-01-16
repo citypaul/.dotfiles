@@ -1,4 +1,0 @@
-set-option -g default-shell /bin/zsh
-
-# Copied the mouse stuff from this Gist: https://gist.github.com/simme/1297707
-# More on mouse support http://floriancrouzat.net/2010/07/run-tmux-with-mouse-support-in-mac-os-x-terminal-app/
