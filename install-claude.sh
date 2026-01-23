@@ -225,6 +225,8 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
     "docs-guardian.md"
     "adr.md"
     "learn.md"
+    "pr-reviewer.md"
+    "test-design-reviewer.md"
     "use-case-data-patterns.md"
     "progress-guardian.md"
     "README.md"
@@ -275,7 +277,7 @@ if [[ "$INSTALL_COMMANDS" == true ]]; then
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} agents/ (8 Claude Code agents + README)"
+  echo -e "  ${GREEN}✓${NC} agents/ (10 Claude Code agents + README)"
 fi
 
 if [[ "$INSTALL_OPENCODE" == true ]]; then

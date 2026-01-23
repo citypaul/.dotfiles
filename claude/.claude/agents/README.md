@@ -82,6 +82,38 @@ This directory contains specifications for specialized Claude Code agents that w
 
 ---
 
+#### `test-design-reviewer`
+**Purpose**: Evaluates test quality using Dave Farley's eight properties of good tests, providing a comprehensive Farley Score.
+
+**Use proactively when**:
+- Writing new test suites
+- Planning test strategy
+- Want guidance on test design before writing
+
+**Use reactively when**:
+- Tests are written and need quality assessment
+- Reviewing test suite quality
+- Investigating test brittleness or maintenance issues
+- Evaluating TDD adherence
+
+**Core responsibility**: Score tests on eight properties (Understandable, Maintainable, Repeatable, Atomic, Necessary, Granular, Fast, First) and provide actionable recommendations.
+
+**Eight Properties Evaluated**:
+1. **Understandable** - Tests read like specifications
+2. **Maintainable** - Tests survive refactoring
+3. **Repeatable** - Deterministic, no flakiness
+4. **Atomic** - Isolated, no shared state
+5. **Necessary** - Every test adds value
+6. **Granular** - One assertion per test
+7. **Fast** - Quick execution
+8. **First** - Test-driven design
+
+**Output**: Farley Score (weighted average of properties), detailed analysis, and prioritized recommendations.
+
+> **Attribution**: Adapted from [Andrea Laforgia's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md).
+
+---
+
 ### Documentation & Knowledge Agents
 
 #### `docs-guardian`
