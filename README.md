@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten enforcement agents](claude/.claude/agents/)** - Development guidelines, 10 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** - Development guidelines, 11 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -70,6 +70,7 @@ Unlike typical style guides, CLAUDE.md provides:
 |---------|-----------------|-------------------|
 | **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
 | **Mutation Testing** | Test effectiveness verification, mutation operators, weak test detection | [→ skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) |
+| **Test Design Review** | Dave Farley's 8 properties evaluation, Farley Score calculation, test quality assessment | [→ skills/test-design-reviewer](claude/.claude/skills/test-design-reviewer/SKILL.md) |
 | **Front-End Testing** | DOM Testing Library patterns, accessibility-first queries, userEvent best practices (framework-agnostic) | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
 | **React Testing** | React Testing Library patterns for components, hooks, context, and forms | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
 | **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
@@ -425,7 +426,7 @@ Ask yourself:
 
 [**→ Read the agents documentation**](claude/.claude/agents/README.md)
 
-Ten specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
+Nine specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
 
 ### 1. `tdd-guardian` - TDD Compliance Enforcer
 
@@ -726,43 +727,6 @@ Claude Code: [Launches use-case-data-patterns agent]
 
 ---
 
-### 10. `test-design-reviewer` - Test Design Quality Reviewer
-
-**Use proactively** when writing tests, or **reactively** to evaluate test suite quality against established best practices.
-
-**What it evaluates:**
-- Scores tests on 8 properties based on Dave Farley's testing principles
-- Provides weighted Farley Score (1-10) with detailed breakdown
-- Identifies test brittleness, maintenance issues, and TDD violations
-- Offers actionable recommendations prioritized by impact
-
-**Eight Properties Evaluated:**
-1. **Understandable** - Tests read like specifications
-2. **Maintainable** - Tests survive refactoring
-3. **Repeatable** - Deterministic, no flakiness
-4. **Atomic** - Isolated, no shared state
-5. **Necessary** - Every test adds value
-6. **Granular** - One assertion per test
-7. **Fast** - Quick execution
-8. **First** - Test-driven design
-
-**Example invocation:**
-```
-You: "I just wrote tests for the authentication module, can you review them?"
-Claude Code: [Launches test-design-reviewer agent, scores each property, calculates Farley Score]
-```
-
-**Output:**
-- Property scores table with evidence
-- Farley Score (weighted average) with rating
-- Detailed analysis with code examples
-- Prioritized recommendations for improvement
-- Reference to Dave Farley's testing principles
-
-> **Attribution**: Adapted from [Andrea Laforgia's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md).
-
----
-
 ## 🚀 How to Use This in Your Projects
 
 **Quick navigation by situation:**
@@ -845,9 +809,9 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (10 auto-discovered patterns: tdd, testing, mutation-testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
+- ✅ `~/.claude/skills/` (11 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
 - ✅ `~/.claude/commands/` (2 slash commands: /pr, /generate-pr-review)
-- ✅ `~/.claude/agents/` (10 automated enforcement agents)
+- ✅ `~/.claude/agents/` (9 automated enforcement agents)
 
 **Optional: Enable GitHub MCP Integration**
 
@@ -968,7 +932,6 @@ curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotf
 curl -o .claude/agents/progress-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/progress-guardian.md
 curl -o .claude/agents/adr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/adr.md
 curl -o .claude/agents/pr-reviewer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/pr-reviewer.md
-curl -o .claude/agents/test-design-reviewer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/test-design-reviewer.md
 curl -o .claude/agents/use-case-data-patterns.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/use-case-data-patterns.md
 
 # Download agents README
@@ -1053,10 +1016,10 @@ The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `-
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (10 skills: tdd, testing, mutation-testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (11 skills: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
 - **[Commands](claude/.claude/commands/)** - Slash commands (/pr, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
-- **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, test-design-reviewer, use-case-data-patterns)
+- **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (9 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns)
 
 ---
 
@@ -1230,7 +1193,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 10 skills + 10 agents (development guidelines)
+- ✅ CLAUDE.md + 11 skills + 9 agents (development guidelines)
 - ✅ Commands (/pr, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
@@ -1310,7 +1273,7 @@ Special thanks to contributors who have shared their work:
 
 - **[Kieran O'Hara](https://github.com/kieran-ohara)** - The `use-case-data-patterns` agent is adapted from [Kieran's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you for creating and sharing this excellent agent specification.
 
-- **[Andrea Laforgia](https://github.com/andlaf-ak)** - The `test-design-reviewer` agent is adapted from [Andrea's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md). Thank you for creating and sharing this comprehensive test design review framework based on Dave Farley's testing principles.
+- **[Andrea Laforgia](https://github.com/andlaf-ak)** - The `test-design-reviewer` skill is adapted from [Andrea's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md). Thank you for creating and sharing this comprehensive test design review framework based on Dave Farley's testing principles.
 
 ---
 
