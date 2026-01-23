@@ -155,7 +155,7 @@ echo -e "${BLUE}Creating directories...${NC}"
 mkdir -p ~/.claude/agents ~/.claude/skills ~/.claude/commands
 mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
-mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing
+mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
 echo -e "${GREEN}✓${NC} Directories created"
 echo ""
 
@@ -180,6 +180,8 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "functional/SKILL.md"
     "refactoring/SKILL.md"
     "testing/SKILL.md"
+    "mutation-testing/SKILL.md"
+    "test-design-reviewer/SKILL.md"
     "expectations/SKILL.md"
     "planning/SKILL.md"
     "front-end-testing/SKILL.md"
@@ -225,6 +227,7 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
     "docs-guardian.md"
     "adr.md"
     "learn.md"
+    "pr-reviewer.md"
     "use-case-data-patterns.md"
     "progress-guardian.md"
     "README.md"
@@ -267,7 +270,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (9 auto-discovered patterns: tdd, testing, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)"
+  echo -e "  ${GREEN}✓${NC} skills/ (11 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)"
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
@@ -275,7 +278,7 @@ if [[ "$INSTALL_COMMANDS" == true ]]; then
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} agents/ (8 Claude Code agents + README)"
+  echo -e "  ${GREEN}✓${NC} agents/ (9 Claude Code agents + README)"
 fi
 
 if [[ "$INSTALL_OPENCODE" == true ]]; then
