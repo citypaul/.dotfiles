@@ -30,7 +30,9 @@ INSTALL_SKILLS=true
 INSTALL_COMMANDS=true
 INSTALL_AGENTS=true
 INSTALL_OPENCODE=false
+INSTALL_EXTERNAL=true
 BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
+WEB_QUALITY_SKILLS_URL="https://raw.githubusercontent.com/addyosmani/web-quality-skills"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -71,6 +73,10 @@ while [[ $# -gt 0 ]]; do
       INSTALL_OPENCODE=true
       shift
       ;;
+    --no-external)
+      INSTALL_EXTERNAL=false
+      shift
+      ;;
     --version)
       VERSION="$2"
       shift 2
@@ -89,6 +95,7 @@ Options:
   --agents-only      Install only agents
   --with-opencode    Also install OpenCode configuration
   --opencode-only    Install only OpenCode configuration
+  --no-external      Skip external community skills (web-quality-skills)
   --version VERSION  Install specific version (default: main)
   --help, -h         Show this help message
 
@@ -156,6 +163,10 @@ mkdir -p ~/.claude/agents ~/.claude/skills ~/.claude/commands
 mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
+if [[ "$INSTALL_EXTERNAL" == true ]]; then
+  mkdir -p ~/.claude/skills/accessibility ~/.claude/skills/best-practices ~/.claude/skills/core-web-vitals
+  mkdir -p ~/.claude/skills/performance ~/.claude/skills/seo ~/.claude/skills/web-quality-audit
+fi
 echo -e "${GREEN}✓${NC} Directories created"
 echo ""
 
@@ -195,6 +206,37 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
       ~/.claude/skills/"$skill" \
       "skills/$skill"
   done
+  echo ""
+fi
+
+# Install external community skills (fetched from upstream repos)
+if [[ "$INSTALL_EXTERNAL" == true && "$INSTALL_SKILLS" == true ]]; then
+  echo -e "${BLUE}Installing external community skills...${NC}"
+  echo -e "${YELLOW}→${NC} Source: addyosmani/web-quality-skills (MIT License)"
+
+  external_skills=(
+    "accessibility/SKILL.md"
+    "best-practices/SKILL.md"
+    "core-web-vitals/SKILL.md"
+    "performance/SKILL.md"
+    "seo/SKILL.md"
+    "web-quality-audit/SKILL.md"
+  )
+
+  for skill in "${external_skills[@]}"; do
+    backup_file ~/.claude/skills/"$skill"
+    download_file \
+      "$WEB_QUALITY_SKILLS_URL/main/skills/$skill" \
+      ~/.claude/skills/"$skill" \
+      "skills/$skill (web-quality-skills)"
+  done
+
+  # Download the license file to preserve attribution as required by MIT
+  download_file \
+    "$WEB_QUALITY_SKILLS_URL/main/LICENSE" \
+    ~/.claude/skills/.web-quality-skills-LICENSE \
+    "web-quality-skills LICENSE"
+
   echo ""
 fi
 
@@ -271,6 +313,9 @@ fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "  ${GREEN}✓${NC} skills/ (11 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)"
+  if [[ "$INSTALL_EXTERNAL" == true ]]; then
+    echo -e "  ${GREEN}✓${NC} skills/ (6 web quality patterns: accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)"
+  fi
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
@@ -313,6 +358,20 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
   echo ""
 fi
 
+echo -e "${BLUE}Acknowledgments:${NC}"
+echo ""
+echo -e "  This project includes contributions and adapted work from:"
+echo ""
+echo -e "  • ${YELLOW}Addy Osmani${NC} - Web quality skills (accessibility, performance, SEO,"
+echo -e "    core-web-vitals, best-practices, web-quality-audit)"
+echo -e "    ${BLUE}https://github.com/addyosmani/web-quality-skills${NC} (MIT License)"
+echo ""
+echo -e "  • ${YELLOW}Kieran O'Hara${NC} - use-case-data-patterns agent"
+echo -e "    ${BLUE}https://github.com/kieran-ohara/dotfiles${NC}"
+echo ""
+echo -e "  • ${YELLOW}Andrea Laforgia${NC} - test-design-reviewer skill"
+echo -e "    ${BLUE}https://github.com/andlaf-ak/claude-code-agents${NC}"
+echo ""
 echo -e "${BLUE}For help or issues:${NC}"
 echo -e "  ${YELLOW}https://github.com/citypaul/.dotfiles${NC}"
 echo ""
