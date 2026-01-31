@@ -32,7 +32,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** - Development guidelines, 11 auto-discovered skill patterns, and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** - Development guidelines, 11 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -79,6 +79,12 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
 | **Planning** | Small increments, three-document model (PLAN/WIP/LEARNINGS), commit approval | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
+| **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
+| **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
+| **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
+| **Accessibility** | WCAG compliance, screen reader support, keyboard navigation | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
+| **SEO** | Search engine optimization, crawlability, structured data | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
+| **Best Practices** | Security, modern APIs, code quality patterns | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 
 ---
 
@@ -104,6 +110,11 @@ Unlike typical style guides, CLAUDE.md provides:
 | Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
 | Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
 | Planning significant work | [planning](claude/.claude/skills/planning/SKILL.md) | Three-document model (PLAN/WIP/LEARNINGS), commit approval |
+| Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
+| Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
+| Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
+| Poor search engine visibility | [seo](https://github.com/addyosmani/web-quality-skills) | Technical SEO, structured data, meta tags, crawlability |
+| Full site quality audit | [web-quality-audit](https://github.com/addyosmani/web-quality-skills) | Comprehensive Lighthouse audit across all categories |
 
 ### How Skills Work
 
@@ -802,6 +813,7 @@ chmod +x install-claude.sh
 ./install-claude.sh --claude-only      # Install only CLAUDE.md
 ./install-claude.sh --skills-only      # Install only skills
 ./install-claude.sh --no-agents        # Install without agents
+./install-claude.sh --no-external      # Skip external community skills (web-quality-skills)
 ./install-claude.sh --with-opencode    # Also install OpenCode configuration
 ./install-claude.sh --version v2.0.0   # Install v2.0.0 (modular docs)
 ./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
@@ -810,6 +822,7 @@ chmod +x install-claude.sh
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
 - ✅ `~/.claude/skills/` (11 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
+- ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
 - ✅ `~/.claude/commands/` (2 slash commands: /pr, /generate-pr-review)
 - ✅ `~/.claude/agents/` (9 automated enforcement agents)
 
@@ -1016,7 +1029,7 @@ The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `-
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (11 skills: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (11 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
 - **[Commands](claude/.claude/commands/)** - Slash commands (/pr, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (9 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns)
@@ -1193,7 +1206,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 11 skills + 9 agents (development guidelines)
+- ✅ CLAUDE.md + 17 skills (11 built-in + 6 web quality) + 9 agents (development guidelines)
 - ✅ Commands (/pr, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
@@ -1270,6 +1283,8 @@ Please open issues or PRs on GitHub.
 ## 🙏 Acknowledgments
 
 Special thanks to contributors who have shared their work:
+
+- **[Addy Osmani](https://github.com/addyosmani)** - The web quality skills (accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit) are sourced from [Addy's web-quality-skills repository](https://github.com/addyosmani/web-quality-skills). These skills are fetched directly from the upstream repository at install time so you always get the latest version. Licensed under the [MIT License](https://github.com/addyosmani/web-quality-skills/blob/main/LICENSE).
 
 - **[Kieran O'Hara](https://github.com/kieran-ohara)** - The `use-case-data-patterns` agent is adapted from [Kieran's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you for creating and sharing this excellent agent specification.
 
