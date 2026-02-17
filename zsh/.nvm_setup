@@ -30,9 +30,10 @@ _nvm_load() {
 }
 
 # Stub functions that trigger lazy loading
-node() { _nvm_load; node "$@"; }
-npm() { _nvm_load; npm "$@"; }
-npx() { _nvm_load; npx "$@"; }
-nvm() { _nvm_load; nvm "$@"; }
-yarn() { _nvm_load; yarn "$@"; }
-pnpm() { _nvm_load; pnpm "$@"; }
+# Each stub unsets itself first to prevent infinite recursion if _nvm_load fails
+node() { unset -f node; _nvm_load; node "$@"; }
+npm() { unset -f npm; _nvm_load; npm "$@"; }
+npx() { unset -f npx; _nvm_load; npx "$@"; }
+nvm() { unset -f nvm; _nvm_load; nvm "$@"; }
+yarn() { unset -f yarn; _nvm_load; yarn "$@"; }
+pnpm() { unset -f pnpm; _nvm_load; pnpm "$@"; }
