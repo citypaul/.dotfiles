@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.8.0
+
+### Minor Changes
+
+- 04e245e: Add frontend-design skill from anthropics/skills (Apache 2.0 licensed)
+
 ## 3.7.0
 
 ### Minor Changes
