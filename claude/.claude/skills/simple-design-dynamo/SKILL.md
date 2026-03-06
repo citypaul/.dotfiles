@@ -1,6 +1,10 @@
 ---
 name: simple-design-dynamo
-description: The Four Elements of Simple Design, rules 2 and 3 of which form a feedback loop. Use as a guiding light when refactoring legacy code.
+description: >
+  Collaborative refactoring using the Four Elements of Simple Design
+  (minimize duplication, maximize clarity). Use when refactoring legacy code,
+  improving code quality, or simplifying complex code with a human partner.
+disable-model-invocation: true
 allowed-tools:
   - Read
   - Edit
@@ -12,6 +16,21 @@ allowed-tools:
 # Simple Design Dynamo
 
 This skill uses J. B. Rainsberger's Four Elements of Simple Design.
+
+**Related skills**: This skill builds on top of the `tdd` and `refactoring` skills.
+Load those for the detailed TDD workflow (RED-GREEN-REFACTOR) and refactoring patterns.
+
+---
+
+# How This Skill Fits With TDD
+
+This skill operates **within the REFACTOR phase** of the RED-GREEN-REFACTOR cycle defined in `tdd`. It does not replace that cycle. The sequence is:
+
+1. **RED**: Write a failing test (per `tdd` skill)
+2. **GREEN**: Write minimum code to pass (per `tdd` skill)
+3. **REFACTOR**: Use the Simple Design Dynamo (this skill) as a guiding light for what to improve
+
+When invoked explicitly via `/simple-design-dynamo`, the dynamo cycle below guides the collaborative refactoring conversation.
 
 ---
 
@@ -31,65 +50,63 @@ J. B. Rainsberger found:
 
 # MANDATORY: Human Involvement Checkpoints
 
-**🛑 STOP AND DISCUSS with your human partner in these situations:**
+**STOP AND DISCUSS with your human partner in these situations:**
 
-1. **Before ANY code change** - Propose the small change and discuss options together
-2. **When naming** - Propose 2-3 name options and let the human decide
-3. **When surfacing duplication** - Show the duplicated code and discuss extraction strategies
-4. **When uncertain about next step** - Never proceed autonomously when unsure
-5. **When tests fail unexpectedly** - Discuss the failure before attempting a fix
-6. **When considering multiple refactoring approaches** - Present options, don't choose alone
-7. **Before removing code** - Always confirm with the human before deletion
-8. **When a refactoring feels "too big"** - Break it down together
+1. **When naming** - Propose 2-3 name options and let the human decide
+2. **When surfacing duplication** - Show the duplicated code and discuss extraction strategies
+3. **Before removing code** - Always confirm with the human before deletion
 
-**⚠️ NEVER proceed on your own if:**
+**NEVER proceed on your own if:**
 - You're about to make a change that affects more than one concept
 - You're unsure whether tests adequately cover the change
-- The change could break existing functionality
 
 ---
 
-# Rigorous Process (Follow Exactly)
-
-## The Refactoring Cycle
+# The Refactoring Cycle
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  1. DISCUSS with human: What small change to make? │
-│     (Propose options, decide together)             │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  2. Make ONE small change                          │
-│     (Only what was agreed - nothing more!)         │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  3. Run ALL tests                                  │
-│     - If RED: STOP, discuss with human, undo if    │
-│       necessary                                    │
-│     - If GREEN: proceed                            │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  4. Run linter (e.g., rubocop -a)                  │
-│     - Fix any issues                               │
-│     - Re-run tests after fixes                     │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  5. Commit with conventional commit message        │
-│     (e.g., refactor:, fix:, test:)                 │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  6. DISCUSS: Check for code smells                 │
-│     - Is there duplication to surface?             │
-│     - Are names clear?                             │
-│     - Can anything be simplified?                  │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-              [Return to Step 1]
++-----------------------------------------------------+
+|  1. DISCUSS with human: What small change to make?   |
+|     (Propose options, decide together)               |
++-------------------------+---------------------------+
+                          |
+                          v
++-----------------------------------------------------+
+|  2. Make ONE small change                            |
+|     (Only what was agreed - nothing more!)           |
++-------------------------+---------------------------+
+                          |
+                          v
++-----------------------------------------------------+
+|  3. Run ALL tests                                    |
+|     - If RED: STOP, discuss with human, undo if      |
+|       necessary                                      |
+|     - If GREEN: proceed                              |
++-------------------------+---------------------------+
+                          |
+                          v
++-----------------------------------------------------+
+|  4. Run linter                                       |
+|     - Fix any issues                                 |
+|     - Re-run tests after fixes                       |
++-------------------------+---------------------------+
+                          |
+                          v
++-----------------------------------------------------+
+|  5. Commit with conventional commit message          |
+|     (e.g., refactor:, fix:, test:)                   |
++-------------------------+---------------------------+
+                          |
+                          v
++-----------------------------------------------------+
+|  6. DISCUSS: Check for code smells                   |
+|     - Is there duplication to surface?               |
+|     - Are names clear?                               |
+|     - Can anything be simplified?                    |
++-------------------------+---------------------------+
+                          |
+                          v
+               [Return to Step 1]
 ```
 
 ## Rules for Minimizing Duplication
@@ -100,18 +117,20 @@ J. B. Rainsberger found:
     - Align the code visually
     - Use identical variable names where appropriate
     - Show the human the side-by-side comparison
-    - **🛑 STOP**: Discuss extraction strategy with human
+    - STOP: Discuss extraction strategy with human
 
 3. **Never extract silently**: Always propose the extraction and get human approval.
+
+For more on DRY principles (knowledge vs code duplication), see the `refactoring` skill.
 
 ## Rules for Maximizing Clarity
 
 1. **Naming requires human decision**: When renaming:
     - Propose 2-3 name options
     - Explain the trade-offs of each
-    - **🛑 STOP**: Let the human choose
+    - STOP: Let the human choose
 
-2. **Comments are a smell**: If you feel the need to add a comment, consider whether a better name would suffice. Discuss with human.
+2. **Comments are a smell**: If you feel the need to add a comment, a better name would suffice. Code should be self-documenting.
 
 3. **Extract to explain**: If a block of code needs explanation, consider extracting it to a well-named method. Propose this to the human.
 
@@ -121,62 +140,25 @@ J. B. Rainsberger found:
     - Proven unused (tests still pass)
     - Confirmed unnecessary by human
 
-2. **Dead code**: If you spot dead code, point it out to the human. **🛑 STOP**: Get confirmation before removing.
+2. **Dead code**: If you spot dead code, point it out to the human. STOP: Get confirmation before removing.
 
 ---
 
 # Examples of Small Changes
 
-## Parallel Change/Expand and Contract
-
-This is a pattern to implement backward-incompatible changes to an interface in a safe manner, by breaking the change into three distinct phases: expand, migrate, and contract.
-
-**CRITICAL**: Each phase is a SEPARATE commit with passing tests!
-
-### Phase 1: Expand (Add the new thing)
-- Add the new method/class/interface alongside the old one
-- Both old and new coexist
-- **🛑 STOP**: Run tests, commit, discuss next step with human
-
-### Phase 2: Migrate (Move clients to new thing)
-- Update each caller one at a time
-- After EACH caller migration: run tests, commit
-- **🛑 STOP**: After all migrations, discuss with human before proceeding
-
-### Phase 3: Contract (Remove the old thing)
-- **🛑 STOP**: Confirm with human that all clients are migrated
-- Remove the old method/class/interface
-- Run tests, commit
-
-## Rename Refactoring
-
-1. **🛑 STOP**: Propose new name options to human
-2. After human chooses: Add new name (alias or wrapper)
-3. Run tests, commit
-4. Migrate callers one by one (test + commit each)
-5. **🛑 STOP**: Confirm with human before removing old name
-6. Remove old name
-7. Run tests, commit
-
-## Extract Method
-
-1. **🛑 STOP**: Identify code to extract, discuss with human
-2. **🛑 STOP**: Propose method name options, let human choose
-3. Extract to new method (keep original code calling it)
-4. Run tests, commit
-5. Check for other call sites that could use the new method
+For detailed refactoring examples, see [examples/](examples/).
 
 ---
 
 # Anti-Patterns (NEVER Do These)
 
-❌ **Big Bang Refactoring**: Making multiple changes at once
-❌ **Speculative Generality**: Adding flexibility "just in case"
-❌ **Autonomous Decision Making**: Choosing refactoring direction without human input
-❌ **Skipping Tests**: Never make a change without running tests immediately after
-❌ **Skipping Commits**: Every green test run after a change deserves a commit
-❌ **Premature Extraction**: Extracting duplication before the Rule of Three
-❌ **Silent Deletion**: Removing code without human confirmation
+- **Big Bang Refactoring**: Making multiple changes at once
+- **Speculative Generality**: Adding flexibility "just in case"
+- **Autonomous Decision Making**: Choosing refactoring direction without human input
+- **Skipping Tests**: Never make a change without running tests immediately after
+- **Skipping Commits**: Every green test run after a change deserves a commit
+- **Premature Extraction**: Extracting duplication before the Rule of Three
+- **Silent Deletion**: Removing code without human confirmation
 
 ---
 
@@ -194,26 +176,27 @@ This is a pattern to implement backward-incompatible changes to an interface in 
 # Summary: The Dynamo in Action
 
 ```
-    ┌──────────────────────┐
-    │   DISCUSS & AGREE    │◄────────────────┐
-    │   (Human + Agent)    │                 │
-    └──────────┬───────────┘                 │
-               ▼                             │
-    ┌──────────────────────┐                 │
-    │  Minimize Duplication │                │
-    │  (Surface it first!) │                 │
-    └──────────┬───────────┘                 │
-               │                             │
-               ▼                             │
-    ┌──────────────────────┐                 │
-    │   Maximize Clarity   │                 │
-    │  (Propose names!)    │                 │
-    └──────────┬───────────┘                 │
-               │                             │
-               ▼                             │
-    ┌──────────────────────┐                 │
-    │     Test → Commit    │─────────────────┘
-    └──────────────────────┘
+    +----------------------+
+    |   DISCUSS & AGREE    |<----------------+
+    |   (Human + Agent)    |                 |
+    +----------+-----------+                 |
+               |                             |
+               v                             |
+    +----------------------+                 |
+    |  Minimize Duplication |                |
+    |  (Surface it first!) |                 |
+    +----------+-----------+                 |
+               |                             |
+               v                             |
+    +----------------------+                 |
+    |   Maximize Clarity   |                 |
+    |  (Propose names!)    |                 |
+    +----------+-----------+                 |
+               |                             |
+               v                             |
+    +----------------------+                 |
+    |     Test -> Commit   |-----------------+
+    +----------------------+
 ```
 
 The dynamo only works when human and agent collaborate at each step!
