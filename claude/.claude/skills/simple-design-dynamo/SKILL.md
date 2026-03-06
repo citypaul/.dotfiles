@@ -1,6 +1,12 @@
 ---
 name: simple-design-dynamo
 description: The Four Elements of Simple Design, rules 2 and 3 of which form a feedback loop. Use as a guiding light when refactoring legacy code.
+allowed-tools:
+  - Read
+  - Edit
+  - Glob
+  - Grep
+  - Bash
 ---
 
 # Simple Design Dynamo
