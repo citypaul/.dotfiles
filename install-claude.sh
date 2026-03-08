@@ -163,6 +163,7 @@ mkdir -p ~/.claude/agents ~/.claude/skills ~/.claude/commands
 mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
+mkdir -p ~/.claude/skills/ci-debugging ~/.claude/skills/hexagonal-architecture ~/.claude/skills/domain-driven-design ~/.claude/skills/frontend-design
 if [[ "$INSTALL_EXTERNAL" == true ]]; then
   mkdir -p ~/.claude/skills/accessibility ~/.claude/skills/best-practices ~/.claude/skills/core-web-vitals
   mkdir -p ~/.claude/skills/performance ~/.claude/skills/seo ~/.claude/skills/web-quality-audit
@@ -197,6 +198,10 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "planning/SKILL.md"
     "front-end-testing/SKILL.md"
     "react-testing/SKILL.md"
+    "ci-debugging/SKILL.md"
+    "hexagonal-architecture/SKILL.md"
+    "domain-driven-design/SKILL.md"
+    "frontend-design/SKILL.md"
   )
 
   for skill in "${skills[@]}"; do
@@ -245,7 +250,11 @@ if [[ "$INSTALL_COMMANDS" == true ]]; then
   echo -e "${BLUE}Installing commands (slash commands)...${NC}"
 
   commands=(
+    "setup.md"
     "pr.md"
+    "plan.md"
+    "continue.md"
+    "generate-pr-review.md"
   )
 
   for cmd in "${commands[@]}"; do

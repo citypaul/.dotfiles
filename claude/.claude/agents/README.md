@@ -341,6 +341,18 @@ Quick decision table for all agents:
 - "What's missing to implement this feature?"
 - → Answer: Analytical report mapping use cases to data patterns
 
+## Slash Commands
+
+Commands complement agents by encoding common workflows into single invocations.
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/setup` | Project onboarding — detect tech stack, create CLAUDE.md, hooks, commands, PR reviewer | Starting work on a new project (replaces `/init`) |
+| `/pr` | Create a pull request following standards | When ready to submit work |
+| `/plan` | Create a plan document on a branch with a PR — no code | When planning work before implementation |
+| `/continue` | Pull merged PR, create new branch, update plan | After a PR is merged and you want to continue |
+| `/generate-pr-review` | Generate project-specific PR review automation | One-time setup per project |
+
 ## Using These Agents
 
 These agent specifications are designed to be integrated into Claude Code. To use them:

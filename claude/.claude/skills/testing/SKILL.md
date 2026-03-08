@@ -5,6 +5,8 @@ description: Testing patterns for behavior-driven tests. Use when writing tests 
 
 # Testing Patterns
 
+For verifying test effectiveness through mutation analysis, load the `mutation-testing` skill. For evaluating test quality against Dave Farley's properties, load the `test-design-reviewer` skill.
+
 ## Core Principle
 
 **Test behavior, not implementation.** 100% coverage through business behavior, not implementation details.
@@ -165,6 +167,8 @@ const getMockUser = (overrides?: Partial<User>): User => {
 - Ensures test data is valid according to production schema
 - Catches breaking changes early (schema changes fail tests)
 - Single source of truth (no schema redefinition)
+
+**Tip:** For factories where only a subset of fields are relevant, use `Pick<T, 'field1' | 'field2'>` for the overrides parameter to constrain what callers can customize.
 
 ### Factory Composition
 
