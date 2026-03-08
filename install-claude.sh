@@ -321,14 +321,14 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (11 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)"
+  echo -e "  ${GREEN}✓${NC} skills/ (15 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, frontend-design)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "  ${GREEN}✓${NC} skills/ (6 web quality patterns: accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)"
   fi
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} commands/ (1 slash command: /pr)"
+  echo -e "  ${GREEN}✓${NC} commands/ (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)"
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
