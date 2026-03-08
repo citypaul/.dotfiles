@@ -276,6 +276,24 @@ progress-guardian (orchestrates)
    - Invoke `docs-guardian`: Update permanent docs
    - **DELETE PLAN.md, WIP.md, LEARNINGS.md**
 
+## When to Use Which Agent
+
+Quick decision table for all agents:
+
+| Question | Agent | Timing |
+|----------|-------|--------|
+| "How do I work with X?" | `learn` | After discovering patterns/gotchas |
+| "Why did we choose X?" | `adr` | When making/documenting architecture decisions |
+| "Is this type-safe?" | `ts-enforcer` | During development (proactive) |
+| "Is this PR ready?" | `pr-reviewer` | At review time (reactive) |
+| "Should I refactor this?" | `refactor-scan` | After GREEN phase only |
+| "Was TDD followed?" | `tdd-guardian` | During TDD cycle |
+| "Is this documented?" | `docs-guardian` | At feature completion |
+| "What data patterns exist?" | `use-case-data-patterns` | Before implementing features |
+| "Where am I in this work?" | `progress-guardian` | Throughout multi-step work |
+
+**Note:** `learn` and `adr` can both apply to the same decision — `learn` captures "how to use it" (→ CLAUDE.md), `adr` captures "why we chose it" (→ ADR doc).
+
 ## Key Distinctions
 
 ### Documentation Types
