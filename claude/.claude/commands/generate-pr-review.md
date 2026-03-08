@@ -74,11 +74,33 @@ API.md
 
 Parse ADRs for architectural decisions that affect code review (e.g., "We use Zod for all validation").
 
+### CI Pipeline Detection
+
+Check for CI configuration files and document the pipeline:
+
+```bash
+# GitHub Actions
+.github/workflows/*.yml
+
+# Forgejo Actions
+.forgejo/workflows/*.yml
+
+# Woodpecker
+.woodpecker/*.yml
+
+# Other
+Jenkinsfile
+.circleci/config.yml
+.gitlab-ci.yml
+```
+
+Extract: pipeline steps, execution order, Node/runtime versions, environment variables, and any known differences from local development.
+
 ### Tech Stack Detection
 
 Check for:
 - `package.json` - Dependencies, scripts, type of project
-- `tsconfig.json` - TypeScript configuration
+- `tsconfig.json` - TypeScript configuration (note `strict`, `noUncheckedIndexedAccess`, and other strict flags)
 - `.eslintrc.*` or `eslint.config.*` - Linting rules
 - `jest.config.*` or `vitest.config.*` - Testing setup
 - `biome.json` - Biome configuration
@@ -142,6 +164,8 @@ This reviewer enforces:
 - `type` for data structures, `interface` for behavior contracts
 - Schema-first at trust boundaries (Zod/Standard Schema)
 - `readonly` on immutable data
+[IF noUncheckedIndexedAccess IS ENABLED: - All indexed access returns `T | undefined` — use optional chaining or explicit guards, never non-null assertions]
+[ADD ANY OTHER STRICT FLAGS DETECTED FROM tsconfig.json]
 
 ### Functional Patterns
 - No data mutation (no `.push()`, `.splice()`, property assignment)
@@ -268,7 +292,68 @@ When reviewing PRs for this project:
 ```
 ```
 
-## Step 3: Optionally Create Project Skill
+## Step 3: Generate Project-Level Hooks
+
+Create `.claude/settings.json` (or merge into existing) with a PostToolUse hook that runs typecheck after editing TypeScript files:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty'); if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx ]]; then [DETECTED_TYPE_CHECK_COMMAND] 2>&1 | tail -20; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Replace `[DETECTED_TYPE_CHECK_COMMAND]` with the actual typecheck command from `package.json` scripts (e.g., `pnpm typecheck`, `npx tsc --noEmit`).
+
+## Step 4: Generate Project-Specific /pr Command
+
+Create `.claude/commands/pr.md` that runs quality checks before creating the PR:
+
+```markdown
+---
+description: Create a pull request with pre-flight quality checks
+allowed-tools: Bash(git:*), Bash(gh:*), Bash([PACKAGE_MANAGER]:*)
+---
+
+Current branch state:
+!` + "`" + `git log main..HEAD --oneline` + "`" + `
+
+Changes summary:
+!` + "`" + `git diff main...HEAD --stat` + "`" + `
+
+Before creating the PR, run these checks in order:
+
+1. [DETECTED_TYPE_CHECK_COMMAND]
+2. [DETECTED_LINT_COMMAND]
+3. [DETECTED_TEST_COMMAND]
+
+If any check fails, fix the issue before proceeding.
+
+Create a PR with:
+
+## Summary
+- 1-3 bullet points describing the changes
+- Focus on WHAT changed and WHY
+
+Note: No test plan section needed - TDD means tests are already written and passing.
+
+Use ` + "`" + `gh pr create` + "`" + ` (or project-specific CLI) with appropriate title and body.
+```
+
+Replace all `[DETECTED_*]` placeholders with actual commands from `package.json` scripts.
+
+## Step 5: Optionally Create Project Skill
 
 If the project has complex review patterns, also create `.claude/skills/pr-review/SKILL.md`:
 
@@ -283,7 +368,7 @@ description: PR review patterns specific to [PROJECT_NAME]. Auto-loaded when rev
 [Detailed patterns discovered from project analysis]
 ```
 
-## Step 4: Summary
+## Step 6: Summary
 
 After generation, provide:
 
@@ -302,6 +387,8 @@ After generation, provide:
 ### Files Created
 
 1. `.claude/agents/pr-reviewer.md` - Main PR reviewer agent
+2. `.claude/settings.json` - Project-level hooks (typecheck on edit)
+3. `.claude/commands/pr.md` - Project-specific PR command with quality gates
 
 ### Sources Analyzed
 
