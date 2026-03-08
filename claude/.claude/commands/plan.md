@@ -21,5 +21,15 @@ Create a plan for the requested work:
 - **Do NOT write any production code, test code, or implementation files**
 - **Plan document only** — the only file you should create/modify is PLAN.md
 - Write the plan to a file, never present it inline in chat
+- **Prefer multiple small PRs** — break work into the smallest independently mergeable units. Each PR should be reviewable in isolation.
 - Each step in the plan must be small enough for a single commit
 - Each step must follow RED-GREEN-REFACTOR (specify the failing test first)
+
+## Pre-PR Quality Gate
+
+Include this quality gate in the plan as an explicit step before each PR:
+
+1. **Mutation testing** — Run the `mutation-testing` skill. All surviving mutants must be killed or justified as equivalent mutants.
+2. **Refactoring assessment** — Run the `refactoring` skill. Only refactor if it adds genuine value. Commit before refactoring.
+3. **Typecheck and lint pass** — Run the project's typecheck and lint commands with zero errors.
+4. **DDD glossary check** (if project uses DDD) — Verify all new/changed types, functions, and test names conform to the project's DDD glossary.

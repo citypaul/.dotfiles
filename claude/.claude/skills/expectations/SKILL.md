@@ -20,7 +20,7 @@ description: Working expectations and documentation practices. Use when capturin
 **At the end of every significant change, ask: "What do I wish I'd known at the start?"**
 
 Document if ANY of these are true:
-- Would save future developers >30 minutes
+- Would save future developers significant time
 - Prevents a class of bugs or errors
 - Reveals non-obvious behavior or constraints
 - Captures architectural rationale or trade-offs

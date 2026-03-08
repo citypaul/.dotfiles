@@ -254,7 +254,7 @@ Tell me more about what you learned and how it would have helped."
 ## Learning Significance Assessment
 
 **Document if ANY of these are true:**
-- ✅ Would save future developers significant time (>30 minutes)
+- ✅ Would save future developers significant time
 - ✅ Prevents a class of bugs or errors
 - ✅ Reveals non-obvious behavior or constraints
 - ✅ Captures architectural rationale or trade-offs
@@ -357,7 +357,7 @@ const PaymentSchema = z.object({ /* duplicate definition */ });
 
 ### Rationale
 - Encountered this when tests were failing due to schema mismatch
-- Would have saved 30 minutes if schema export pattern was documented
+- Would have saved significant time if schema export pattern was documented
 - Prevents future schema duplication violations
 - Directly relates to existing "Schema Usage in Tests" section
 

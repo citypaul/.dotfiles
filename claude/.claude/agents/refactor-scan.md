@@ -94,7 +94,7 @@ For each file, evaluate:
 **B. Structural Simplicity**
 - Are there nested conditionals that could use early returns?
 - Is nesting depth ≤2 levels?
-- Are functions <20 lines and focused?
+- Are functions short and focused on a single responsibility?
 
 **C. Knowledge Duplication**
 - Is the same business rule expressed in multiple places?
@@ -124,7 +124,7 @@ For each file, evaluate:
 **⚠️ High Value (Should Fix):**
 - Unclear names affecting comprehension
 - Magic numbers/strings used multiple times
-- Long functions (>30 lines)
+- Long functions doing too many things
 
 **💡 Nice to Have (Consider):**
 - Minor naming improvements
