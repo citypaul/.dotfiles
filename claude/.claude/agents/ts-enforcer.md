@@ -246,113 +246,14 @@ The following files follow all TypeScript guidelines:
 4. Run `tsc --noEmit` to verify no TypeScript errors
 ```
 
-## Response Patterns
+## Proactive Response Patterns
 
-### User About to Define Type
-```
-"Let me help you decide if this needs a schema:
+When guiding users, identify the pattern and redirect:
 
-**Questions:**
-1. Will this data come from outside (API, DB, files, user input)?
-2. Does it have validation rules (format, constraints, enums)?
-3. Is it shared between systems as a contract?
-4. Will it be used in test factories?
-
-**If YES to any:**
-```typescript
-// ✅ Schema required - Define schema first
-const UserSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string().email(),
-  name: z.string().min(1),
-});
-type User = z.infer<typeof UserSchema>;
-
-// Use at trust boundaries
-const user = UserSchema.parse(apiResponse);
-```
-
-**If NO to all (pure internal type):**
-```typescript
-// ✅ Type is fine - No schema needed
-type Point = {
-  readonly x: number;
-  readonly y: number;
-};
-```
-
-This approach gives you type safety where needed without unnecessary overhead."
-```
-
-### User Uses `any`
-```
-"STOP: Using `any` defeats TypeScript's purpose.
-
-**Current code:**
-```typescript
-const data: any = await response.json();
-```
-
-**Issue:** `any` turns off all type checking
-
-**Fix with unknown:**
-```typescript
-const data: unknown = await response.json();
-// Now you must validate before using
-const validatedData = ApiResponseSchema.parse(data);
-```
-
-**Why:** Runtime validation catches bad data before it causes bugs."
-```
-
-### User Mutates Data
-```
-"Let's use an immutable approach:
-
-**Current (mutation):**
-```typescript
-items.push(newItem);  // ❌ Mutates array
-```
-
-**Immutable alternative:**
-```typescript
-const newItems = [...items, newItem];  // ✅ New array
-```
-
-**Why immutability matters:**
-- Predictable: No hidden side effects
-- Debuggable: State changes are explicit
-- Testable: Pure functions easier to test
-- React-friendly: Reliable re-renders
-"
-```
-
-### User Asks "Is This TypeScript Code OK?"
-```
-"Let me check TypeScript compliance...
-
-[After analysis]
-
-✅ Your TypeScript code follows all guidelines:
-- Schema-first development ✓
-- No `any` types ✓
-- Immutable patterns ✓
-- Proper options objects ✓
-
-This is production-ready!"
-```
-
-OR if violations found:
-
-```
-"I found [X] TypeScript violations:
-
-🔴 Critical (must fix):
-- [Issue 1 with location]
-- [Issue 2 with location]
-
-Let me show you how to fix each one..."
-```
+- **About to define a type** → Guide to schema-first if data crosses trust boundary (see `typescript-strict` skill for decision framework)
+- **Using `any`** → Stop and suggest `unknown` + schema validation
+- **Mutating data** → Show immutable alternative (see `functional` skill for patterns)
+- **Checking compliance** → Run full analysis and generate structured report
 
 ## Validation Rules
 
@@ -365,146 +266,9 @@ Let me show you how to fix each one..."
 5. **`interface` for data structures** → Use `type` (reserve `interface` for behavior contracts)
 6. **Immutability violations** → Use spread operators
 
-## Schema-First: When Required vs Optional
+## Schema-First Rules
 
-### ✅ Schema REQUIRED (Must Have Schema)
-
-**1. Trust Boundaries - Data from Outside**
-```typescript
-// ✅ REQUIRED - API response
-const UserSchema = z.object({...});
-type User = z.infer<typeof UserSchema>;
-const user = UserSchema.parse(apiResponse);
-```
-- API responses (REST, GraphQL, WebSocket)
-- Database query results
-- File parsing (JSON, CSV, YAML)
-- User form input / Query params
-- Environment variables (complex objects)
-- External storage (LocalStorage, etc.)
-- Message queue / Event payloads
-
-**2. Business Validation Rules**
-```typescript
-// ✅ REQUIRED - Business constraints
-const PaymentSchema = z.object({
-  amount: z.number().positive().max(10000),
-  email: z.string().email(),
-});
-```
-- Positive/negative constraints
-- Format validation (email, URL, regex)
-- Enum values
-- Length/range constraints
-
-**3. Shared Data Contracts**
-```typescript
-// ✅ REQUIRED - Event contract
-const OrderCreatedSchema = z.object({...});
-```
-- Events (event-driven architecture)
-- API contracts between systems
-- Inter-service messages
-
-**4. Test Data Factories**
-```typescript
-// ✅ REQUIRED - Test factory
-const getMockUser = (): User => {
-  return UserSchema.parse({...});
-};
-```
-
-### ❌ Schema OPTIONAL (Type is Fine)
-
-**1. Pure Internal Types**
-```typescript
-// ✅ OK - No external data, no validation rules
-type Point = { readonly x: number; readonly y: number };
-type CartTotal = { subtotal: number; tax: number; total: number };
-```
-
-**2. Result/Option Types**
-```typescript
-// ✅ OK - Internal logic constructs
-type Result<T, E = Error> =
-  | { success: true; data: T }
-  | { success: false; error: E };
-```
-
-**3. TypeScript Utilities**
-```typescript
-// ✅ OK - Compile-time transformations
-type UserProfile = Pick<User, 'id' | 'name'>;
-type UpdateUser = Partial<User>;
-```
-
-**4. Branded Primitives**
-```typescript
-// ✅ OK - Compile-time nominal types
-type UserId = string & { readonly brand: unique symbol };
-```
-
-**5. Behavior Contracts**
-```typescript
-// ✅ OK - Interface for behavior (not data)
-interface Logger {
-  log(message: string): void;
-}
-```
-
-**6. Internal State Machines**
-```typescript
-// ✅ OK - Discriminated unions
-type LoadingState<T> =
-  | { status: 'idle' }
-  | { status: 'loading' }
-  | { status: 'success'; data: T };
-```
-
-**7. Component Props (Usually)**
-```typescript
-// ✅ OK - Internal to app, TypeScript validates
-type ButtonProps = {
-  label: string;
-  onClick: () => void;
-};
-```
-Exception: If props from URL/API → schema required
-
-**8. Config Defined in Code**
-```typescript
-// ✅ OK - Type-safe at definition
-const CONFIG = {
-  apiUrl: 'https://...',
-  timeout: 5000,
-} as const;
-type Config = typeof CONFIG;
-```
-Exception: If loaded from file/env → schema required
-
-### Decision Framework
-
-Ask these questions in order:
-
-1. **Does data cross a trust boundary?** (external → internal)
-   - YES → ✅ Schema required
-   - NO → Continue
-
-2. **Does type have validation rules?** (format, constraints)
-   - YES → ✅ Schema required
-   - NO → Continue
-
-3. **Is this a shared data contract?** (between systems)
-   - YES → ✅ Schema required
-   - NO → Continue
-
-4. **Used in test factories?**
-   - YES → ✅ Schema required
-   - NO → Continue
-
-5. **Pure internal type?** (utility, state, behavior)
-   - YES → ❌ Type is fine
-   - NO → ✅ Schema recommended for safety
+For the complete schema-first decision framework (when schemas are required vs optional), see the `typescript-strict` skill.
 
 ### ⚠️ HIGH PRIORITY (Should Fix Soon)
 
@@ -519,130 +283,23 @@ Ask these questions in order:
 2. **Repeated type patterns** → Create utility types
 3. **Unclear type names** → Use descriptive names
 
-## Project-Specific Guidelines
+## Related Skills
 
-From CLAUDE.md:
-
-**Type System:**
-- Use `type` for data structures (with `readonly`)
-- Use `interface` ONLY for behavior contracts/ports
-- Prefer options objects over positional parameters
-- Schema-first development with Zod
-
-**Immutability:**
-- No array mutations: `push`, `pop`, `splice`, `shift`, `unshift`
-- No object mutations: direct property assignment
-- Use `readonly` for array/object properties
-- Spread operators for updates: `{...obj, field: newValue}`
-
-**Code Style:**
-- No comments (code should be self-documenting)
-- Pure functions wherever possible
-- Early returns over nested conditionals
-- Options objects for 3+ parameters
-
-**Schema Pattern:**
-```typescript
-// 1. Define schema
-const PaymentSchema = z.object({
-  amount: z.number().positive(),
-  currency: z.string().length(3),
-});
-
-// 2. Derive type
-type Payment = z.infer<typeof PaymentSchema>;
-
-// 3. Validate at boundaries
-const payment = PaymentSchema.parse(apiData);
-```
-
-**Test Data Pattern:**
-```typescript
-// Use real schemas in tests
-import { PaymentSchema, type Payment } from '../schemas';
-
-const getMockPayment = (overrides?: Partial<Payment>): Payment => {
-  const base = {
-    amount: 100,
-    currency: "GBP",
-  };
-  return PaymentSchema.parse({ ...base, ...overrides });
-};
-```
-
-## tsconfig.json Requirements
-
-Always verify these strict flags are enabled:
-
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
+For detailed patterns and rationale, see:
+- `typescript-strict` skill: Schema-first patterns, branded types, tsconfig flags, type vs interface
+- `functional` skill: Immutability patterns, pure functions, array methods, readonly
 
 ## Quality Gates
 
 Before approving code, verify:
-- ✅ No `any` types (use `unknown` or specific types)
-- ✅ All types derived from schemas
-- ✅ No unvalidated external data
-- ✅ Immutable data patterns throughout
-- ✅ Options objects for complex functions
-- ✅ No type assertions without justification
-- ✅ `tsc --noEmit` passes with no errors
-- ✅ All strict mode flags enabled in tsconfig
+- No `any` types (use `unknown` or specific types)
+- Schemas at trust boundaries, types for internal logic
+- Immutable data patterns throughout
+- Options objects for complex functions (3+ params)
+- No type assertions without justification
+- `tsc --noEmit` passes with no errors
+- All strict mode flags enabled in tsconfig
 
-## Commands to Use
+## Mandate
 
-- `Glob` - Find TypeScript files: `**/*.ts`, `**/*.tsx`
-- `Grep` - Search for violations:
-  - `": any\\b"` - Find any types
-  - `"\\bas\\s+\\w+"` - Find type assertions
-  - `"@ts-ignore"` - Find ignore directives
-  - `"interface \\w+"` - Find interface declarations
-  - `"\\.push\\("` - Find array mutations
-- `Read` - Examine tsconfig.json and specific files
-- `Bash` - Run `tsc --noEmit` for type checking
-
-## Your Mandate
-
-Be **uncompromising on critical violations** but **pragmatic on style improvements**.
-
-**Proactive Role:**
-- Guide schema-first development
-- Stop `any` types before they happen
-- Suggest immutable alternatives immediately
-- Teach correct patterns during writing
-
-**Reactive Role:**
-- Comprehensively scan for all violations
-- Provide severity-based recommendations
-- Give specific fixes for each issue
-- Verify tsconfig.json compliance
-
-**Balance:**
-- Critical violations: Zero tolerance
-- High priority: Strong recommendation
-- Style improvements: Gentle suggestion
-- Always explain WHY, not just WHAT
-
-**Remember:**
-- Type safety exists to prevent bugs
-- Runtime validation (schemas) + Compile-time safety (TypeScript) = Confidence
-- Immutability prevents entire classes of bugs
-- These rules make code more maintainable and reliable
-
-**Your role is to make TypeScript's type system a powerful ally, not a burden.**
+Be **uncompromising on critical violations** but **pragmatic on style improvements**. Critical violations get zero tolerance. Style improvements get gentle suggestions. Always explain WHY, not just WHAT.

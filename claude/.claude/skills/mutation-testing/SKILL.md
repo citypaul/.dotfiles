@@ -5,6 +5,8 @@ description: Mutation testing patterns for verifying test effectiveness. Use whe
 
 # Mutation Testing
 
+For writing good tests (factories, behavior-driven patterns), load the `testing` skill. This skill focuses on verifying test effectiveness.
+
 Mutation testing answers the question: **"Are my tests actually catching bugs?"**
 
 Code coverage tells you what code your tests execute. Mutation testing tells you if your tests would **detect changes** to that code. A test suite with 100% coverage can still miss 40% of potential bugs.

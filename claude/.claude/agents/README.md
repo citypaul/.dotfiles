@@ -234,47 +234,71 @@ progress-guardian (orchestrates)
 
 ### Typical Workflow
 
-1. **Start significant work**
-   - Load `planning` skill for principles
-   - Invoke `progress-guardian`: Creates PLAN.md, WIP.md, LEARNINGS.md
-   - Get approval for PLAN.md
+**Recommended command flow:** `/setup` → `/plan` → RED-GREEN-REFACTOR → `/pr` → `/continue` → repeat
 
-2. **For each step in plan**
+1. **Onboard project** (once)
+   - Run `/setup` to detect tech stack and generate project-level config
+   - Run `/generate-pr-review` if custom PR review rules needed
+
+2. **Plan the work** (before writing any code)
+   - Run `/plan` to create PLAN.md on a branch with a draft PR
+   - For significant work, invoke `progress-guardian`: Creates PLAN.md, WIP.md, LEARNINGS.md
+   - Get approval for the plan before writing any code
+
+3. **For each step in plan**
    - RED: Write failing test (TDD non-negotiable)
    - GREEN: Minimal code to pass
    - REFACTOR: Invoke `refactor-scan` to assess improvements
-   - Update WIP.md with progress
+   - Update WIP.md with progress (if using `progress-guardian`)
    - Capture discoveries in LEARNINGS.md
    - **WAIT FOR COMMIT APPROVAL**
 
-3. **When plan needs changing**
+4. **When plan needs changing**
    - Invoke `progress-guardian`: Propose changes
    - **Get approval before modifying PLAN.md**
 
-4. **When architectural decision arises**
+5. **When architectural decision arises**
    - Add to LEARNINGS.md immediately
    - Invoke `adr` if decision warrants permanent record
 
-5. **Before commits**
+6. **Before commits**
    - Invoke `ts-enforcer`: Verify TypeScript compliance
    - Invoke `tdd-guardian`: Verify TDD compliance
    - **Ask for commit approval**
 
-6. **End of session**
-   - Invoke `progress-guardian`: Update WIP.md, session checkpoint
-
-7. **Before creating PR**
+7. **Submit work**
    - Invoke `pr-reviewer`: Self-review changes
    - Fix any issues found
-   - Create PR using `/pr` command
+   - Run `/pr` to create PR with quality gates (typecheck + lint + test + build)
 
-8. **Feature complete**
+8. **Continue to next step**
+   - After PR is merged, run `/continue` to pull main, create new branch, update plan
+
+9. **Feature complete**
    - Invoke `progress-guardian`: Verify all criteria met
    - Review LEARNINGS.md for merge destinations
    - Invoke `learn`: Merge gotchas/patterns → CLAUDE.md
    - Invoke `adr`: Create ADRs for architectural decisions
    - Invoke `docs-guardian`: Update permanent docs
    - **DELETE PLAN.md, WIP.md, LEARNINGS.md**
+
+## When to Use Which Agent
+
+Quick decision table for all agents:
+
+| Question | Agent | Timing |
+|----------|-------|--------|
+| "How do I work with X?" | `learn` | After discovering patterns/gotchas |
+| "Why did we choose X?" | `adr` | When making/documenting architecture decisions |
+| "Is this type-safe?" | `ts-enforcer` | During development (proactive) |
+| "Is this PR ready?" | `pr-reviewer` | At review time (reactive) |
+| "Should I refactor this?" | `refactor-scan` | After GREEN phase only |
+| "Was TDD followed?" | `tdd-guardian` | During TDD cycle |
+| "Is this documented?" | `docs-guardian` | At feature completion |
+| "What data patterns exist?" | `use-case-data-patterns` | Before implementing features |
+| "Where am I in this work?" | `progress-guardian` | Throughout multi-step work |
+
+**Note:** `learn` and `adr` can both apply to the same decision — `learn` captures "how to use it" (→ CLAUDE.md), `adr` captures "why we chose it" (→ ADR doc).
 
 ## Key Distinctions
 
@@ -322,6 +346,18 @@ progress-guardian (orchestrates)
 - "What data patterns support this use case?"
 - "What's missing to implement this feature?"
 - → Answer: Analytical report mapping use cases to data patterns
+
+## Slash Commands
+
+Commands complement agents by encoding common workflows into single invocations.
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/setup` | Project onboarding — detect tech stack, create CLAUDE.md, hooks, commands, PR reviewer | Starting work on a new project (replaces `/init`) |
+| `/pr` | Create a pull request following standards | When ready to submit work |
+| `/plan` | Create a plan document on a branch with a PR — no code | When planning work before implementation |
+| `/continue` | Pull merged PR, create new branch, update plan | After a PR is merged and you want to continue |
+| `/generate-pr-review` | Generate project-specific PR review automation | One-time setup per project |
 
 ## Using These Agents
 

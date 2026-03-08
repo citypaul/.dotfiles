@@ -13,6 +13,7 @@
 - [What This Is](#what-this-is)
 - [CLAUDE.md: The Development Framework](#-claudemd-the-development-framework)
 - [Claude Code Agents: Automated Enforcement](#-claude-code-agents-automated-enforcement)
+- [Slash Commands](#-slash-commands)
 - [How to Use This in Your Projects](#-how-to-use-this-in-your-projects)
 - [Documentation](#-documentation)
 - [Who This Is For](#-who-this-is-for)
@@ -32,7 +33,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** - Development guidelines, 11 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 15 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality enforcement (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -71,14 +72,18 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
 | **Mutation Testing** | Test effectiveness verification, mutation operators, weak test detection | [→ skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) |
 | **Test Design Review** | Dave Farley's 8 properties evaluation, Farley Score calculation, test quality assessment | [→ skills/test-design-reviewer](claude/.claude/skills/test-design-reviewer/SKILL.md) |
-| **Front-End Testing** | DOM Testing Library patterns, accessibility-first queries, userEvent best practices (framework-agnostic) | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
-| **React Testing** | React Testing Library patterns for components, hooks, context, and forms | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
+| **Front-End Testing** | Vitest Browser Mode (preferred) + DOM Testing Library patterns, real browser testing with Playwright | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
+| **React Testing** | Vitest Browser Mode with vitest-browser-react (preferred) + React Testing Library patterns | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
 | **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
 | **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
 | **Planning** | Small increments, three-document model (PLAN/WIP/LEARNINGS), commit approval | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
+| **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
+| **Hexagonal Architecture** | Ports and adapters pattern, dependency inversion, domain isolation | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
+| **Domain-Driven Design** | Ubiquitous language, glossary enforcement, value objects, aggregates, domain events | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
+| **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -100,8 +105,8 @@ Unlike typical style guides, CLAUDE.md provides:
 |---------|-------|-------------|
 | Tests that break when I refactor | [testing](claude/.claude/skills/testing/SKILL.md) | Test behavior through public APIs, not implementation |
 | 100% coverage but bugs still slip through | [mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) | Coverage measures execution, mutation testing measures detection |
-| Tests break when refactoring UI components | [front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) | Query by role (getByRole), not implementation (framework-agnostic) |
-| Testing React components, hooks, or context | [react-testing](claude/.claude/skills/react-testing/SKILL.md) | renderHook for hooks, wrapper for context, test components as functions |
+| Tests break when refactoring UI components | [front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) | Use Vitest Browser Mode for real browser testing, query by role |
+| Testing React components, hooks, or context | [react-testing](claude/.claude/skills/react-testing/SKILL.md) | Use vitest-browser-react for Browser Mode, renderHook for hooks |
 | Don't know when to use schemas vs types | [typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) | 5-question decision framework |
 | Code that "looks the same" - should I abstract it? | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Semantic vs structural abstraction guide |
 | Refactoring everything vs nothing | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Priority classification (Critical/High/Nice/Skip) |
@@ -110,6 +115,10 @@ Unlike typical style guides, CLAUDE.md provides:
 | Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
 | Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
 | Planning significant work | [planning](claude/.claude/skills/planning/SKILL.md) | Three-document model (PLAN/WIP/LEARNINGS), commit approval |
+| CI pipeline keeps failing | [ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) | Every failure is real until proven otherwise, hypothesis-first diagnosis |
+| Separating domain from infrastructure | [hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) | Ports define contracts, adapters implement them, domain stays pure |
+| Complex business rules need modeling | [domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) | Ubiquitous language, glossary enforcement, value objects, aggregates |
+| UI looks generic or AI-generated | [frontend-design](claude/.claude/skills/frontend-design/SKILL.md) | Distinctive design, production-grade quality, avoid template aesthetics |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
@@ -738,6 +747,91 @@ Claude Code: [Launches use-case-data-patterns agent]
 
 ---
 
+## ⚡ Slash Commands
+
+[**→ Browse the commands directory**](claude/.claude/commands/)
+
+Five slash commands that encode common workflows into single invocations:
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| **`/setup`** | One-shot project onboarding — detect tech stack, create CLAUDE.md, hooks, commands, and PR reviewer | Starting work on a new project (replaces `/init`) |
+| **`/pr`** | Create a pull request following standards | When ready to submit work |
+| **`/plan`** | Create a plan document on a branch with a PR — no code changes | When planning work before implementation |
+| **`/continue`** | Pull merged PR, create new branch, update plan | After a PR is merged and you want to continue |
+| **`/generate-pr-review`** | Generate project-specific PR review automation | One-time setup per project |
+
+### Recommended Flow
+
+This is the full lifecycle for working on a feature, from project setup through to completion. Commands and agents are shown in the order you'd use them.
+
+#### Phase 1: Project Setup (once per project)
+
+```
+/setup  →  Detects tech stack, creates .claude/CLAUDE.md, hooks, commands, PR reviewer
+```
+
+**Why first:** `/setup` replaces Claude Code's built-in `/init`. It analyses your project (TypeScript config, CI pipeline, DDD patterns, test runner) and generates project-level configuration so that every subsequent command and agent has the right context. Run this once when you start working on a new project — it creates:
+- `.claude/CLAUDE.md` with exact build/test/lint/typecheck commands
+- `.claude/settings.json` with PostToolUse hooks (auto-typecheck after file edits)
+- `.claude/commands/pr.md` with project-specific quality gates
+- `.claude/agents/pr-reviewer.md` with project-specific review rules
+
+#### Phase 2: Plan the Work (before writing any code)
+
+```
+/plan  →  Creates PLAN.md on a branch with a draft PR — no code, just the plan
+```
+
+**Why before code:** Planning in a separate step prevents the most common friction point — Claude jumping straight to implementation before the approach is agreed. The plan becomes a PR you can review and approve before any code is written. Each step in the plan specifies the failing test to write first.
+
+#### Phase 3: Implement (repeat for each step in the plan)
+
+```
+RED     →  Write a failing test (tdd-guardian verifies test-first)
+GREEN   →  Write minimum code to pass (ts-enforcer checks type safety)
+REFACTOR → Assess improvements (refactor-scan identifies opportunities)
+COMMIT  →  Wait for approval, then commit
+```
+
+**Why this order:** The RED-GREEN-REFACTOR cycle is enforced by agents, not willpower. `tdd-guardian` catches tests written after code, `ts-enforcer` catches type safety violations, and `refactor-scan` only runs after GREEN — you can't refactor code that doesn't pass tests yet. Each cycle produces one small, reviewable commit.
+
+#### Phase 4: Submit the Work
+
+```
+/pr  →  Runs typecheck + lint + test + build, then creates PR
+```
+
+**Why not just `git push`:** `/pr` runs all quality gates before creating the PR, catching failures that would otherwise show up in CI. The project-specific version (generated by `/setup`) knows your exact commands.
+
+#### Phase 5: Continue to the Next Step
+
+```
+/continue  →  Pulls merged PR, creates new branch, updates plan, shows next step
+```
+
+**Why a command for this:** After a PR is merged, you need to pull main, create a new branch, and figure out where you left off. `/continue` does all of this and updates the plan document so you have immediate context for the next step. This eliminates the repetitive "pull, branch, update plan" sequence between PRs.
+
+#### Phase 6: Capture Knowledge (throughout and at the end)
+
+```
+learn agent       →  Captures gotchas and patterns into CLAUDE.md
+adr agent         →  Documents significant architectural decisions
+docs-guardian     →  Updates user-facing documentation
+```
+
+**Why at the end:** Learnings are captured throughout (in LEARNINGS.md if using `progress-guardian`), but merged into permanent documentation at the end when you have full context on what mattered and what didn't.
+
+#### One-Time Setup (optional)
+
+```
+/generate-pr-review  →  Creates project-specific PR review automation
+```
+
+**When to use:** If you need more control over the generated PR reviewer than `/setup` provides, or want to regenerate it after your project conventions evolve.
+
+---
+
 ## 🚀 How to Use This in Your Projects
 
 **Quick navigation by situation:**
@@ -753,19 +847,11 @@ Claude Code: [Launches use-case-data-patterns agent]
 
 ### How the Workflow Works (Regardless of Installation Method)
 
-Once installed (via any option below), here's the typical development flow:
-
-1. **Start feature**: Plan with Claude, let tdd-guardian guide test-first approach
-2. **Write tests**: Get RED (failing test)
-3. **Implement**: Get GREEN (minimal code to pass)
-4. **Refactor**: Run refactor-scan to assess opportunities
-5. **Review**: Run ts-enforcer and tdd-guardian before commit
-6. **Document**: Use learn agent to capture insights, docs-guardian for user-facing docs
-7. **Commit**: Follow conventional commits format
+Once installed, the full development lifecycle is: `/setup` → `/plan` → RED-GREEN-REFACTOR → `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each step.
 
 **Agent invocation examples:**
 
-Agents can be invoked implicitly (Claude detects when to use them) or explicitly:
+Agents are invoked implicitly (Claude detects when to use them) or explicitly:
 
 - **Implicit**: "I just implemented payment processing. Can you verify I followed TDD?" → Claude automatically launches tdd-guardian
 - **Explicit**: "Launch the refactor-scan agent to assess code quality" → Claude launches refactor-scan
@@ -821,9 +907,9 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (11 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing)
+- ✅ `~/.claude/skills/` (15 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, frontend-design)
 - ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
-- ✅ `~/.claude/commands/` (2 slash commands: /pr, /generate-pr-review)
+- ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (9 automated enforcement agents)
 
 **Optional: Enable GitHub MCP Integration**
@@ -952,7 +1038,10 @@ curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dot
 
 # Download commands
 mkdir -p .claude/commands
+curl -o .claude/commands/setup.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/setup.md
 curl -o .claude/commands/pr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/pr.md
+curl -o .claude/commands/plan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/plan.md
+curl -o .claude/commands/continue.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/continue.md
 curl -o .claude/commands/generate-pr-review.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/generate-pr-review.md
 ```
 
@@ -1006,7 +1095,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 9 auto-discovered skills + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 15 auto-discovered skills + 5 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1029,8 +1118,8 @@ The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `-
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (11 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
-- **[Commands](claude/.claude/commands/)** - Slash commands (/pr, /generate-pr-review)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (15 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
+- **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (9 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns)
 
@@ -1206,8 +1295,8 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 17 skills (11 built-in + 6 web quality) + 9 agents (development guidelines)
-- ✅ Commands (/pr, /generate-pr-review slash commands)
+- ✅ CLAUDE.md + 21 skills (15 built-in + 6 web quality) + 9 agents (development guidelines)
+- ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
 - ✅ Shell configuration (bash/zsh)

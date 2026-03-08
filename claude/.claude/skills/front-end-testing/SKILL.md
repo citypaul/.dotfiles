@@ -1,11 +1,181 @@
 ---
 name: front-end-testing
-description: DOM Testing Library patterns for behavior-driven UI testing. Framework-agnostic patterns for testing user interfaces. Use when testing any front-end application.
+description: Behavior-driven UI testing patterns. Covers Vitest Browser Mode (preferred) and DOM Testing Library. Use when testing any front-end application, writing UI tests, querying DOM elements, or simulating user interactions. For React-specific patterns, see the react-testing skill.
 ---
 
-# Front-End Testing with DOM Testing Library
+# Front-End Testing
 
-This skill focuses on framework-agnostic DOM Testing Library patterns that work across React, Vue, Svelte, and other frameworks. For React-specific patterns (renderHook, context, components), load the `react-testing` skill. For TDD workflow (RED-GREEN-REFACTOR), load the `tdd` skill. For general testing patterns (factories, public API testing), load the `testing` skill.
+For React-specific patterns (components, hooks, context), load the `react-testing` skill. For TDD workflow, load the `tdd` skill. For general testing patterns (factories, public API testing), load the `testing` skill.
+
+## Vitest Browser Mode (Preferred)
+
+**Always prefer Vitest Browser Mode over jsdom/happy-dom.** Tests run in a real browser (via Playwright), giving production-accurate behavior for CSS, events, focus management, and accessibility.
+
+### Why Browser Mode Over jsdom
+
+| Aspect | jsdom/happy-dom | Browser Mode |
+|---|---|---|
+| Environment | Simulated DOM in Node.js | Real browser (Chromium/Firefox/WebKit) |
+| CSS | Not rendered | Real CSS rendering, layout, computed styles |
+| Events | Synthetic JS events | CDP-based real browser events |
+| APIs | Subset of Web APIs | Full browser API surface |
+| Focus/a11y | Approximate | Real focus management, accessibility tree |
+| Debugging | Console only | Full browser DevTools |
+
+### Setup
+
+```bash
+npm install -D vitest @vitest/browser-playwright
+```
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import { playwright } from '@vitest/browser-playwright'
+
+export default defineConfig({
+  test: {
+    browser: {
+      enabled: true,
+      provider: playwright(),
+      headless: true,
+      instances: [{ browser: 'chromium' }],
+    },
+  },
+})
+```
+
+Quick setup wizard: `npx vitest init browser`
+
+### Built-in Locators
+
+Vitest Browser Mode has built-in locators that mirror Testing Library queries. **No separate `@testing-library/dom` import needed.**
+
+```typescript
+import { page } from 'vitest/browser'
+
+// These work exactly like Testing Library queries
+page.getByRole('button', { name: /submit/i })
+page.getByText(/welcome/i)
+page.getByLabelText(/email/i)
+page.getByPlaceholder(/search/i)
+page.getByAltText(/logo/i)
+page.getByTestId('my-element')  // Last resort only
+```
+
+### Built-in Assertions with Retry
+
+Use `expect.element()` for DOM assertions — it **automatically retries** until the assertion passes or times out, reducing flakiness:
+
+```typescript
+// ✅ CORRECT - Auto-retrying assertion
+await expect.element(page.getByText(/success/i)).toBeVisible()
+await expect.element(page.getByRole('button')).toBeDisabled()
+
+// Available matchers (no @testing-library/jest-dom needed):
+await expect.element(el).toBeVisible()
+await expect.element(el).toBeDisabled()
+await expect.element(el).toHaveTextContent(/text/i)
+await expect.element(el).toHaveValue('input value')
+await expect.element(el).toHaveAttribute('aria-label', 'Close')
+await expect.element(el).toBeChecked()
+```
+
+### Built-in User Events (CDP-based)
+
+```typescript
+import { userEvent } from 'vitest/browser'
+
+// Real browser events via Chrome DevTools Protocol
+await userEvent.click(page.getByRole('button', { name: /submit/i }))
+await userEvent.fill(page.getByLabelText(/email/i), 'test@example.com')
+await userEvent.keyboard('{Enter}')
+await userEvent.selectOptions(page.getByLabelText(/country/i), 'USA')
+await userEvent.clear(page.getByLabelText(/search/i))
+```
+
+Or use locator methods directly:
+```typescript
+await page.getByRole('button', { name: /submit/i }).click()
+await page.getByLabelText(/email/i).fill('test@example.com')
+```
+
+### Multi-Project Setup (Node + Browser)
+
+When you need both unit tests (Node) and UI tests (browser):
+
+```typescript
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          include: ['tests/unit/**/*.test.ts'],
+          name: 'unit',
+          environment: 'node',
+        },
+      },
+      {
+        test: {
+          include: ['tests/browser/**/*.test.ts'],
+          name: 'browser',
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            instances: [{ browser: 'chromium' }],
+          },
+        },
+      },
+    ],
+  },
+})
+```
+
+### Browser Mode Gotchas
+
+- **`vi.spyOn` on imports**: ES module namespaces are sealed in real browsers. Use `vi.mock('./module', { spy: true })` instead.
+- **`alert()`/`confirm()`**: Thread-blocking dialogs halt browser execution. Mock them with `vi.spyOn(window, 'alert').mockImplementation(() => {})`.
+- **`act()` not needed**: CDP events + `expect.element()` retry handle timing automatically.
+
+### Playwright / Browser Mode Test Idempotency
+
+**All Playwright-style tests MUST be idempotent.** Every test must produce the same result regardless of execution order, how many times it runs, or what other tests ran before it.
+
+**Rules:**
+- Each test creates its own state from scratch — never depend on another test's side effects
+- Clean up any persistent state (database rows, localStorage, cookies) created during the test
+- Use unique identifiers (e.g., timestamp-based) to avoid collisions when tests run in parallel
+- Never assume the DOM is in a particular state at the start of a test — render fresh
+- If tests share a server or database, use isolation strategies (transactions, test-specific data)
+
+```typescript
+// ❌ WRONG - Tests depend on shared state
+it('creates a user', async () => {
+  await page.getByRole('button', { name: /create/i }).click()
+  // Creates user "Alice" in the database
+})
+
+it('lists users', async () => {
+  // Assumes "Alice" exists from previous test!
+  await expect.element(page.getByText('Alice')).toBeVisible()
+})
+
+// ✅ CORRECT - Each test is self-contained
+it('creates and displays a user', async () => {
+  const uniqueName = `User-${Date.now()}`
+  await page.getByLabelText(/name/i).fill(uniqueName)
+  await page.getByRole('button', { name: /create/i }).click()
+  await expect.element(page.getByText(uniqueName)).toBeVisible()
+})
+```
+
+**Why this matters:** Browser Mode can run tests in parallel across multiple browser instances. Non-idempotent tests will produce flaky failures that are nearly impossible to debug.
+
+---
+
+## Legacy: DOM Testing Library Patterns
+
+The patterns below apply when using `@testing-library/dom` directly (e.g., with jsdom). **Prefer Vitest Browser Mode** for new projects — the query patterns are identical but built-in.
 
 ---
 
@@ -877,15 +1047,15 @@ npm install -D eslint-plugin-testing-library eslint-plugin-jest-dom
 
 Before merging UI tests, verify:
 
-- [ ] Using `getByRole` as first choice for queries
-- [ ] Using `userEvent` with `setup()` (not `fireEvent`)
-- [ ] Using `screen` object for all queries (not destructuring from render)
-- [ ] Using `findBy*` for async elements (loading, API responses)
-- [ ] Using `jest-dom` matchers (`toBeInTheDocument`, `toBeDisabled`, etc.)
+- [ ] **Preferred**: Using Vitest Browser Mode with real browser (not jsdom/happy-dom)
+- [ ] All Playwright/Browser Mode tests are idempotent (no shared state between tests)
+- [ ] Using `getByRole` as first choice for queries (built-in or Testing Library)
+- [ ] Using `expect.element()` for auto-retrying assertions (Browser Mode)
+- [ ] Using `userEvent` for interactions (CDP-based in Browser Mode, or `@testing-library/user-event`)
 - [ ] Testing behavior users see, not implementation details
-- [ ] ESLint plugins installed (`eslint-plugin-testing-library`, `eslint-plugin-jest-dom`)
 - [ ] No manual `cleanup()` calls (automatic)
+- [ ] No manual `act()` calls (Browser Mode handles timing)
 - [ ] MSW for API mocking (not fetch/axios mocks)
 - [ ] Following TDD workflow (see `tdd` skill)
 - [ ] Using test factories for data (see `testing` skill)
-- [ ] For framework-specific patterns (React hooks, context, components), see `react-testing` skill
+- [ ] For React-specific patterns (hooks, context, components), see `react-testing` skill

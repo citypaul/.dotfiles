@@ -76,7 +76,18 @@ If code isn't driven by a failing test, don't write it.
 - Code written "for future flexibility"
 - Untested error handling paths
 
-**What to do**: Delete speculative code. Add behavior tests instead.
+✅ **Correct approach**: Delete speculative code. If the behavior is needed, write a failing test that demands it, then implement.
+
+```typescript
+// ❌ WRONG - Speculative error handling (no test demands this)
+if (items.length === 0) {
+  throw new Error('Empty cart'); // No test for this path!
+}
+
+// ✅ CORRECT - Test-driven error handling
+// First: write a test that expects this behavior
+// Then: implement the guard clause to make it pass
+```
 
 ---
 
