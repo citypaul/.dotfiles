@@ -1,6 +1,6 @@
 ---
 name: expectations
-description: Working expectations and documentation practices. Use when capturing learnings or understanding how to work with this codebase.
+description: Working expectations and documentation practices. Use when capturing learnings, documenting gotchas, recording architectural decisions, or understanding how to work with a codebase. Triggers on "document this", "remember this pattern", "what should I know about", or after completing significant features.
 ---
 
 # Expectations

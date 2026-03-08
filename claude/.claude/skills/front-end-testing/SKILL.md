@@ -1,6 +1,6 @@
 ---
 name: front-end-testing
-description: Behavior-driven UI testing patterns. Covers Vitest Browser Mode (preferred) and DOM Testing Library. Use when testing any front-end application.
+description: Behavior-driven UI testing patterns. Covers Vitest Browser Mode (preferred) and DOM Testing Library. Use when testing any front-end application, writing UI tests, querying DOM elements, or simulating user interactions. For React-specific patterns, see the react-testing skill.
 ---
 
 # Front-End Testing
@@ -136,6 +136,40 @@ export default defineConfig({
 - **`vi.spyOn` on imports**: ES module namespaces are sealed in real browsers. Use `vi.mock('./module', { spy: true })` instead.
 - **`alert()`/`confirm()`**: Thread-blocking dialogs halt browser execution. Mock them with `vi.spyOn(window, 'alert').mockImplementation(() => {})`.
 - **`act()` not needed**: CDP events + `expect.element()` retry handle timing automatically.
+
+### Playwright / Browser Mode Test Idempotency
+
+**All Playwright-style tests MUST be idempotent.** Every test must produce the same result regardless of execution order, how many times it runs, or what other tests ran before it.
+
+**Rules:**
+- Each test creates its own state from scratch — never depend on another test's side effects
+- Clean up any persistent state (database rows, localStorage, cookies) created during the test
+- Use unique identifiers (e.g., timestamp-based) to avoid collisions when tests run in parallel
+- Never assume the DOM is in a particular state at the start of a test — render fresh
+- If tests share a server or database, use isolation strategies (transactions, test-specific data)
+
+```typescript
+// ❌ WRONG - Tests depend on shared state
+it('creates a user', async () => {
+  await page.getByRole('button', { name: /create/i }).click()
+  // Creates user "Alice" in the database
+})
+
+it('lists users', async () => {
+  // Assumes "Alice" exists from previous test!
+  await expect.element(page.getByText('Alice')).toBeVisible()
+})
+
+// ✅ CORRECT - Each test is self-contained
+it('creates and displays a user', async () => {
+  const uniqueName = `User-${Date.now()}`
+  await page.getByLabelText(/name/i).fill(uniqueName)
+  await page.getByRole('button', { name: /create/i }).click()
+  await expect.element(page.getByText(uniqueName)).toBeVisible()
+})
+```
+
+**Why this matters:** Browser Mode can run tests in parallel across multiple browser instances. Non-idempotent tests will produce flaky failures that are nearly impossible to debug.
 
 ---
 
@@ -1014,6 +1048,7 @@ npm install -D eslint-plugin-testing-library eslint-plugin-jest-dom
 Before merging UI tests, verify:
 
 - [ ] **Preferred**: Using Vitest Browser Mode with real browser (not jsdom/happy-dom)
+- [ ] All Playwright/Browser Mode tests are idempotent (no shared state between tests)
 - [ ] Using `getByRole` as first choice for queries (built-in or Testing Library)
 - [ ] Using `expect.element()` for auto-retrying assertions (Browser Mode)
 - [ ] Using `userEvent` for interactions (CDP-based in Browser Mode, or `@testing-library/user-event`)

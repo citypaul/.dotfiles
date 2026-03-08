@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Testing patterns for behavior-driven tests. Use when writing tests or test factories.
+description: Testing patterns for behavior-driven tests. Use when writing tests, creating test factories, structuring test files, or deciding what to test. Do NOT use for UI-specific testing (see front-end-testing or react-testing skills).
 ---
 
 # Testing Patterns

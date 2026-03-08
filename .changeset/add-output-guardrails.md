@@ -24,3 +24,5 @@ Improvements based on Claude Code insights analysis (63 sessions):
 - Update README.md with all new skills, commands, and Vitest Browser Mode references
 - Update install-claude.sh to include all 15 skills and 5 commands
 - Add "Recommended Flow" section to README and agents README showing full command lifecycle with rationale
+- Improve skill frontmatter descriptions with trigger phrases and negative triggers per Anthropic best practices
+- Add Playwright/Browser Mode test idempotency requirement to front-end-testing and react-testing skills

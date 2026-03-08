@@ -1,6 +1,6 @@
 ---
 name: react-testing
-description: React component testing patterns. Covers Vitest Browser Mode with vitest-browser-react (preferred) and @testing-library/react. Use when testing React applications.
+description: React component testing patterns including components, hooks, context, and forms. Covers Vitest Browser Mode with vitest-browser-react (preferred) and @testing-library/react. Use when testing React applications. For general UI testing patterns, see the front-end-testing skill.
 ---
 
 # React Testing
@@ -577,6 +577,7 @@ React-specific checks:
 
 - [ ] **Preferred**: Using `vitest-browser-react` with Vitest Browser Mode (real browser)
 - [ ] **Fallback**: Using `@testing-library/react` if Browser Mode not yet configured
+- [ ] All Playwright/Browser Mode tests are idempotent (no shared state between tests)
 - [ ] Using `renderHook()` for custom hooks
 - [ ] Using `wrapper` option for context providers
 - [ ] No manual `act()` calls (handled automatically)

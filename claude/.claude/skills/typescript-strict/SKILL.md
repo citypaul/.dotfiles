@@ -1,6 +1,6 @@
 ---
 name: typescript-strict
-description: TypeScript strict mode patterns. Use when writing any TypeScript code.
+description: TypeScript strict mode patterns including schema-first development, branded types, type vs interface guidance, and tsconfig strict flags. Use when writing TypeScript code, defining types or schemas, or reviewing type safety. For immutability and pure function patterns, see the functional skill.
 ---
 
 # TypeScript Strict Mode
