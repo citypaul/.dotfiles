@@ -23,3 +23,4 @@ Improvements based on Claude Code insights analysis (63 sessions):
 - Add /setup command for one-shot project onboarding (replaces /init)
 - Update README.md with all new skills, commands, and Vitest Browser Mode references
 - Update install-claude.sh to include all 15 skills and 5 commands
+- Add "Recommended Flow" section to README and agents README showing full command lifecycle with rationale
