@@ -92,6 +92,7 @@ For detailed patterns and examples, load the `functional` skill.
 For detailed TDD workflow, load the `tdd` skill.
 For refactoring methodology, load the `refactoring` skill.
 For significant work, load the `planning` skill for three-document model (PLAN.md, WIP.md, LEARNINGS.md).
+For CI failure diagnosis, load the `ci-debugging` skill.
 
 ## Output Guardrails
 
