@@ -44,6 +44,16 @@ PLAN.md (static)          WIP.md (living)           LEARNINGS.md (temporary)
                                       - ADRs (architectural decisions)
 ```
 
+## Prefer Multiple Small PRs
+
+**Break work into the smallest independently mergeable units.** Each PR should be reviewable in isolation and deliver a coherent slice of value.
+
+**Why this matters:** Small PRs are easier to review, easier to revert, and easier to reason about. When something breaks, the cause is obvious. When a PR sits in review, it doesn't block unrelated work. The goal is to stay as close to main as possible at all times.
+
+**A PR is too big when** the reviewer needs to hold multiple unrelated concepts in their head to understand it, or when you'd struggle to write a clear 1-3 sentence summary of what it does.
+
+There will be exceptions — some changes are inherently coupled and splitting them would create broken intermediate states. Use judgement. But the default should always be to ask "can this be split?"
+
 ## What Makes a "Known-Good Increment"
 
 Each step MUST:
@@ -62,12 +72,11 @@ Each step MUST:
 - Requires multiple commits to complete
 - Has multiple "and"s in description
 - You're unsure how to test it
-- Involves more than 3 files
 
 **Right size if:**
 - One clear test case
 - One logical change
-- Can explain to someone in 30 seconds
+- Can explain to someone quickly
 - Obvious when done
 - Single responsibility
 

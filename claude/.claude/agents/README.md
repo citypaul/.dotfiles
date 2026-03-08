@@ -266,7 +266,9 @@ progress-guardian (orchestrates)
    - Invoke `tdd-guardian`: Verify TDD compliance
    - **Ask for commit approval**
 
-7. **Submit work**
+7. **Pre-PR quality gate**
+   - Run `mutation-testing` skill: Verify tests detect changes, kill surviving mutants
+   - Invoke `refactor-scan`: Assess improvements (only if adds value)
    - Invoke `pr-reviewer`: Self-review changes
    - Fix any issues found
    - Run `/pr` to create PR with quality gates (typecheck + lint + test + build)
