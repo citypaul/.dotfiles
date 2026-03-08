@@ -93,6 +93,12 @@ For detailed TDD workflow, load the `tdd` skill.
 For refactoring methodology, load the `refactoring` skill.
 For significant work, load the `planning` skill for three-document model (PLAN.md, WIP.md, LEARNINGS.md).
 
+## Output Guardrails
+
+- **Write to files, not chat** — When asked to produce a plan, document, or artifact, always write it to a file. Never present multi-paragraph plans or documents inline in conversation.
+- **Plan-only mode** — When asked for a plan, design, or document only, produce ONLY that artifact. Do not write production code, test code, or make any implementation changes unless explicitly asked.
+- **Incremental output** — When exploring a codebase, produce a first draft of output within 3-4 tool calls. Refine iteratively rather than front-loading all exploration before producing anything.
+
 ## Working with Claude
 
 **Core principle**: Think deeply, follow TDD strictly, capture learnings while context is fresh.
