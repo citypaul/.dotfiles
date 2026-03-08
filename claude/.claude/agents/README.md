@@ -234,41 +234,47 @@ progress-guardian (orchestrates)
 
 ### Typical Workflow
 
-1. **Start significant work**
-   - Load `planning` skill for principles
-   - Invoke `progress-guardian`: Creates PLAN.md, WIP.md, LEARNINGS.md
-   - Get approval for PLAN.md
+**Recommended command flow:** `/setup` → `/plan` → RED-GREEN-REFACTOR → `/pr` → `/continue` → repeat
 
-2. **For each step in plan**
+1. **Onboard project** (once)
+   - Run `/setup` to detect tech stack and generate project-level config
+   - Run `/generate-pr-review` if custom PR review rules needed
+
+2. **Plan the work** (before writing any code)
+   - Run `/plan` to create PLAN.md on a branch with a draft PR
+   - For significant work, invoke `progress-guardian`: Creates PLAN.md, WIP.md, LEARNINGS.md
+   - Get approval for the plan before writing any code
+
+3. **For each step in plan**
    - RED: Write failing test (TDD non-negotiable)
    - GREEN: Minimal code to pass
    - REFACTOR: Invoke `refactor-scan` to assess improvements
-   - Update WIP.md with progress
+   - Update WIP.md with progress (if using `progress-guardian`)
    - Capture discoveries in LEARNINGS.md
    - **WAIT FOR COMMIT APPROVAL**
 
-3. **When plan needs changing**
+4. **When plan needs changing**
    - Invoke `progress-guardian`: Propose changes
    - **Get approval before modifying PLAN.md**
 
-4. **When architectural decision arises**
+5. **When architectural decision arises**
    - Add to LEARNINGS.md immediately
    - Invoke `adr` if decision warrants permanent record
 
-5. **Before commits**
+6. **Before commits**
    - Invoke `ts-enforcer`: Verify TypeScript compliance
    - Invoke `tdd-guardian`: Verify TDD compliance
    - **Ask for commit approval**
 
-6. **End of session**
-   - Invoke `progress-guardian`: Update WIP.md, session checkpoint
-
-7. **Before creating PR**
+7. **Submit work**
    - Invoke `pr-reviewer`: Self-review changes
    - Fix any issues found
-   - Create PR using `/pr` command
+   - Run `/pr` to create PR with quality gates (typecheck + lint + test + build)
 
-8. **Feature complete**
+8. **Continue to next step**
+   - After PR is merged, run `/continue` to pull main, create new branch, update plan
+
+9. **Feature complete**
    - Invoke `progress-guardian`: Verify all criteria met
    - Review LEARNINGS.md for merge destinations
    - Invoke `learn`: Merge gotchas/patterns → CLAUDE.md
