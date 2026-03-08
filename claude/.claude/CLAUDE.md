@@ -93,6 +93,9 @@ For detailed TDD workflow, load the `tdd` skill.
 For refactoring methodology, load the `refactoring` skill.
 For significant work, load the `planning` skill for three-document model (PLAN.md, WIP.md, LEARNINGS.md).
 For CI failure diagnosis, load the `ci-debugging` skill.
+For hexagonal architecture projects, load the `hexagonal-architecture` skill.
+
+**Project-level hooks:** Projects should add a PostToolUse hook in `.claude/settings.json` to run typecheck after Write/Edit on .ts/.tsx files. See the global `settings.json` prettier/eslint hook as a template.
 
 ## Output Guardrails
 
