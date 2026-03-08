@@ -87,11 +87,9 @@ For detailed patterns and examples, load the `functional` skill.
 - REFACTOR: Assess improvement opportunities (only refactor if adds value)
 - **Wait for commit approval** before every commit
 - Each increment leaves codebase in working state
-- Capture learnings as they occur, merge at end
-
 For detailed TDD workflow, load the `tdd` skill.
 For refactoring methodology, load the `refactoring` skill.
-For significant work, load the `planning` skill for three-document model (PLAN.md, WIP.md, LEARNINGS.md).
+For significant work, load the `planning` skill. Plans live in `plans/` directory.
 For CI failure diagnosis, load the `ci-debugging` skill.
 For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.

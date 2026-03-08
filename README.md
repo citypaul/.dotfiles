@@ -79,7 +79,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
-| **Planning** | Small increments, three-document model (PLAN/WIP/LEARNINGS), commit approval | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
+| **Planning** | Small increments, plans directory, commit approval, prefer small PRs | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Hexagonal Architecture** | Ports and adapters pattern, dependency inversion, domain isolation | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
 | **Domain-Driven Design** | Ubiquitous language, glossary enforcement, value objects, aggregates, domain events | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
@@ -601,39 +601,28 @@ Claude Code: [Launches learn agent]
 
 ### 6. `progress-guardian` - Progress Guardian
 
-**Use proactively** when starting significant multi-step work, or **reactively** to update progress, capture learnings, and handle blockers.
-
-**Three-Document Model:**
-
-| Document | Purpose | Updates |
-|----------|---------|---------|
-| **PLAN.md** | What we're doing (approved steps) | Only with user approval |
-| **WIP.md** | Where we are now (current state) | Constantly |
-| **LEARNINGS.md** | What we discovered | As discoveries occur |
+**Use proactively** when starting significant multi-step work, or **reactively** to track progress through plan steps.
 
 **What it manages:**
-- Creates and maintains three documents for significant work
+- Tracks progress through steps in plan files (`plans/<name>.md`)
 - Enforces small increments, TDD, and **commit approval**
-- Never modifies PLAN.md without explicit user approval
-- Captures learnings as they occur
-- At end: orchestrates learning merge, then **deletes all three docs**
+- Never modifies plans without explicit user approval
+- At end: orchestrates learning merge, then **deletes the plan file**
 
 **Example invocation:**
 ```
 You: "I need to implement OAuth with JWT tokens and refresh logic"
-Claude Code: [Launches progress-guardian to create PLAN.md, WIP.md, LEARNINGS.md]
+Claude Code: [Launches progress-guardian to create plans/oauth.md]
 
 You: "Tests are passing now"
-Claude Code: [Launches progress-guardian to update WIP.md and ask for commit approval]
+Claude Code: [Launches progress-guardian to update plan and ask for commit approval]
 ```
 
 **Output:**
-- **PLAN.md** - Approved steps with acceptance criteria
-- **WIP.md** - Current step, status, blockers, next action
-- **LEARNINGS.md** - Gotchas, patterns, decisions discovered
-- At end: learnings merged into CLAUDE.md/ADRs, all docs deleted
+- Plan file in `plans/` with approved steps and acceptance criteria
+- At end: learnings merged into CLAUDE.md/ADRs, plan file deleted
 
-**Key distinction:** Creates TEMPORARY documents (deleted when done). Learnings merged into permanent knowledge base first.
+**Key distinction:** Plan files are TEMPORARY (deleted when done). Learnings merged into permanent knowledge base first.
 
 **Related skill:** Load `planning` skill for detailed incremental work principles.
 
@@ -780,7 +769,7 @@ This is the full lifecycle for working on a feature, from project setup through 
 #### Phase 2: Plan the Work (before writing any code)
 
 ```
-/plan  →  Creates PLAN.md on a branch with a draft PR — no code, just the plan
+/plan  →  Creates a plan in plans/ on a branch with a PR — no code, just the plan
 ```
 
 **Why before code:** Planning in a separate step prevents the most common friction point — Claude jumping straight to implementation before the approach is agreed. The plan becomes a PR you can review and approve before any code is written. Each step in the plan specifies the failing test to write first.
@@ -824,7 +813,7 @@ adr agent         →  Documents significant architectural decisions
 docs-guardian     →  Updates user-facing documentation
 ```
 
-**Why at the end:** Learnings are captured throughout (in LEARNINGS.md if using `progress-guardian`), but merged into permanent documentation at the end when you have full context on what mattered and what didn't.
+**Why at the end:** Learnings are best captured when you have full context on what mattered and what didn't. Use the `learn` agent for CLAUDE.md updates and the `adr` agent for architectural decisions.
 
 #### One-Time Setup (optional)
 
