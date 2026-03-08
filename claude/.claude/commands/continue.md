@@ -19,4 +19,4 @@ The previous PR has been merged. Continue the workflow:
 ## Constraints
 
 - Do NOT start implementing anything yet — just set up the branch and update the plan
-- If no plan file exists (PLAN.md or .claude/plans/*.md), ask what to work on next
+- If no plan file exists in `plans/`, ask what to work on next

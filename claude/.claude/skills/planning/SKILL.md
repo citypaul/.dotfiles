@@ -7,42 +7,17 @@ description: Planning work in small, known-good increments. Use when starting si
 
 **All work must be done in small, known-good increments.** Each increment leaves the codebase in a working state where all tests pass.
 
-**Document Management**: Use the `progress-guardian` agent to create and maintain planning documents (PLAN.md, WIP.md, LEARNINGS.md).
+Use the `/plan` command to create plans. Use the `/continue` command to resume work after a merged PR.
 
-## Three-Document Model
+## Plans Directory
 
-For significant work, maintain three documents:
+Plans live in `plans/` at the project root. Each plan is a self-contained file named descriptively (e.g., `plans/gift-tracking.md`, `plans/email-validation.md`).
 
-| Document | Purpose | Lifecycle |
-|----------|---------|-----------|
-| **PLAN.md** | What we're doing | Created at start, changes need approval |
-| **WIP.md** | Where we are now | Updated constantly, always accurate |
-| **LEARNINGS.md** | What we discovered | Temporary, merged at end then deleted |
+To discover active plans: `ls plans/`
 
-### Document Relationships
+Multiple plans can coexist — each is independent and won't conflict across branches or worktrees because they have unique filenames.
 
-```
-PLAN.md (static)          WIP.md (living)           LEARNINGS.md (temporary)
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│ Goal            │       │ Current step    │       │ Gotchas         │
-│ Acceptance      │  ──►  │ Status          │  ──►  │ Patterns        │
-│ Steps 1-N       │       │ Blockers        │       │ Decisions       │
-│ (approved)      │       │ Next action     │       │ Edge cases      │
-└─────────────────┘       └─────────────────┘       └─────────────────┘
-        │                         │                         │
-        │                         │                         │
-        └─────────────────────────┴─────────────────────────┘
-                                  │
-                                  ▼
-                         END OF FEATURE
-                                  │
-                    ┌─────────────┴─────────────┐
-                    │                           │
-                    ▼                           ▼
-              DELETE all              Merge LEARNINGS into:
-              three docs              - CLAUDE.md (gotchas, patterns)
-                                      - ADRs (architectural decisions)
-```
+**When a plan is complete:** delete the plan file. If `plans/` is empty, delete the directory.
 
 ## Prefer Multiple Small PRs
 
@@ -114,9 +89,7 @@ After completing a step (RED-GREEN-REFACTOR):
 
 1. Verify all tests pass
 2. Verify static analysis passes
-3. Update WIP.md with progress
-4. Capture any learnings in LEARNINGS.md
-5. **STOP and ask**: "Ready to commit [description]. Approve?"
+3. **STOP and ask**: "Ready to commit [description]. Approve?"
 
 Only proceed with commit after explicit approval.
 
@@ -127,10 +100,15 @@ Only proceed with commit after explicit approval.
 - Prevents accidental commits of incomplete work
 - Creates natural checkpoint for discussion
 
-## PLAN.md Structure
+## Plan File Structure
+
+Each plan file in `plans/` follows this structure:
 
 ```markdown
 # Plan: [Feature Name]
+
+**Branch**: feat/feature-name
+**Status**: Active
 
 ## Goal
 
@@ -155,6 +133,17 @@ Only proceed with commit after explicit approval.
 **Test**: ...
 **Implementation**: ...
 **Done when**: ...
+
+## Pre-PR Quality Gate
+
+Before each PR:
+1. Mutation testing — run `mutation-testing` skill
+2. Refactoring assessment — run `refactoring` skill
+3. Typecheck and lint pass
+4. DDD glossary check (if applicable)
+
+---
+*Delete this file when the plan is complete. If `plans/` is empty, delete the directory.*
 ```
 
 ### Plan Changes Require Approval
@@ -167,125 +156,13 @@ If the plan needs to change:
 
 Plans are not immutable, but changes must be explicit and approved.
 
-## WIP.md Structure
-
-```markdown
-# WIP: [Feature Name]
-
-## Current Step
-
-Step N of M: [Description]
-
-## Status
-
-🔴 RED - Writing failing test
-🟢 GREEN - Making test pass
-🔵 REFACTOR - Assessing improvements
-⏸️ WAITING - Awaiting commit approval
-
-## Completed
-
-- [x] Step 1: [Description]
-- [x] Step 2: [Description]
-- [ ] Step 3: [Description] ← current
-
-## Blockers
-
-[None / List current blockers]
-
-## Next Action
-
-[Specific next thing to do]
-```
-
-### WIP Must Always Be Accurate
-
-Update WIP.md:
-- When starting a new step
-- When status changes (RED → GREEN → REFACTOR)
-- When blockers appear or resolve
-- After each commit
-- At end of each session
-
-**If WIP.md doesn't reflect reality, update it immediately.**
-
-## LEARNINGS.md Structure
-
-```markdown
-# Learnings: [Feature Name]
-
-## Gotchas
-
-### [Title]
-- **Context**: When this occurs
-- **Issue**: What goes wrong
-- **Solution**: How to handle it
-
-## Patterns That Worked
-
-### [Title]
-- **What**: Description
-- **Why it works**: Rationale
-- **Example**: Brief code example
-
-## Decisions Made
-
-### [Title]
-- **Options considered**: What we evaluated
-- **Decision**: What we chose
-- **Rationale**: Why
-- **Trade-offs**: What we gained/lost
-
-## Edge Cases
-
-- [Edge case 1]: How we handled it
-- [Edge case 2]: How we handled it
-```
-
-### Capture Learnings As They Occur
-
-Don't wait until the end. When you discover something:
-
-1. Add it to LEARNINGS.md immediately
-2. Continue with current work
-3. At end of feature, learnings are ready to merge
-
 ## End of Feature
 
 When all steps are complete:
 
-### 1. Verify Completion
-
-- All acceptance criteria met
-- All tests passing
-- All steps marked complete in WIP.md
-
-### 2. Merge Learnings
-
-Review LEARNINGS.md and determine destination:
-
-| Learning Type | Destination | Method |
-|---------------|-------------|--------|
-| Gotchas | CLAUDE.md | Use `learn` agent |
-| Patterns | CLAUDE.md | Use `learn` agent |
-| Architectural decisions | ADR | Use `adr` agent |
-| Domain knowledge | Project docs | Direct update |
-
-### 3. Delete Documents
-
-After learnings are merged:
-
-```bash
-rm PLAN.md WIP.md LEARNINGS.md
-git add -A
-git commit -m "chore: complete [feature], remove planning docs"
-```
-
-**The knowledge lives on in:**
-- CLAUDE.md (gotchas, patterns)
-- ADRs (architectural decisions)
-- Git history (what was done)
-- Project docs (if applicable)
+1. **Verify completion** — all acceptance criteria met, all tests passing
+2. **Merge learnings** — if significant insights were gained, use the `learn` agent for CLAUDE.md updates or `adr` agent for architectural decisions
+3. **Delete plan file** — remove from `plans/`, delete `plans/` if empty
 
 ## Anti-Patterns
 
@@ -298,39 +175,29 @@ git commit -m "chore: complete [feature], remove planning docs"
 ❌ **Writing code before tests**
 - RED comes first, always
 
-❌ **Letting WIP.md become stale**
-- Update immediately when reality changes
-
-❌ **Waiting until end to capture learnings**
-- Add to LEARNINGS.md as discoveries occur
-
 ❌ **Plans that change silently**
 - All plan changes require discussion and approval
 
-❌ **Keeping planning docs after feature complete**
-- Delete them; knowledge is now in permanent locations
+❌ **Keeping plan files after feature complete**
+- Delete them; knowledge lives in CLAUDE.md, ADRs, and git history
 
 ## Quick Reference
 
 ```
 START FEATURE
 │
-├─► Create PLAN.md (get approval)
-├─► Create WIP.md
-├─► Create LEARNINGS.md
+├─► Create plan in plans/ (get approval)
 │
 │   FOR EACH STEP:
 │   │
 │   ├─► RED: Failing test
 │   ├─► GREEN: Make it pass
 │   ├─► REFACTOR: If valuable
-│   ├─► Update WIP.md
-│   ├─► Capture learnings
 │   └─► **WAIT FOR COMMIT APPROVAL**
 │
 END FEATURE
 │
 ├─► Verify all criteria met
-├─► Merge learnings (learn agent, adr agent)
-└─► Delete PLAN.md, WIP.md, LEARNINGS.md
+├─► Merge learnings if significant (learn agent, adr agent)
+└─► Delete plan file from plans/
 ```
