@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  opencode-compat:
+    name: OpenCode Compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Test OpenCode compatibility
+        run: ./test/opencode-compat.sh
