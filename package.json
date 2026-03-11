@@ -17,6 +17,7 @@
   "author": "Paul Hammond",
   "license": "MIT",
   "scripts": {
+    "test": "./test/opencode-compat.sh",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "changeset publish"
