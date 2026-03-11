@@ -93,8 +93,8 @@ Options:
   --no-agents        Install without agents
   --skills-only      Install only skills
   --agents-only      Install only agents
-  --with-opencode    Also install OpenCode configuration (symlinks commands + agents)
-  --opencode-only    Install only OpenCode configuration (symlinks commands + agents)
+  --with-opencode    Also install OpenCode configuration (commands + agents)
+  --opencode-only    Install only OpenCode configuration (commands + agents)
   --no-external      Skip external community skills (web-quality-skills)
   --version VERSION  Install specific version (default: main)
   --help, -h         Show this help message
@@ -304,28 +304,31 @@ if [[ "$INSTALL_OPENCODE" == true ]]; then
     ~/.config/opencode/opencode.json \
     "opencode.json"
 
-  # Symlink commands so OpenCode discovers them as slash commands
+  # Copy commands for OpenCode, stripping Claude Code-specific frontmatter
   # OpenCode uses ~/.config/opencode/command/ (singular) for slash commands
+  # The 'allowed-tools' field is Claude Code-specific and not valid in OpenCode
   if [[ -d ~/.claude/commands ]]; then
-    echo -e "${BLUE}Symlinking commands for OpenCode...${NC}"
+    echo -e "${BLUE}Copying commands for OpenCode...${NC}"
     mkdir -p ~/.config/opencode/command
     for cmd in ~/.claude/commands/*.md; do
       if [[ -f "$cmd" ]]; then
-        ln -sf "$cmd" ~/.config/opencode/command/"$(basename "$cmd")"
-        echo -e "${GREEN}✓${NC} command/$(basename "$cmd") → $cmd"
+        sed '/^allowed-tools:/d' "$cmd" > ~/.config/opencode/command/"$(basename "$cmd")"
+        echo -e "${GREEN}✓${NC} command/$(basename "$cmd")"
       fi
     done
   fi
 
-  # Symlink agents so OpenCode discovers them
+  # Copy agents for OpenCode, stripping Claude Code-specific frontmatter
   # OpenCode uses ~/.config/opencode/agent/ (singular) for agents
+  # The 'tools' field expects an object in OpenCode but is a string in Claude Code
+  # The 'color' field expects hex (#RRGGBB) in OpenCode but is a named color in Claude Code
   if [[ -d ~/.claude/agents ]]; then
-    echo -e "${BLUE}Symlinking agents for OpenCode...${NC}"
+    echo -e "${BLUE}Copying agents for OpenCode...${NC}"
     mkdir -p ~/.config/opencode/agent
     for agent in ~/.claude/agents/*.md; do
       if [[ -f "$agent" ]]; then
-        ln -sf "$agent" ~/.config/opencode/agent/"$(basename "$agent")"
-        echo -e "${GREEN}✓${NC} agent/$(basename "$agent") → $agent"
+        sed '/^tools:/d; /^color:/d' "$agent" > ~/.config/opencode/agent/"$(basename "$agent")"
+        echo -e "${GREEN}✓${NC} agent/$(basename "$agent")"
       fi
     done
   fi
@@ -366,8 +369,8 @@ if [[ "$INSTALL_OPENCODE" == true ]]; then
   echo -e ""
   echo -e "${BLUE}Installed to ~/.config/opencode/${NC}"
   echo -e "  ${GREEN}✓${NC} opencode.json (OpenCode rules configuration)"
-  echo -e "  ${GREEN}✓${NC} command/ (symlinks to ~/.claude/commands/ for slash commands)"
-  echo -e "  ${GREEN}✓${NC} agent/ (symlinks to ~/.claude/agents/ for agents)"
+  echo -e "  ${GREEN}✓${NC} command/ (slash commands from ~/.claude/commands/)"
+  echo -e "  ${GREEN}✓${NC} agent/ (agents from ~/.claude/agents/)"
 fi
 
 echo ""
@@ -400,7 +403,7 @@ if [[ "$INSTALL_OPENCODE" == false ]]; then
   echo -e "${BLUE}Using OpenCode?${NC}"
   echo ""
   echo -e "  All skills, commands, and agents also work with OpenCode."
-  echo -e "  Re-run with ${YELLOW}--with-opencode${NC} to symlink everything into"
+  echo -e "  Re-run with ${YELLOW}--with-opencode${NC} to set up everything in"
   echo -e "  ~/.config/opencode/ so slash commands and agents show up."
   echo ""
 fi

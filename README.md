@@ -959,10 +959,10 @@ OpenCode doesn't automatically read `~/.claude/` files. It uses different discov
 |-----------|------------|----------|-------------|
 | Instructions | `~/.claude/CLAUDE.md` | `~/.config/opencode/AGENTS.md` | `opencode.json` instructions field |
 | Skills | `~/.claude/skills/` | `~/.config/opencode/skills/` | OpenCode reads `~/.claude/skills/` natively |
-| Commands | `~/.claude/commands/` | `~/.config/opencode/command/` (singular) | Symlinked during install |
-| Agents | `~/.claude/agents/` | `~/.config/opencode/agent/` (singular) | Symlinked during install |
+| Commands | `~/.claude/commands/` | `~/.config/opencode/command/` (singular) | Copied with frontmatter converted |
+| Agents | `~/.claude/agents/` | `~/.config/opencode/agent/` (singular) | Copied with frontmatter converted |
 
-The installer creates symlinks from OpenCode's expected directories to the Claude Code source files, so there's a single source of truth with zero duplication.
+The installer copies commands and agents into OpenCode's directories, stripping Claude Code-specific frontmatter fields (`allowed-tools`, `tools`, `color`) that use incompatible formats between the two tools.
 
 **Installation:**
 
@@ -984,8 +984,8 @@ curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-cla
   - `~/.claude/CLAUDE.md` (core principles)
   - `~/.claude/skills/*/SKILL.md` (all skill patterns)
   - `~/.claude/agents/*.md` (agent instructions)
-- `~/.config/opencode/command/` - Symlinks to `~/.claude/commands/*.md` (slash commands)
-- `~/.config/opencode/agent/` - Symlinks to `~/.claude/agents/*.md` (agents)
+- `~/.config/opencode/command/` - Slash commands from `~/.claude/commands/` (frontmatter converted)
+- `~/.config/opencode/agent/` - Agents from `~/.claude/agents/` (frontmatter converted)
 
 **Manual Installation:**
 
@@ -1006,14 +1006,14 @@ cat > ~/.config/opencode/opencode.json << 'EOF'
 }
 EOF
 
-# Symlink commands (OpenCode uses singular "command/" directory)
+# Copy commands, stripping Claude Code-specific 'allowed-tools' field
 for cmd in ~/.claude/commands/*.md; do
-  ln -sf "$cmd" ~/.config/opencode/command/"$(basename "$cmd")"
+  sed '/^allowed-tools:/d' "$cmd" > ~/.config/opencode/command/"$(basename "$cmd")"
 done
 
-# Symlink agents (OpenCode uses singular "agent/" directory)
+# Copy agents, stripping Claude Code-specific 'tools' and 'color' fields
 for agent in ~/.claude/agents/*.md; do
-  ln -sf "$agent" ~/.config/opencode/agent/"$(basename "$agent")"
+  sed '/^tools:/d; /^color:/d' "$agent" > ~/.config/opencode/agent/"$(basename "$agent")"
 done
 ```
 
