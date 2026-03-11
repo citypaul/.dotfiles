@@ -1,6 +1,6 @@
 # Development Guidelines for AI-Assisted Programming
 
-**Comprehensive CLAUDE.md guidelines + enforcement agents for Test-Driven Development, TypeScript strict mode, and functional programming.**
+**Comprehensive CLAUDE.md guidelines + enforcement agents for Test-Driven Development, TypeScript strict mode, and functional programming. Works with both [Claude Code](https://claude.ai/code) and [OpenCode](https://opencode.ai).**
 
 [![Watch me use my CLAUDE.md file to build a real feature](https://img.youtube.com/vi/rSoeh6K5Fqo/0.jpg)](https://www.youtube.com/watch?v=rSoeh6K5Fqo)
 
@@ -15,6 +15,7 @@
 - [Claude Code Agents: Automated Enforcement](#-claude-code-agents-automated-enforcement)
 - [Slash Commands](#-slash-commands)
 - [How to Use This in Your Projects](#-how-to-use-this-in-your-projects)
+  - [OpenCode Support](#optional-enable-opencode-support)
 - [Documentation](#-documentation)
 - [Who This Is For](#-who-this-is-for)
 - [Philosophy](#-philosophy)
@@ -37,6 +38,8 @@ This repository now serves two purposes:
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
+
+> **Using OpenCode?** All skills, slash commands, and agents in this repo work with both Claude Code and [OpenCode](https://opencode.ai). Install with `--with-opencode` to get full compatibility — see [OpenCode Support](#optional-enable-opencode-support) for details.
 
 ---
 
@@ -861,7 +864,7 @@ Agents are invoked implicitly (Claude detects when to use them) or explicitly:
 **Why choose this:**
 - ✅ One-time setup applies everywhere automatically
 - ✅ No per-project configuration needed
-- ✅ Works with Claude Code immediately
+- ✅ Works with Claude Code and OpenCode (`--with-opencode`)
 - ✅ Modular structure loads details on-demand
 - ✅ Easy updates via git pull
 
@@ -944,13 +947,22 @@ Restart Claude Code and run `/mcp` to verify the GitHub server shows as connecte
 - `@github:pr://123` - Reference PRs directly in prompts
 - `@github:issue://45` - Reference issues directly in prompts
 
-**Optional: Enable OpenCode Support**
+#### Optional: Enable OpenCode Support
 
-These guidelines also work with [OpenCode](https://opencode.ai) - an open source AI coding agent. OpenCode uses `AGENTS.md` for custom instructions (similar to `CLAUDE.md` in Claude Code).
+These guidelines also work with [OpenCode](https://opencode.ai) - an open source AI coding agent. All slash commands, agents, and skills work in both Claude Code and OpenCode.
 
 **How OpenCode Integration Works:**
 
-OpenCode doesn't automatically read `~/.claude/` files. Instead, it uses a configuration file to specify which instruction files to load. The `opencode.json` configuration tells OpenCode to load your CLAUDE.md and skills files.
+OpenCode doesn't automatically read `~/.claude/` files. It uses different discovery paths:
+
+| Component | Claude Code | OpenCode | Integration |
+|-----------|------------|----------|-------------|
+| Instructions | `~/.claude/CLAUDE.md` | `~/.config/opencode/AGENTS.md` | `opencode.json` instructions field |
+| Skills | `~/.claude/skills/` | `~/.config/opencode/skills/` | OpenCode reads `~/.claude/skills/` natively |
+| Commands | `~/.claude/commands/` | `~/.config/opencode/command/` (singular) | Symlinked during install |
+| Agents | `~/.claude/agents/` | `~/.config/opencode/agent/` (singular) | Symlinked during install |
+
+The installer creates symlinks from OpenCode's expected directories to the Claude Code source files, so there's a single source of truth with zero duplication.
 
 **Installation:**
 
@@ -971,22 +983,38 @@ curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-cla
 - `~/.config/opencode/opencode.json` - Configuration that loads:
   - `~/.claude/CLAUDE.md` (core principles)
   - `~/.claude/skills/*/SKILL.md` (all skill patterns)
+  - `~/.claude/agents/*.md` (agent instructions)
+- `~/.config/opencode/command/` - Symlinks to `~/.claude/commands/*.md` (slash commands)
+- `~/.config/opencode/agent/` - Symlinks to `~/.claude/agents/*.md` (agents)
 
 **Manual Installation:**
 
 If you prefer to set it up manually:
 
 ```bash
-mkdir -p ~/.config/opencode
+mkdir -p ~/.config/opencode/command ~/.config/opencode/agent
+
+# OpenCode configuration
 cat > ~/.config/opencode/opencode.json << 'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
     "~/.claude/CLAUDE.md",
-    "~/.claude/skills/*/SKILL.md"
+    "~/.claude/skills/*/SKILL.md",
+    "~/.claude/agents/*.md"
   ]
 }
 EOF
+
+# Symlink commands (OpenCode uses singular "command/" directory)
+for cmd in ~/.claude/commands/*.md; do
+  ln -sf "$cmd" ~/.config/opencode/command/"$(basename "$cmd")"
+done
+
+# Symlink agents (OpenCode uses singular "agent/" directory)
+for agent in ~/.claude/agents/*.md; do
+  ln -sf "$agent" ~/.config/opencode/agent/"$(basename "$agent")"
+done
 ```
 
 **Learn more:**
