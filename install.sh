@@ -20,6 +20,7 @@ FPATH=$FPATH:~/.zsh_autocomplete
 
 mkdir -p ~/.zsh_autocomplete
 zellij setup --generate-completion zsh >>~/.zsh_autocomplete/_zellij-completion
+git gtr completion zsh >~/.zsh_autocomplete/_git-gtr
 
 move_with_backup ~/.zshrc
 
