@@ -57,7 +57,7 @@ Each step MUST:
 
 ## TDD Integration
 
-**Every step follows RED-GREEN-REFACTOR.** See `testing` skill for factory patterns.
+**Every step follows RED-GREEN-REFACTOR-MUTATE.** See `testing` skill for factory patterns.
 
 ```
 FOR EACH STEP:
@@ -75,6 +75,10 @@ FOR EACH STEP:
     │   - See `refactoring` skill
     │   - Only if it adds value
     │   - All tests still pass
+    │
+    ├─► MUTATE: Verify test effectiveness
+    │   - Run `mutation-testing` skill
+    │   - Fix any surviving mutants
     │
     └─► STOP: Wait for commit approval
 ```
@@ -125,7 +129,7 @@ Tests at every level (unit, browser, integration) should verify behaviour.]
 
 ## Steps
 
-Every step follows RED-GREEN-REFACTOR. No production code without a failing test.
+Every step follows RED-GREEN-REFACTOR-MUTATE. No production code without a failing test.
 Read the project's CLAUDE.md and testing rules before writing steps.
 
 ### Step 1: [One sentence description]
@@ -133,6 +137,7 @@ Read the project's CLAUDE.md and testing rules before writing steps.
 **RED**: What failing test will we write? (Describes expected behaviour, not implementation.)
 **GREEN**: What minimum code makes the test pass?
 **REFACTOR**: Assess improvements (only if they add value).
+**MUTATE**: Run `mutation-testing` skill to verify tests catch real bugs.
 **Done when**: How do we know it's complete?
 
 ### Step 2: [One sentence description]
@@ -140,6 +145,7 @@ Read the project's CLAUDE.md and testing rules before writing steps.
 **RED**: ...
 **GREEN**: ...
 **REFACTOR**: ...
+**MUTATE**: ...
 **Done when**: ...
 
 ## Pre-PR Quality Gate
@@ -201,6 +207,7 @@ START FEATURE
 │   ├─► RED: Failing test
 │   ├─► GREEN: Make it pass
 │   ├─► REFACTOR: If valuable
+│   ├─► MUTATE: Verify tests catch bugs
 │   └─► **WAIT FOR COMMIT APPROVAL**
 │
 END FEATURE
