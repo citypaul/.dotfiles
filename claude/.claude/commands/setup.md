@@ -32,6 +32,7 @@ Set up this project for Claude Code using the global framework. Analyze the proj
 4. **Detect existing config**: check for existing CLAUDE.md, .claude/ directory, hooks, commands
 5. **Check for DDD**: look for glossary files, domain directories, bounded context structure
 6. **Check for hexagonal architecture**: look for ports/, adapters/, domain/ directory structure
+7. **Check for 12-factor patterns**: look for Dockerfile, docker-compose.yml, Procfile, .env.example, process.env usage, PORT binding, Kubernetes manifests (k8s/, deployment.yaml)
 
 ## Generation Phase
 
@@ -46,6 +47,7 @@ Include sections based on what was detected:
 - **Monorepo structure**: if applicable, map workspaces and their purposes
 - **CI pipeline**: CI system, pipeline steps, known environment differences from local
 - **DDD glossary location**: if DDD detected, point to glossary file
+- **12-factor services**: if 12-factor patterns detected, add `For 12-factor service patterns, load the \`twelve-factor\` skill.` and note the `twelve-factor-audit` agent is available for compliance audits
 - **Testing**: test runner, test command, any special setup needed
 
 Keep it concise and actionable — this replaces the need to run `/init`.
