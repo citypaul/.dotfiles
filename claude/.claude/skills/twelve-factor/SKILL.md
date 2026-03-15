@@ -7,7 +7,9 @@ description: 12-Factor App patterns for deployable applications. Use when config
 
 Core factors (config, dependencies, backing services, logs) apply to any deployed application — services, frontends, workers, and CLI tools. Server-specific factors (port binding, concurrency, disposability) apply only to backend services that run as long-lived processes.
 
-Based on [12factor.net](https://12factor.net). Focuses on the factors that directly affect code: config, dependencies, backing services, stateless processes, disposability, logging, and concurrency. Purely operational factors (codebase management, build pipelines) are omitted.
+Based on [12factor.net](https://12factor.net). All 12 factors are covered below. Factors that primarily affect code (config, dependencies, backing services, stateless processes, disposability, logging, concurrency) get full treatment with code examples. Factors that are primarily operational (codebase, build/release/run) get brief guidance on the code-level implications.
+
+See the `typescript-strict` skill for schema-first patterns at trust boundaries. See the `testing` skill for how to TDD these patterns — config validation, shutdown behavior, and backing service integration are all testable through behavior-driven tests.
 
 ## When to Apply
 
@@ -18,6 +20,12 @@ Based on [12factor.net](https://12factor.net). Focuses on the factors that direc
   3. **Disposability** (Factor IX) — add graceful shutdown handlers
   4. **Backing services** (Factor IV) — abstract connections behind config URLs
   5. **Stateless processes** (Factor VI) — migrate in-memory state to backing services
+
+## Codebase (Factor I)
+
+One codebase tracked in revision control, many deploys. Each deployable service has its own codebase. Shared code between services is extracted into libraries managed via the package manager, not copy-pasted.
+
+In a monorepo, each service should have its own entry point, its own deploy pipeline, and its own set of backing service connections. A single repo is fine as long as each service deploys independently.
 
 ## Config (Factor III)
 
@@ -36,7 +44,7 @@ const ConfigSchema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   API_KEY: z.string().min(1),
   SENTRY_DSN: z.string().url().optional(),
-  ALLOWED_ORIGINS: z.string().transform((s) => s.split(',')).default(''),
+  ALLOWED_ORIGINS: z.string().default('').transform((s) => s === '' ? [] : s.split(',')),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -114,6 +122,7 @@ export const checkSystemDependencies = (required: readonly string[]) => {
 **Rules:**
 - Every dependency in `package.json` (or equivalent manifest)
 - Lockfile (`package-lock.json`, `pnpm-lock.yaml`) committed to repo
+- Dependencies are isolated — the app does not leak from or depend on the system environment (use `node_modules`, not global installs)
 - No `exec('imagemagick ...')` or `child_process` calls to assumed system tools
 - If a system tool is required, document it explicitly and check for it at startup
 
@@ -122,7 +131,7 @@ export const checkSystemDependencies = (required: readonly string[]) => {
 Treat every backing service (database, cache, queue, email, storage) as an attached resource identified by a URL in config.
 
 ```typescript
-export const createApp = ({ config }: { config: Config }) => {
+export const createApp = ({ config }: { config: Pick<Config, 'DATABASE_URL' | 'REDIS_URL'> }) => {
   const db = createDbPool({ connectionString: config.DATABASE_URL });
   const cache = createRedisClient({ url: config.REDIS_URL });
 
@@ -132,7 +141,7 @@ export const createApp = ({ config }: { config: Config }) => {
     async shutdown() {
       await Promise.all([db.end(), cache.quit()]);
     },
-  };
+  } as const;
 };
 ```
 
@@ -189,13 +198,13 @@ Scale out via the process model. Design the app so work can be divided across pr
 // web.ts — handles HTTP requests
 const config = createConfig();
 const app = createApp({ config });
-startServer({ app, config });
+await startServer({ app, config });
 
-// worker.ts — processes background jobs
+// worker.ts — processes background jobs from a queue backed by Redis
 const config = createConfig();
-const queue = createQueueConsumer({ url: config.QUEUE_URL });
-queue.process('email', sendEmail);
-queue.process('report', generateReport);
+const queue = createQueueConsumer({ url: config.REDIS_URL });
+await queue.process('email', sendEmail);
+await queue.process('report', generateReport);
 ```
 
 **Rules:**
@@ -233,7 +242,7 @@ const SHUTDOWN_TIMEOUT_MS = 30_000;
 export const startServer = async ({ app, config }: { app: App; config: Pick<Config, 'PORT'> }) => {
   const server = app.listen(config.PORT);
 
-  const shutdown = async (signal: string) => {
+  const shutdown = async (signal: 'SIGTERM' | 'SIGINT') => {
     const forceExit = setTimeout(() => process.exit(1), SHUTDOWN_TIMEOUT_MS);
 
     try {
@@ -294,7 +303,7 @@ export const createLogger = ({ config }: { config: Pick<Config, 'LOG_LEVEL'> }) 
 
   const log = (level: keyof typeof LOG_LEVELS, message: string, data?: Record<string, unknown>) => {
     if (!shouldLog(level)) return;
-    const output = JSON.stringify({ timestamp: new Date().toISOString(), level, message, ...data });
+    const output = JSON.stringify({ timestamp: new Date().toISOString(), level, message, context: data });
     (level === 'error' ? console.error : console.log)(output);
   };
 
@@ -322,6 +331,15 @@ console.log(`User ${userId} logged in`);
 ```
 
 **Why these are wrong:** File transports mean the app is routing its own logs. Unstructured string interpolation produces logs that cannot be parsed or queried. The execution environment (container orchestrator, PaaS) captures stdout and routes it to the appropriate destination.
+
+## Build, Release, Run (Factor V)
+
+Strictly separate build and run stages. Config is injected at release/run time, never baked into the build.
+
+**Code-level implications:**
+- No environment-specific build outputs — the same build artifact deploys to every environment
+- Config comes from env vars at runtime, not from compile-time substitution
+- Releases are immutable — code changes require a new build, not runtime patching
 
 ## Port Binding (Factor VII)
 
@@ -352,14 +370,30 @@ Run admin tasks (migrations, data fixes, console sessions) as one-off processes 
 ```typescript
 const config = createConfig();
 const db = createDbPool({ connectionString: config.DATABASE_URL });
-await runMigrations(db);
-await db.end();
+try {
+  await runMigrations(db);
+} finally {
+  await db.end();
+}
 ```
 
-Admin scripts live in the repo alongside application code (e.g. `scripts/migrate.ts`). They are not separate tools or ad-hoc shell commands.
+Admin scripts live in the repo alongside application code (e.g. `scripts/migrate.ts`). They are not separate tools or ad-hoc shell commands. Admin processes run in an identical environment to the app — same release, same config, same dependencies.
+
+## Testing 12-Factor Patterns
+
+12-factor patterns are testable through behavior-driven tests:
+
+- **Config**: test that `createConfig` throws on missing required vars and returns correct defaults
+- **Disposability**: test that shutdown closes all connections (inject test doubles for db/cache)
+- **Backing services**: test that services work with any backing service URL (inject via config)
+- **Statelessness**: test that request handlers do not depend on prior request state
+
+Config injection via options objects makes all of these patterns naturally testable without mocking `process.env` or global state. See the `testing` skill for factory patterns and behavior-driven test examples.
 
 ## Checklist
 
+- [ ] One codebase per deployable service; shared code extracted as libraries
+- [ ] Same build artifact deploys to every environment (no env-specific builds)
 - [ ] All config comes from environment variables, validated at startup with a schema
 - [ ] Startup fails fast with a clear error message if config is invalid
 - [ ] `.env.example` documents required variables (no real credentials)

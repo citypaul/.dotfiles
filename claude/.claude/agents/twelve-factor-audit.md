@@ -62,9 +62,12 @@ Use Grep to search for implicit system dependencies:
 - Pattern: `execSync|exec\(|spawnSync|spawn\(` in source files (glob: `"*.{ts,js}"`)
 - Pattern: `child_process` in source files
 
+Use Bash to check for lockfile in git:
 ```bash
-git ls-files | grep -E 'package-lock|pnpm-lock|yarn\.lock'
+git ls-files --error-unmatch package-lock.json pnpm-lock.yaml yarn.lock 2>/dev/null
 ```
+
+**False positive note:** `exec` in test files or build scripts is acceptable. Only flag production source code that shells out to assumed system tools.
 
 #### Factor III: Config
 
@@ -81,9 +84,12 @@ Use Grep to search for violations:
 - Pattern: `sk_live_|AKIA|ghp_|Bearer [A-Za-z0-9]` for hardcoded API keys/tokens
 - Pattern: `process\.env\.` to find all env var access points — count unique files to assess centralization
 
+Use Bash to check for `.env` in git:
 ```bash
-git ls-files | grep -E '^\.env$'
+git ls-files --error-unmatch .env 2>/dev/null
 ```
+
+**False positive note:** `localhost` references in `.env.example`, test fixtures, documentation, and OpenAPI specs are acceptable. Only flag `localhost` in production source code that would run in deployed environments.
 
 Use Glob to find config modules:
 - Pattern: `**/config.{ts,js}`, `**/env.{ts,js}`, `**/config/**`
@@ -100,6 +106,8 @@ Use Grep to find connection patterns:
 - Pattern: `createConnection|createPool|createClient|connect\(` in source files
 - Pattern: `PrismaClient|DataSource|Sequelize|drizzle` for ORM usage
 - Then Read those files to check if connection strings come from config or are hardcoded
+
+**False positive note:** ORMs configured via `prisma/schema.prisma` with `env("DATABASE_URL")` are compliant. Only flag hardcoded connection strings in code or config files checked into git.
 
 #### Factor V: Build, Release, Run
 
@@ -188,6 +196,8 @@ Use Grep:
 - Pattern: `winston|pino|bunyan|log4js` to identify logging library
 - If found, check for file transports: `transports.*File|filename.*\.log`
 - Pattern: `console\.log\(` with template literal backtick for unstructured logging
+
+**False positive note:** `console.log` in build scripts, CLI tools, or seed scripts is not a logging violation. Only flag unstructured logging in production request-handling code. Winston/pino configured with only console/stdout transports is compliant.
 
 #### Factor XII: Admin Processes
 
