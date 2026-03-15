@@ -145,7 +145,23 @@ This directory contains specifications for specialized Claude Code agents that w
 
 ---
 
-### Analysis & Architecture Agents
+### Compliance & Architecture Agents
+
+#### `twelve-factor-audit`
+**Purpose**: Audits Node.js/TypeScript codebases for 12-Factor App compliance.
+
+**Use when**:
+- Onboarding to an existing service project
+- Assessing deployment readiness
+- Reviewing infrastructure patterns before scaling
+
+**Core responsibility**: Produce a compliance report covering all 12 factors with specific file/line citations, gaps, and prioritized actionable suggestions.
+
+**Output:** Compliance report with factor summary table, violation details, code suggestions, and prioritized action plan written to `twelve-factor-audit.md`.
+
+**Related skill**: Load `twelve-factor` skill for detailed 12-factor patterns.
+
+---
 
 #### `use-case-data-patterns`
 **Purpose**: Analyzes how user-facing use cases map to underlying data access patterns and architectural implementation.
@@ -281,6 +297,7 @@ Quick decision table for all agents:
 | "Was TDD followed?" | `tdd-guardian` | During TDD cycle |
 | "Is this documented?" | `docs-guardian` | At feature completion |
 | "What data patterns exist?" | `use-case-data-patterns` | Before implementing features |
+| "Is this 12-factor compliant?" | `twelve-factor-audit` | When onboarding or assessing deployment readiness |
 | "Where am I in this work?" | `progress-guardian` | Throughout multi-step work |
 
 **Note:** `learn` and `adr` can both apply to the same decision — `learn` captures "how to use it" (→ CLAUDE.md), `adr` captures "why we chose it" (→ ADR doc).
@@ -384,6 +401,7 @@ When creating a new agent specification:
 These agents work together to create a comprehensive development workflow:
 
 - **Analysis**: use-case-data-patterns maps use cases to implementation patterns
+- **Compliance**: twelve-factor-audit assesses 12-factor methodology adherence
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
 - **Improvement**: refactor-scan optimizes code after tests pass
 - **Review**: pr-reviewer validates PRs before merge

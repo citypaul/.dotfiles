@@ -1,6 +1,6 @@
 # Development Guidelines for AI-Assisted Programming
 
-**Comprehensive CLAUDE.md guidelines + enforcement agents for Test-Driven Development, TypeScript strict mode, and functional programming. Works with both [Claude Code](https://claude.ai/code) and [OpenCode](https://opencode.ai).**
+**Comprehensive CLAUDE.md guidelines + specialized agents for Test-Driven Development, TypeScript strict mode, and functional programming. Works with both [Claude Code](https://claude.ai/code) and [OpenCode](https://opencode.ai).**
 
 [![Watch me use my CLAUDE.md file to build a real feature](https://img.youtube.com/vi/rSoeh6K5Fqo/0.jpg)](https://www.youtube.com/watch?v=rSoeh6K5Fqo)
 
@@ -34,7 +34,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine enforcement agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 15 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality enforcement (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 16 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -86,6 +86,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Hexagonal Architecture** | Ports and adapters pattern, dependency inversion, domain isolation | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
 | **Domain-Driven Design** | Ubiquitous language, glossary enforcement, value objects, aggregates, domain events | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
+| **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -121,6 +122,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | CI pipeline keeps failing | [ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) | Every failure is real until proven otherwise, hypothesis-first diagnosis |
 | Separating domain from infrastructure | [hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) | Ports define contracts, adapters implement them, domain stays pure |
 | Complex business rules need modeling | [domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) | Ubiquitous language, glossary enforcement, value objects, aggregates |
+| Config scattered in code, not env vars | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Validate config at startup with Zod, inject via options objects |
+| Service won't scale horizontally | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Stateless processes, external backing services, graceful shutdown |
 | UI looks generic or AI-generated | [frontend-design](claude/.claude/skills/frontend-design/SKILL.md) | Distinctive design, production-grade quality, avoid template aesthetics |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
@@ -449,7 +452,7 @@ Ask yourself:
 
 [**→ Read the agents documentation**](claude/.claude/agents/README.md)
 
-Nine specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
+Ten specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
 
 ### 1. `tdd-guardian` - TDD Compliance Enforcer
 
@@ -739,6 +742,43 @@ Claude Code: [Launches use-case-data-patterns agent]
 
 ---
 
+### 10. `twelve-factor-audit` - Twelve-Factor Compliance Auditor
+
+**Use when** onboarding to a service project, assessing deployment readiness, or reviewing infrastructure patterns.
+
+**What it audits (all 12 factors):**
+
+| Factor | What It Checks |
+|--------|---------------|
+| **I. Codebase** | Single repo, multiple deploys |
+| **II. Dependencies** | Explicit declaration, lockfile committed |
+| **III. Config** | Env vars, centralized validation, no hardcoded secrets |
+| **IV. Backing Services** | Connections via config URLs |
+| **V. Build/Release/Run** | Dockerfile, CI pipeline separation |
+| **VI. Processes** | No in-memory state, stateless |
+| **VII. Port Binding** | Self-contained, port from config |
+| **VIII. Concurrency** | Separate process types (web/worker) |
+| **IX. Disposability** | Graceful shutdown, drain timeout, health checks |
+| **X. Dev/Prod Parity** | Same backing services everywhere |
+| **XI. Logs** | Structured stdout, no file transports |
+| **XII. Admin Processes** | Scripts in repo, shared config |
+
+**Example invocation:**
+```
+You: "Audit this service for 12-factor compliance"
+Claude Code: [Launches twelve-factor-audit agent, produces compliance report]
+```
+
+**Output:**
+- Factor summary table with compliance status
+- Detailed findings with file paths and line numbers
+- Code suggestions for each gap
+- Prioritized action plan
+
+**Related skill:** Load `twelve-factor` skill for detailed 12-factor patterns.
+
+---
+
 ## ⚡ Slash Commands
 
 [**→ Browse the commands directory**](claude/.claude/commands/)
@@ -903,10 +943,10 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (15 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, frontend-design)
+- ✅ `~/.claude/skills/` (16 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design)
 - ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
-- ✅ `~/.claude/agents/` (9 automated enforcement agents)
+- ✅ `~/.claude/agents/` (10 specialized workflow agents)
 
 **Optional: Enable GitHub MCP Integration**
 
@@ -1053,6 +1093,7 @@ curl -o .claude/agents/progress-guardian.md https://raw.githubusercontent.com/ci
 curl -o .claude/agents/adr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/adr.md
 curl -o .claude/agents/pr-reviewer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/pr-reviewer.md
 curl -o .claude/agents/use-case-data-patterns.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/use-case-data-patterns.md
+curl -o .claude/agents/twelve-factor-audit.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/twelve-factor-audit.md
 
 # Download agents README
 curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
@@ -1116,7 +1157,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 15 auto-discovered skills + 5 slash commands + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 16 auto-discovered skills + 5 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1139,10 +1180,10 @@ The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `-
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (15 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (16 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
-- **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (9 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns)
+- **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
 
 ---
 
@@ -1316,7 +1357,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 21 skills (15 built-in + 6 web quality) + 9 agents (development guidelines)
+- ✅ CLAUDE.md + 22 skills (16 built-in + 6 web quality) + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration

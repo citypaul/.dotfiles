@@ -163,7 +163,7 @@ mkdir -p ~/.claude/agents ~/.claude/skills ~/.claude/commands
 mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skills/functional
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
-mkdir -p ~/.claude/skills/ci-debugging ~/.claude/skills/hexagonal-architecture ~/.claude/skills/domain-driven-design ~/.claude/skills/frontend-design
+mkdir -p ~/.claude/skills/ci-debugging ~/.claude/skills/hexagonal-architecture ~/.claude/skills/domain-driven-design ~/.claude/skills/twelve-factor ~/.claude/skills/frontend-design
 if [[ "$INSTALL_EXTERNAL" == true ]]; then
   mkdir -p ~/.claude/skills/accessibility ~/.claude/skills/best-practices ~/.claude/skills/core-web-vitals
   mkdir -p ~/.claude/skills/performance ~/.claude/skills/seo ~/.claude/skills/web-quality-audit
@@ -201,6 +201,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "ci-debugging/SKILL.md"
     "hexagonal-architecture/SKILL.md"
     "domain-driven-design/SKILL.md"
+    "twelve-factor/SKILL.md"
     "frontend-design/SKILL.md"
   )
 
@@ -281,6 +282,7 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
     "pr-reviewer.md"
     "use-case-data-patterns.md"
     "progress-guardian.md"
+    "twelve-factor-audit.md"
     "README.md"
   )
 
@@ -351,7 +353,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (15 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, frontend-design)"
+  echo -e "  ${GREEN}✓${NC} skills/ (16 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "  ${GREEN}✓${NC} skills/ (6 web quality patterns: accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)"
   fi
@@ -362,7 +364,7 @@ if [[ "$INSTALL_COMMANDS" == true ]]; then
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} agents/ (9 Claude Code agents + README)"
+  echo -e "  ${GREEN}✓${NC} agents/ (10 Claude Code agents + README)"
 fi
 
 if [[ "$INSTALL_OPENCODE" == true ]]; then
