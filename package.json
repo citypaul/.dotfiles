@@ -1,6 +1,6 @@
 {
   "name": "@paulhammond/dotfiles",
-  "version": "3.11.1",
+  "version": "3.11.2",
   "private": true,
   "description": "Personal dotfiles including CLAUDE.md development framework and Claude Code agents",
   "repository": {
