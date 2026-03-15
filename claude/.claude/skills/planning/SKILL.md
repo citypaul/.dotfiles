@@ -116,8 +116,8 @@ Each plan file in `plans/` follows this structure:
 
 ## Acceptance Criteria
 
-[Behaviour-driven criteria — describe observable outcomes, not implementation details.
-Each criterion should be testable as a Playwright/integration test.]
+[Behaviour-driven criteria — describe observable business outcomes, not implementation details.
+Tests at every level (unit, browser, integration) should verify behaviour.]
 
 - [ ] Criterion 1
 - [ ] Criterion 2
