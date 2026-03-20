@@ -12,10 +12,13 @@ Restructure DDD and hexagonal architecture skills with decision frameworks, reso
 - Domain Events building block with when-to-use/avoid guidance (Khorikov, Chassaing)
 - Value object equality as definitional characteristic, Currency type, Zod/schema note
 - Glossary file format example restored
-- Branded Types generalized (entity IDs + value objects like EmailAddress)
+- Branded Types generalized with factory functions (entity IDs + value objects like EmailAddress)
+- Specifications (predicate functions) as named building block
 - Bounded Contexts expanded with ACL, context mapping patterns
-- Per-layer testing strategy
+- Per-layer testing strategy with property-based testing guidance
 - Error modeling guidance (discriminated union results vs exceptions, propagation through layers)
+- Interface vs type rationale for repository ports
+- Use case placement resolved to domain/ as clear default
 - Resources: `domain-services.md`, `testing-by-layer.md`, `aggregate-design.md`, `domain-events.md`, `bounded-contexts.md`, `error-modeling.md`
 
 **Hex arch skill restructure** based on Cockburn, Pierrain, Graca, Netflix, Seemann:
@@ -28,6 +31,10 @@ Restructure DDD and hexagonal architecture skills with decision frameworks, reso
 - Cross-cutting concerns (auth, logging, transactions, error formatting — where each lives)
 - Use case naming convention (business language, not pattern suffixes)
 - Full stack worked example (one feature through every layer with tests and file locations)
-- Resources: `cqrs-lite.md`, `testing-hex-arch.md`, `worked-example.md`, `cross-cutting-concerns.md`
+- Event-driven driving adapter example (SQS consumer, same thin-glue pattern)
+- Adapter error handling patterns (constraint violations, infrastructure failures)
+- Incremental adoption guide (strangler fig, step-by-step extraction)
+- Mutable fakes acknowledged as deliberate testing-only exception
+- Resources: `cqrs-lite.md`, `testing-hex-arch.md`, `worked-example.md`, `cross-cutting-concerns.md`, `incremental-adoption.md`
 
 **New: REFERENCES.md** — authoritative sources with specific attributions. Added Wlaschin, Chassaing (Decider), Khorikov, Greg Young, Udi Dahan, Cockburn's "Configurable Dependency", Seemann's dependency rejection and impureim sandwich.
