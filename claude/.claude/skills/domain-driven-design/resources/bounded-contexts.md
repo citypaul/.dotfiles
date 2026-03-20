@@ -110,9 +110,65 @@ The deployment model is independent of the context boundary. A monolith can have
 
 ## Discovering Context Boundaries
 
-Context boundaries emerge where language diverges. Signals that two things belong in different contexts:
+Context boundaries are discovered, not designed up front. They emerge where language, ownership, or business rules diverge.
 
-- The same word means different things to different stakeholders ("User" in billing vs "User" in shipping)
-- Two concepts change for different business reasons
-- Different teams own different parts
-- A model that works for one workflow doesn't fit another
+### The Language Test
+
+The strongest signal is when the same word means different things to different people:
+
+| Word | In gifting context | In billing context |
+|------|-------------------|-------------------|
+| "User" | Someone who organizes occasions and manages gift ideas | An account with a payment method and billing history |
+| "Event" | A gift-giving occasion (birthday, holiday) | A billable transaction or audit log entry |
+| "Amount" | How much to pledge toward a gift | An invoice line item total |
+
+When you find yourself adding qualifiers ("billing user" vs "gifting user"), you've found a context boundary. Each context should use the unqualified term with its own meaning.
+
+### Signals That You Need to Split
+
+**Strong signals (split now):**
+- The same word means different things — and you're adding prefixes to disambiguate
+- Two parts of the system change for different business reasons at different rates
+- A model that makes one workflow simple makes another workflow awkward
+- Different stakeholders or domain experts own different parts of the system
+
+**Moderate signals (consider splitting):**
+- You're building a "god entity" with dozens of fields, most irrelevant to any single use case
+- Teams step on each other's code — merge conflicts across unrelated features
+- Business rules in one area have nothing to do with business rules in another
+
+**Weak signals (probably don't split yet):**
+- Code is getting large (size alone doesn't imply a boundary)
+- You want to "clean up" the architecture (refactoring isn't the same as boundary discovery)
+- Technical concerns differ (use hex arch layers, not context boundaries)
+
+### How to Find Boundaries in Practice
+
+**1. Listen for language friction.** When domain conversations become awkward — "I mean the *shipping* address, not the *billing* address" — you've found a seam. Map where these qualifiers appear.
+
+**2. Map the workflows.** For each major business workflow (e.g., "place an order", "process a return", "manage inventory"), list the entities and rules involved. Where workflows share entities but use different fields or apply different rules, there's likely a boundary.
+
+```
+Workflow: "Pledge a contribution"
+  → Entities: Occasion, Contributor, Money
+  → Rules: balance check, funding-closed check
+
+Workflow: "Send gift reminders"
+  → Entities: Occasion, Recipient, NotificationPreference
+  → Rules: reminder timing, opt-out, channel selection
+
+These share "Occasion" but use different fields and rules.
+"Occasion" means different things in each workflow.
+→ Potential boundary between gifting and notifications.
+```
+
+**3. Follow the ownership.** If different people (or teams) are responsible for different decisions, those decisions likely belong in different contexts. The gifting team decides budget rules; the notifications team decides delivery channels.
+
+**4. Check for independent deployability.** Could this part of the system change and deploy without affecting the other? If yes, it's likely a separate context. If changes always cascade across both, they may be one context.
+
+### Common Mistakes
+
+- **Splitting by technical layer** (a "database context" and an "API context") — contexts are business boundaries, not technical ones
+- **One context per entity** — most entities don't warrant their own context. Split by business capability, not by noun
+- **Splitting too early** — start with one context and split when you feel the friction. Premature boundaries create coordination overhead worse than a slightly large model
+- **Ignoring the cost of communication** — every context boundary adds an integration point. Only split when the cost of a unified model exceeds the cost of integration
