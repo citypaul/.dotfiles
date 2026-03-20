@@ -2,6 +2,8 @@
 
 > For fakes implementation patterns, `createTestDb` helper, and the Swappability Test, see the hexagonal-architecture skill's `resources/testing-hex-arch.md`. This resource focuses on DDD-specific testing concerns.
 
+This testing approach follows Jemuović's Use Case Driven Design (UCDD) — see `../REFERENCES.md` for sources.
+
 ## Primary Test Boundary: The Use Case
 
 The primary test boundary is the **use case** (application service / driving port). Test by calling the use case with driven ports replaced by in-memory fakes. This exercises domain entities, domain services, value objects, and orchestration together — proving the feature works as a whole.

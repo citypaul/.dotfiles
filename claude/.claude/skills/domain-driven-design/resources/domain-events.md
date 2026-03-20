@@ -197,11 +197,13 @@ const advanceGiftPurchase = (
         newState: { step: 'awaiting-shipment', paymentId: event.paymentId },
         commands: [{ type: 'ShipGift', paymentId: event.paymentId }],
       };
-    case 'PaymentFailed':
+    case 'PaymentFailed': {
+      if (state.step !== 'awaiting-payment') return { newState: state, commands: [] };
       return {
         newState: { step: 'failed', reason: 'payment-declined' },
-        commands: [{ type: 'ReleaseBudgetHold', occasionId: state.step === 'awaiting-payment' ? state.occasionId : '' as OccasionId }],
+        commands: [{ type: 'ReleaseBudgetHold', occasionId: state.occasionId }],
       };
+    }
     case 'GiftShipped':
       return {
         newState: { step: 'complete', trackingNumber: event.trackingNumber },

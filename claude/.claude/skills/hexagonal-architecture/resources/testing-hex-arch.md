@@ -1,6 +1,6 @@
 # Testing Strategy for Hexagonal Architecture
 
-Hex arch's primary value is testability. The architecture creates natural test boundaries — but the primary boundary is the **use case**, not each layer in isolation.
+Hex arch's primary value is testability. The architecture creates natural test boundaries — but the primary boundary is the **use case**, not each layer in isolation. This approach follows Jemuović's Use Case Driven Design (UCDD) — see `../REFERENCES.md` for sources.
 
 ## Primary Boundary: The Use Case
 
@@ -58,7 +58,7 @@ const createFakeOrderRepo = (): OrderRepository & { readonly savedEntities: read
 
 ## Domain Unit Tests: A Complement
 
-Pure domain functions (business rules, calculations) can also be tested directly. This is behavioral testing — the domain function IS the public API. Use this for complex rules with many edge cases.
+Pure domain functions (business rules, calculations) can also be tested directly. This is behavioral testing — the domain function IS the public API. Use this for complex rules with many edge cases. For property-based testing of domain invariants with `fast-check`, see the DDD skill's `resources/testing-by-layer.md`.
 
 ```typescript
 it('rejects contribution exceeding available balance', () => {
@@ -71,7 +71,7 @@ it('rejects contribution exceeding available balance', () => {
 
 Driven adapters (repositories, API clients) need integration tests to verify they translate between domain types and infrastructure correctly. These are secondary to use case tests.
 
-The `useTestDb()` helper creates a fresh database for each test file and cleans up after:
+The `createTestDb` helper creates a fresh in-memory database per test:
 
 ```typescript
 // test/helpers/create-test-db.ts — fresh database per test, no shared state

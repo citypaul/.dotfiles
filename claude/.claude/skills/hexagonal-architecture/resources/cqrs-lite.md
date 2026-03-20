@@ -52,7 +52,7 @@ const toDashboardCard = (row: DashboardRow, now: Date): DashboardCard => ({
 
 ## Testing
 
-- **Query functions:** Integration tests with real database (`useTestDb()`)
+- **Query functions:** Integration tests with real database (`createTestDb()`)
 - **Domain transforms:** Unit tests (pure functions, no mocks)
 - **Full read path (query → transform → render):** E2E tests
 

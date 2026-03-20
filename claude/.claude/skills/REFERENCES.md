@@ -86,7 +86,8 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 
 ### Mark Seemann — "Dependency Injection in .NET" + [blog.ploeh.dk](https://blog.ploeh.dk)
 - **"Functional architecture is ports and adapters"** — maximizing pure functions and pushing impure code to the edges naturally produces hex arch → Hex arch skill: the fundamental structural principle
-- **"Dependency rejection"** — in FP, gather impure data at the boundary, pass to pure functions, act on the result (the "impureim sandwich": impure/pure/impure) → Hex arch skill: "Dependency Injection" section
+- **"Impureim sandwich"** (impure/pure/impure) — gather data at the boundary, call pure function, act on the result → Hex arch skill: "Dependency Injection" section, driving adapter pattern
+- **"Dependency rejection"** — eliminate injected abstractions entirely by passing only values to pure functions (distinct from parameter injection) → Hex arch skill: the ideal for domain functions that take only domain types
 - **Composition root pattern** (wire dependencies at the entry point, nowhere else) → Hex arch skill: composition root example
 - **Against DI containers in TypeScript** — function parameters are sufficient → Hex arch skill: "No DI container needed"
 - **Wrong/right DI comparison** — Service Locator and internal construction are anti-patterns; constructor/parameter injection makes preconditions explicit → Hex arch skill: DI wrong/right example

@@ -76,13 +76,13 @@ The physical structure depends on your project and team setup. The principle is 
 src/
   contexts/
     gifting/
-      domain/        # Aggregates, value objects, ports
-      application/   # Use cases
-      infrastructure/# Adapters
+      domain/        # Aggregates, value objects, ports, use cases
+      db/            # Driven adapters (repositories, queries)
+      app/           # Driving adapters (route handlers)
     budgeting/
       domain/
-      application/
-      infrastructure/
+      db/
+      app/
   shared/            # Shared kernel (Money, Email)
 ```
 
