@@ -25,11 +25,11 @@ The Decider (Chassaing, 2021) separates business decisions from state changes. T
 
 ```typescript
 // 1. Decide: command + current state → events (the business decision)
-const decide = (command: OrderCommand, state: OrderState): readonly OrderEvent[] => {
+const decide = (command: OrderCommand, state: OrderState, now: Date): readonly OrderEvent[] => {
   switch (command.type) {
     case 'place': {
       if (state.status !== 'draft') return [];
-      return [{ type: 'OrderPlaced', items: state.items, placedAt: new Date() }];
+      return [{ type: 'OrderPlaced', items: state.items, placedAt: now }];
     }
     case 'ship': {
       if (state.status !== 'placed') return [];
@@ -102,16 +102,18 @@ Events returned from `decide` are plain data — test them like any other return
 
 ```typescript
 it('produces OrderPlaced event when placing a draft order', () => {
+  const now = new Date('2026-03-20');
   const state: OrderState = { status: 'draft', items: [testItem] };
-  const events = decide({ type: 'place' }, state);
+  const events = decide({ type: 'place' }, state, now);
   expect(events).toEqual([
-    expect.objectContaining({ type: 'OrderPlaced', items: [testItem] }),
+    { type: 'OrderPlaced', items: [testItem], placedAt: now },
   ]);
 });
 
 it('produces no events when placing an already-placed order', () => {
+  const now = new Date('2026-03-20');
   const state: OrderState = { status: 'placed', items: [testItem], placedAt: someDate };
-  const events = decide({ type: 'place' }, state);
+  const events = decide({ type: 'place' }, state, now);
   expect(events).toEqual([]);
 });
 ```

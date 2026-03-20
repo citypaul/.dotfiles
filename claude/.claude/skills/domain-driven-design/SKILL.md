@@ -179,7 +179,7 @@ Apply the same principle to entity lifecycles:
 type Order =
   | { readonly status: 'draft'; readonly items: ReadonlyArray<OrderItem> }
   | { readonly status: 'placed'; readonly items: ReadonlyArray<OrderItem>; readonly placedAt: Date }
-  | { readonly status: 'shipped'; readonly placedAt: Date; readonly shippedAt: Date; readonly trackingNumber: string };
+  | { readonly status: 'shipped'; readonly items: ReadonlyArray<OrderItem>; readonly placedAt: Date; readonly shippedAt: Date; readonly trackingNumber: string };
 ```
 
 **Always handle all variants exhaustively.** The `never` type ensures the compiler catches unhandled states when you add a new variant:
@@ -239,11 +239,15 @@ const pledgeContribution = (
   occasion: Occasion,
   contributor: Contributor,
   amount: Money,
-): { readonly occasion: Occasion; readonly contributor: Contributor } => {
+): PledgeResult => {
   if (amount.amount > contributor.walletBalance.amount) {
-    throw new Error('Insufficient balance');
+    return { success: false, reason: 'insufficient-balance' };
   }
-  // Returns updated versions of both aggregates
+  return {
+    success: true,
+    occasion: addContribution(occasion, { contributorId: contributor.id, amount }),
+    contributor: deductBalance(contributor, amount),
+  };
 };
 ```
 

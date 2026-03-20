@@ -41,7 +41,7 @@ const toPaymentResult = (charge: StripeCharge): PaymentResult => {
     return {
       success: true,
       chargeId: createChargeId(charge.id),
-      amount: createMoney(charge.amount / 100, charge.currency.toUpperCase() as Currency),
+      amount: createMoney(charge.amount / 100, parseCurrency(charge.currency)),
     };
   }
   return { success: false, reason: `Payment failed: ${charge.status}` };
