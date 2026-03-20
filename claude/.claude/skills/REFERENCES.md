@@ -26,7 +26,7 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **Repository pattern** (collection-like semantics) → DDD skill: "Repository Pattern"
 
 ### Khalil Stemmler — khalilstemmler.com
-- **TypeScript-specific DDD patterns** (branded types, discriminated unions, schema-first) → DDD skill: "Branded Entity IDs", "Make Illegal States Unrepresentable"
+- **TypeScript-specific DDD patterns** (branded types, discriminated unions, schema-first) → DDD skill: "Branded Types", "Make Illegal States Unrepresentable"
 - **Value objects as plain types with factory functions** (functional approach) → DDD skill: "Value Objects" section
 - **Module-based composition roots** (no DI container, validated at 150K LOC) → Hex arch skill: "Dependency Injection" composition root example
 - **Per-layer testing strategy** → DDD `resources/testing-by-layer.md` + Hex arch `resources/testing-hex-arch.md`
@@ -36,6 +36,26 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **Always-valid entities principle** → DDD skill: Entities section + `resources/aggregate-design.md`
 - **Testing by layer prescription** (unit for domain, integration for adapters) → DDD `resources/testing-by-layer.md`
 - **Purity is necessary but not sufficient for domain placement** → DDD skill: "Where Does This Code Belong?" purity test
+
+### Scott Wlaschin — "Domain Modeling Made Functional" (2018) + fsharpforfunandprofit.com
+- **"Making Illegal States Unrepresentable"** — encode business rules in the type system using discriminated unions → DDD skill: "Make Illegal States Unrepresentable" section + exhaustive switch pattern
+- **Workflows as functions** whose input is a command and output is events → DDD `resources/domain-events.md`: the functional approach
+- **Validate at boundaries, trust inside** — parse/validate at the outer boundary, then domain functions trust their types → Aligns with typescript-strict skill "schemas at trust boundaries"
+
+### Jeremie Chassaing — "Functional Event Sourcing Decider" (thinkbeforecoding.com, 2021)
+- **Decider pattern** (`decide(command, state) → events[]`, `evolve(state, event) → state`) — the standard functional approach to domain events → DDD `resources/domain-events.md`: "The Decider Pattern"
+
+### Vladimir Khorikov — Enterprise Craftsmanship (enterprisecraftsmanship.com)
+- **Domain events add complexity** — "If all consumers reside within the same database transaction, domain events add very little value" → DDD `resources/domain-events.md`: "When to Avoid Domain Events"
+- **Explicit returns over indirection** — prefer returning results from domain functions over event-based coordination when possible
+
+### Greg Young — CQRS and Event Sourcing
+- **CQRS is not event sourcing** — they are orthogonal concerns → Hex arch skill: CQRS-lite section
+- **CQRS is not a top-level architecture** — apply selectively to specific bounded contexts, not the whole system
+- **"Current state is a left fold of previous events"** — functional model for event sourcing → DDD `resources/domain-events.md`: Decider pattern's `evolve` function
+
+### Udi Dahan — Clarified CQRS (udidahan.com)
+- **CQRS-lite is sufficient** — separating reads from writes doesn't require separate databases, async messaging, or event sourcing → Hex arch `resources/cqrs-lite.md`
 
 ### Lev Gorodinski — "Domain Services vs Application Services" (gorodinski.com)
 - **Clear distinction** between domain services (business rules, domain types only) and application services (orchestration, infrastructure coordination) → DDD skill: "Domain Services" comparison table + `resources/domain-services.md`
@@ -47,6 +67,7 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 ### Alistair Cockburn — "Hexagonal Architecture" (alistair.cockburn.us, 2005)
 - **Core concept** (application as hexagon, ports on edges, adapters outside) → Hex arch skill: "Core Concept" section + diagram
 - **Primary (driving) vs secondary (driven) ports/adapters** → Hex arch skill: driving/driven distinction in diagram and throughout
+- **"Configurable Dependency"** (Cockburn/Meszaros) — the hexagon declares needs via ports, a startup configurer wires concrete adapters → Hex arch skill: composition root pattern
 - **Port granularity** (Cockburn prefers 2-4 ports per hexagon, named by business purpose) → Hex arch skill: "Port design principles"
 - **The swappability test** (swap an adapter, domain doesn't change) → Hex arch `resources/testing-hex-arch.md`: "The Swappability Test"
 
@@ -64,20 +85,24 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **Port design by business purpose, not technology** → Hex arch skill: "Port design principles"
 
 ### Mark Seemann — "Dependency Injection in .NET" + blog (blog.ploeh.dk)
-- **FP naturally produces hex arch** (pure functions with injected dependencies) → Hex arch skill: factory functions over classes, parameter injection
-- **Composition root pattern** (wire dependencies at the entry point, nowhere else) → Hex arch skill: "Dependency Injection" section
+- **"Functional architecture is ports and adapters"** — maximizing pure functions and pushing impure code to the edges naturally produces hex arch → Hex arch skill: the fundamental structural principle
+- **"Dependency rejection"** — in FP, gather impure data at the boundary, pass to pure functions, act on the result (the "impureim sandwich": impure/pure/impure) → Hex arch skill: "Dependency Injection" section
+- **Composition root pattern** (wire dependencies at the entry point, nowhere else) → Hex arch skill: composition root example
 - **Against DI containers in TypeScript** — function parameters are sufficient → Hex arch skill: "No DI container needed"
+- **Wrong/right DI comparison** — Service Locator and internal construction are anti-patterns; constructor/parameter injection makes preconditions explicit → Hex arch skill: DI wrong/right example
 
 ---
 
-### Valentina Cupac (Jemuovic) — Optivem Journal (journal.optivem.com), Tech Excellence community
-- **Primary test boundary is the use case, not individual layers** — test by calling use case handlers with faked driven ports → Both testing resources: "Primary Test Boundary: The Use Case"
+### Valentina Jemuović (née Cupac) — Optivem Journal (journal.optivem.com), Tech Excellence community (techexcellence.io)
+- **Use Case Driven Design (UCDD)** — model system behavior through use cases (the hexagon API) first, write tests coupled to use cases as executable requirements, then let domain structure emerge through refactoring → Both skills: use case as primary test boundary
+- **Primary test boundary is the use case, not individual layers** — test by calling use case handlers with faked driven ports. "TDD: Test the API, NOT the World" → Both testing resources: "Primary Test Boundary: The Use Case"
 - **Fakes over mocks** — in-memory implementations that maintain state, not call-sequence verification. "Fake data, not behavior. Test behavior, not calls." → Both testing resources: "Fakes, Not Mocks" section
 - **Use case tests exercise the full business path** (domain entities + services + orchestration together) → DDD `resources/testing-by-layer.md`: opening example showing single test exercising multiple concerns
 - **Domain unit tests as complement, not primary strategy** — complex pure rules tested directly, simple logic covered through use cases → Both testing resources: "Domain Unit Tests: A Complement" section
 - **Narrow integration tests for driven adapters as secondary concern** → Both testing resources: adapter test sections
 - **"Unit tests passed. The bug shipped anyway."** — the gap between isolated tests passing and features working → Testing strategy framing in both skills
-- Key articles: "TDD: Test the API, NOT the World", "Modern Hexagonal Architecture Testing for Backend", "Hexagonal Architecture: Do NOT Mock Everything", "Unit Tests Passed. The Bug Shipped Anyway."
+- **"Clean Code is Useless Without Tests"** — you cannot refactor toward clean code without tests protecting you → Aligns with TDD skill's non-negotiable testing-first approach
+- Key articles: "TDD: Test the API, NOT the World", "Unit Testing Use Cases or Domain?", "Hexagonal Architecture: Do NOT Mock Everything", "Unit Tests Passed. The Bug Shipped Anyway.", "Clean Code is Useless Without Tests"
 
 ---
 

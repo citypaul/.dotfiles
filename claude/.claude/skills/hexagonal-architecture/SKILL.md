@@ -132,10 +132,17 @@ For detailed CQRS-lite guidance, see `resources/cqrs-lite.md`.
 
 ## Dependency Injection
 
-Inject all dependencies via function parameters. No DI container needed.
+Inject all dependencies via function parameters. No DI container needed. This is Seemann's "dependency rejection" — in functional TypeScript, the use case is a pure function that receives everything it needs.
 
 ```typescript
-// Use case accepts ports via parameters — testable with fakes
+// WRONG — creates dependencies internally (untestable, tightly coupled)
+const createOrder = async (order: NewOrder) => {
+  const repo = new DrizzleOrderRepo(getDb());          // hardcoded
+  const gateway = new StripeGateway(process.env.KEY);   // hardcoded
+  // ...
+};
+
+// RIGHT — dependencies as parameters (testable, swappable)
 const createOrder = async (
   repo: OrderRepository,
   gateway: PaymentGateway,

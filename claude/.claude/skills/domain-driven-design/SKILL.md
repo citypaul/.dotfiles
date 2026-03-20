@@ -1,6 +1,6 @@
 ---
 name: domain-driven-design
-description: Domain-Driven Design patterns for TypeScript. Use when implementing ubiquitous language, value objects, entities, aggregates, domain services, or bounded contexts. Only applies to projects that explicitly use DDD. Do NOT use for simple CRUD or projects without domain modeling.
+description: Domain-Driven Design patterns for TypeScript. Use when implementing ubiquitous language, value objects, entities, aggregates, domain events, domain services, or bounded contexts. Only applies to projects that explicitly use DDD. Do NOT use for simple CRUD or projects without domain modeling.
 ---
 
 # Domain-Driven Design (DDD)
@@ -77,6 +77,16 @@ export const calculateCommittedTotal = (items: readonly GiftItem[]) =>
 
 DDD projects must maintain a glossary file that defines all domain terms. This is the single source of truth for naming.
 
+### The Glossary File
+
+```markdown
+| Term | Definition | Examples |
+|------|-----------|----------|
+| Occasion | A gift-giving event (birthday, holiday) | "Mum's Birthday", "Christmas 2026" |
+| Gift Idea | A potential gift for an occasion | "Cookbook", "Scarf" |
+| Contribution | Money pledged toward a gift | "£25 from Dad" |
+```
+
 ### Enforcement Rules
 
 - All `type` and `interface` names must use glossary terms
@@ -103,9 +113,10 @@ type Item = { readonly id: string; readonly text: string; readonly parentId: str
 
 ### Value Objects
 
-Immutable, identity-less, compared by value. Represent domain concepts defined by their attributes.
+Immutable, identity-less, compared by their attributes (not by reference). Represent domain concepts defined by their attributes. Two `Money` values with the same amount and currency are equal — value objects have no identity.
 
 ```typescript
+type Currency = 'GBP' | 'USD' | 'EUR';
 type Money = { readonly amount: number; readonly currency: Currency };
 
 const createMoney = (amount: number, currency: Currency): Money => {
@@ -114,13 +125,16 @@ const createMoney = (amount: number, currency: Currency): Money => {
 };
 ```
 
-### Branded Entity IDs
+For value objects crossing trust boundaries (API input, form data), use Zod schemas. For domain-internal value objects, plain types + factory functions suffice. See the `typescript-strict` skill for schema-first patterns.
 
-Prevent accidental ID swapping at compile time:
+### Branded Types
+
+Prevent accidental swapping of primitives at compile time. Use for entity IDs and single-value value objects:
 
 ```typescript
 type OccasionId = string & { readonly __brand: 'OccasionId' };
 type GiftIdeaId = string & { readonly __brand: 'GiftIdeaId' };
+type EmailAddress = string & { readonly __brand: 'EmailAddress' };
 ```
 
 ### Entities
@@ -147,13 +161,38 @@ const renameOccasion = (occasion: Occasion, newName: string): Occasion => ({
 
 ### Make Illegal States Unrepresentable
 
-Use discriminated unions to prevent invalid state combinations at compile time:
+Use the type system to make invalid states impossible. Replace boolean flags and optional fields with discriminated unions where each variant carries only the data valid for that state:
+
+```typescript
+// WRONG — boolean + optional allows { isVerified: true, verifiedAt: undefined }
+type User = { readonly isVerified: boolean; readonly verifiedAt?: Date };
+
+// RIGHT — impossible to be verified without a date
+type User =
+  | { readonly status: 'unverified' }
+  | { readonly status: 'verified'; readonly verifiedAt: Date };
+```
+
+Apply the same principle to entity lifecycles:
 
 ```typescript
 type Order =
   | { readonly status: 'draft'; readonly items: ReadonlyArray<OrderItem> }
   | { readonly status: 'placed'; readonly items: ReadonlyArray<OrderItem>; readonly placedAt: Date }
   | { readonly status: 'shipped'; readonly placedAt: Date; readonly shippedAt: Date; readonly trackingNumber: string };
+```
+
+**Always handle all variants exhaustively.** The `never` type ensures the compiler catches unhandled states when you add a new variant:
+
+```typescript
+const describeOrder = (order: Order): string => {
+  switch (order.status) {
+    case 'draft': return `Draft with ${order.items.length} items`;
+    case 'placed': return `Placed at ${order.placedAt.toISOString()}`;
+    case 'shipped': return `Shipped: ${order.trackingNumber}`;
+    default: { const _exhaustive: never = order; return _exhaustive; }
+  }
+};
 ```
 
 ### Aggregates
@@ -166,6 +205,22 @@ Clusters of entities and value objects with a single root. All modifications go 
 4. **Keep aggregates small** — only what's needed for consistency
 
 For detailed aggregate design guidance, see `resources/aggregate-design.md`.
+
+### Domain Events
+
+Domain events represent something meaningful that happened in the domain ("OrderPlaced", "ContributionPledged"). They coordinate side effects across aggregates and bounded contexts.
+
+**Domain events earn their complexity when:**
+- Side effects cross aggregate boundaries
+- Other bounded contexts need to react to changes
+- You need an audit trail or event-driven workflows
+
+**Don't add domain events when:**
+- All logic is within a single aggregate
+- Side effects are within the same transaction
+- Explicit return values from domain functions suffice
+
+For most projects, start without domain events and add them when the domain demands coordination. See `resources/domain-events.md` for the Decider pattern and detailed guidance.
 
 ---
 
@@ -269,12 +324,15 @@ const getTestOccasion = (overrides?: Partial<Occasion>): Occasion =>
 
 ## Bounded Contexts
 
-A bounded context is a boundary within which a particular domain model applies.
+A bounded context is a linguistic boundary within which a particular domain model and glossary apply. The same word (e.g., "User") can mean different things in different contexts — and that's correct.
 
-1. **Each context has its own model** — `User` may differ across contexts
-2. **Communicate between contexts via events or explicit contracts**
-3. **Shared kernel should be minimal** — only truly shared value objects
-4. **Each context has its own glossary section**
+1. **Each context owns its own model and glossary** — `User` in billing differs from `User` in shipping
+2. **Communicate between contexts via events or explicit contracts** — never share mutable state
+3. **Anti-Corruption Layer (ACL)** — when integrating with external systems or other contexts whose model doesn't fit yours, translate at the boundary rather than letting their types leak in
+4. **Shared kernel should be minimal** — only truly universal value objects (Money, Email). If the shared kernel grows, boundaries are unclear
+5. **Each context has its own glossary section**
+
+For context mapping patterns, monorepo structure, and ACL examples, see `resources/bounded-contexts.md`.
 
 ---
 
@@ -313,11 +371,12 @@ Not every project needs aggregates, domain events, or bounded contexts. Start wi
 - [ ] All test descriptions use domain language
 - [ ] Value objects are immutable and identity-less
 - [ ] Entities are always valid (invariants enforced on construction and transitions)
-- [ ] Entities have branded IDs
+- [ ] Entities have branded IDs; primitive value objects use branded types
 - [ ] Aggregate roots enforce all invariants
 - [ ] Other aggregates referenced by ID, not embedded
 - [ ] Cross-aggregate logic in domain services, not crammed into one entity
 - [ ] Repository interfaces defined in domain layer
+- [ ] Discriminated unions have exhaustive switch handling
 - [ ] Domain logic has zero infrastructure dependencies
 - [ ] Presentation logic is NOT in domain/ (even if pure)
 - [ ] Tests organized by domain concept, not implementation file
