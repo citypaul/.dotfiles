@@ -1,6 +1,6 @@
 ---
 name: domain-driven-design
-description: Domain-Driven Design patterns for TypeScript. Use when implementing ubiquitous language, value objects, entities, aggregates, domain events, glossary enforcement, or bounded contexts. Only applies to projects that explicitly use DDD. Do NOT use for simple CRUD or projects without domain modeling.
+description: Domain-Driven Design patterns for TypeScript. Use when implementing ubiquitous language, value objects, entities, aggregates, domain services, or bounded contexts. Only applies to projects that explicitly use DDD. Do NOT use for simple CRUD or projects without domain modeling.
 ---
 
 # Domain-Driven Design (DDD)
@@ -8,6 +8,8 @@ description: Domain-Driven Design patterns for TypeScript. Use when implementing
 This skill applies only to projects that have opted in to DDD. Do not apply these patterns to projects that use a different approach.
 
 For hexagonal architecture (ports and adapters), load the `hexagonal-architecture` skill. DDD and hexagonal architecture are complementary but independent — a project may use one without the other.
+
+**Deep-dive resources** are in the `resources/` directory within this skill folder. The main skill covers core rules; resources provide detailed guidance for specific decisions.
 
 ---
 
@@ -36,22 +38,44 @@ DDD adds value for **complex domains** with rich business rules. Not every proje
 
 ---
 
+## Where Does This Code Belong?
+
+This is the most common decision in DDD. When unsure, use this framework:
+
+| Question | If yes → | If no ↓ |
+|----------|----------|---------|
+| Does it enforce a business rule or compute a business value? | `domain/` (entity function, value object, or domain service) | ↓ |
+| Does it orchestrate multiple domain operations without owning logic? | Use case / application service | ↓ |
+| Does it format, transform, or prepare data for display? | `lib/` or inline in the view | ↓ |
+| Does it talk to an external system (DB, API, file system)? | Adapter (implements a port defined in domain) | ↓ |
+| Is it framework-specific glue (route handler, middleware)? | Delivery layer (`app/`) | — |
+
+**The purity test is necessary but not sufficient.** A pure function that formats a date for display does not belong in `domain/` just because it's pure. The question is always: "Is this a business rule?"
+
+```typescript
+// ❌ Pure but NOT domain — formats for human display
+export const formatEventDate = (date: string | null) =>
+  date ? format(parseISO(date), "MMMM d, yyyy") : undefined;
+// → Belongs in lib/format.ts
+
+// ✅ Pure AND domain — business rule that affects behavior
+export const isPastEvent = (eventDate: string | null, now: Date) =>
+  eventDate ? parseISO(eventDate) < now : false;
+// → Belongs in domain/event/
+
+// ✅ Pure AND domain — business calculation
+export const calculateCommittedTotal = (items: readonly GiftItem[]) =>
+  items.filter(i => i.status !== "idea").reduce((sum, i) => sum + i.pricePence, 0);
+// → Belongs in domain/budget/
+```
+
+**Why placement matters:** `domain/` files typically have strict coverage requirements and zero infrastructure imports. Putting code in the wrong layer creates unnecessary testing obligations and architectural violations.
+
+---
+
 ## Ubiquitous Language & Glossary
 
-### The Glossary File
-
-DDD projects must maintain a glossary file (e.g., `docs/glossary.md` or `.claude/glossary.md`) that defines all domain terms. This is the single source of truth for naming.
-
-```markdown
-# Domain Glossary
-
-| Term | Definition | Examples |
-|------|-----------|----------|
-| Occasion | A future event that may involve gift-giving | Birthday, Christmas, Wedding |
-| Gift Idea | A potential gift for a specific person and occasion | "Book about gardening" for Mum's Birthday |
-| Contributor | A person who contributes money toward a group gift | — |
-| Contribution | A specific monetary amount pledged by a contributor | £25 from Alice |
-```
+DDD projects must maintain a glossary file that defines all domain terms. This is the single source of truth for naming.
 
 ### Enforcement Rules
 
@@ -61,7 +85,7 @@ DDD projects must maintain a glossary file (e.g., `docs/glossary.md` or `.claude
 - If you need a new term, add it to the glossary first
 
 ```typescript
-// ✅ CORRECT - Uses domain language
+// ✅ Uses domain language
 type GiftIdea = {
   readonly id: GiftIdeaId;
   readonly description: string;
@@ -69,98 +93,39 @@ type GiftIdea = {
   readonly estimatedCost: Money;
 };
 
-const addGiftIdea = (occasion: Occasion, idea: GiftIdea): Occasion => ({
-  ...occasion,
-  giftIdeas: [...occasion.giftIdeas, idea],
-});
-
-// ❌ WRONG - Technical jargon instead of domain language
-type Item = {
-  readonly id: string;
-  readonly text: string;
-  readonly parentId: string;
-  readonly cost: number;
-};
-
-const addItem = (parent: Container, item: Item): Container => { ... };
-```
-
-### Test Names Use Domain Language
-
-```typescript
-// ✅ CORRECT - Domain language in tests
-describe('Gift Idea', () => {
-  it('should add a gift idea to an occasion', () => { ... });
-  it('should reject a gift idea that exceeds the budget', () => { ... });
-  it('should allow contributors to see all gift ideas for an occasion', () => { ... });
-});
-
-// ❌ WRONG - Technical language in tests
-describe('addItem', () => {
-  it('should push item to array', () => { ... });
-  it('should return error when cost > max', () => { ... });
-});
+// ❌ Technical jargon
+type Item = { readonly id: string; readonly text: string; readonly parentId: string; };
 ```
 
 ---
 
-## Value Objects
+## Building Blocks
 
-Value objects are immutable, identity-less, and compared by value. They represent domain concepts that are defined by their attributes, not by a unique ID.
+### Value Objects
 
-### Pattern: Branded Types for Value Objects
+Immutable, identity-less, compared by value. Represent domain concepts defined by their attributes.
 
 ```typescript
-// Branded type for compile-time safety
-type Money = {
-  readonly amount: number;
-  readonly currency: Currency;
-};
+type Money = { readonly amount: number; readonly currency: Currency };
 
-type Currency = 'GBP' | 'USD' | 'EUR';
-
-// Factory function with validation
 const createMoney = (amount: number, currency: Currency): Money => {
   if (amount < 0) throw new Error('Money cannot be negative');
   return { amount, currency };
 };
-
-// Schema at trust boundaries
-const MoneySchema = z.object({
-  amount: z.number().nonnegative(),
-  currency: z.enum(['GBP', 'USD', 'EUR']),
-});
-type MoneyFromSchema = z.infer<typeof MoneySchema>;
 ```
 
-### Pattern: Branded Primitives for Entity IDs
+### Branded Entity IDs
+
+Prevent accidental ID swapping at compile time:
 
 ```typescript
 type OccasionId = string & { readonly __brand: 'OccasionId' };
 type GiftIdeaId = string & { readonly __brand: 'GiftIdeaId' };
-
-const createOccasionId = (value: string): OccasionId => value as OccasionId;
-
-// Prevents accidental ID swapping
-const findGiftIdea = (occasionId: OccasionId, giftIdeaId: GiftIdeaId) => { ... };
-
-// ✅ Compiler catches this mistake:
-// findGiftIdea(giftIdeaId, occasionId) // Type error!
 ```
 
-### Value Object Equality
+### Entities
 
-```typescript
-// Value objects are equal when their properties are equal
-const areSameMoney = (a: Money, b: Money): boolean =>
-  a.amount === b.amount && a.currency === b.currency;
-```
-
----
-
-## Entities
-
-Entities have identity (an ID) and a lifecycle. They are mutable over time (but we represent mutations as new immutable snapshots).
+Have identity and a lifecycle. Always valid after construction or state transition.
 
 ```typescript
 type Occasion = {
@@ -169,184 +134,123 @@ type Occasion = {
   readonly date: Date;
   readonly giftIdeas: ReadonlyArray<GiftIdea>;
   readonly budget: Money;
-  readonly createdBy: UserId;
 };
 
-// "Mutation" via immutable update
+// Immutable update — returns new valid state
 const renameOccasion = (occasion: Occasion, newName: string): Occasion => ({
   ...occasion,
   name: newName,
 });
 ```
 
----
+**Always-valid principle:** An entity must satisfy its invariants at all times. Validate on construction (factory functions or schema parsing) and on every state transition. Never allow an entity to exist in an invalid state, even temporarily.
 
-## Make Illegal States Unrepresentable
+### Make Illegal States Unrepresentable
 
-Use TypeScript's type system to prevent invalid domain states at compile time.
+Use discriminated unions to prevent invalid state combinations at compile time:
 
 ```typescript
-// ❌ WRONG - Allows invalid states
-type Order = {
-  readonly status: 'draft' | 'placed' | 'shipped' | 'delivered';
-  readonly shippedAt?: Date;    // Can be set when status is 'draft'!
-  readonly trackingNumber?: string;
-};
-
-// ✅ CORRECT - Discriminated union prevents invalid combinations
 type Order =
   | { readonly status: 'draft'; readonly items: ReadonlyArray<OrderItem> }
   | { readonly status: 'placed'; readonly items: ReadonlyArray<OrderItem>; readonly placedAt: Date }
-  | { readonly status: 'shipped'; readonly items: ReadonlyArray<OrderItem>; readonly placedAt: Date; readonly shippedAt: Date; readonly trackingNumber: string }
-  | { readonly status: 'delivered'; readonly items: ReadonlyArray<OrderItem>; readonly placedAt: Date; readonly shippedAt: Date; readonly deliveredAt: Date; readonly trackingNumber: string };
+  | { readonly status: 'shipped'; readonly placedAt: Date; readonly shippedAt: Date; readonly trackingNumber: string };
 ```
 
-TypeScript's exhaustive checking ensures all states are handled:
+### Aggregates
 
-```typescript
-const getStatusMessage = (order: Order): string => {
-  switch (order.status) {
-    case 'draft': return 'Order not yet placed';
-    case 'placed': return `Placed on ${order.placedAt.toLocaleDateString()}`;
-    case 'shipped': return `Tracking: ${order.trackingNumber}`;
-    case 'delivered': return `Delivered on ${order.deliveredAt.toLocaleDateString()}`;
-  }
-  // TypeScript error if a case is missing (exhaustive check)
-};
-```
+Clusters of entities and value objects with a single root. All modifications go through the root.
+
+1. **One aggregate root per transaction**
+2. **Reference other aggregates by ID** — never embed
+3. **All invariants enforced by the root**
+4. **Keep aggregates small** — only what's needed for consistency
+
+For detailed aggregate design guidance, see `resources/aggregate-design.md`.
 
 ---
 
-## Aggregates
+## Domain Services
 
-Aggregates are clusters of entities and value objects with a single root entity. All modifications go through the aggregate root.
-
-### Rules
-
-1. **One aggregate root per transaction** — don't modify multiple aggregates in one operation
-2. **Reference other aggregates by ID** — never embed another aggregate
-3. **All invariants enforced by the root** — the aggregate is always in a valid state
-4. **Keep aggregates small** — only include what's needed to enforce invariants
+When business logic doesn't belong to a single entity, it belongs in a **domain service** — a stateless function in the domain layer that operates across multiple entities or aggregates.
 
 ```typescript
-// Occasion is the aggregate root
-type Occasion = {
-  readonly id: OccasionId;
-  readonly name: string;
-  readonly giftIdeas: ReadonlyArray<GiftIdea>;  // Owned by this aggregate
-  readonly organizerId: UserId;                  // Reference by ID, not embedded
+// ❌ WRONG — cramming cross-entity logic into one entity
+const addContribution = (occasion: Occasion, contribution: Contribution): Occasion => {
+  // This needs to check the contributor's wallet balance — wrong aggregate!
 };
 
-// All operations go through the aggregate root
-const addGiftIdea = (occasion: Occasion, idea: NewGiftIdea): Occasion => {
-  if (occasion.giftIdeas.length >= 50) {
-    throw new Error('Maximum gift ideas per occasion reached');
+// ✅ CORRECT — domain service operates across aggregates
+const pledgeContribution = (
+  occasion: Occasion,
+  contributor: Contributor,
+  amount: Money,
+): { readonly occasion: Occasion; readonly contributor: Contributor } => {
+  if (amount.amount > contributor.walletBalance.amount) {
+    throw new Error('Insufficient balance');
   }
-  return {
-    ...occasion,
-    giftIdeas: [...occasion.giftIdeas, { ...idea, id: createGiftIdeaId() }],
-  };
+  // Returns updated versions of both aggregates
 };
 ```
 
----
+**Domain service vs use case (application service):**
 
-## Domain Events
+| | Domain Service | Use Case |
+|--|----------------|----------|
+| Contains business logic? | Yes | No — orchestration only |
+| Lives in | `domain/` | `domain/` or `app/` |
+| Depends on | Domain types only | Repositories, ports, domain services |
+| Example | `pledgeContribution(occasion, contributor, amount)` | `handlePledge(repo, dto)` — loads, calls domain service, saves |
 
-Domain events capture something meaningful that happened in the domain. They are immutable facts.
-
-```typescript
-type DomainEvent =
-  | { readonly type: 'OccasionCreated'; readonly occasionId: OccasionId; readonly createdBy: UserId; readonly occurredAt: Date }
-  | { readonly type: 'GiftIdeaAdded'; readonly occasionId: OccasionId; readonly giftIdeaId: GiftIdeaId; readonly occurredAt: Date }
-  | { readonly type: 'ContributionPledged'; readonly giftIdeaId: GiftIdeaId; readonly contributorId: UserId; readonly amount: Money; readonly occurredAt: Date };
-
-// Domain operations return the new state + events
-type DomainResult<T> = {
-  readonly state: T;
-  readonly events: ReadonlyArray<DomainEvent>;
-};
-
-const addGiftIdea = (occasion: Occasion, idea: NewGiftIdea): DomainResult<Occasion> => {
-  const giftIdeaId = createGiftIdeaId();
-  return {
-    state: {
-      ...occasion,
-      giftIdeas: [...occasion.giftIdeas, { ...idea, id: giftIdeaId }],
-    },
-    events: [{
-      type: 'GiftIdeaAdded',
-      occasionId: occasion.id,
-      giftIdeaId,
-      occurredAt: new Date(),
-    }],
-  };
-};
-```
+For detailed guidance, see `resources/domain-services.md`.
 
 ---
 
 ## Repository Pattern
 
-Repositories provide collection-like access to aggregates. They are **interfaces** (behavior contracts) in the domain layer, with implementations in the adapter layer.
+Repositories provide collection-like access to aggregates. **Interfaces** in the domain layer, **implementations** in the adapter layer.
 
 ```typescript
-// Port (domain layer) — uses interface for behavior contract
+// Port (domain layer)
 interface OccasionRepository {
   findById(id: OccasionId): Promise<Occasion | undefined>;
-  findByOrganizer(userId: UserId): Promise<ReadonlyArray<Occasion>>;
   save(occasion: Occasion): Promise<void>;
-  delete(id: OccasionId): Promise<void>;
 }
 
-// Adapter (infrastructure layer) — implements the port
-// See hexagonal-architecture skill for implementation patterns
+// Adapter (infrastructure layer) — see hexagonal-architecture skill
 ```
 
----
+**Repositories handle writes and single-aggregate reads.** For reads that need to JOIN across aggregates (dashboard views, detail pages combining data from multiple entities), repositories are the wrong tool — they enforce aggregate boundaries that reads need to cross. Use query functions that JOIN freely instead. This is the CQRS-lite pattern: writes go through repositories (consistency), reads go through query functions (flexibility). See the `hexagonal-architecture` skill's CQRS-lite section and `resources/cqrs-lite.md` for details.
 
-## Bounded Contexts
-
-A bounded context is a boundary within which a particular domain model applies. The same real-world concept may have different representations in different contexts.
-
-### In a Monorepo
-
-```
-packages/
-  occasions/          # Occasion Management context
-    src/domain/       # Occasion, GiftIdea, Budget
-  contributions/      # Contribution context
-    src/domain/       # Contribution, Pledge, Payment
-  notifications/      # Notification context
-    src/domain/       # Notification, Recipient, Channel
-  shared/             # Shared kernel (minimal!)
-    src/domain/       # UserId, Money (shared value objects)
-```
-
-### Rules
-
-1. **Each context has its own model** — `User` in one context may have different properties than in another
-2. **Communicate between contexts via events or explicit contracts** — never share internal types
-3. **Shared kernel should be minimal** — only truly shared value objects (IDs, Money)
-4. **Each context has its own glossary section** — terms may have different meanings across contexts
+For simple domains where reads map cleanly to a single aggregate, repository reads are fine. Don't separate prematurely.
 
 ---
 
 ## DDD + TDD Integration
 
-### Test Organization by Domain Concept
+### Test by Domain Concept, Not Implementation File
 
 ```
 tests/
   occasions/
-    create-occasion.test.ts       # Tests for creating occasions
-    add-gift-idea.test.ts         # Tests for adding gift ideas
-    occasion-budget.test.ts       # Tests for budget constraints
-  contributions/
-    pledge-contribution.test.ts   # Tests for pledging contributions
+    create-occasion.test.ts       # Behavior: creating occasions
+    add-gift-idea.test.ts         # Behavior: managing gift ideas
+    occasion-budget.test.ts       # Behavior: budget constraints
 ```
 
-Not by implementation file — by domain behavior.
+### Primary Test Boundary: The Use Case
+
+Test by calling use cases with driven ports replaced by in-memory **fakes** (not mocks). This exercises domain entities, domain services, and orchestration together — proving the feature works as a whole.
+
+Domain unit tests **complement** use case tests for complex pure business rules. They don't replace them.
+
+| Priority | Boundary | What it proves |
+|----------|----------|----------------|
+| **Primary** | Use case (faked driven ports) | Feature works end-to-end within the hexagon |
+| **Complement** | Domain pure functions directly | Complex business rules in isolation |
+| **Secondary** | Driven adapters (real DB/MSW) | Adapter translates correctly |
+| **Verification** | E2E (full stack) | User experience works |
+
+For detailed testing guidance, see `resources/testing-by-layer.md`.
 
 ### Test Factories Use Domain Language
 
@@ -355,19 +259,22 @@ const getTestOccasion = (overrides?: Partial<Occasion>): Occasion =>
   OccasionSchema.parse({
     id: createOccasionId('occasion-1'),
     name: "Mum's Birthday",
-    date: new Date('2025-06-15'),
     giftIdeas: [],
     budget: createMoney(100, 'GBP'),
-    organizerId: createUserId('user-1'),
     ...overrides,
   });
 ```
 
-### Red-Green-Refactor with Domain Focus
+---
 
-1. **RED**: Write a failing test using domain language ("should reject a contribution that exceeds the remaining budget")
-2. **GREEN**: Implement using domain concepts (not generic data structures)
-3. **REFACTOR**: Extract value objects, improve domain naming, enforce glossary
+## Bounded Contexts
+
+A bounded context is a boundary within which a particular domain model applies.
+
+1. **Each context has its own model** — `User` may differ across contexts
+2. **Communicate between contexts via events or explicit contracts**
+3. **Shared kernel should be minimal** — only truly shared value objects
+4. **Each context has its own glossary section**
 
 ---
 
@@ -375,39 +282,19 @@ const getTestOccasion = (overrides?: Partial<Occasion>): Occasion =>
 
 ### Anemic Domain Model
 
-```typescript
-// ❌ WRONG - Data bag with no behavior
-type Occasion = {
-  id: string;
-  name: string;
-  items: Array<{ name: string; cost: number }>;
-};
-
-// All logic in "services"
-const occasionService = {
-  addItem(occasion: Occasion, item: Item) {
-    occasion.items.push(item); // Mutation!
-  },
-};
-```
-
-```typescript
-// ✅ CORRECT - Rich domain model with behavior as pure functions
-type Occasion = {
-  readonly id: OccasionId;
-  readonly name: string;
-  readonly giftIdeas: ReadonlyArray<GiftIdea>;
-};
-
-const addGiftIdea = (occasion: Occasion, idea: GiftIdea): Occasion => ({
-  ...occasion,
-  giftIdeas: [...occasion.giftIdeas, idea],
-});
-```
+Entities are data bags with no behavior. All logic in "services." Fix: put behavior as pure functions next to the types they operate on.
 
 ### Generic Technical Names
 
 Using `Item`, `Entity`, `Record`, `Data`, `Info` instead of domain terms. Always use the glossary.
+
+### Presentation Logic in Domain
+
+Display formatting does not belong in `domain/`. The test: "make this look right for a human" = presentation (`lib/`). "Enforce a business rule" = domain. Purity is not sufficient — a pure formatting function is still presentation.
+
+### Leaking Domain Logic
+
+Business logic in route handlers, database queries, or adapters. Keep it in `domain/`.
 
 ### Over-Engineering
 
@@ -415,10 +302,6 @@ Not every project needs aggregates, domain events, or bounded contexts. Start wi
 1. Ubiquitous language (glossary)
 2. Value objects and entities
 3. Add complexity only when the domain demands it
-
-### Leaking Domain Logic
-
-Domain logic must not leak into adapters (controllers, routes, database queries). Keep it in the domain layer.
 
 ---
 
@@ -429,9 +312,13 @@ Domain logic must not leak into adapters (controllers, routes, database queries)
 - [ ] All functions use glossary verbs and nouns
 - [ ] All test descriptions use domain language
 - [ ] Value objects are immutable and identity-less
+- [ ] Entities are always valid (invariants enforced on construction and transitions)
 - [ ] Entities have branded IDs
 - [ ] Aggregate roots enforce all invariants
 - [ ] Other aggregates referenced by ID, not embedded
+- [ ] Cross-aggregate logic in domain services, not crammed into one entity
 - [ ] Repository interfaces defined in domain layer
 - [ ] Domain logic has zero infrastructure dependencies
+- [ ] Presentation logic is NOT in domain/ (even if pure)
 - [ ] Tests organized by domain concept, not implementation file
+- [ ] Each layer has behavioral tests at the appropriate level
