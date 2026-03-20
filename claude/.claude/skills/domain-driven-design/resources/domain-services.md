@@ -60,7 +60,17 @@ const handlePledge = async (
 
 ## Naming
 
-Domain services are named after the business operation: `pledgeContribution`, `transferMoney`, `calculateShippingCost`. Not after technical patterns: `ContributionService`, `ShippingCalculator`.
+All domain functions — domain services, use cases, entity operations — are named after the business operation: `pledgeContribution`, `transferMoney`, `placeOrder`. Never after technical patterns: `ContributionService`, `PlaceOrderUseCase`, `ShippingCalculator`. Your domain experts say "place an order", not "execute the place order use case."
+
+You can tell a use case from a domain function by its signature, not its name:
+
+```typescript
+// Use case — takes ports (infrastructure interfaces)
+const placeOrder = async (repo: OrderRepository, gateway: PaymentGateway, order: NewOrder) => ...
+
+// Domain service — takes only domain types
+const pledgeContribution = (occasion: Occasion, contributor: Contributor, amount: Money) => ...
+```
 
 ## Testing
 

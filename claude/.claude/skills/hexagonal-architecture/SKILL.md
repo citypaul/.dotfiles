@@ -176,6 +176,8 @@ export async function POST(request: Request) {
 
 The route handler is thin glue: parse input → wire adapters → call use case → return response. No business logic.
 
+**Naming:** Use cases are named after the business operation — `createOrder`, `placeOrder`, `handlePledge`. Never `createOrderUseCase` or `PlaceOrderHandler`. Pattern suffixes are technical jargon, not domain language. You can tell a use case from a domain function by its signature — use cases take ports (repositories, gateways) as parameters; domain functions take only domain types.
+
 ---
 
 ## File Organization
