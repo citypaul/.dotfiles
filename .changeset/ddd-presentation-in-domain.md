@@ -15,7 +15,8 @@ Restructure DDD and hexagonal architecture skills with decision frameworks, reso
 - Branded Types generalized (entity IDs + value objects like EmailAddress)
 - Bounded Contexts expanded with ACL, context mapping patterns
 - Per-layer testing strategy
-- Resources: `domain-services.md`, `testing-by-layer.md`, `aggregate-design.md`, `domain-events.md`, `bounded-contexts.md`
+- Error modeling guidance (discriminated union results vs exceptions, propagation through layers)
+- Resources: `domain-services.md`, `testing-by-layer.md`, `aggregate-design.md`, `domain-events.md`, `bounded-contexts.md`, `error-modeling.md`
 
 **Hex arch skill restructure** based on Cockburn, Pierrain, Graca, Netflix, Seemann:
 - Driving (left) vs driven (right) adapter distinction with visual diagram
@@ -23,7 +24,10 @@ Restructure DDD and hexagonal architecture skills with decision frameworks, reso
 - Composition root / thin delivery layer pattern
 - Wrong/right DI comparison (Seemann: dependency rejection, not internal construction)
 - Per-layer testing strategy with swappability test
-- Anti-patterns (domain depending on infrastructure, business logic in adapters, port proliferation)
-- Resources: `cqrs-lite.md`, `testing-hex-arch.md`
+- Anti-patterns with code examples (business logic in adapters, bypass adapters, technology-shaped ports)
+- Cross-cutting concerns (auth, logging, transactions, error formatting — where each lives)
+- Use case naming convention (business language, not pattern suffixes)
+- Full stack worked example (one feature through every layer with tests and file locations)
+- Resources: `cqrs-lite.md`, `testing-hex-arch.md`, `worked-example.md`, `cross-cutting-concerns.md`
 
 **New: REFERENCES.md** — authoritative sources with specific attributions. Added Wlaschin, Chassaing (Decider), Khorikov, Greg Young, Udi Dahan, Cockburn's "Configurable Dependency", Seemann's dependency rejection and impureim sandwich.

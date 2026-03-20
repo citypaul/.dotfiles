@@ -184,7 +184,7 @@ The route handler is thin glue: parse input → wire adapters → call use case 
 
 | Layer | Location | Contains | Tests |
 |-------|----------|----------|-------|
-| Domain | `src/domain/` | Pure business logic, types, port interfaces | Unit tests (no mocks) |
+| Domain | `src/domain/` | Pure business logic, types, port interfaces, use cases | Unit tests (no mocks) |
 | Adapters (driven) | `src/db/`, `src/infrastructure/` | Repository impls, API clients, query functions | Integration tests (real DB/MSW) |
 | Adapters (driving) | `src/app/` | Route handlers, event listeners | E2E tests (Playwright) |
 | Wiring | `src/lib/`, `src/context.ts` | Adapter factories, config, composition | Covered by E2E |
@@ -211,6 +211,22 @@ Hex arch's primary benefit is testability. The primary test boundary is the **us
 
 **Fakes over mocks:** Fakes implement the real interface and maintain state. Mocks verify call sequences and break on refactoring. See `resources/testing-hex-arch.md` for detailed patterns.
 
+For a complete worked example showing one feature traced through every layer (glossary → types → domain → use case → adapters → tests → file locations), see `resources/worked-example.md`.
+
+---
+
+## Cross-Cutting Concerns
+
+| Concern | Where | Why |
+|---------|-------|-----|
+| Authentication (who are you?) | Driving adapter | Protocol-specific (JWT, session, API key) |
+| Authorization (are you allowed?) | Domain | Business rule about permissions |
+| Logging | Adapters (both sides) | Side effect, not business logic |
+| Transactions | Adapter / composition root | Infrastructure concern, domain unaware |
+| Error formatting | Driving adapter | Translates domain results to HTTP/gRPC |
+
+**The domain never imports a logger, catches HTTP errors, or manages transactions.** It returns results; adapters handle the rest. See `resources/cross-cutting-concerns.md` for detailed patterns.
+
 ---
 
 ## Anti-Patterns
@@ -234,9 +250,35 @@ interface UserRepository {
 
 Route handlers or repositories contain business rules instead of delegating to domain.
 
+```typescript
+// ❌ Business rule in route handler
+export async function POST(request: Request) {
+  const order = await orderRepo.findById(id);
+  if (order.total > 1000) { await requireManagerApproval(order); } // business rule!
+  ...
+}
+
+// ✅ Business rule in domain
+const placeOrder = (order: Order): PlaceOrderResult => {
+  if (order.total > 1000) return { success: false, reason: 'requires-approval' };
+  ...
+};
+```
+
 ### Bypass Adapters
 
 Route handler accesses the database directly instead of going through a port.
+
+```typescript
+// ❌ Route handler hits DB directly
+export async function GET(request: Request) {
+  const users = await db.select().from(users).where(eq(users.active, true));
+  ...
+}
+
+// ✅ Route handler calls use case, which uses a port
+const result = await getActiveUsers(userRepo);
+```
 
 ### Port Proliferation
 
@@ -244,7 +286,21 @@ Creating a port for every tiny abstraction. Ports should represent meaningful bo
 
 ### Technology-Shaped Ports
 
-Port methods that expose technology details (`findBySqlQuery`, `getFromRedis`). Port methods should use domain language (`findActiveUsers`, `getUpcomingEvents`).
+Port methods that expose technology details. Port methods should use domain language.
+
+```typescript
+// ❌ Technology leaks into port
+interface UserRepository {
+  readonly findBySqlQuery: (sql: string) => Promise<User[]>;
+  readonly getFromRedisCache: (key: string) => Promise<User>;
+}
+
+// ✅ Business language
+interface UserRepository {
+  readonly findActive: () => Promise<readonly User[]>;
+  readonly findById: (id: UserId) => Promise<User | undefined>;
+}
+```
 
 ---
 
@@ -260,3 +316,5 @@ Port methods that expose technology details (`findBySqlQuery`, `getFromRedis`). 
 - [ ] Reads that JOIN across aggregates use query functions (CQRS-lite)
 - [ ] Each layer has behavioral tests at the appropriate level
 - [ ] Swapping any adapter requires zero domain code changes
+- [ ] Cross-cutting concerns (auth, logging, transactions) live in adapters, not domain
+- [ ] Domain returns result types for expected outcomes, never throws for business rules

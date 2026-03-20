@@ -264,15 +264,31 @@ For detailed guidance, see `resources/domain-services.md`.
 
 ---
 
+## Error Modeling
+
+Use discriminated union result types for expected business outcomes. Reserve exceptions for programmer mistakes and infrastructure failures.
+
+```typescript
+type PledgeResult =
+  | { readonly success: true; readonly occasion: Occasion; readonly contributor: Contributor }
+  | { readonly success: false; readonly reason: 'insufficient-balance' | 'funding-closed' | 'not-found' };
+```
+
+**The test:** Could a user's action legitimately cause this outcome? If yes → result type. If no (it would mean a bug) → exception.
+
+For detailed error modeling patterns and how errors propagate through layers, see `resources/error-modeling.md`.
+
+---
+
 ## Repository Pattern
 
-Repositories provide collection-like access to aggregates. **Interfaces** in the domain layer, **implementations** in the adapter layer.
+Repositories provide collection-like access to aggregates. **Interfaces** in the domain layer, **implementations** in the adapter layer. Name methods using domain language.
 
 ```typescript
 // Port (domain layer)
 interface OccasionRepository {
-  findById(id: OccasionId): Promise<Occasion | undefined>;
-  save(occasion: Occasion): Promise<void>;
+  readonly findById: (id: OccasionId) => Promise<Occasion | undefined>;
+  readonly save: (occasion: Occasion) => Promise<void>;
 }
 
 // Adapter (infrastructure layer) — see hexagonal-architecture skill
@@ -309,7 +325,7 @@ Domain unit tests **complement** use case tests for complex pure business rules.
 | **Secondary** | Driven adapters (real DB/MSW) | Adapter translates correctly |
 | **Verification** | E2E (full stack) | User experience works |
 
-For detailed testing guidance, see `resources/testing-by-layer.md`.
+For detailed testing guidance, see `resources/testing-by-layer.md`. For a complete worked example showing one feature through every layer with tests, see the hexagonal-architecture skill's `resources/worked-example.md`.
 
 ### Test Factories Use Domain Language
 
@@ -381,6 +397,7 @@ Not every project needs aggregates, domain events, or bounded contexts. Start wi
 - [ ] Cross-aggregate logic in domain services, not crammed into one entity
 - [ ] Repository interfaces defined in domain layer
 - [ ] Discriminated unions have exhaustive switch handling
+- [ ] Expected business outcomes use result types, not exceptions
 - [ ] Domain logic has zero infrastructure dependencies
 - [ ] Presentation logic is NOT in domain/ (even if pure)
 - [ ] Tests organized by domain concept, not implementation file
