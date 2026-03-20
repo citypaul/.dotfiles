@@ -57,7 +57,7 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 ### Udi Dahan — [Clarified CQRS](https://udidahan.com/2009/12/09/clarified-cqrs/)
 - **CQRS-lite is sufficient** — separating reads from writes doesn't require separate databases, async messaging, or event sourcing → Hex arch `resources/cqrs-lite.md`
 
-### Lev Gorodinski — ["Domain Services vs Application Services"](http://gorodinski.com/blog/2012/04/14/services-in-domain-driven-design-ddd/)
+### Lev Gorodinski — ["Domain Services vs Application Services"](https://gorodinski.com/blog/2012/04/14/services-in-domain-driven-design-ddd/)
 - **Clear distinction** between domain services (business rules, domain types only) and application services (orchestration, infrastructure coordination) → DDD skill: "Domain Services" comparison table + `resources/domain-services.md`
 
 ---

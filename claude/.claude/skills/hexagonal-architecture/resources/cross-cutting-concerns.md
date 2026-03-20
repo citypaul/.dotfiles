@@ -91,7 +91,6 @@ const createTransactionalPledgeHandler = (db: Database) =>
       const contributorRepo = createDrizzleContributorRepository(tx);
       return handlePledge(occasionRepo, contributorRepo, dto);
     });
-};
 ```
 
 The use case function (`handlePledge`) is unchanged — it still takes repositories as parameters. The driving adapter passes transactional repositories. The domain doesn't know or care.

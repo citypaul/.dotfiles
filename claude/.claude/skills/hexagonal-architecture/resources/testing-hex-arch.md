@@ -1,6 +1,6 @@
 # Testing Strategy for Hexagonal Architecture
 
-Hex arch's primary value is testability. The architecture creates natural test boundaries — but the primary boundary is the **use case**, not each layer in isolation. This approach follows Valentina Jemuović's Use Case Driven Design (UCDD) — see `../REFERENCES.md` for sources.
+Hex arch's primary value is testability. The architecture creates natural test boundaries — but the primary boundary is the **use case**, not each layer in isolation. This approach follows Valentina Jemuović's Use Case Driven Design (UCDD) — see `../../REFERENCES.md` for sources.
 
 ## Primary Boundary: The Use Case
 
