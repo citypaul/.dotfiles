@@ -14,7 +14,7 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **Bounded contexts** → DDD skill: "Bounded Contexts" section
 - **"Always-valid" entities** (invariants enforced at all times) → DDD skill: "Always-valid principle" in Entities + `resources/aggregate-design.md`
 
-### Vaughn Vernon — "Implementing Domain-Driven Design" (2013)
+### Vaughn Vernon — ["Implementing Domain-Driven Design"](https://www.informit.com/store/implementing-domain-driven-design-9780321834577) (2013)
 - **Aggregate design rules** (small aggregates, reference by ID, one per transaction) → DDD skill: "Aggregates" section + `resources/aggregate-design.md`
 - **Domain services vs application services distinction** → DDD skill: "Domain Services" comparison table
 - **Always-valid entities** (never allow temporary invalid states) → `resources/aggregate-design.md`
@@ -102,7 +102,12 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **Narrow integration tests for driven adapters as secondary concern** → Both testing resources: adapter test sections
 - **"Unit tests passed. The bug shipped anyway."** — the gap between isolated tests passing and features working → Testing strategy framing in both skills
 - **"Clean Code is Useless Without Tests"** — you cannot refactor toward clean code without tests protecting you → Aligns with TDD skill's non-negotiable testing-first approach
-- Key articles: "TDD: Test the API, NOT the World", "Unit Testing Use Cases or Domain?", "Hexagonal Architecture: Do NOT Mock Everything", "Unit Tests Passed. The Bug Shipped Anyway.", "Clean Code is Useless Without Tests"
+- Key articles:
+  - ["TDD: Test the API, NOT the World"](https://journal.optivem.com/p/tdd-test-the-api-not-the-world)
+  - ["Unit Testing Use Cases or Domain?"](https://journal.optivem.com/p/unit-testing-use-cases-or-domain)
+  - ["Hexagonal Architecture: Do NOT Mock Everything"](https://journal.optivem.com/p/hexagonal-architecture-do-not-mock-everything)
+  - ["Unit Tests Passed. The Bug Shipped Anyway."](https://journal.optivem.com/p/unit-tests-passed-the-bug-shipped-anyway)
+  - ["Clean Code is Useless Without Tests"](https://journal.optivem.com/p/clean-code-is-useless-without-tests)
 
 ---
 

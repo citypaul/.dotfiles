@@ -15,7 +15,7 @@ For hexagonal architecture (ports and adapters), load the `hexagonal-architectur
 |----------|-------------|
 | `aggregate-design.md` | Designing or splitting aggregates, sizing questions, optimistic locking |
 | `domain-services.md` | Unsure if logic is a domain service vs use case, naming conventions |
-| `domain-events.md` | Considering cross-aggregate coordination, Decider pattern |
+| `domain-events.md` | Cross-aggregate coordination, Decider pattern, event dispatch (outbox), process managers |
 | `bounded-contexts.md` | Drawing context boundaries, integrating with external systems (ACL), context mapping |
 | `error-modeling.md` | Deciding between result types and exceptions, error propagation |
 | `testing-by-layer.md` | Writing tests for DDD code, property-based testing for invariants |
@@ -147,6 +147,10 @@ const createMoney = (amount: number, currency: Currency): Money => {
   if (amount < 0) throw new Error('Money cannot be negative');
   return { amount, currency };
 };
+// Factory throws = invariant violation (a bug in calling code).
+// Schemas catch invalid user input at trust boundaries BEFORE
+// the factory is called. If the factory throws, something
+// bypassed the schema.
 ```
 
 For value objects crossing trust boundaries (API input, form data), use Zod schemas. For domain-internal value objects, plain types + factory functions suffice. See the `typescript-strict` skill for schema-first patterns.
@@ -334,7 +338,7 @@ const pledgeContribution = (
 | | Domain Service | Use Case |
 |--|----------------|----------|
 | Contains business logic? | Yes | No — orchestration only |
-| Lives in | `domain/` | `domain/` (default — takes ports as params, so it's testable without infrastructure) |
+| Lives in | `domain/` | `domain/` — identifiable by taking ports as params |
 | Depends on | Domain types only | Repositories, ports, domain services |
 | Example | `pledgeContribution(occasion, contributor, amount)` | `handlePledge(repo, dto)` — loads, calls domain service, saves |
 

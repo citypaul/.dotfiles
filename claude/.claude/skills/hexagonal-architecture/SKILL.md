@@ -163,7 +163,7 @@ For detailed CQRS-lite guidance, see `resources/cqrs-lite.md`.
 
 ## Dependency Injection
 
-Inject all dependencies via function parameters. No DI container needed. This is Seemann's "dependency rejection" — in functional TypeScript, the use case is a pure function that receives everything it needs.
+Inject all dependencies via function parameters. No DI container needed. The driving adapter gathers impure dependencies, passes them to the use case, and acts on the result — Seemann's "impureim sandwich" (impure/pure/impure).
 
 ```typescript
 // WRONG — creates dependencies internally (untestable, tightly coupled)
@@ -231,7 +231,7 @@ The use case doesn't know or care whether it was triggered by an HTTP request, a
 
 | Layer | Location | Contains | Tests |
 |-------|----------|----------|-------|
-| Domain | `src/domain/` | Pure business logic, types, port interfaces, use cases | Unit tests (no mocks) |
+| Domain | `src/domain/` | Business logic (pure functions), types, port interfaces, use cases (orchestration) | Unit + use case tests (fakes) |
 | Adapters (driven) | `src/db/`, `src/infrastructure/` | Repository impls, API clients, query functions | Integration tests (real DB/MSW) |
 | Adapters (driving) | `src/app/` | Route handlers, event listeners | E2E tests (Playwright) |
 | Wiring | `src/lib/`, `src/context.ts` | Adapter factories, config, composition | Covered by E2E |

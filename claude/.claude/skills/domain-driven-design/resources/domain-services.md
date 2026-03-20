@@ -39,7 +39,7 @@ const pledgeContribution = (
 };
 
 // USE CASE — orchestration only, no business logic
-// Lives in domain/ or app/ depending on project convention
+// Lives in domain/ — identifiable by taking ports as parameters
 const handlePledge = async (
   occasionRepo: OccasionRepository,
   contributorRepo: ContributorRepository,

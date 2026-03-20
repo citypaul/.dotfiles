@@ -96,6 +96,133 @@ The use case receives the result and decides what to do next. No event bus, no s
 - **Business language**: `BudgetExceeded`, not `ThresholdBreached`
 - **Specific**: `ContributionPledged`, not `DataUpdated`
 
+## Dispatching Events
+
+Producing events (via `decide` or explicit returns) is only half the picture. Events must reach their consumers. Choose the simplest mechanism that meets your reliability needs.
+
+### In-Process Dispatch (Simplest)
+
+The use case collects events and passes them to handlers directly. No infrastructure needed.
+
+```typescript
+const handlePlaceOrder = async (
+  orderRepo: OrderRepository,
+  notifier: OrderNotifier,
+  command: PlaceOrderCommand,
+  now: Date,
+): Promise<PlaceOrderResult> => {
+  const order = await orderRepo.findById(command.orderId);
+  if (!order) return { success: false, reason: 'not-found' };
+
+  const events = decide(command, order, now);
+  const newState = events.reduce(evolve, order);
+  await orderRepo.save(newState);
+
+  // Dispatch events in-process — simple, but events are lost if the process crashes
+  for (const event of events) {
+    await notifier.notify(event);
+  }
+  return { success: true, order: newState };
+};
+```
+
+Good enough for: side effects within the same service where eventual delivery is acceptable. If the process crashes between save and notify, events are lost.
+
+### Outbox Pattern (Reliable)
+
+For reliable delivery, save events alongside the aggregate in the same transaction. A separate process reads the outbox and publishes to a message broker.
+
+```typescript
+// Use case saves aggregate + events in one transaction
+const handlePlaceOrder = async (
+  orderRepo: OrderRepository,
+  eventOutbox: EventOutbox,
+  command: PlaceOrderCommand,
+  now: Date,
+): Promise<PlaceOrderResult> => {
+  const order = await orderRepo.findById(command.orderId);
+  if (!order) return { success: false, reason: 'not-found' };
+
+  const events = decide(command, order, now);
+  const newState = events.reduce(evolve, order);
+
+  // Both saved in the same transaction — events can't be lost
+  await orderRepo.save(newState);
+  await eventOutbox.save(events);
+
+  return { success: true, order: newState };
+};
+
+// EventOutbox port — driven adapter
+interface EventOutbox {
+  readonly save: (events: readonly OrderEvent[]) => Promise<void>;
+}
+```
+
+A background worker polls the outbox table and publishes to the message broker. This guarantees at-least-once delivery — consumers must be idempotent.
+
+Use when: events must not be lost, cross-service communication, audit requirements.
+
+### When to Use Which
+
+| Mechanism | Reliability | Complexity | Use when |
+|-----------|------------|------------|----------|
+| Explicit returns (no events) | N/A | Lowest | Side effects within same aggregate |
+| In-process dispatch | At-most-once | Low | Non-critical notifications, same service |
+| Outbox pattern | At-least-once | Medium | Cross-service, must not lose events |
+| Full event sourcing | Complete history | High | Audit trail, temporal queries, replay |
+
+Start with explicit returns. Move to in-process dispatch when you need cross-aggregate coordination. Move to outbox when you need reliability. Move to event sourcing only when you need the event history itself.
+
+## Process Managers (Long-Running Workflows)
+
+When a business process spans multiple aggregates over time and may need compensation on failure, use a process manager — a stateful coordinator that reacts to events and issues commands.
+
+```typescript
+// Process manager state tracks workflow progress
+type GiftPurchaseProcess =
+  | { readonly step: 'awaiting-payment'; readonly occasionId: OccasionId }
+  | { readonly step: 'awaiting-shipment'; readonly paymentId: string }
+  | { readonly step: 'complete'; readonly trackingNumber: string }
+  | { readonly step: 'failed'; readonly reason: string };
+
+// React to events, issue next command or compensate
+const advanceGiftPurchase = (
+  state: GiftPurchaseProcess,
+  event: GiftPurchaseEvent,
+): { readonly newState: GiftPurchaseProcess; readonly commands: readonly GiftPurchaseCommand[] } => {
+  switch (event.type) {
+    case 'PaymentSucceeded':
+      return {
+        newState: { step: 'awaiting-shipment', paymentId: event.paymentId },
+        commands: [{ type: 'ShipGift', paymentId: event.paymentId }],
+      };
+    case 'PaymentFailed':
+      return {
+        newState: { step: 'failed', reason: 'payment-declined' },
+        commands: [{ type: 'ReleaseBudgetHold', occasionId: state.step === 'awaiting-payment' ? state.occasionId : '' as OccasionId }],
+      };
+    case 'GiftShipped':
+      return {
+        newState: { step: 'complete', trackingNumber: event.trackingNumber },
+        commands: [],
+      };
+    default: { const _: never = event; return _; }
+  }
+};
+```
+
+Process managers are pure functions — same Decider-like pattern (state + event → new state + commands). They coordinate; they don't own business rules. Test them the same way: pass events in, assert state and commands out.
+
+**Use process managers when:**
+- A workflow spans multiple aggregates and takes time (not a single request)
+- Failure at step N requires compensating actions for steps 1..N-1
+- The workflow has business-meaningful intermediate states
+
+**Don't use process managers when:**
+- The workflow completes in a single request (use a domain service)
+- There's no compensation needed (use simple event dispatch)
+
 ## Testing Domain Events
 
 Events returned from `decide` are plain data — test them like any other return value:
