@@ -98,7 +98,7 @@ const handlePledge = async (repos, dto) => {
 - They always change together
 - Splitting would require a complex coordination mechanism
 
-**Start combined, split when you feel the pain.** Premature splitting creates coordination complexity worse than the performance problem it prevents.
+**Start combined, split when you feel the pain.** Premature splitting creates coordination complexity worse than the performance problem it prevents. Aggregate boundaries are expected to evolve as domain understanding deepens — splitting or merging aggregates is a normal part of DDD, not a sign of failure.
 
 ## Concurrency: Optimistic Locking
 

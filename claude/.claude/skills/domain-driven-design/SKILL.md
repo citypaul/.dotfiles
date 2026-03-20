@@ -39,13 +39,15 @@ DDD adds value for **complex domains** with rich business rules. Not every proje
 - Technical/infrastructure-focused projects
 - No domain expert to consult
 
-**Start simple:** Begin with ubiquitous language (glossary) and value objects. Add aggregates, domain events, and bounded contexts only when the domain demands it.
+**Start simple and evolve:** Begin with ubiquitous language (glossary) and value objects. Add aggregates, domain events, and bounded contexts only when the domain demands it. Your first model will be wrong — that's fine. The goal is to learn quickly and refactor toward deeper insight.
 
 ---
 
 ## Core Principle
 
 **The code must speak the language of the domain.** Every type, function, variable, and test name must use terms from the project's ubiquitous language (glossary). If a concept doesn't have a domain term, that's a modeling gap to discuss with stakeholders — not something to paper over with technical jargon.
+
+**Domain models evolve.** The first model is never the final model. As understanding deepens through conversations with domain experts and building working software, the model should change — types get renamed, aggregates get split or merged, new concepts emerge. This is expected and ideal. A model that never changes is either perfect (unlikely) or stagnant (the team stopped learning). TDD and behavioral tests make this evolution safe — rename a concept, update the glossary, and the tests tell you what needs to change.
 
 ---
 
@@ -86,16 +88,27 @@ export const calculateCommittedTotal = (items: readonly GiftItem[]) =>
 
 ## Ubiquitous Language & Glossary
 
-DDD projects must maintain a glossary file that defines all domain terms. This is the single source of truth for naming.
+DDD projects must maintain a glossary file that defines all domain terms. This is the single source of truth for naming. The glossary evolves as the model evolves — when the team discovers a better name or splits a concept, update the glossary first and let the code follow.
 
 ### The Glossary File
 
+For projects with multiple bounded contexts, organize by context. The same term may have different definitions in different contexts — this is correct, not a bug.
+
 ```markdown
+## Gifting Context
+
 | Term | Definition | Examples |
 |------|-----------|----------|
 | Occasion | A gift-giving event (birthday, holiday) | "Mum's Birthday", "Christmas 2026" |
 | Gift Idea | A potential gift for an occasion | "Cookbook", "Scarf" |
 | Contribution | Money pledged toward a gift | "£25 from Dad" |
+
+## Notifications Context
+
+| Term | Definition | Examples |
+|------|-----------|----------|
+| Occasion | An upcoming event that may trigger reminders | (same events, different concern) |
+| Recipient | The person being gifted — target of reminder scheduling | "Mum" |
 ```
 
 ### Enforcement Rules
@@ -445,6 +458,10 @@ Not every project needs aggregates, domain events, or bounded contexts. Start wi
 1. Ubiquitous language (glossary)
 2. Value objects and entities
 3. Add complexity only when the domain demands it
+
+### Resisting Model Evolution
+
+Treating the initial model as sacred — refusing to rename types, split aggregates, or restructure bounded contexts as understanding deepens. The model should evolve continuously. If a refactoring reveals that "Occasion" should really be "GiftEvent" and "SavingsGoal", do it. The glossary changes, the types change, the tests guide the migration. Evans calls these "breakthroughs" — moments where the model fundamentally improves because the team learned something new about the domain.
 
 ---
 
