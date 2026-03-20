@@ -84,8 +84,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
 | **Planning** | Small increments, plans directory, commit approval, prefer small PRs | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
-| **Hexagonal Architecture** | Ports and adapters pattern, dependency inversion, domain isolation | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
-| **Domain-Driven Design** | Ubiquitous language, glossary enforcement, value objects, aggregates, domain events | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
+| **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 5 deep-dive resources | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
+| **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -408,6 +408,69 @@ const wrong = "incorrect approach";
 ```
 
 **Key insight:** Capture learnings while context is fresh, not during retrospectives when details are lost. Ask "What do I wish I'd known at the start?" after every significant change.
+
+---
+
+### 🏗️ Hexagonal Architecture → [skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md)
+
+**Problem it solves:** Business logic tangled with database queries and HTTP handlers; untestable code; changing a database requires rewriting business rules
+
+**What's inside (main skill + 5 deep-dive resources):**
+- **Driving/driven adapter asymmetry** with visual diagram — HTTP routes, queue consumers, cron jobs
+- **Dependency injection** via parameters — wrong/right comparison, composition root pattern
+- **CQRS-lite** — reads bypass repositories, query functions JOIN freely
+- **Cross-cutting concerns** — where auth, logging, transactions, and error formatting live
+- **Anti-patterns with code** — business logic in adapters, bypass adapters, technology-shaped ports
+- **Full worked example** — one feature traced through every layer with tests and file map
+- **Incremental adoption** — strangler fig approach for existing codebases
+- **Authoritative sources** — Cockburn, Seemann, Pierrain, Graca, Netflix, Valentina Jemuović
+
+**The core insight:**
+
+```typescript
+// ❌ Business logic tangled with infrastructure
+export async function POST(request: Request) {
+  const order = await db.select().from(orders).where(eq(orders.id, id)).get();
+  if (order.total > 1000) await requireManagerApproval(order); // business rule in route handler!
+  ...
+}
+
+// ✅ Domain stays pure; adapters are thin glue
+const placeOrder = (order: Order): PlaceOrderResult => {
+  if (order.total > 1000) return { success: false, reason: 'requires-approval' };
+  ...
+};
+```
+
+**Key insight:** If swapping your database requires changing business logic, the boundary is wrong. The worked example shows the full picture from glossary through domain through adapters to tests.
+
+---
+
+### 📐 Domain-Driven Design → [skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md)
+
+**Problem it solves:** Business rules scattered across route handlers and database queries; technical jargon instead of domain language; models that don't evolve as understanding deepens
+
+**What's inside (main skill + 6 deep-dive resources):**
+- **"Where Does This Code Belong?"** — decision framework for the most common DDD question
+- **Building blocks** — value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, branded types with factory functions
+- **Make Illegal States Unrepresentable** — boolean-to-union pattern + exhaustive switch
+- **Error modeling** — result types for business outcomes, exceptions for bugs
+- **Bounded contexts** — ACL, context mapping, comprehensive discovery methodology
+- **Event dispatch** — in-process, outbox pattern, process managers
+- **Model evolution** — domain models should evolve; the first model is never the final model
+- **Authoritative sources** — Evans, Vernon, Wlaschin, Chassaing, Khorikov, Valentina Jemuović
+
+**The decision framework from the docs:**
+
+| Question | If yes → |
+|----------|----------|
+| Does it enforce a business rule? | `domain/` |
+| Does it orchestrate without owning logic? | Use case (takes ports as params) |
+| Does it format data for display? | `lib/` — purity is not sufficient |
+| Does it talk to an external system? | Adapter (implements a port) |
+| Is it framework glue? | Delivery layer (`app/`) |
+
+**Key insight:** Domain models evolve as understanding deepens — this is expected and ideal, not a sign of failure. TDD makes this evolution safe: rename a concept, update the glossary, and the tests guide the migration.
 
 ---
 
