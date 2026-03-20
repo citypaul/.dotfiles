@@ -20,13 +20,17 @@ const createOccasion = (params: CreateOccasionParams): Occasion => {
   });
 };
 
-// ✅ State transition enforces invariants
-const addGiftIdea = (occasion: Occasion, idea: NewGiftIdea): Occasion => {
+// ✅ State transition enforces invariants — returns result type for business outcomes
+type AddGiftIdeaResult =
+  | { readonly success: true; readonly occasion: Occasion }
+  | { readonly success: false; readonly reason: 'exceeds-budget' };
+
+const addGiftIdea = (occasion: Occasion, idea: NewGiftIdea): AddGiftIdeaResult => {
   const totalCost = occasion.giftIdeas.reduce((sum, i) => sum + i.estimatedCost.amount, 0);
   if (totalCost + idea.estimatedCost.amount > occasion.budget.amount) {
-    throw new Error('Gift ideas exceed occasion budget');
+    return { success: false, reason: 'exceeds-budget' };
   }
-  return { ...occasion, giftIdeas: [...occasion.giftIdeas, idea] };
+  return { success: true, occasion: { ...occasion, giftIdeas: [...occasion.giftIdeas, idea] } };
 };
 ```
 
@@ -95,3 +99,40 @@ const handlePledge = async (repos, dto) => {
 - Splitting would require a complex coordination mechanism
 
 **Start combined, split when you feel the pain.** Premature splitting creates coordination complexity worse than the performance problem it prevents.
+
+## Concurrency: Optimistic Locking
+
+When multiple users can modify the same aggregate concurrently, add a version field to detect conflicts:
+
+```typescript
+type Occasion = {
+  readonly id: OccasionId;
+  readonly version: number;  // incremented on each save
+  readonly name: string;
+  readonly budget: Money;
+  readonly giftIdeas: ReadonlyArray<GiftIdea>;
+};
+```
+
+The repository checks the version on save:
+
+```typescript
+save: async (occasion) => {
+  const updated = await db.update(occasions)
+    .set({ ...toRow(occasion), version: occasion.version + 1 })
+    .where(and(eq(occasions.id, occasion.id), eq(occasions.version, occasion.version)));
+  if (updated.rowsAffected === 0) throw new Error('Concurrent modification detected');
+},
+```
+
+If two users load version 3 and both try to save, the first succeeds (version becomes 4) and the second fails (version 3 no longer matches). The use case catches this and asks the user to retry.
+
+**When to add optimistic locking:**
+- Multiple users can edit the same aggregate
+- The aggregate is long-lived (not created and discarded in one request)
+- Concurrent modifications would violate invariants
+
+**When it's unnecessary:**
+- Single-user aggregates (e.g., user preferences)
+- Append-only aggregates (e.g., event logs)
+- Short-lived aggregates created and consumed in one request

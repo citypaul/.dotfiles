@@ -9,7 +9,18 @@ This skill applies only to projects that have opted in to DDD. Do not apply thes
 
 For hexagonal architecture (ports and adapters), load the `hexagonal-architecture` skill. DDD and hexagonal architecture are complementary but independent — a project may use one without the other.
 
-**Deep-dive resources** are in the `resources/` directory within this skill folder. The main skill covers core rules; resources provide detailed guidance for specific decisions. For authoritative sources and attributions, see `../REFERENCES.md`.
+**Deep-dive resources** are in the `resources/` directory. Load them on demand:
+
+| Resource | Load when... |
+|----------|-------------|
+| `aggregate-design.md` | Designing or splitting aggregates, sizing questions, optimistic locking |
+| `domain-services.md` | Unsure if logic is a domain service vs use case, naming conventions |
+| `domain-events.md` | Considering cross-aggregate coordination, Decider pattern |
+| `bounded-contexts.md` | Structuring a monorepo, integrating with external systems (ACL) |
+| `error-modeling.md` | Deciding between result types and exceptions, error propagation |
+| `testing-by-layer.md` | Writing tests for DDD code, property-based testing for invariants |
+
+For authoritative sources, see `../REFERENCES.md`.
 
 ---
 
@@ -126,6 +137,28 @@ const createMoney = (amount: number, currency: Currency): Money => {
 ```
 
 For value objects crossing trust boundaries (API input, form data), use Zod schemas. For domain-internal value objects, plain types + factory functions suffice. See the `typescript-strict` skill for schema-first patterns.
+
+**Zod-to-branded-type bridging** — parse raw input into branded domain types at trust boundaries:
+
+```typescript
+// Schema at trust boundary — parses raw strings into branded types
+const PledgeInputSchema = z.object({
+  occasionId: z.string().min(1).transform(createOccasionId),
+  contributorId: z.string().min(1).transform(createContributorId),
+  amount: z.object({ amount: z.number().positive(), currency: CurrencySchema }),
+});
+
+// Reconstitution from persistence — same pattern, used in driven adapters
+const toOccasion = (row: OccasionRow): Occasion => ({
+  id: createOccasionId(row.id),
+  name: row.name,
+  budget: createMoney(row.budgetAmount, parseCurrency(row.budgetCurrency)),
+  totalPledged: createMoney(row.pledgedAmount, parseCurrency(row.budgetCurrency)),
+  isFundingClosed: row.isFundingClosed,
+});
+```
+
+Reconstitution (rebuilding domain objects from DB rows) uses the same factory functions as creation. The factory validates, so invalid persisted data is caught on read rather than silently corrupting the domain.
 
 ### Branded Types
 

@@ -30,7 +30,7 @@ Pull the business rule into a pure function. No infrastructure, no async.
 // domain/billing/deduct-balance.ts — extracted pure function
 type DeductResult =
   | { readonly success: true; readonly user: User }
-  | { readonly success: false; readonly reason: 'insufficient-balance' };
+  | { readonly success: false; readonly reason: 'insufficient-balance' | 'not-found' };
 
 const deductBalance = (user: User, amount: Money): DeductResult => {
   if (amount.amount > user.balance.amount) {
@@ -83,7 +83,7 @@ const handleDeduction = async (
   dto: { readonly userId: UserId; readonly amount: Money },
 ): Promise<DeductResult> => {
   const user = await userRepo.findById(dto.userId);
-  if (!user) return { success: false, reason: 'not-found' as const };
+  if (!user) return { success: false, reason: 'not-found' };
   const result = deductBalance(user, dto.amount);
   if (result.success) await userRepo.save(result.user);
   return result;

@@ -9,7 +9,17 @@ This skill applies only to projects that have opted in to hexagonal architecture
 
 For domain modeling (entities, value objects, aggregates, ubiquitous language), load the `domain-driven-design` skill. Hex arch and DDD are complementary but independent — hex arch provides structural isolation (how the outside connects), DDD provides the domain model (what lives in the center). A project may use one without the other.
 
-**Deep-dive resources** are in the `resources/` directory within this skill folder. For authoritative sources and attributions, see `../REFERENCES.md`.
+**Deep-dive resources** are in the `resources/` directory. Load them on demand:
+
+| Resource | Load when... |
+|----------|-------------|
+| `worked-example.md` | Need a full feature traced through every layer with tests and file map |
+| `testing-hex-arch.md` | Writing tests, creating fakes, setting up `createTestDb`, swappability test |
+| `cqrs-lite.md` | Reads need to JOIN across aggregates, separating read/write paths |
+| `cross-cutting-concerns.md` | Placing auth, logging, transactions, or error formatting |
+| `incremental-adoption.md` | Introducing hex arch into an existing codebase |
+
+For authoritative sources, see `../REFERENCES.md`.
 
 ---
 
@@ -59,6 +69,11 @@ interface UserRepository {
 interface PaymentGateway {
   readonly charge: (amount: Money, paymentInfo: PaymentInfo) => Promise<ChargeResult>;
 }
+
+// Driven port — event publishing (outbound to message brokers)
+interface OrderEventPublisher {
+  readonly publish: (event: OrderEvent) => Promise<void>;
+}
 ```
 
 **Port design principles:**
@@ -98,15 +113,17 @@ const createFakeUserRepository = (initial: readonly User[] = []): UserRepository
 **Adapter error handling:** Infrastructure errors (connection lost, timeout, constraint violation) should either propagate as exceptions to a top-level handler or be translated into domain-appropriate results at the adapter boundary. The domain never catches infrastructure errors — it doesn't know infrastructure exists.
 
 ```typescript
-// Driven adapter translates constraint violations into domain results
-save: async (user) => {
-  try {
-    await db.insert(users).values(toRow(user)).onConflictDoUpdate({ ... });
-  } catch (e) {
-    if (isUniqueConstraintError(e)) throw new Error(`User ${user.id} already exists`);
-    throw e; // unexpected errors propagate to top-level handler
-  }
-},
+// Driven adapter: expected infrastructure outcomes become domain results
+const createDrizzleUserRepository = (db: Database): UserRepository => ({
+  save: async (user) => {
+    const existing = await db.select().from(users).where(eq(users.id, user.id)).get();
+    if (existing) return { success: false, reason: 'already-exists' as const };
+    await db.insert(users).values(toRow(user));
+    return { success: true };
+  },
+  // Unexpected infrastructure errors (connection lost, disk full) propagate
+  // as exceptions to the top-level error handler — don't catch those
+});
 ```
 
 **Key principle:** If swapping an adapter requires changing domain code, the boundary is wrong.

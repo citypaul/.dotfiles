@@ -6,7 +6,7 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 
 ## Domain-Driven Design
 
-### Eric Evans — "Domain-Driven Design: Tackling Complexity in the Heart of Software" (2003)
+### Eric Evans — "Domain-Driven Design: Tackling Complexity in the Heart of Software" (2003) — [DDD Reference (free PDF)](https://www.domainlanguage.com/ddd/reference/)
 - **Ubiquitous language** → DDD skill: "Core Principle" section + glossary enforcement rules
 - **Entities, value objects, aggregates** → DDD skill: "Building Blocks" section
 - **Repositories as collection-like interfaces** → DDD skill: "Repository Pattern" section
@@ -20,32 +20,32 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **Always-valid entities** (never allow temporary invalid states) → `resources/aggregate-design.md`
 - **When to split vs combine aggregates** → `resources/aggregate-design.md`
 
-### Martin Fowler — martinfowler.com
+### Martin Fowler — [martinfowler.com](https://martinfowler.com)
 - **Anemic domain model anti-pattern** → DDD skill: "Anti-Patterns" section
 - **CQRS pattern** (separating read and write models) → Hex arch skill: "Reads vs Writes (CQRS-lite)" section + `resources/cqrs-lite.md`
 - **Repository pattern** (collection-like semantics) → DDD skill: "Repository Pattern"
 
-### Khalil Stemmler — khalilstemmler.com
+### Khalil Stemmler — [khalilstemmler.com](https://khalilstemmler.com)
 - **TypeScript-specific DDD patterns** (branded types, discriminated unions, schema-first) → DDD skill: "Branded Types", "Make Illegal States Unrepresentable"
 - **Value objects as plain types with factory functions** (functional approach) → DDD skill: "Value Objects" section
 - **Module-based composition roots** (no DI container, validated at 150K LOC) → Hex arch skill: "Dependency Injection" composition root example
 - **Per-layer testing strategy** → DDD `resources/testing-by-layer.md` + Hex arch `resources/testing-hex-arch.md`
 
-### Microsoft — .NET Architecture Guidance (docs.microsoft.com)
+### Microsoft — [.NET Architecture Guidance](https://learn.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/)
 - **Domain layer contents** (entities, value objects, aggregates, domain services — NOT read models) → DDD skill: "Where Does This Code Belong?" decision framework
 - **Always-valid entities principle** → DDD skill: Entities section + `resources/aggregate-design.md`
 - **Testing by layer prescription** (unit for domain, integration for adapters) → DDD `resources/testing-by-layer.md`
 - **Purity is necessary but not sufficient for domain placement** → DDD skill: "Where Does This Code Belong?" purity test
 
-### Scott Wlaschin — "Domain Modeling Made Functional" (2018) + fsharpforfunandprofit.com
+### Scott Wlaschin — "Domain Modeling Made Functional" (2018) + [fsharpforfunandprofit.com](https://fsharpforfunandprofit.com/ddd/)
 - **"Making Illegal States Unrepresentable"** — encode business rules in the type system using discriminated unions → DDD skill: "Make Illegal States Unrepresentable" section + exhaustive switch pattern
 - **Workflows as functions** whose input is a command and output is events → DDD `resources/domain-events.md`: the functional approach
 - **Validate at boundaries, trust inside** — parse/validate at the outer boundary, then domain functions trust their types → Aligns with typescript-strict skill "schemas at trust boundaries"
 
-### Jeremie Chassaing — "Functional Event Sourcing Decider" (thinkbeforecoding.com, 2021)
+### Jeremie Chassaing — ["Functional Event Sourcing Decider"](https://thinkbeforecoding.com/post/2021/12/17/functional-event-sourcing-decider) (2021)
 - **Decider pattern** (`decide(command, state) → events[]`, `evolve(state, event) → state`) — the standard functional approach to domain events → DDD `resources/domain-events.md`: "The Decider Pattern"
 
-### Vladimir Khorikov — Enterprise Craftsmanship (enterprisecraftsmanship.com)
+### Vladimir Khorikov — [Enterprise Craftsmanship](https://enterprisecraftsmanship.com)
 - **Domain events add complexity** — "If all consumers reside within the same database transaction, domain events add very little value" → DDD `resources/domain-events.md`: "When to Avoid Domain Events"
 - **Explicit returns over indirection** — prefer returning results from domain functions over event-based coordination when possible
 
@@ -54,17 +54,17 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **CQRS is not a top-level architecture** — apply selectively to specific bounded contexts, not the whole system
 - **"Current state is a left fold of previous events"** — functional model for event sourcing → DDD `resources/domain-events.md`: Decider pattern's `evolve` function
 
-### Udi Dahan — Clarified CQRS (udidahan.com)
+### Udi Dahan — [Clarified CQRS](https://udidahan.com/2009/12/09/clarified-cqrs/)
 - **CQRS-lite is sufficient** — separating reads from writes doesn't require separate databases, async messaging, or event sourcing → Hex arch `resources/cqrs-lite.md`
 
-### Lev Gorodinski — "Domain Services vs Application Services" (gorodinski.com)
+### Lev Gorodinski — ["Domain Services vs Application Services"](http://gorodinski.com/blog/2012/04/14/services-in-domain-driven-design-ddd/)
 - **Clear distinction** between domain services (business rules, domain types only) and application services (orchestration, infrastructure coordination) → DDD skill: "Domain Services" comparison table + `resources/domain-services.md`
 
 ---
 
 ## Hexagonal Architecture
 
-### Alistair Cockburn — "Hexagonal Architecture" (alistair.cockburn.us, 2005)
+### Alistair Cockburn — ["Hexagonal Architecture"](https://alistair.cockburn.us/hexagonal-architecture/) (2005)
 - **Core concept** (application as hexagon, ports on edges, adapters outside) → Hex arch skill: "Core Concept" section + diagram
 - **Primary (driving) vs secondary (driven) ports/adapters** → Hex arch skill: driving/driven distinction in diagram and throughout
 - **"Configurable Dependency"** (Cockburn/Meszaros) — the hexagon declares needs via ports, a startup configurer wires concrete adapters → Hex arch skill: composition root pattern
@@ -75,16 +75,16 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **"A good adapter is a pretty dumb adapter"** — no business logic in adapters → Hex arch skill: "Adapters" section key principle
 - **Driving vs driven asymmetry** (driving adapters call ports, driven adapters implement ports) → Hex arch skill: "Core Concept" section
 
-### Herberto Graca — "DDD, Hexagonal, Onion, Clean, CQRS… How I put it all together" (herbertograca.com)
+### Herberto Graca — ["DDD, Hexagonal, Onion, Clean, CQRS… How I put it all together"](https://herbertograca.com/2017/11/16/explicit-architecture-01-ddd-hexagonal-onion-clean-cqrs-how-i-put-it-all-together/)
 - **Unification of architectural patterns** showing hex arch as the structural container, DDD as the domain model → Both skills: cross-references between hex arch and DDD
 - **Primary/secondary adapter naming** → Hex arch skill: diagram and terminology
 - **Application layer as use case orchestration** → Hex arch skill: composition root pattern
 
-### Netflix Tech Blog — "Ready for changes with Hexagonal Architecture" (2020)
+### Netflix Tech Blog — ["Ready for changes with Hexagonal Architecture"](https://netflixtechblog.com/ready-for-changes-with-hexagonal-architecture-b315ec967749) (2020)
 - **Practical validation at scale** — swapping a data source adapter in 2 hours → Hex arch skill: swappability as the ultimate test of correct boundaries
 - **Port design by business purpose, not technology** → Hex arch skill: "Port design principles"
 
-### Mark Seemann — "Dependency Injection in .NET" + blog (blog.ploeh.dk)
+### Mark Seemann — "Dependency Injection in .NET" + [blog.ploeh.dk](https://blog.ploeh.dk)
 - **"Functional architecture is ports and adapters"** — maximizing pure functions and pushing impure code to the edges naturally produces hex arch → Hex arch skill: the fundamental structural principle
 - **"Dependency rejection"** — in FP, gather impure data at the boundary, pass to pure functions, act on the result (the "impureim sandwich": impure/pure/impure) → Hex arch skill: "Dependency Injection" section
 - **Composition root pattern** (wire dependencies at the entry point, nowhere else) → Hex arch skill: composition root example
@@ -93,7 +93,7 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 
 ---
 
-### Valentina Jemuović (née Cupac) — Optivem Journal (journal.optivem.com), Tech Excellence community (techexcellence.io)
+### Valentina Jemuović (née Cupac) — [Optivem Journal](https://journal.optivem.com), [Tech Excellence](https://techexcellence.io)
 - **Use Case Driven Design (UCDD)** — model system behavior through use cases (the hexagon API) first, write tests coupled to use cases as executable requirements, then let domain structure emerge through refactoring → Both skills: use case as primary test boundary
 - **Primary test boundary is the use case, not individual layers** — test by calling use case handlers with faked driven ports. "TDD: Test the API, NOT the World" → Both testing resources: "Primary Test Boundary: The Use Case"
 - **Fakes over mocks** — in-memory implementations that maintain state, not call-sequence verification. "Fake data, not behavior. Test behavior, not calls." → Both testing resources: "Fakes, Not Mocks" section
@@ -116,6 +116,6 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **RED-GREEN-REFACTOR cycle** → TDD skill: core workflow
 - **Tests as documentation of behavior** → Testing skill: test naming guidance
 
-### Gary Bernhardt — "Boundaries" (destroyallsoftware.com, 2012)
+### Gary Bernhardt — ["Boundaries"](https://www.destroyallsoftware.com/talks/boundaries) (2012)
 - **Functional core, imperative shell** — pure domain logic surrounded by impure adapters → Hex arch skill: the fundamental structural principle
 - **Testing pure core with unit tests, shell with integration tests** → Both testing-by-layer resources

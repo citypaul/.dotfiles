@@ -71,12 +71,22 @@ it('rejects contribution exceeding available balance', () => {
 
 Driven adapters (repositories, API clients) need integration tests to verify they translate between domain types and infrastructure correctly. These are secondary to use case tests.
 
+The `useTestDb()` helper creates a fresh database for each test file and cleans up after:
+
 ```typescript
-// Real database
+// test/helpers/create-test-db.ts — fresh database per test, no shared state
+const createTestDb = async (): Promise<Database> => {
+  const db = createDb(':memory:'); // or Testcontainers for real Postgres
+  await migrate(db, migrations);
+  return db;
+};
+```
+
+```typescript
+// Real database — fresh DB per test, no shared state
 describe('DrizzleOrderRepository', () => {
-  const getDb = useTestDb();
   it('round-trips an order through persistence', async () => {
-    const db = getDb();
+    const db = await createTestDb();
     const repo = createDrizzleOrderRepository(db);
     await repo.save(testOrder);
     expect(await repo.findById(testOrder.id)).toEqual(testOrder);

@@ -1,5 +1,7 @@
 # Testing Strategy for DDD
 
+> For fakes implementation patterns, `createTestDb` helper, and the Swappability Test, see the hexagonal-architecture skill's `resources/testing-hex-arch.md`. This resource focuses on DDD-specific testing concerns.
+
 ## Primary Test Boundary: The Use Case
 
 The primary test boundary is the **use case** (application service / driving port). Test by calling the use case with driven ports replaced by in-memory fakes. This exercises domain entities, domain services, value objects, and orchestration together — proving the feature works as a whole.
@@ -125,12 +127,10 @@ Use property-based tests for domain invariants that must hold for all inputs. Us
 Driven adapters (repositories, API clients) need their own integration tests to verify they correctly translate between domain types and infrastructure. These are secondary to use case tests.
 
 ```typescript
-// Repository against real database
+// Repository against real database — fresh DB per test
 describe('DrizzleOrderRepository', () => {
-  const getDb = useTestDb();
-
   it('persists and retrieves an order', async () => {
-    const db = getDb();
+    const db = await createTestDb();
     const repo = createDrizzleOrderRepository(db);
     await repo.save(testOrder);
     const found = await repo.findById(testOrder.id);

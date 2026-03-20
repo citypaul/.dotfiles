@@ -83,18 +83,14 @@ const createDrizzleOccasionRepository = (db: Database, logger: Logger): Occasion
 **Transactions are an adapter concern.** The use case doesn't know whether saves are transactional. The adapter layer decides.
 
 ```typescript
-// Option A: Adapter wraps multiple saves in a transaction
-const createTransactionalPledgeHandler = (db: Database) => {
-  const occasionRepo = createDrizzleOccasionRepository(db);
-  const contributorRepo = createDrizzleContributorRepository(db);
-
-  return async (dto: PledgeDto): Promise<PledgeResult> => {
-    return db.transaction(async (tx) => {
-      const txOccasionRepo = createDrizzleOccasionRepository(tx);
-      const txContributorRepo = createDrizzleContributorRepository(tx);
-      return handlePledge(txOccasionRepo, txContributorRepo, dto);
+// Driving adapter wraps the use case in a transaction
+const createTransactionalPledgeHandler = (db: Database) =>
+  async (dto: PledgeDto): Promise<PledgeResult> =>
+    db.transaction(async (tx) => {
+      const occasionRepo = createDrizzleOccasionRepository(tx);
+      const contributorRepo = createDrizzleContributorRepository(tx);
+      return handlePledge(occasionRepo, contributorRepo, dto);
     });
-  };
 };
 ```
 
