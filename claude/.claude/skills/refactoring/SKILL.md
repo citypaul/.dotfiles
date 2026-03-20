@@ -100,6 +100,7 @@ Don't refactor when:
 - ❌ Would change behavior (that's a feature, not refactoring)
 - ❌ Premature optimization
 - ❌ Code is "good enough" for current phase
+- ❌ **Extracting purely for testability** — if the only reason to move code into a separate file is "so we can unit test it", keep it inline. The consuming function already has behavioral tests that cover this code. Extract for readability, DRY (same knowledge used in multiple places — see "DRY = Knowledge, Not Code" above), or separation of concerns, never for testability alone.
 
 **Remember**: Refactoring should improve code structure without changing behavior.
 

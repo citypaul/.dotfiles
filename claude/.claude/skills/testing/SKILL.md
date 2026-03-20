@@ -113,6 +113,48 @@ describe('processPayment', () => {
 
 ---
 
+## Don't Extract for Testability
+
+Never extract a function into its own file purely to give it its own unit test. Extract for readability (a descriptive name clarifies intent), for DRY (same **knowledge** used in multiple places — see the `refactoring` skill's "DRY = Knowledge, Not Code" rule), or for separation of concerns. Not for testability.
+
+If code is inline in a function, it gets coverage through that function's behavioral tests. Every layer has behavioral tests — domain functions have vitest unit tests, components have browser tests, pages have integration tests. There is no gap.
+
+The anti-pattern is creating a 1:1 mapping between extracted helpers and test files (see "No 1:1 Mapping" below). The extracted helper is an implementation detail of its consumer. Test the consumer's behavior.
+
+❌ **WRONG — Extracted single-use helper with its own test file:**
+```typescript
+// prepare-participant-data.ts (new file, one caller)
+export const prepareParticipantData = (items: Item[]) => ({
+  yourClaims: items.filter(i => i.isClaimed && i.isClaimedByCurrentUser),
+  available: items.filter(i => !i.isClaimedByCurrentUser),
+});
+
+// prepare-participant-data.test.ts (tests the helper directly)
+it('filters claims', () => { ... });
+```
+
+✅ **CORRECT — Inline in the consuming function, tested through its behavior:**
+```typescript
+// load-participant-view.ts
+export const loadParticipantView = async (db, eventId, userId) => {
+  const items = await getItems(db, eventId);
+  const yourClaims = items.filter(i => i.isClaimed && i.isClaimedByCurrentUser);
+  const available = items.filter(i => !i.isClaimedByCurrentUser);
+  return { yourClaims, available };
+};
+
+// The behavioral test for loadParticipantView covers the filtering:
+it('returns claimed gifts in yourClaims and unclaimed in available', () => {
+  const result = await loadParticipantView(db, eventId, userId);
+  expect(result.yourClaims).toHaveLength(1);
+  expect(result.available).toHaveLength(2);
+});
+```
+
+**When extraction IS justified (DRY):** If the same filtering logic is used by multiple consumers with the same business meaning, extract it. But test it through each consumer's behavior, not as an isolated unit.
+
+---
+
 ## Test Factory Pattern
 
 For test data, use factory functions with optional overrides.
