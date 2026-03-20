@@ -16,7 +16,7 @@ For hexagonal architecture (ports and adapters), load the `hexagonal-architectur
 | `aggregate-design.md` | Designing or splitting aggregates, sizing questions, optimistic locking |
 | `domain-services.md` | Unsure if logic is a domain service vs use case, naming conventions |
 | `domain-events.md` | Considering cross-aggregate coordination, Decider pattern |
-| `bounded-contexts.md` | Structuring a monorepo, integrating with external systems (ACL) |
+| `bounded-contexts.md` | Drawing context boundaries, integrating with external systems (ACL), context mapping |
 | `error-modeling.md` | Deciding between result types and exceptions, error propagation |
 | `testing-by-layer.md` | Writing tests for DDD code, property-based testing for invariants |
 

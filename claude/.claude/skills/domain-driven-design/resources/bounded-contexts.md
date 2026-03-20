@@ -66,9 +66,11 @@ A minimal set of types shared across contexts. Keep it as small as possible — 
 - Changes to the kernel require coordinating multiple teams
 - It has its own business logic beyond construction/validation
 
-## Monorepo Structure
+## Structuring Context Boundaries in Code
 
-For a single team, directory-based separation is sufficient:
+The physical structure depends on your project and team setup. The principle is the same: each context owns its code and exposes a clear boundary.
+
+**Single app, directory-based separation:**
 
 ```
 src/
@@ -84,7 +86,7 @@ src/
   shared/            # Shared kernel (Money, Email)
 ```
 
-For multiple teams, use workspace packages with explicit exports:
+**Monorepo with workspace packages** (enforced boundaries):
 
 ```
 packages/
@@ -93,11 +95,18 @@ packages/
   shared-kernel/     # Minimal shared types
 ```
 
+**Separate services** (strongest isolation):
+
+Each bounded context is its own deployable service. Communicate via events (Published Language) or explicit API contracts (Open Host Service). Use ACLs to translate between contexts.
+
+The deployment model is independent of the context boundary. A monolith can have well-defined contexts; microservices can have muddled ones. The boundary is linguistic and ownership-based, not deployment-based.
+
 ## Enforcing Boundaries
 
 - **Import restrictions**: Use ESLint rules (eslint-plugin-boundaries, Nx enforce-module-boundaries) to prevent cross-context imports
 - **Barrel exports**: Each context exposes only its public API via `index.ts`
 - **Code review**: Every PR touching domain code should be checked for ubiquitous language compliance against the glossary
+- **Separate packages/services**: The strongest enforcement — contexts can only communicate through published interfaces
 
 ## Discovering Context Boundaries
 
