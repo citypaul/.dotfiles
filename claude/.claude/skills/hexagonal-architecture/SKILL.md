@@ -113,18 +113,20 @@ const createFakeUserRepository = (initial: readonly User[] = []): UserRepository
 **Adapter error handling:** Infrastructure errors (connection lost, timeout, constraint violation) should either propagate as exceptions to a top-level handler or be translated into domain-appropriate results at the adapter boundary. The domain never catches infrastructure errors — it doesn't know infrastructure exists.
 
 ```typescript
-// Driven adapter: expected infrastructure outcomes become domain results
+// Driven adapter: translate expected infrastructure errors into domain-specific errors
 const createDrizzleUserRepository = (db: Database): UserRepository => ({
   save: async (user) => {
-    const existing = await db.select().from(users).where(eq(users.id, user.id)).get();
-    if (existing) return { success: false, reason: 'already-exists' as const };
-    await db.insert(users).values(toRow(user));
-    return { success: true };
+    try {
+      await db.insert(users).values(toRow(user)).onConflictDoUpdate({ ... });
+    } catch (e) {
+      if (isUniqueConstraintError(e)) throw new UserAlreadyExistsError(user.id);
+      throw e; // unexpected errors (connection lost, disk full) propagate
+    }
   },
-  // Unexpected infrastructure errors (connection lost, disk full) propagate
-  // as exceptions to the top-level error handler — don't catch those
 });
 ```
+
+Expected constraint violations become domain-specific errors (caught by the use case or driving adapter). Unexpected infrastructure errors propagate to the top-level handler.
 
 **Key principle:** If swapping an adapter requires changing domain code, the boundary is wrong.
 
