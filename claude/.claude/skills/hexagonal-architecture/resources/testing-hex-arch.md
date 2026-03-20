@@ -54,6 +54,8 @@ const createFakeOrderRepo = (): OrderRepository & { readonly savedEntities: read
 - Mocks create untyped stubs that silently drift from the real contract
 - Changing a repository method signature breaks all mocks but is caught by fake type errors
 
+**Note on mutability in fakes:** Fakes use mutable internal state (`Map.set`, `Array.push`) to simulate a data store. This is a deliberate testing-only exception to the immutability rule — fakes are test infrastructure, not domain code. The domain types they store remain immutable.
+
 ## Domain Unit Tests: A Complement
 
 Pure domain functions (business rules, calculations) can also be tested directly. This is behavioral testing — the domain function IS the public API. Use this for complex rules with many edge cases.

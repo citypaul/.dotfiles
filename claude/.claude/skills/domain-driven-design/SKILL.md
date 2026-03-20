@@ -9,7 +9,7 @@ This skill applies only to projects that have opted in to DDD. Do not apply thes
 
 For hexagonal architecture (ports and adapters), load the `hexagonal-architecture` skill. DDD and hexagonal architecture are complementary but independent — a project may use one without the other.
 
-**Deep-dive resources** are in the `resources/` directory within this skill folder. The main skill covers core rules; resources provide detailed guidance for specific decisions.
+**Deep-dive resources** are in the `resources/` directory within this skill folder. The main skill covers core rules; resources provide detailed guidance for specific decisions. For authoritative sources and attributions, see `../REFERENCES.md`.
 
 ---
 
@@ -129,13 +129,26 @@ For value objects crossing trust boundaries (API input, form data), use Zod sche
 
 ### Branded Types
 
-Prevent accidental swapping of primitives at compile time. Use for entity IDs and single-value value objects:
+Prevent accidental swapping of primitives at compile time. Use for entity IDs and single-value value objects. Always provide a factory function — raw strings become branded types only through validation:
 
 ```typescript
 type OccasionId = string & { readonly __brand: 'OccasionId' };
 type GiftIdeaId = string & { readonly __brand: 'GiftIdeaId' };
 type EmailAddress = string & { readonly __brand: 'EmailAddress' };
+
+// Factory functions — the only way to create branded values
+const createOccasionId = (raw: string): OccasionId => {
+  if (!raw.trim()) throw new Error('OccasionId cannot be empty');
+  return raw as OccasionId; // justified: factory validates, then brands
+};
+
+const createEmailAddress = (raw: string): EmailAddress => {
+  if (!raw.includes('@')) throw new Error('Invalid email');
+  return raw as EmailAddress; // justified: factory validates, then brands
+};
 ```
+
+The `as` assertion is the one justified exception in branded type factories — the factory validates first, then brands. This is the standard TypeScript pattern for nominal typing. Everywhere else, the compiler prevents mixing up `OccasionId` and `GiftIdeaId`.
 
 ### Entities
 
@@ -206,6 +219,25 @@ Clusters of entities and value objects with a single root. All modifications go 
 
 For detailed aggregate design guidance, see `resources/aggregate-design.md`.
 
+### Specifications (Predicate Functions)
+
+Complex business rules for filtering, eligibility, or validation are expressed as predicate functions in the domain layer. Evans calls these "specifications."
+
+```typescript
+// Specification: "can this contributor pledge to this occasion?"
+const canPledge = (occasion: Occasion, contributor: Contributor, amount: Money): boolean =>
+  !occasion.isFundingClosed &&
+  amount.amount <= contributor.walletBalance.amount &&
+  amount.currency === occasion.budget.currency;
+
+// Compose specifications for complex eligibility
+const isGiftReady = (occasion: Occasion): boolean =>
+  occasion.totalPledged.amount >= occasion.budget.amount &&
+  occasion.giftIdeas.some(idea => idea.status === 'selected');
+```
+
+Specifications are pure predicate functions — they return `boolean` and have no side effects. Use them in domain services, use cases, and query filters. Name them with `is`, `can`, or `has` prefixes.
+
 ### Domain Events
 
 Domain events represent something meaningful that happened in the domain ("OrderPlaced", "ContributionPledged"). They coordinate side effects across aggregates and bounded contexts.
@@ -256,7 +288,7 @@ const pledgeContribution = (
 | | Domain Service | Use Case |
 |--|----------------|----------|
 | Contains business logic? | Yes | No — orchestration only |
-| Lives in | `domain/` | `domain/` or `app/` |
+| Lives in | `domain/` | `domain/` (default — takes ports as params, so it's testable without infrastructure) |
 | Depends on | Domain types only | Repositories, ports, domain services |
 | Example | `pledgeContribution(occasion, contributor, amount)` | `handlePledge(repo, dto)` — loads, calls domain service, saves |
 
@@ -282,10 +314,10 @@ For detailed error modeling patterns and how errors propagate through layers, se
 
 ## Repository Pattern
 
-Repositories provide collection-like access to aggregates. **Interfaces** in the domain layer, **implementations** in the adapter layer. Name methods using domain language.
+Repositories provide collection-like access to aggregates. **Interfaces** in the domain layer, **implementations** in the adapter layer. Repositories use `interface` (not `type`) because they define behavior contracts — this aligns with the TypeScript strict rule "reserve `interface` for behavior contracts." Name methods using domain language.
 
 ```typescript
-// Port (domain layer)
+// Port (domain layer) — interface because it's a behavior contract
 interface OccasionRepository {
   readonly findById: (id: OccasionId) => Promise<Occasion | undefined>;
   readonly save: (occasion: Occasion) => Promise<void>;

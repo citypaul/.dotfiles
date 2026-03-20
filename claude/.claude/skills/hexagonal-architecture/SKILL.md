@@ -5,11 +5,11 @@ description: Hexagonal (ports and adapters) architecture patterns for TypeScript
 
 # Hexagonal Architecture (Ports & Adapters)
 
-This skill applies only to projects that have opted in to hexagonal architecture. Do not apply these patterns to projects that use a different architecture.
+This skill applies only to projects that have opted in to hexagonal architecture. Do not apply these patterns to projects that use a different architecture. For introducing hex arch into an existing codebase incrementally, see `resources/incremental-adoption.md`.
 
 For domain modeling (entities, value objects, aggregates, ubiquitous language), load the `domain-driven-design` skill. Hex arch and DDD are complementary but independent — hex arch provides structural isolation (how the outside connects), DDD provides the domain model (what lives in the center). A project may use one without the other.
 
-**Deep-dive resources** are in the `resources/` directory within this skill folder.
+**Deep-dive resources** are in the `resources/` directory within this skill folder. For authoritative sources and attributions, see `../REFERENCES.md`.
 
 ---
 
@@ -95,6 +95,20 @@ const createFakeUserRepository = (initial: readonly User[] = []): UserRepository
 };
 ```
 
+**Adapter error handling:** Infrastructure errors (connection lost, timeout, constraint violation) should either propagate as exceptions to a top-level handler or be translated into domain-appropriate results at the adapter boundary. The domain never catches infrastructure errors — it doesn't know infrastructure exists.
+
+```typescript
+// Driven adapter translates constraint violations into domain results
+save: async (user) => {
+  try {
+    await db.insert(users).values(toRow(user)).onConflictDoUpdate({ ... });
+  } catch (e) {
+    if (isUniqueConstraintError(e)) throw new Error(`User ${user.id} already exists`);
+    throw e; // unexpected errors propagate to top-level handler
+  }
+},
+```
+
 **Key principle:** If swapping an adapter requires changing domain code, the boundary is wrong.
 
 ---
@@ -175,6 +189,22 @@ export async function POST(request: Request) {
 ```
 
 The route handler is thin glue: parse input → wire adapters → call use case → return response. No business logic.
+
+**Non-HTTP driving adapters** follow the same pattern — parse, wire, delegate:
+
+```typescript
+// Queue consumer = driving adapter (same structure as route handler)
+const handlePledgeMessage = async (message: SQSMessage, env: Env) => {
+  const db = createDb(env.DB);
+  const occasionRepo = createDrizzleOccasionRepository(db);
+  const contributorRepo = createDrizzleContributorRepository(db);
+
+  const dto = PledgeSchema.parse(JSON.parse(message.body));
+  await handlePledge(occasionRepo, contributorRepo, dto);
+};
+```
+
+The use case doesn't know or care whether it was triggered by an HTTP request, a queue message, a cron job, or a CLI command. Every driving adapter is thin glue.
 
 **Naming:** Use cases are named after the business operation — `createOrder`, `placeOrder`, `handlePledge`. Never `createOrderUseCase` or `PlaceOrderHandler`. Pattern suffixes are technical jargon, not domain language. You can tell a use case from a domain function by its signature — use cases take ports (repositories, gateways) as parameters; domain functions take only domain types.
 

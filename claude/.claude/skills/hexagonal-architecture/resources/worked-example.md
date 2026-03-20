@@ -125,6 +125,8 @@ const handlePledge = async (
 
 The use case is identifiable by its signature — it takes ports as parameters. It contains zero business logic. It loads, delegates to the domain service, and saves.
 
+**Note:** This use case saves two aggregates. For atomicity, the driving adapter should wrap it in a transaction — see `resources/cross-cutting-concerns.md` for the transaction pattern. The use case itself is unaware of transactions.
+
 ## 6. Driven Adapter (Repository Implementation)
 
 ```

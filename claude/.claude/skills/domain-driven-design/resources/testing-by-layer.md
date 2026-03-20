@@ -60,6 +60,8 @@ vi.mock('../repositories/user-repository');
 
 **Why fakes over mocks:** Fakes implement the real interface. If the interface changes, the fake breaks at compile time. Mocks create untyped stubs that silently drift from the real contract. Fakes test behavior ("was the data saved correctly?"). Mocks test implementation ("was `.save()` called with these arguments?").
 
+**Note on mutability in fakes:** Fakes use mutable internal state (`Map.set`, `Array.push`) to simulate a data store. This is a deliberate testing-only exception to the immutability rule — fakes are test infrastructure, not domain code.
+
 ## Domain Unit Tests: A Complement, Not the Primary Strategy
 
 Pure domain functions (business rules, calculations, invariants) CAN be tested directly — they are the public API of the domain. This is legitimate behavioral testing when the test describes a business rule.
@@ -93,6 +95,30 @@ These are fast, focused, and directly test business rules. They complement use c
 - Simple logic that's already exercised by the use case test
 - Logic where the correctness depends on the orchestration context (order of operations matters)
 - Anything where testing directly would mean testing implementation rather than behavior
+
+**Property-based testing** is a natural fit for pure domain functions with many edge cases. Libraries like `fast-check` generate random inputs and verify invariants hold across thousands of cases:
+
+```typescript
+import fc from 'fast-check';
+
+it('pledged amount never exceeds contributor balance', () => {
+  fc.assert(fc.property(
+    fc.integer({ min: 0, max: 10000 }),
+    fc.integer({ min: 0, max: 10000 }),
+    (balance, pledge) => {
+      const contributor = getTestContributor({ walletBalance: createMoney(balance, 'GBP') });
+      const occasion = getTestOccasion();
+      const result = pledgeContribution(occasion, contributor, createMoney(pledge, 'GBP'));
+      if (result.success) {
+        return result.contributor.walletBalance.amount >= 0;
+      }
+      return true; // rejected pledges are always valid
+    },
+  ));
+});
+```
+
+Use property-based tests for domain invariants that must hold for all inputs. Use example-based tests for specific business scenarios.
 
 ## Adapter Tests: Narrow Integration Tests
 
