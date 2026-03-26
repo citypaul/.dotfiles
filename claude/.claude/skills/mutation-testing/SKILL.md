@@ -48,9 +48,9 @@ TDD Workflow                    Mutation Testing Validation
 
 ---
 
-## Systematic Branch Analysis Process
+## Execution Process
 
-When analyzing code on a branch, follow this systematic process:
+When verifying test effectiveness, **actually mutate the code and run the tests.** Do not just reason about whether tests would catch mutations — prove it.
 
 ### Step 1: Identify Changed Code
 
@@ -62,28 +62,65 @@ git diff main...HEAD --name-only | grep -E '\.(ts|js|tsx|jsx)$' | grep -v '\.tes
 git diff main...HEAD -- src/
 ```
 
-### Step 2: Generate Mental Mutants
+### Step 2: Apply Mutations and Run Tests
 
-For each changed function/method, mentally apply mutation operators (see Mutation Operators section below).
+For each changed function/method, work through the mutation operators (see Mutation Operators section below). For each applicable mutation:
 
-### Step 3: Verify Test Coverage
+1. **Mutate**: Change the production code (e.g., flip `*` to `/`, negate a condition)
+2. **Run**: Execute the test suite
+3. **Evaluate**: Did a test fail?
+   - **Yes** → mutant killed (good). Revert the mutation.
+   - **No** → mutant survived (bad). Revert the mutation, then add or strengthen a test.
+4. **Revert**: Always restore the original code before the next mutation
 
-For each potential mutant, ask:
+**Always revert each mutation before applying the next.** Never leave mutated code in place.
 
-1. **Is there a test that exercises this code path?**
-2. **Would that test FAIL if this mutation were applied?**
-3. **Is the assertion specific enough to catch this change?**
+You do not need to apply every possible mutation to every line. Focus on:
+- Changed code on the branch
+- Operators most likely to have surviving mutants (see Quick Reference)
+- Conditions with boundary values
+- Boolean logic with multiple operands
 
-### Step 4: Document Findings
+### Step 3: Produce a Report
 
-Categorize findings:
+After working through the mutations, produce a summary:
 
-| Category | Description | Action Required |
-|----------|-------------|-----------------|
-| Killed | Test would fail if mutant applied | None - tests are effective |
-| Survived | Test would pass with mutant | Add/strengthen test |
-| No Coverage | No test exercises this code | Add behavior test |
-| Equivalent | Mutant produces same behavior | None - not a real bug |
+```markdown
+## Mutation Testing Report
+
+### Killed (tests caught the mutation)
+- `calculateTotal`: `*` → `/` — killed by "calculates total for multiple items"
+- `isEligible`: `>=` → `>` — killed by "returns true at exact boundary"
+
+### Survived (tests DID NOT catch the mutation)
+- `applyDiscount`: `>` → `>=` — no test for boundary value at exactly 100
+  → **Action**: Add boundary test for discount threshold
+
+### Summary
+- Mutations applied: 8
+- Killed: 6
+- Survived: 2
+- Mutation score: 75%
+```
+
+### Step 4: Fix Surviving Mutants
+
+Not every surviving mutant warrants a new test. Some mutations produce equivalent behavior, and some boundary cases are low-risk enough that the test would add noise without meaningful protection.
+
+**Fix immediately** when:
+- The mutation represents a realistic bug (wrong operator, inverted condition)
+- The surviving mutant is in critical business logic (money, permissions, eligibility)
+- The fix is a simple boundary test or stronger assertion
+
+**Ask the human** when:
+- You're unsure whether the mutation represents a real risk
+- The test to kill it would be complex or hard to name clearly
+- The mutation is in a code path that's also covered by integration/E2E tests
+- The surviving mutant feels like an equivalent mutant but you're not certain
+
+Present the mutation, explain why the current tests don't catch it, and let the human decide whether it's worth a new test.
+
+When fixing, follow TDD — write the failing test first, verify it fails against the mutated code, then verify it passes against the original code.
 
 ---
 

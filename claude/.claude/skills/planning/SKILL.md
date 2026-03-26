@@ -57,10 +57,15 @@ Each step MUST:
 
 ## TDD Integration
 
-**Every step follows RED-GREEN-REFACTOR-MUTATE.** See `testing` skill for factory patterns.
+**Every step follows RED-GREEN-REFACTOR-MUTATE-FIX.** See `tdd` skill for the workflow, `testing` skill for factory patterns.
 
 ```
 FOR EACH STEP:
+    │
+    ├─► CONFIRM: Present acceptance criteria for this step
+    │   - Human must approve criteria before any code is written
+    │   - Criteria must be specific and observable
+    │   - Do NOT proceed until human confirms
     │
     ├─► RED: Write failing test FIRST
     │   - Test describes expected behavior
@@ -78,9 +83,16 @@ FOR EACH STEP:
     │
     ├─► MUTATE: Verify test effectiveness
     │   - Run `mutation-testing` skill
-    │   - Fix any surviving mutants
+    │   - Produces a mutation testing report
     │
-    └─► STOP: Wait for commit approval
+    ├─► FIX: Kill surviving mutants
+    │   - Add or strengthen tests for surviving mutants
+    │   - Ask the human if unsure whether a mutant is worth fixing
+    │   - All tests pass after fixes
+    │
+    └─► STOP: Present the work and wait for commit approval
+         - Show what was implemented and the mutation testing report
+         - Human reviews and approves before commit
 ```
 
 **No exceptions. No "I'll add tests later."**
@@ -89,11 +101,12 @@ FOR EACH STEP:
 
 **NEVER commit without user approval.**
 
-After completing a step (RED-GREEN-REFACTOR):
+After completing a step (RED-GREEN-REFACTOR-MUTATE-FIX):
 
 1. Verify all tests pass
 2. Verify static analysis passes
-3. **STOP and ask**: "Ready to commit [description]. Approve?"
+3. Present the mutation testing report
+4. **STOP and ask**: "Ready to commit [description]. Approve?"
 
 Only proceed with commit after explicit approval.
 
@@ -121,7 +134,7 @@ Each plan file in `plans/` follows this structure:
 ## Acceptance Criteria
 
 [Behaviour-driven criteria — describe observable business outcomes, not implementation details.
-Tests at every level (unit, browser, integration) should verify behaviour.]
+Test at the lowest level that gives confidence: prefer unit tests (vitest) for logic and domain behaviour, browser tests (vitest browser mode) for UI interaction, Playwright integration tests only for end-to-end flows. Avoid defaulting to Playwright for everything.]
 
 - [ ] Criterion 1
 - [ ] Criterion 2
@@ -134,18 +147,22 @@ Read the project's CLAUDE.md and testing rules before writing steps.
 
 ### Step 1: [One sentence description]
 
+**Acceptance criteria**: [What observable behaviour proves this step is done? Be specific — "user sees X", "API returns Y", "test covers Z". Vague criteria like "it works" are not acceptable. **Present to human and get confirmation before writing any code.**]
 **RED**: What failing test will we write? (Describes expected behaviour, not implementation.)
 **GREEN**: What minimum code makes the test pass?
 **REFACTOR**: Assess improvements (only if they add value).
-**MUTATE**: Run `mutation-testing` skill to verify tests catch real bugs.
-**Done when**: How do we know it's complete?
+**MUTATE**: Run `mutation-testing` skill — produce a report.
+**FIX**: Kill surviving mutants (ask human if value is unclear).
+**Done when**: All acceptance criteria met, mutation report reviewed, human approves commit.
 
 ### Step 2: [One sentence description]
 
+**Acceptance criteria**: ...
 **RED**: ...
 **GREEN**: ...
 **REFACTOR**: ...
 **MUTATE**: ...
+**FIX**: ...
 **Done when**: ...
 
 ## Pre-PR Quality Gate
@@ -204,11 +221,13 @@ START FEATURE
 │
 │   FOR EACH STEP:
 │   │
+│   ├─► CONFIRM: Present acceptance criteria, **wait for human approval**
 │   ├─► RED: Failing test
 │   ├─► GREEN: Make it pass
 │   ├─► REFACTOR: If valuable
-│   ├─► MUTATE: Verify tests catch bugs
-│   └─► **WAIT FOR COMMIT APPROVAL**
+│   ├─► MUTATE: Run mutations, produce report
+│   ├─► FIX: Kill surviving mutants (ask human if unsure)
+│   └─► **PRESENT WORK + REPORT, WAIT FOR COMMIT APPROVAL**
 │
 END FEATURE
 │
