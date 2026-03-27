@@ -57,7 +57,7 @@ Each step MUST:
 
 ## TDD Integration
 
-**Every step follows RED-GREEN-REFACTOR-MUTATE-FIX.** See `tdd` skill for the workflow, `testing` skill for factory patterns.
+**Every step follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR.** See `tdd` skill for the workflow, `testing` skill for factory patterns.
 
 ```
 FOR EACH STEP:
@@ -76,19 +76,19 @@ FOR EACH STEP:
     │   - No premature optimization
     │   - Just make the test pass
     │
-    ├─► REFACTOR: Assess improvements
-    │   - See `refactoring` skill
-    │   - Only if it adds value
-    │   - All tests still pass
-    │
     ├─► MUTATE: Verify test effectiveness
     │   - Run `mutation-testing` skill
     │   - Produces a mutation testing report
     │
-    ├─► FIX: Kill surviving mutants
+    ├─► KILL MUTANTS: Address surviving mutants
     │   - Add or strengthen tests for surviving mutants
-    │   - Ask the human if unsure whether a mutant is worth fixing
+    │   - Ask the human when a surviving mutant's value is ambiguous
     │   - All tests pass after fixes
+    │
+    ├─► REFACTOR: Assess improvements
+    │   - See `refactoring` skill
+    │   - Only if it adds value
+    │   - All tests still pass
     │
     └─► STOP: Present the work and wait for commit approval
          - Show what was implemented and the mutation testing report
@@ -101,7 +101,7 @@ FOR EACH STEP:
 
 **NEVER commit without user approval.**
 
-After completing a step (RED-GREEN-REFACTOR-MUTATE-FIX):
+After completing a step (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR):
 
 1. Verify all tests pass
 2. Verify static analysis passes
@@ -142,7 +142,7 @@ Test at the lowest level that gives confidence: prefer unit tests (vitest) for l
 
 ## Steps
 
-Every step follows RED-GREEN-REFACTOR-MUTATE. No production code without a failing test.
+Every step follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. No production code without a failing test.
 Read the project's CLAUDE.md and testing rules before writing steps.
 
 ### Step 1: [One sentence description]
@@ -150,9 +150,9 @@ Read the project's CLAUDE.md and testing rules before writing steps.
 **Acceptance criteria**: [What observable behaviour proves this step is done? Be specific — "user sees X", "API returns Y", "test covers Z". Vague criteria like "it works" are not acceptable. **Present to human and get confirmation before writing any code.**]
 **RED**: What failing test will we write? (Describes expected behaviour, not implementation.)
 **GREEN**: What minimum code makes the test pass?
-**REFACTOR**: Assess improvements (only if they add value).
 **MUTATE**: Run `mutation-testing` skill — produce a report.
-**FIX**: Kill surviving mutants (ask human if value is unclear).
+**KILL MUTANTS**: Address surviving mutants (ask human when value is ambiguous).
+**REFACTOR**: Assess improvements (only if they add value).
 **Done when**: All acceptance criteria met, mutation report reviewed, human approves commit.
 
 ### Step 2: [One sentence description]
@@ -160,9 +160,9 @@ Read the project's CLAUDE.md and testing rules before writing steps.
 **Acceptance criteria**: ...
 **RED**: ...
 **GREEN**: ...
-**REFACTOR**: ...
 **MUTATE**: ...
-**FIX**: ...
+**KILL MUTANTS**: ...
+**REFACTOR**: ...
 **Done when**: ...
 
 ## Pre-PR Quality Gate
@@ -224,9 +224,9 @@ START FEATURE
 │   ├─► CONFIRM: Present acceptance criteria, **wait for human approval**
 │   ├─► RED: Failing test
 │   ├─► GREEN: Make it pass
-│   ├─► REFACTOR: If valuable
 │   ├─► MUTATE: Run mutations, produce report
-│   ├─► FIX: Kill surviving mutants (ask human if unsure)
+│   ├─► KILL MUTANTS: Address survivors (ask human when ambiguous)
+│   ├─► REFACTOR: If valuable
 │   └─► **PRESENT WORK + REPORT, WAIT FOR COMMIT APPROVAL**
 │
 END FEATURE

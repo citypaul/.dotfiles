@@ -43,15 +43,16 @@ Tests at every level (unit, browser, integration) should verify behaviour.]
 
 ## Steps
 
-Every step follows RED-GREEN-REFACTOR-MUTATE. No production code without a failing test.
+Every step follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. No production code without a failing test.
 Read the project's CLAUDE.md and testing rules before writing steps.
 
 ### Step 1: [One sentence description]
 
 **RED**: What failing test will we write? (Describes expected behaviour, not implementation.)
 **GREEN**: What minimum code makes the test pass?
+**MUTATE**: Run `mutation-testing` skill — produce a report.
+**KILL MUTANTS**: Address surviving mutants (ask human when value is ambiguous).
 **REFACTOR**: Assess improvements (only if they add value).
-**MUTATE**: Run `mutation-testing` skill to verify tests catch real bugs.
 **Done when**: How do we know it's complete?
 
 ### Step 2: ...
@@ -75,6 +76,6 @@ Before each PR:
 - Write the plan to a file, never present it inline in chat
 - **Prefer multiple small PRs** — break work into the smallest independently mergeable units. Each PR should be reviewable in isolation.
 - Each step in the plan must be small enough for a single commit
-- **TDD is mandatory** — every step must specify the failing test first (RED), then the minimum implementation (GREEN), then refactoring assessment, then mutation testing to verify test effectiveness. No exceptions.
+- **TDD is mandatory** — every step must specify the failing test first (RED), then the minimum implementation (GREEN), then mutation testing to verify test effectiveness, then kill surviving mutants, then refactoring assessment. No exceptions.
 - **Test behaviour, not implementation** — acceptance criteria and test descriptions must describe observable outcomes (what the user sees, what the API returns), never internal details (what function was called, what query was run)
 - **Read project testing rules** — before writing steps, read the project's CLAUDE.md and any testing guidelines to ensure tests follow the project's conventions (factories, MSW vs mocks, real DB vs stubs, etc.)

@@ -17,7 +17,7 @@ This directory contains specifications for specialized Claude Code agents that w
 - Code has been written (verify TDD was followed)
 - Tests are green (assess refactoring opportunities)
 
-**Core responsibility**: Enforce RED-GREEN-REFACTOR cycle, verify tests written first.
+**Core responsibility**: Enforce RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR cycle, verify tests written first.
 
 ---
 
@@ -38,10 +38,10 @@ This directory contains specifications for specialized Claude Code agents that w
 ---
 
 #### `refactor-scan`
-**Purpose**: Assesses refactoring opportunities after tests pass (TDD's third step).
+**Purpose**: Assesses refactoring opportunities after mutation testing validates test strength (TDD's final step).
 
 **Use proactively when**:
-- Tests just turned green
+- Mutation testing is complete and surviving mutants addressed
 - Considering creating abstractions
 - Planning code improvements
 
@@ -219,9 +219,9 @@ progress-guardian (orchestrates)
     ├─► Creates: plans/<name>.md
     │
     ├─► For each step:
-    │   ├─→ tdd-guardian (RED-GREEN-REFACTOR)
+    │   ├─→ tdd-guardian (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR)
     │   ├─→ ts-enforcer (before commits)
-    │   └─→ refactor-scan (after GREEN)
+    │   └─→ refactor-scan (after MUTATE + KILL MUTANTS)
     │
     ├─► When decisions arise:
     │   └─→ adr (architectural decisions)
@@ -239,7 +239,7 @@ progress-guardian (orchestrates)
 
 ### Typical Workflow
 
-**Recommended command flow:** `/setup` → `/plan` → RED-GREEN-REFACTOR → `/pr` → `/continue` → repeat
+**Recommended command flow:** `/setup` → `/plan` → RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR → `/pr` → `/continue` → repeat
 
 1. **Onboard project** (once)
    - Run `/setup` to detect tech stack and generate project-level config
@@ -293,7 +293,7 @@ Quick decision table for all agents:
 | "Why did we choose X?" | `adr` | When making/documenting architecture decisions |
 | "Is this type-safe?" | `ts-enforcer` | During development (proactive) |
 | "Is this PR ready?" | `pr-reviewer` | At review time (reactive) |
-| "Should I refactor this?" | `refactor-scan` | After GREEN phase only |
+| "Should I refactor this?" | `refactor-scan` | After MUTATE + KILL MUTANTS |
 | "Was TDD followed?" | `tdd-guardian` | During TDD cycle |
 | "Is this documented?" | `docs-guardian` | At feature completion |
 | "What data patterns exist?" | `use-case-data-patterns` | Before implementing features |
@@ -403,14 +403,14 @@ These agents work together to create a comprehensive development workflow:
 - **Analysis**: use-case-data-patterns maps use cases to implementation patterns
 - **Compliance**: twelve-factor-audit assesses 12-factor methodology adherence
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
-- **Improvement**: refactor-scan optimizes code after tests pass
+- **Improvement**: refactor-scan optimizes code after mutation testing validates test strength
 - **Review**: pr-reviewer validates PRs before merge
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
 - **Progress**: progress-guardian tracks work through plan files in `plans/`
 
 **Key workflow principles** (see `planning` skill for details):
 - All work in small, known-good increments
-- TDD non-negotiable (RED-GREEN-REFACTOR)
+- TDD non-negotiable (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR)
 - Commit approval required before every commit
 - Learnings captured at end via `learn` and `adr` agents
 

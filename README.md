@@ -78,7 +78,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Front-End Testing** | Vitest Browser Mode (preferred) + DOM Testing Library patterns, real browser testing with Playwright | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
 | **React Testing** | Vitest Browser Mode with vitest-browser-react (preferred) + React Testing Library patterns | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
 | **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
-| **TDD Process** | RED-GREEN-REFACTOR cycle, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
+| **TDD Process** | RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR cycle, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
@@ -136,7 +136,7 @@ Unlike typical style guides, CLAUDE.md provides:
 Skills are **auto-discovered** by Claude when relevant:
 - Writing TypeScript? → `typescript-strict` skill loads automatically
 - Running tests? → `testing` skill provides factory patterns
-- After GREEN tests? → `refactoring` skill assesses opportunities
+- After MUTATE + KILL MUTANTS? → `refactoring` skill assesses opportunities
 - Reviewing test effectiveness? → `mutation-testing` skill identifies weak tests
 
 **No manual invocation needed** - Claude detects when skills apply.
@@ -272,7 +272,7 @@ const user = UserSchema.parse(apiResponse);
 
 **What's inside:**
 - **TDD process with quality gates** (what to verify before each commit)
-- **RED-GREEN-REFACTOR** cycle with complete examples
+- **RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR** cycle with complete examples
 - **Refactoring priority classification** (Critical/High/Nice/Skip)
 - **Semantic vs structural abstraction** (the most important refactoring rule)
 - **Understanding DRY** - knowledge vs code duplication
@@ -575,7 +575,7 @@ Claude Code: [Launches ts-enforcer agent]
 
 ### 3. `refactor-scan` - Refactoring Opportunity Scanner
 
-**Use after achieving green tests** (the REFACTOR step in RED-GREEN-REFACTOR).
+**Use after mutation testing validates test strength** (the REFACTOR step in RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR).
 
 **What it analyzes:**
 - 🎯 Knowledge duplication (DRY violations)
@@ -883,13 +883,15 @@ This is the full lifecycle for working on a feature, from project setup through 
 #### Phase 3: Implement (repeat for each step in the plan)
 
 ```
-RED     →  Write a failing test (tdd-guardian verifies test-first)
-GREEN   →  Write minimum code to pass (ts-enforcer checks type safety)
-REFACTOR → Assess improvements (refactor-scan identifies opportunities)
-COMMIT  →  Wait for approval, then commit
+RED          →  Write a failing test (tdd-guardian verifies test-first)
+GREEN        →  Write minimum code to pass (ts-enforcer checks type safety)
+MUTATE       →  Run mutation testing, produce report (mutation-testing skill)
+KILL MUTANTS →  Address surviving mutants (ask human when ambiguous)
+REFACTOR     →  Assess improvements (refactor-scan identifies opportunities)
+COMMIT       →  Wait for approval, then commit
 ```
 
-**Why this order:** The RED-GREEN-REFACTOR cycle is enforced by agents, not willpower. `tdd-guardian` catches tests written after code, `ts-enforcer` catches type safety violations, and `refactor-scan` only runs after GREEN — you can't refactor code that doesn't pass tests yet. Each cycle produces one small, reviewable commit.
+**Why this order:** Mutation testing comes *before* refactoring so you restructure code with verified test strength, not assumed test strength. The cycle is enforced by agents, not willpower. `tdd-guardian` catches tests written after code, `ts-enforcer` catches type safety violations, mutation testing verifies tests catch real bugs, and `refactor-scan` only runs after MUTATE — you refactor with confidence that your tests are strong. Each cycle produces one small, reviewable commit.
 
 #### Phase 4: Pre-PR Quality Gate
 
@@ -946,7 +948,7 @@ docs-guardian     →  Updates user-facing documentation
 
 ### How the Workflow Works (Regardless of Installation Method)
 
-Once installed, the full development lifecycle is: `/setup` → `/plan` → RED-GREEN-REFACTOR → `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each step.
+Once installed, the full development lifecycle is: `/setup` → `/plan` → RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR → `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each step.
 
 **Agent invocation examples:**
 

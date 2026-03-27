@@ -38,13 +38,16 @@ Use mutation testing analysis when:
 **Integration with TDD:**
 
 ```
-TDD Workflow                    Mutation Testing Validation
-┌─────────────────┐             ┌─────────────────────────────┐
-│ RED: Write test │             │                             │
-│ GREEN: Pass it  │──────────►  │ After GREEN: Verify tests   │
-│ REFACTOR        │             │ would kill relevant mutants │
-└─────────────────┘             └─────────────────────────────┘
+RED-GREEN-MUTATE-REFACTOR Cycle
+┌─────────────────────────────────────────────────┐
+│ 1. RED:      Write failing test                 │
+│ 2. GREEN:    Minimum code to pass               │
+│ 3. MUTATE:   Verify tests catch real bugs  ◄──  │  ← You are here
+│ 4. REFACTOR: Improve structure with confidence  │
+└─────────────────────────────────────────────────┘
 ```
+
+**Why MUTATE before REFACTOR:** Mutation testing validates test strength *before* you restructure code. Refactoring with unverified tests means restructuring code whose safety net you haven't checked.
 
 ---
 
@@ -103,7 +106,7 @@ After working through the mutations, produce a summary:
 - Mutation score: 75%
 ```
 
-### Step 4: Fix Surviving Mutants
+### Step 4: Kill Surviving Mutants
 
 Not every surviving mutant warrants a new test. Some mutations produce equivalent behavior, and some boundary cases are low-risk enough that the test would add noise without meaningful protection.
 
