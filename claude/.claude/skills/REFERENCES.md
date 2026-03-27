@@ -119,8 +119,11 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 - **Test properties** (8 properties of good tests) → Test design reviewer skill
 
 ### Kent Beck — "Test-Driven Development: By Example" (2002)
-- **RED-GREEN-REFACTOR cycle** → TDD skill: core workflow
+- **RED-GREEN-REFACTOR cycle** (original formulation) → TDD skill: core workflow foundation
 - **Tests as documentation of behavior** → Testing skill: test naming guidance
+
+### Eran Boudjnah — RED-GREEN-MUTATE-REFACTOR reordering
+- **Mutation testing before refactoring** → TDD skill: cycle ordering. Insight: verify test strength *before* restructuring code, so you refactor with genuine confidence. Pointed out on LinkedIn that the original RED-GREEN-REFACTOR-MUTATE order means refactoring with unverified test effectiveness.
 
 ### Gary Bernhardt — ["Boundaries"](https://www.destroyallsoftware.com/talks/boundaries) (2012)
 - **Functional core, imperative shell** — pure domain logic surrounded by impure adapters → Hex arch skill: the fundamental structural principle

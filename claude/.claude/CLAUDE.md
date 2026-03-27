@@ -79,11 +79,13 @@ For detailed patterns and examples, load the `functional` skill.
 
 ## Development Workflow
 
-**Core principle**: RED-GREEN-REFACTOR in small, known-good increments. TDD is the fundamental practice.
+**Core principle**: RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR in small, known-good increments. TDD is the fundamental practice.
 
 **Quick reference:**
 - RED: Write failing test first (NO production code without failing test)
 - GREEN: Write MINIMUM code to pass test
+- MUTATE: Run mutation testing to verify test effectiveness, produce a report
+- KILL MUTANTS: Address surviving mutants (ask human when value is ambiguous)
 - REFACTOR: Assess improvement opportunities (only refactor if adds value)
 - **Wait for commit approval** before every commit
 - Each increment leaves codebase in working state

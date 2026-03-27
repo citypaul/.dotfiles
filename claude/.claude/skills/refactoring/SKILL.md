@@ -1,15 +1,15 @@
 ---
 name: refactoring
-description: Refactoring assessment and patterns. Use after tests pass (GREEN phase) to assess improvement opportunities.
+description: Refactoring assessment and patterns. Use after mutation testing validates test strength (MUTATE phase) to assess improvement opportunities.
 ---
 
 # Refactoring
 
-Refactoring is the third step of TDD. After GREEN, assess if refactoring adds value.
+Refactoring is the final step of TDD. After mutation testing confirms test strength, assess if refactoring adds value.
 
 ## When to Refactor
 
-- Always assess after green
+- Always assess after mutation testing confirms test strength
 - Only refactor if it improves the code
 - **Commit working code BEFORE refactoring** (critical safety net)
 
@@ -23,9 +23,11 @@ Having a working baseline before refactoring:
 
 **Workflow:**
 1. GREEN: Tests pass
-2. COMMIT: Save working code
-3. REFACTOR: Improve structure
-4. COMMIT: Save refactored code
+2. MUTATE: Verify test effectiveness
+3. KILL MUTANTS: Address surviving mutants
+4. COMMIT: Save working code with strong tests
+5. REFACTOR: Improve structure
+6. COMMIT: Save refactored code
 
 ## Priority Classification
 
@@ -51,7 +53,7 @@ Having a working baseline before refactoring:
 ## Example Assessment
 
 ```typescript
-// After GREEN:
+// After MUTATE + KILL MUTANTS:
 const processOrder = (order: Order): ProcessedOrder => {
   const itemsTotal = order.items.reduce((sum, item) => sum + item.price, 0);
   const shipping = itemsTotal > 50 ? 0 : 5.99;

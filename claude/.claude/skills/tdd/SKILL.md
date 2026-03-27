@@ -11,7 +11,7 @@ TDD is the fundamental practice. Every line of production code must be written i
 
 ---
 
-## RED-GREEN-REFACTOR Cycle
+## RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR Cycle
 
 ### RED: Write Failing Test First
 - NO production code until you have a failing test
@@ -21,10 +21,19 @@ TDD is the fundamental practice. Every line of production code must be written i
 ### GREEN: Minimum Code to Pass
 - Write ONLY enough code to make the test pass
 - Resist adding functionality not demanded by a test
-- Commit immediately after green
+
+### MUTATE: Verify Test Effectiveness
+- Run `mutation-testing` skill against the changed code
+- Produce a mutation testing report (killed/survived/score)
+- This validates whether your tests would catch real bugs
+
+### KILL MUTANTS: Address Surviving Mutants
+- Add or strengthen tests to kill surviving mutants
+- Ask the human when a surviving mutant's value is ambiguous
+- All tests pass after fixes
 
 ### REFACTOR: Assess Improvements
-- Assess AFTER every green (but only refactor if it adds value)
+- Assess AFTER mutation testing confirms test strength
 - Commit before refactoring
 - All tests must pass after refactoring
 
@@ -34,13 +43,14 @@ TDD is the fundamental practice. Every line of production code must be written i
 
 ### Default Expectation
 
-Commit history should show clear RED → GREEN → REFACTOR progression.
+Commit history should show clear RED → GREEN → MUTATE → KILL MUTANTS → REFACTOR progression.
 
 **Ideal progression:**
 ```
 commit abc123: test: add failing test for user authentication
 commit def456: feat: implement user authentication to pass test
-commit ghi789: refactor: extract validation logic for clarity
+commit ghi789: test: strengthen boundary tests (mutation testing)
+commit jkl012: refactor: extract validation logic for clarity
 ```
 
 ### Rare Exceptions
@@ -60,7 +70,7 @@ TDD evidence may not be linearly visible in commits in these cases:
 - **Evidence**: Reference to RED commit in PR description
 
 **3. Refactoring Commits**
-- Large refactors after GREEN
+- Large refactors after GREEN + MUTATE + KILL MUTANTS
 - Multiple small refactors combined into single commit
 - All tests remained green throughout
 - **Evidence**: Commit message notes "refactor only, no behavior change"
@@ -74,6 +84,7 @@ When exception applies, document in PR description:
 
 RED phase: commit c925187 (added failing tests for shopping cart)
 GREEN phase: commits 5e0055b, 9a246d0 (implementation + bug fixes)
+MUTATE + KILL MUTANTS: commit 7b8c9d0 (strengthened boundary tests)
 REFACTOR: commit 11dbd1a (test isolation improvements)
 
 Test Evidence:
@@ -214,8 +225,10 @@ The burden of proof is on the requester. 100% is the default expectation.
 2. **Run test** - confirm it fails (`pnpm test:watch`)
 3. **Implement minimum** - just enough to pass
 4. **Run test** - confirm it passes
-5. **Refactor if valuable** - improve code structure
-6. **Commit** - with conventional commit message
+5. **Run mutation testing** - verify tests catch real bugs
+6. **Kill surviving mutants** - strengthen tests (ask human when ambiguous)
+7. **Refactor if valuable** - improve code structure
+8. **Commit** - with conventional commit message
 
 ### Workflow Example
 
@@ -231,9 +244,13 @@ if (user.name === '') {
   return { success: false, error: 'Name required' };
 } # ✅ Test passes
 
-# 3. Refactor if needed (extract validation, improve naming)
+# 3. Run mutation testing to verify test strength
 
-# 4. Commit
+# 4. Kill surviving mutants (ask human when ambiguous)
+
+# 5. Refactor if needed (extract validation, improve naming)
+
+# 6. Commit
 git add .
 git commit -m "feat: reject empty user names"
 ```
@@ -300,7 +317,7 @@ REFACTOR: commit 6e5f4a3 (extract permission resolution logic)
 
 ## Refactoring Priority
 
-After green, classify any issues:
+After mutation testing confirms test strength, classify any issues:
 
 | Priority | Action | Examples |
 |----------|--------|----------|
@@ -337,6 +354,7 @@ Before marking work complete:
 - [ ] Commit history shows TDD evidence (or documented exception)
 - [ ] All tests pass
 - [ ] Coverage verified at 100% (or exception documented)
+- [ ] Mutation testing run and surviving mutants addressed
 - [ ] Test factories used (no `let`/`beforeEach`)
 - [ ] Tests verify behavior (not implementation details)
 - [ ] Refactoring assessed and applied if valuable

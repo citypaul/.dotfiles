@@ -107,7 +107,7 @@ Do you approve this plan change?"
 
 ### 2. Commit Approval Required
 
-After RED-GREEN-REFACTOR:
+After RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR:
 
 ```markdown
 "Step 3 complete. All tests passing.
@@ -150,7 +150,7 @@ When all steps are complete:
 |-------|-----------------|
 | `tdd-guardian` | Before commits, to verify TDD compliance |
 | `ts-enforcer` | Before commits, to check TypeScript strictness |
-| `refactor-scan` | After GREEN, to assess refactoring |
+| `refactor-scan` | After MUTATE + KILL MUTANTS, to assess refactoring |
 | `learn` | At end of feature, to merge learnings into CLAUDE.md |
 | `adr` | When architectural decisions need recording |
 | `docs-guardian` | When permanent docs need updating |
