@@ -22,12 +22,6 @@ Rules:
 - SHOULD NOT generate or consume JWTs using `alg: "none"` unless the JWT is already protected end-to-end by TLS
 - Each key MUST be used with exactly one algorithm, enforced at configuration time
 
-### Weak Algorithm Avoidance
-
-- SHOULD avoid RSA-PKCS1 v1.5 encryption (`RSA1_5`) -- prefer RSAES-OAEP
-- SHOULD implement ECDSA using the deterministic approach (RFC 6979) to prevent private key recovery from predictable random values
-- Human-memorizable passwords MUST NOT be used directly as HMAC keys (e.g., for HS256). Symmetric keys must have sufficient entropy
-
 ### Claim Validation
 
 Every JWT consumer MUST validate these claims:
@@ -118,14 +112,6 @@ Clients MUST prevent CSRF on their redirection endpoint. Acceptable mechanisms:
 2. **OpenID Connect `nonce`**
 3. **One-time-use `state` parameter** cryptographically bound to the user agent session
 
-### Mix-Up Attack Defense
-
-When a client interacts with multiple authorization servers:
-
-- SHOULD use the `iss` parameter (RFC 9207) in the authorization response to identify the issuer
-- Clients MUST store the issuer for each authorization request and compare against the response
-- Abort on mismatch
-
 ### Redirect Security
 
 - Authorization servers MUST NOT use HTTP 307 redirects for requests that may contain user credentials (e.g., login form POSTs). Use HTTP 303 instead, which rewrites POST to GET and drops the form body.
@@ -140,11 +126,6 @@ Authorization servers MUST prevent clickjacking on authorization endpoints and l
 - `Content-Security-Policy: frame-ancestors 'none'` (or specific trusted origins)
 - `X-Frame-Options: DENY`
 - Frame-busting JavaScript as a fallback
-
-### Client Authentication
-
-- Authorization servers SHOULD enforce client authentication when feasible.
-- Prefer asymmetric cryptography: Mutual TLS (RFC 8705) or Private Key JWT (RFC 7523). This avoids storing symmetric secrets at the authorization server.
 
 ### Authorization Server Metadata
 
