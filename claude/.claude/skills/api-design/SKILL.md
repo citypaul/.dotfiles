@@ -5,7 +5,7 @@ description: Stable API and interface design patterns. Use when designing REST e
 
 # API and Interface Design
 
-For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill. For versioning strategies and deprecation patterns, see `resources/api-evolution.md`. For security at the API boundary, see `resources/api-security.md`. For HTTP protocol fundamentals (caching, URI design, browser security, content negotiation), see `resources/http-fundamentals.md`. For JWT and OAuth 2.0 security deep-dive, see `resources/auth-security.md`.
+For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill. For versioning strategies and deprecation patterns, see `resources/api-evolution.md`. For security at the API boundary, see `resources/api-security.md`. For HTTP protocol fundamentals (caching, browser security, status codes, headers), see `resources/http-fundamentals.md`. For JWT and OAuth 2.0 security deep-dive, see `resources/auth-security.md`.
 
 ## When to Use
 
@@ -307,7 +307,7 @@ See `resources/http-fundamentals.md` for full caching guidance including content
 | Response fields | camelCase | `{ createdAt, updatedAt, taskId }` |
 | Boolean fields | is/has/can prefix | `isComplete`, `hasAttachments` |
 | Enum values | UPPER_SNAKE | `"IN_PROGRESS"`, `"COMPLETED"` |
-| Headers | No `X-` prefix (RFC 6648/BCP 178). Use Structured Fields (RFC 8941). | `Example-Request-Id` |
+| Headers | No `X-` prefix (RFC 6648/BCP 178) | `Example-Request-Id` |
 
 ### Resource Design
 
