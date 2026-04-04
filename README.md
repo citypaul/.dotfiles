@@ -88,7 +88,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
-| **API Design** | Contract-first development, Hyrum's Law, REST conventions, error semantics, pagination, backward compatibility | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
+| **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 2 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -480,19 +480,23 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 
 ### 🔌 API and Interface Design → [skills/api-design](claude/.claude/skills/api-design/SKILL.md)
 
-**Problem it solves:** Inconsistent API contracts, breaking changes that surprise consumers, endpoints returning different shapes, no pagination on list endpoints
+**Problem it solves:** Inconsistent API contracts, breaking changes that surprise consumers, endpoints returning different shapes, no pagination on list endpoints, duplicate operations from retried requests
 
-**What's inside:**
+**What's inside (main skill + 2 deep-dive resources):**
 - **Hyrum's Law** — every observable behavior becomes a de facto contract; design implications for what you expose
 - **Contract-first development** — define the interface before implementing (aligns with TDD: define what you want → test → implement)
-- **Consistent error semantics** — unified error format + HTTP status code mapping
+- **RFC 9457 error semantics** — standard `application/problem+json` format with security considerations, extension members, validation error patterns
+- **Idempotency** — HTTP method safety table, idempotency keys for POST (Stripe's pattern), making DELETE idempotent
+- **Rate limiting** — standard headers (`RateLimit-Limit/Remaining/Reset`), `Retry-After`, 429 responses
 - **REST conventions** — resource naming, PATCH vs PUT, pagination, filtering, sub-resources
 - **Backward compatibility** — additive-only changes, what breaks vs preserves contracts
 - **Input/output separation** — distinguish caller-provided data from server-generated fields
-- **Common rationalizations table** — "We'll document later", "We don't need pagination yet"
+- **Common rationalizations table** — "We'll document later", "We don't need pagination yet", "Retries are the client's problem"
 - **Red flags and verification checklist**
+- [`resources/api-evolution.md`](claude/.claude/skills/api-design/resources/api-evolution.md) — Versioning strategies (Stripe's date-pinning, URL, header), Postel's Law, Sunset/Deprecation headers, enum evolution, consumer-driven contract testing (Pact)
+- [`resources/api-security.md`](claude/.claude/skills/api-design/resources/api-security.md) — OWASP API Security Top 10 with TypeScript code examples, authentication patterns (API keys, OAuth2+PKCE, JWT tradeoffs), security checklist
 
-**Adapted from** [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), modified to align with existing skills: TypeScript patterns (branded types, discriminated unions) deferred to `typescript-strict`, data structures use `type` with `readonly` per `functional` skill conventions, validation patterns cross-reference `typescript-strict` schema-first approach.
+**Adapted from** [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), significantly expanded with RFC 9457, idempotency, rate limiting, OWASP API Security Top 10, versioning strategies, and deprecation patterns. Modified to align with existing skills: TypeScript patterns deferred to `typescript-strict`, data structures use `type` with `readonly` per `functional` skill conventions.
 
 ---
 

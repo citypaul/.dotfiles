@@ -2,18 +2,20 @@
 "@paulhammond/dotfiles": minor
 ---
 
-feat: add api-design skill for stable API and interface design
+feat: add api-design skill with deep-dive resources
 
-Adapted from addyosmani/agent-skills, modified to align with existing skill conventions:
-- Uses `type` with `readonly` instead of `interface` for data structures
-- Defers TypeScript patterns (branded types, discriminated unions) to typescript-strict skill
-- Cross-references typescript-strict for schema-first validation at boundaries
+Adapted from addyosmani/agent-skills, significantly expanded and modified to align with existing conventions.
 
-New content not covered by existing skills:
-- Hyrum's Law and observable behavior as contract
-- The One-Version Rule
-- Contract-first development
-- Consistent error semantics with unified error format and HTTP status mapping
-- REST conventions (resource naming, PATCH vs PUT, pagination, filtering)
-- Backward compatibility guidance (additive-only changes)
-- API-specific red flags, rationalizations, and verification checklist
+Main skill covers:
+- Hyrum's Law, One-Version Rule, contract-first development
+- RFC 9457 error semantics (Problem Details for HTTP APIs) with security considerations
+- Idempotency patterns (Stripe's idempotency keys for POST)
+- Rate limiting (standard headers, 429 responses, Retry-After)
+- REST conventions, pagination, filtering, input/output separation
+- Backward compatibility, red flags, rationalizations, verification checklist
+
+Deep-dive resources:
+- resources/api-evolution.md — versioning strategies (Stripe date-pinning, URL, header), Postel's Law, Sunset/Deprecation headers, enum evolution, consumer-driven contract testing (Pact)
+- resources/api-security.md — OWASP API Security Top 10 with TypeScript examples, authentication patterns (API keys, OAuth2+PKCE, JWT), security checklist
+
+REFERENCES.md updated with authoritative sources (RFC 9457, RFC 8594, OWASP, Google/Microsoft/Zalando API guides, Brandur Leach, Phil Sturgeon, Arnaud Lauret, Joshua Bloch)
