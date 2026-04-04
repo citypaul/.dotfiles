@@ -34,7 +34,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 16 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 17 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -88,6 +88,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
+| **API Design** | Contract-first development, Hyrum's Law, REST conventions, error semantics, pagination, backward compatibility | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -125,6 +126,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | Config scattered in code, not env vars | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Validate config at startup with Zod, inject via options objects |
 | Service won't scale horizontally | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Stateless processes, external backing services, graceful shutdown |
 | UI looks generic or AI-generated | [frontend-design](claude/.claude/skills/frontend-design/SKILL.md) | Distinctive design, production-grade quality, avoid template aesthetics |
+| Designing REST APIs or module contracts | [api-design](claude/.claude/skills/api-design/SKILL.md) | Contract-first, Hyrum's Law, consistent error semantics, pagination |
+| Breaking changes keep surprising consumers | [api-design](claude/.claude/skills/api-design/SKILL.md) | Additive-only changes, One-Version Rule, input/output separation |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
@@ -138,6 +141,7 @@ Skills are **auto-discovered** by Claude when relevant:
 - Running tests? → `testing` skill provides factory patterns
 - After MUTATE + KILL MUTANTS? → `refactoring` skill assesses opportunities
 - Reviewing test effectiveness? → `mutation-testing` skill identifies weak tests
+- Designing API endpoints? → `api-design` skill provides contract-first patterns
 
 **No manual invocation needed** - Claude detects when skills apply.
 
@@ -471,6 +475,24 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 | Is it framework glue? | Delivery layer (`app/`) |
 
 **Key insight:** Domain models evolve as understanding deepens — this is expected and ideal, not a sign of failure. TDD makes this evolution safe: rename a concept, update the glossary, and the tests guide the migration.
+
+---
+
+### 🔌 API and Interface Design → [skills/api-design](claude/.claude/skills/api-design/SKILL.md)
+
+**Problem it solves:** Inconsistent API contracts, breaking changes that surprise consumers, endpoints returning different shapes, no pagination on list endpoints
+
+**What's inside:**
+- **Hyrum's Law** — every observable behavior becomes a de facto contract; design implications for what you expose
+- **Contract-first development** — define the interface before implementing (aligns with TDD: define what you want → test → implement)
+- **Consistent error semantics** — unified error format + HTTP status code mapping
+- **REST conventions** — resource naming, PATCH vs PUT, pagination, filtering, sub-resources
+- **Backward compatibility** — additive-only changes, what breaks vs preserves contracts
+- **Input/output separation** — distinguish caller-provided data from server-generated fields
+- **Common rationalizations table** — "We'll document later", "We don't need pagination yet"
+- **Red flags and verification checklist**
+
+**Adapted from** [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), modified to align with existing skills: TypeScript patterns (branded types, discriminated unions) deferred to `typescript-strict`, data structures use `type` with `readonly` per `functional` skill conventions, validation patterns cross-reference `typescript-strict` schema-first approach.
 
 ---
 
@@ -1008,7 +1030,7 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (16 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design)
+- ✅ `~/.claude/skills/` (17 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design)
 - ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
@@ -1222,7 +1244,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 16 auto-discovered skills + 5 slash commands + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 17 auto-discovered skills + 5 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1245,7 +1267,7 @@ The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `-
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (16 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (17 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1422,7 +1444,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 22 skills (16 built-in + 6 web quality) + 10 agents (development guidelines)
+- ✅ CLAUDE.md + 23 skills (17 built-in + 6 web quality) + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
@@ -1500,7 +1522,7 @@ Please open issues or PRs on GitHub.
 
 Special thanks to contributors who have shared their work:
 
-- **[Addy Osmani](https://github.com/addyosmani)** - The web quality skills (accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit) are sourced from [Addy's web-quality-skills repository](https://github.com/addyosmani/web-quality-skills). These skills are fetched directly from the upstream repository at install time so you always get the latest version. Licensed under the [MIT License](https://github.com/addyosmani/web-quality-skills/blob/main/LICENSE).
+- **[Addy Osmani](https://github.com/addyosmani)** - The web quality skills (accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit) are sourced from [Addy's web-quality-skills repository](https://github.com/addyosmani/web-quality-skills). These skills are fetched directly from the upstream repository at install time so you always get the latest version. Licensed under the [MIT License](https://github.com/addyosmani/web-quality-skills/blob/main/LICENSE). The `api-design` skill is adapted from [Addy's agent-skills repository](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), modified to align with existing skill conventions.
 
 - **[Kieran O'Hara](https://github.com/kieran-ohara)** - The `use-case-data-patterns` agent is adapted from [Kieran's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you for creating and sharing this excellent agent specification.
 
