@@ -1,5 +1,42 @@
 # Changelog
 
+## 3.17.0
+
+### Minor Changes
+
+- cd92a7e: feat: enrich api-design skill with RFC BCP guidance (HTTP fundamentals, JWT/OAuth security, caching)
+
+  New resources:
+
+  - `http-fundamentals.md`: HTTP protocol guidance from RFC 9205 (BCP 56) — caching, URI design, browser security, content negotiation, status code discipline
+  - `auth-security.md`: JWT and OAuth 2.0 security deep-dive from RFC 8725 (BCP 225) and RFC 9700 (BCP 240) — algorithm allowlisting, PKCE, token handling, redirect validation
+
+  Updates:
+
+  - `api-design/SKILL.md`: added HTTP Caching section, URI Ownership principle, header naming guidance (no X- prefix), browser security headers in red flags and verification checklist
+  - `api-security.md`: expanded JWT/OAuth sections with RFC references, added Browser Security Headers and Transport Security sections, expanded security checklist
+  - `REFERENCES.md`: added 9 new RFC/BCP sources (RFC 9205, 8820, 8725, 9700, 9325, 8996, 6648, 8941, 6302)
+  - `twelve-factor/SKILL.md`: added RFC 6302 (BCP 162) logging recommendations for internet-facing servers to Factor XI
+
+### Patch Changes
+
+- 8cbaacc: fix: add missing resource files and REFERENCES.md to install script
+
+  The install script only downloaded SKILL.md for each skill but missed 15 deep-dive resource files across hexagonal-architecture (5), domain-driven-design (6), and api-design (4), plus REFERENCES.md. Also removes accidentally committed plans/ddd-hex-arch-95-plus.md.
+
+- a60cb31: fix: remove protocol-spec guidance not relevant to normal web development
+
+  Removed content aimed at protocol specification authors rather than web developers:
+
+  - URI Ownership / URI Design & Discovery (RFC 8820) — not relevant when documenting your own API
+  - Content Negotiation custom media type registration — most web devs use application/json
+  - Versioning via HTTP Mechanisms (link relations, media types) — already covered practically in api-evolution.md
+  - Protocol Version Independence — devs don't specify HTTP versions
+  - Weak Algorithm Avoidance details (deterministic ECDSA, RSA-PKCS1 v1.5) — implementation details most devs never touch
+  - Client Authentication (mTLS, Private Key JWT) — enterprise-grade, not typical web dev
+  - Mix-Up Attack Defense — niche scenario (multiple auth servers)
+  - Structured Fields (RFC 8941) references — most devs don't design new HTTP header formats
+
 ## 3.16.0
 
 ### Minor Changes
