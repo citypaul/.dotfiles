@@ -164,13 +164,15 @@ Simple, good for server-to-server communication.
 
 ### OAuth 2.0 + PKCE
 
-Standard for delegated authorization (user grants access to a third-party app).
+Standard for delegated authorization. Use **Authorization Code flow with PKCE** for ALL client types (web apps, native apps, SPAs). The Implicit grant and Resource Owner Password Credentials grant are deprecated.
 
-- Use **Authorization Code flow with PKCE** (RFC 7636) for all public clients (SPAs, mobile apps, CLI tools)
-- The Implicit flow is deprecated — don't use it for new implementations
-- Scopes should be granular and documented
-- Access tokens should be short-lived (minutes to hours)
-- Refresh tokens should be rotated on use (one-time use)
+Key rules:
+- PKCE with S256 is mandatory for public clients, recommended for confidential clients
+- Exact redirect URI matching only -- no patterns, no wildcards
+- Never pass tokens in URI query parameters
+- Sender-constrain tokens via DPoP or mTLS when feasible
+
+See `auth-security.md` for the full deep-dive on OAuth 2.0 security (RFC 9700 / BCP 240), including PKCE enforcement, redirect validation, CSRF defense, mix-up attacks, and clickjacking prevention.
 
 ### JWT Considerations
 
@@ -179,8 +181,12 @@ JWTs are useful for stateless authentication but have important tradeoffs:
 - **JWTs cannot be revoked** without additional infrastructure (blocklist/denylist)
 - **Keep them short-lived** (5-15 minutes for access tokens)
 - **Never store sensitive data in the payload** — it's base64-encoded, not encrypted
-- **Always validate**: signature, algorithm (`alg` header — reject `none`), issuer, audience, expiration
+- **Hardcode your allowed algorithms** — never let the token's `alg` header alone dictate the algorithm (prevents `alg: none` and RSA/HMAC confusion attacks)
+- **Validate `iss`, `sub`, `aud`, `exp`** on every JWT
+- **Use explicit `typ` headers** to prevent cross-JWT confusion (e.g., `at+jwt` for access tokens)
 - **Use asymmetric signing** (RS256/ES256) for distributed systems — verifiers don't need the signing key
+
+See `auth-security.md` for the full deep-dive on JWT security (RFC 8725 / BCP 225), including algorithm allowlisting, key-algorithm binding, input sanitization, and compression oracle attacks.
 
 ### Decision Framework
 
@@ -190,6 +196,30 @@ JWTs are useful for stateless authentication but have important tradeoffs:
 | User-facing app, delegated access | OAuth 2.0 + PKCE |
 | Microservices, stateless auth needed | JWT (short-lived) + refresh tokens |
 | Internal tools, SSO integration | OAuth 2.0 with your identity provider |
+
+## Browser Security Headers
+
+Even non-browser APIs are accessible from browsers. A malicious page can issue requests to any API the user's browser can reach (RFC 9205 / BCP 56). Send these headers on all API responses:
+
+```
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'
+Referrer-Policy: no-referrer
+```
+
+Additional:
+- Use application-specific media types in `Content-Type` (e.g., `application/vnd.myapp+json`)
+- Set `HttpOnly` flag on cookies
+- Avoid compressing sensitive data (tokens, passwords) alongside attacker-controlled content -- compression oracles (CRIME/BREACH) allow secret recovery
+
+See `http-fundamentals.md` for full HTTP protocol security guidance.
+
+## Transport Security
+
+Use TLS for all API communication. Per RFC 9325 (BCP 195):
+- TLS 1.2 is the minimum acceptable version
+- TLS 1.3 is preferred
+- TLS 1.0 and TLS 1.1 are deprecated (RFC 8996 / BCP 195)
 
 ## Security Checklist
 
@@ -203,5 +233,8 @@ When reviewing an API for security:
 - [ ] API keys in headers only, never in URLs
 - [ ] Third-party API responses validated before use
 - [ ] All endpoints documented in API spec — no shadow endpoints
-- [ ] Short-lived tokens with proper validation
+- [ ] Short-lived tokens with proper validation (algorithm, iss, sub, aud, exp)
 - [ ] SSRF protections on any endpoint accepting URLs
+- [ ] Browser security headers on all responses (X-Content-Type-Options, CSP, Referrer-Policy)
+- [ ] TLS 1.2+ enforced, TLS 1.0/1.1 disabled
+- [ ] OAuth flows use PKCE with S256

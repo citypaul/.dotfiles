@@ -5,7 +5,7 @@ description: Stable API and interface design patterns. Use when designing REST e
 
 # API and Interface Design
 
-For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill. For versioning strategies and deprecation patterns, see `resources/api-evolution.md`. For security at the API boundary, see `resources/api-security.md`.
+For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill. For versioning strategies and deprecation patterns, see `resources/api-evolution.md`. For security at the API boundary, see `resources/api-security.md`. For HTTP protocol fundamentals (caching, URI design, browser security, content negotiation), see `resources/http-fundamentals.md`. For JWT and OAuth 2.0 security deep-dive, see `resources/auth-security.md`.
 
 ## When to Use
 
@@ -277,7 +277,30 @@ Content-Type: application/problem+json
 - **Communicate limits in documentation** — don't make consumers discover them by hitting 429s
 - **Recommend exponential backoff with jitter** in your docs — naive retry loops cause thundering herds
 
+## HTTP Caching
+
+Assign explicit freshness lifetimes on responses. Don't rely on heuristic freshness.
+
+| Directive | Meaning | Common misconception |
+|-----------|---------|----------------------|
+| `Cache-Control: max-age=N` | Fresh for N seconds. Preferred over `Expires`. | -- |
+| `Cache-Control: no-cache` | May be stored, but must revalidate before every use. | Often confused with "don't cache" |
+| `Cache-Control: no-store` | Must NOT be stored at all. Use this to prevent caching. | -- |
+| `Cache-Control: must-revalidate` | Once stale, must revalidate. Cannot serve stale when disconnected. | -- |
+
+Practical rules:
+- Even short freshness (e.g., `max-age=5`) enables reuse across multiple clients
+- Assign ETags for efficient revalidation without re-transferring the body
+- If a request header changes the response, use `Vary` on ALL responses from that resource (including the default)
+- Use `no-store` for responses containing sensitive data (not `no-cache`)
+
+See `resources/http-fundamentals.md` for full caching guidance including content negotiation, header design, and protocol version independence.
+
 ## REST Conventions
+
+### URI Ownership
+
+Don't hardcode fixed URI paths in API specifications. The server authority controls its own URL space (RFC 8820 / BCP 190). Use discovery mechanisms (well-known URIs, link relations, or configuration) instead of static paths. See `resources/http-fundamentals.md` for discovery patterns.
 
 ### Resource Naming
 
@@ -288,6 +311,7 @@ Content-Type: application/problem+json
 | Response fields | camelCase | `{ createdAt, updatedAt, taskId }` |
 | Boolean fields | is/has/can prefix | `isComplete`, `hasAttachments` |
 | Enum values | UPPER_SNAKE | `"IN_PROGRESS"`, `"COMPLETED"` |
+| Headers | No `X-` prefix (RFC 6648/BCP 178). Use Structured Fields (RFC 8941). | `Example-Request-Id` |
 
 ### Resource Design
 
@@ -381,6 +405,8 @@ type Task = {
 - POST endpoints without idempotency handling for state-changing operations
 - No rate limit headers on responses
 - Retry logic without exponential backoff
+- Missing browser security headers on API responses (`X-Content-Type-Options`, CSP, `Referrer-Policy`)
+- Custom `X-` prefixed headers (deprecated by RFC 6648)
 
 ## Verification
 
@@ -397,3 +423,5 @@ After designing an API:
 - [ ] POST endpoints that create resources or change state have idempotency handling
 - [ ] Rate limit headers included on responses
 - [ ] Content-Type is `application/problem+json` for error responses
+- [ ] Browser security headers on all responses (`X-Content-Type-Options: nosniff`, `CSP: default-src 'none'`, `Referrer-Policy: no-referrer`)
+- [ ] Caching strategy defined (explicit `Cache-Control`, ETags for revalidation, `Vary` where needed)

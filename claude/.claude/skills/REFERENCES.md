@@ -178,6 +178,43 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 ### Pact — [Consumer-Driven Contract Testing](https://pact.io/)
 - **Consumer defines expectations, provider verifies** → `resources/api-evolution.md`: know what will break before you break it
 
+### RFC 9205 (BCP 56) — [Building Protocols with HTTP](https://www.rfc-editor.org/rfc/rfc9205) (2022, IETF)
+- **The cardinal rule** — don't redefine HTTP semantics → `resources/http-fundamentals.md`: core principle
+- **URI design and discovery** — don't hardcode paths, use links and well-known URIs → `resources/http-fundamentals.md` + API design skill: "URI Ownership"
+- **HTTP caching** — explicit freshness, Cache-Control directives, ETags, Vary → `resources/http-fundamentals.md`: "HTTP Caching" + API design skill: "HTTP Caching" section
+- **Browser security for APIs** — security headers even for non-browser APIs → `resources/http-fundamentals.md` + `resources/api-security.md`: "Browser Security Headers"
+- **Status code discipline** — don't map errors 1:1, use general codes → `resources/http-fundamentals.md`: "Status Code Discipline"
+- **Content negotiation** — register distinct media types → `resources/http-fundamentals.md`: "Content Negotiation"
+
+### RFC 8820 (BCP 190) — [URI Design and Ownership](https://www.rfc-editor.org/rfc/rfc8820) (2020, IETF)
+- **Server authority controls its URL space** — don't hardcode URI paths in specs → API design skill: "URI Ownership" + `resources/http-fundamentals.md`
+
+### RFC 8725 (BCP 225) — [JWT Best Current Practices](https://www.rfc-editor.org/rfc/rfc8725) (2020, IETF)
+- **Algorithm allowlisting** — never let the token header dictate the algorithm → `resources/auth-security.md`: "Algorithm Allowlisting"
+- **Claim validation** — validate iss, sub, aud, exp on every JWT → `resources/auth-security.md`: "Claim Validation"
+- **Explicit typing** — use `typ` header to prevent cross-JWT confusion → `resources/auth-security.md`: "Explicit Typing"
+- **Input sanitization** — kid as injection vector, jku/x5u as SSRF vector → `resources/auth-security.md`: "Input Sanitization"
+- **Compression oracle** — don't compress before encryption → `resources/auth-security.md`: "Encoding and Compression"
+
+### RFC 9700 (BCP 240) — [OAuth 2.0 Security Best Current Practice](https://www.rfc-editor.org/rfc/rfc9700) (2025, IETF)
+- **Grant type selection** — Authorization Code + PKCE for all clients, no Implicit or ROPC → `resources/auth-security.md`: "Grant Type Selection"
+- **PKCE enforcement** — mandatory for public clients, recommended for all → `resources/auth-security.md`: "PKCE"
+- **Redirect URI validation** — exact string matching only → `resources/auth-security.md`: "Redirect URI Validation"
+- **Token handling** — sender-constraining, audience restriction, no query params → `resources/auth-security.md`: "Token Handling"
+- **CSRF and mix-up defenses** → `resources/auth-security.md`: "CSRF Defense" and "Mix-Up Attack Defense"
+
+### RFC 9325 (BCP 195) — [TLS Recommendations](https://www.rfc-editor.org/rfc/rfc9325) (2022, IETF) + RFC 8996 — [Deprecating TLS 1.0/1.1](https://www.rfc-editor.org/rfc/rfc8996) (2021)
+- **TLS 1.2 minimum, TLS 1.3 preferred** → `resources/api-security.md`: "Transport Security"
+
+### RFC 6648 (BCP 178) — [Deprecating the "X-" Prefix](https://www.rfc-editor.org/rfc/rfc6648) (2012, IETF)
+- **Stop using X- prefixed headers** → API design skill: Resource Naming table
+
+### RFC 8941 — [Structured Fields for HTTP](https://www.rfc-editor.org/rfc/rfc8941) (2021, IETF)
+- **Recommended format for new HTTP header fields** → `resources/http-fundamentals.md`: "Header Design"
+
+### RFC 6302 (BCP 162) — [Logging Recommendations for Internet-Facing Servers](https://www.rfc-editor.org/rfc/rfc6302) (2011, IETF)
+- **What to log for internet-facing servers** — source/destination addresses and ports, timestamps, transport protocol → Twelve-factor skill: Factor XI (Logs)
+
 ---
 
 ## Cross-Cutting Patterns

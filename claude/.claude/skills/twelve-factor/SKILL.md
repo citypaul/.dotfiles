@@ -279,6 +279,8 @@ export const startServer = async ({ app, config }: { app: App; config: Pick<Conf
 
 Treat logs as event streams. Write structured output to stdout. Never route or store logs from within the app.
 
+For internet-facing servers, RFC 6302 (BCP 162) specifies minimum logging requirements: source and destination addresses and ports, timestamps (preferably UTC), and transport protocol. These should be captured at the server/framework level in addition to application-level structured logging.
+
 ### Semantic Requirements
 
 Regardless of which logging library or implementation a project uses, all loggers must satisfy these properties:
