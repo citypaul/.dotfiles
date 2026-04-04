@@ -112,6 +112,74 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 
 ---
 
+## API and Interface Design
+
+### Addy Osmani — [agent-skills/api-and-interface-design](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md)
+- **Original skill** adapted and extended for this codebase → API design skill: foundation for contract-first, error semantics, REST conventions, naming patterns
+- Modified: `interface` → `type` with `readonly`, TypeScript patterns deferred to `typescript-strict` skill
+
+### Hyrum Wright — [Hyrum's Law](https://www.hyrumslaw.com/)
+- **"All observable behaviors will be depended on by somebody"** → API design skill: "Core Principles" section, design implications for what to expose
+
+### Joshua Bloch — ["How to Design a Good API and Why it Matters"](https://www.youtube.com/watch?v=aAb7hSCtvGw) (2006, Google Tech Talk)
+- **"When in doubt, leave it out"** — APIs should be as small as possible but no smaller → API design skill: contract-first development, intentional exposure
+- **"APIs should be easy to use and hard to misuse"** → API design skill: overall design philosophy
+
+### RFC 9457 — [Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457) (2023, IETF)
+- **Standard error format** (`type`, `title`, `status`, `detail`, `instance`) → API design skill: "Consistent Error Semantics" section
+- **Extension members** for forward-compatible error evolution → API design skill: validation error example with `errors` array
+- **Security considerations (§5)** — error responses as information leak vectors → API design skill: security warnings on error design
+- Updated from RFC 7807 (2016) with registry of common problem types and multi-problem guidance
+
+### RFC 8594 — [The Sunset HTTP Header Field](https://www.rfc-editor.org/rfc/rfc8594) (2019, IETF)
+- **Standard deprecation signaling** — programmatic detection of upcoming endpoint removal → `resources/api-evolution.md`: "Deprecation Signals"
+
+### RFC 6585 — [Additional HTTP Status Codes](https://www.rfc-editor.org/rfc/rfc6585) (2012, IETF)
+- **429 Too Many Requests** — proper status code for rate limiting → API design skill: "Rate Limiting" section
+
+### IETF Draft — [RateLimit Header Fields for HTTP](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/)
+- **Standard rate limit headers** (`RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`) → API design skill: "Rate Limiting" section
+
+### Brandur Leach (ex-Stripe) — [brandur.org](https://brandur.org/)
+- **Idempotency keys** — definitive implementation guide for safe retries → API design skill: "Idempotency" section
+- **API versioning at Stripe** — date-based version pinning, additive evolution → `resources/api-evolution.md`: "Date-Based Version Pinning"
+- Key articles:
+  - ["Idempotency Keys: How PayPal and Stripe Prevent Duplicate Payment"](https://brandur.org/idempotency-keys)
+
+### OWASP — [API Security Top 10](https://owasp.org/API-Security/) (2023)
+- **BOLA (#1)** — object-level authorization on every endpoint → `resources/api-security.md`: all 10 items covered with code examples
+- **Mass assignment (#3)** — schema validation prevents accepting unauthorized fields → Aligns with `typescript-strict` skill's boundary validation
+
+### Google — [API Design Guide](https://cloud.google.com/apis/design)
+- **Resource-oriented design** — model as resource hierarchy with standard methods → API design skill: REST conventions
+- **Standard error model** — `code`, `message`, `details` → Influenced error semantics section
+
+### Microsoft — [REST API Guidelines](https://github.com/microsoft/api-guidelines)
+- **Consistency across a large portfolio** — more valuable than optimizing any single API → API design skill: naming conventions table
+- **Long-running operations pattern** — for async API operations
+
+### Zalando — [RESTful API Guidelines](https://opensource.zalando.com/restful-api-guidelines/)
+- **MUST/SHOULD/MAY classification** — makes guidelines actionable and auditable → API design skill: verification checklist approach
+- **RFC 7807/9457 mandate** — standard error format across all services → API design skill: RFC 9457 section
+
+### Phil Sturgeon — [apisyouwonthate.com](https://apisyouwonthate.com/)
+- **"API Versioning Has No Right Answer"** — analysis of versioning tradeoffs → `resources/api-evolution.md`: versioning decision framework
+- *Build APIs You Won't Hate* (2015) — practical, opinionated API design
+- Key articles:
+  - ["API Versioning Has No Right Answer"](https://apisyouwonthate.com/blog/api-versioning-has-no-right-answer)
+
+### Arnaud Lauret ("The API Handyman") — [apihandyman.io](https://apihandyman.io/)
+- *The Design of Web APIs* (Manning, 2019) — consumer-first design methodology
+- **"Errors should be actionable"** — consumer knows what went wrong, why, and what to do → API design skill: error design philosophy
+
+### Jon Postel — Robustness Principle (RFC 761)
+- **"Be conservative in what you send, be liberal in what you accept"** → `resources/api-evolution.md`: foundation for additive API evolution
+
+### Pact — [Consumer-Driven Contract Testing](https://pact.io/)
+- **Consumer defines expectations, provider verifies** → `resources/api-evolution.md`: know what will break before you break it
+
+---
+
 ## Cross-Cutting Patterns
 
 ### Dave Farley — "Modern Software Engineering" (2022)

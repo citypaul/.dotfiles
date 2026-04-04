@@ -4,7 +4,7 @@
 >
 > **Architecture:**
 > - **CLAUDE.md** (this file): Core philosophy + quick reference (~100 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design)
+> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design)
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
 > **Previous versions:**
@@ -62,6 +62,7 @@ For verifying test effectiveness through mutation analysis, load the `mutation-t
 - Use schemas at trust boundaries, plain types for internal logic
 
 For detailed TypeScript patterns and rationale, load the `typescript-strict` skill.
+For API and interface design patterns, load the `api-design` skill.
 
 ## Code Style
 
