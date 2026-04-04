@@ -298,10 +298,6 @@ See `resources/http-fundamentals.md` for full caching guidance including content
 
 ## REST Conventions
 
-### URI Ownership
-
-Don't hardcode fixed URI paths in API specifications. The server authority controls its own URL space (RFC 8820 / BCP 190). Use discovery mechanisms (well-known URIs, link relations, or configuration) instead of static paths. See `resources/http-fundamentals.md` for discovery patterns.
-
 ### Resource Naming
 
 | Pattern | Convention | Example |

@@ -180,14 +180,11 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 
 ### RFC 9205 (BCP 56) — [Building Protocols with HTTP](https://www.rfc-editor.org/rfc/rfc9205) (2022, IETF)
 - **The cardinal rule** — don't redefine HTTP semantics → `resources/http-fundamentals.md`: core principle
-- **URI design and discovery** — don't hardcode paths, use links and well-known URIs → `resources/http-fundamentals.md` + API design skill: "URI Ownership"
+- **URI schemes** — use HTTPS, avoid custom URI schemes → `resources/http-fundamentals.md`: "URI Schemes"
 - **HTTP caching** — explicit freshness, Cache-Control directives, ETags, Vary → `resources/http-fundamentals.md`: "HTTP Caching" + API design skill: "HTTP Caching" section
 - **Browser security for APIs** — security headers even for non-browser APIs → `resources/http-fundamentals.md` + `resources/api-security.md`: "Browser Security Headers"
 - **Status code discipline** — don't map errors 1:1, use general codes → `resources/http-fundamentals.md`: "Status Code Discipline"
 - **Content negotiation** — register distinct media types → `resources/http-fundamentals.md`: "Content Negotiation"
-
-### RFC 8820 (BCP 190) — [URI Design and Ownership](https://www.rfc-editor.org/rfc/rfc8820) (2020, IETF)
-- **Server authority controls its URL space** — don't hardcode URI paths in specs → API design skill: "URI Ownership" + `resources/http-fundamentals.md`
 
 ### RFC 8725 (BCP 225) — [JWT Best Current Practices](https://www.rfc-editor.org/rfc/rfc8725) (2020, IETF)
 - **Algorithm allowlisting** — never let the token header dictate the algorithm → `resources/auth-security.md`: "Algorithm Allowlisting"

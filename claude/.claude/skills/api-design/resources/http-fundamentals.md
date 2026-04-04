@@ -11,19 +11,8 @@ What this means in practice:
 - Don't assign custom meanings to standard status codes (e.g., using 200 with a body-level error indicator).
 - Don't use standard header fields for application-specific data. Define new headers instead.
 
-## URI Design and Discovery
+## URI Schemes
 
-Don't hardcode fixed URI paths in API specifications. The server authority controls its URL space (RFC 8820 / BCP 190).
-
-**Use discovery instead of static paths:**
-
-- **Well-known URI** (RFC 8615) as entry point: `/.well-known/your-app`
-- **URI Templates** (RFC 6570) conveyed via configuration or discovery
-- **Discovery document** at the entry point that links to other resources using Web Linking (RFC 8288)
-
-Links enable multi-server deployment, extensibility, versioning, and natural cache invalidation (change the link when state changes).
-
-**URI schemes:**
 - Use `https` (not `http`) for authentication, integrity, and to mitigate pervasive monitoring (RFC 7258 / BCP 188).
 - Avoid defining custom URI schemes -- they break browser compatibility, intermediary support, caching, cookies, CORS, HSTS, and same-origin policy.
 
