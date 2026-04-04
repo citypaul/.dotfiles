@@ -164,6 +164,7 @@ mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skill
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
 mkdir -p ~/.claude/skills/ci-debugging ~/.claude/skills/hexagonal-architecture ~/.claude/skills/domain-driven-design ~/.claude/skills/twelve-factor ~/.claude/skills/frontend-design ~/.claude/skills/api-design
+mkdir -p ~/.claude/skills/hexagonal-architecture/resources ~/.claude/skills/domain-driven-design/resources ~/.claude/skills/api-design/resources
 if [[ "$INSTALL_EXTERNAL" == true ]]; then
   mkdir -p ~/.claude/skills/accessibility ~/.claude/skills/best-practices ~/.claude/skills/core-web-vitals
   mkdir -p ~/.claude/skills/performance ~/.claude/skills/seo ~/.claude/skills/web-quality-audit
@@ -213,6 +214,41 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
       ~/.claude/skills/"$skill" \
       "skills/$skill"
   done
+
+  # Deep-dive resource files for skills that have them
+  resources=(
+    "hexagonal-architecture/resources/cqrs-lite.md"
+    "hexagonal-architecture/resources/cross-cutting-concerns.md"
+    "hexagonal-architecture/resources/incremental-adoption.md"
+    "hexagonal-architecture/resources/testing-hex-arch.md"
+    "hexagonal-architecture/resources/worked-example.md"
+    "domain-driven-design/resources/aggregate-design.md"
+    "domain-driven-design/resources/bounded-contexts.md"
+    "domain-driven-design/resources/domain-events.md"
+    "domain-driven-design/resources/domain-services.md"
+    "domain-driven-design/resources/error-modeling.md"
+    "domain-driven-design/resources/testing-by-layer.md"
+    "api-design/resources/api-evolution.md"
+    "api-design/resources/api-security.md"
+    "api-design/resources/http-fundamentals.md"
+    "api-design/resources/auth-security.md"
+  )
+
+  for resource in "${resources[@]}"; do
+    backup_file ~/.claude/skills/"$resource"
+    download_file \
+      "$BASE_URL/$VERSION/claude/.claude/skills/$resource" \
+      ~/.claude/skills/"$resource" \
+      "skills/$resource"
+  done
+
+  # References file
+  backup_file ~/.claude/skills/REFERENCES.md
+  download_file \
+    "$BASE_URL/$VERSION/claude/.claude/skills/REFERENCES.md" \
+    ~/.claude/skills/REFERENCES.md \
+    "skills/REFERENCES.md"
+
   echo ""
 fi
 
