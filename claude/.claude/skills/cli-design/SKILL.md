@@ -84,6 +84,8 @@ This isn't an architecture mandate — it's just clean function design. The bene
 
 For simple CLIs where the "handler" is just calling a library, this separation already exists naturally — your library returns data, your CLI formats it. No extra layers needed.
 
+If your project uses hexagonal architecture, the mapping is direct: the CLI entry point is a **driving adapter**, and the handler is a **use case** that returns a result through a port. See the `hexagonal-architecture` skill — the patterns reinforce each other, but hex arch is not required to benefit from keeping handlers pure.
+
 For TypeScript implementation patterns (Result types, entry point wiring, formatters, logger interfaces), see `resources/output-architecture.md`.
 
 ---
