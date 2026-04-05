@@ -76,9 +76,28 @@ What preserves backward compatibility:
 
 Pick one error strategy and use it everywhere. Don't mix patterns where some endpoints throw, others return null, and others return `{ error }`.
 
+### Choosing an Error Format
+
+**The non-negotiable:** Pick one error shape and use it for every endpoint. Consistency matters more than which format you choose.
+
+**For public APIs with external consumers**, use RFC 9457 (Problem Details). It's the industry standard, machine-readable, and what third-party developers expect. Use `application/problem+json` as the Content-Type.
+
+**For internal APIs with a single frontend**, a simpler consistent shape is a valid choice. The minimum viable error response needs: a machine-readable error code, an optional human-readable message, and the correct HTTP status code. This is less ceremony than RFC 9457 while still being consistent and actionable.
+
+```typescript
+// Simpler shape — sufficient for internal APIs
+type ApiError = {
+  readonly error: string;                          // Machine-readable code (UPPER_SNAKE_CASE)
+  readonly message?: string;                       // Human-readable description
+  readonly fieldErrors?: Record<string, string>;   // For validation errors
+};
+```
+
+If you start with a simpler format, design it so it can evolve toward RFC 9457 later (e.g., `error` maps to `title`, `message` maps to `detail`). Don't paint yourself into a corner.
+
 ### RFC 9457 (Problem Details for HTTP APIs)
 
-The standard format for machine-readable API errors. Use `application/problem+json` as the Content-Type.
+The standard format for machine-readable API errors for public APIs. Use `application/problem+json` as the Content-Type.
 
 **Standard members:**
 
@@ -409,7 +428,7 @@ type Task = {
 After designing an API:
 
 - [ ] Every endpoint has typed input and output schemas
-- [ ] Error responses follow RFC 9457 (or a single consistent format)
+- [ ] Error responses follow a single consistent format (RFC 9457 for public APIs, or a simpler consistent shape for internal APIs)
 - [ ] Error responses never leak implementation details (stack traces, internal paths)
 - [ ] Validation happens at system boundaries only
 - [ ] List endpoints support pagination
@@ -418,6 +437,6 @@ After designing an API:
 - [ ] Contract defined before implementation (contract-first)
 - [ ] POST endpoints that create resources or change state have idempotency handling
 - [ ] Rate limit headers included on responses
-- [ ] Content-Type is `application/problem+json` for error responses
+- [ ] Content-Type is `application/problem+json` for RFC 9457 responses, `application/json` for simpler formats
 - [ ] Browser security headers on all responses (`X-Content-Type-Options: nosniff`, `CSP: default-src 'none'`, `Referrer-Policy: no-referrer`)
 - [ ] Caching strategy defined (explicit `Cache-Control`, ETags for revalidation, `Vary` where needed)
