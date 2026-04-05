@@ -164,7 +164,7 @@ mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skill
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
 mkdir -p ~/.claude/skills/ci-debugging ~/.claude/skills/hexagonal-architecture ~/.claude/skills/domain-driven-design ~/.claude/skills/twelve-factor ~/.claude/skills/frontend-design ~/.claude/skills/api-design
-mkdir -p ~/.claude/skills/hexagonal-architecture/resources ~/.claude/skills/domain-driven-design/resources ~/.claude/skills/api-design/resources
+mkdir -p ~/.claude/skills/hexagonal-architecture/resources ~/.claude/skills/domain-driven-design/resources ~/.claude/skills/api-design/resources ~/.claude/skills/cli-design/resources
 if [[ "$INSTALL_EXTERNAL" == true ]]; then
   mkdir -p ~/.claude/skills/accessibility ~/.claude/skills/best-practices ~/.claude/skills/core-web-vitals
   mkdir -p ~/.claude/skills/performance ~/.claude/skills/seo ~/.claude/skills/web-quality-audit
@@ -205,6 +205,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "twelve-factor/SKILL.md"
     "frontend-design/SKILL.md"
     "api-design/SKILL.md"
+    "cli-design/SKILL.md"
   )
 
   for skill in "${skills[@]}"; do
@@ -232,6 +233,9 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "api-design/resources/api-security.md"
     "api-design/resources/http-fundamentals.md"
     "api-design/resources/auth-security.md"
+    "cli-design/resources/output-architecture.md"
+    "cli-design/resources/testing-cli.md"
+    "cli-design/resources/stream-contracts.md"
   )
 
   for resource in "${resources[@]}"; do

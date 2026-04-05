@@ -97,6 +97,7 @@ For CI failure diagnosis, load the `ci-debugging` skill.
 For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.
 For 12-factor service projects, load the `twelve-factor` skill.
+For CLI tool design (stream separation, format flags, exit codes, composability), load the `cli-design` skill.
 
 **Project onboarding:** Run `/setup` in any new project to detect its tech stack and generate project-level CLAUDE.md, hooks, commands, and PR review agent in one shot. This replaces the need for `/init`.
 

@@ -210,6 +210,60 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 
 ---
 
+## CLI Design
+
+### Aanand Prasad, Ben Firshman, Carl Tashian, Eva Parish — [Command Line Interface Guidelines](https://clig.dev/) ([source](https://github.com/cli-guidelines/cli-guidelines))
+- **The canonical modern CLI design guide** — philosophy, output design, composability, TTY detection, error handling, subcommands, flag naming, config precedence → CLI design skill: foundation for every section
+- **stdout for data, stderr for messaging** → CLI design skill: "The Unix Stream Contract"
+- **Three-tier output hierarchy** (default/`--plain`/`--json`) → CLI design skill: "Format Flag Contract"
+- **TTY detection and color disable** (`NO_COLOR`, `TERM=dumb`, `--no-color`) → CLI design skill: "TTY Detection"
+- **Config precedence** (flags > env > project > user > system) → CLI design skill: "Config Precedence"
+- **Composability** (support `-` for stdin, detect interactive terminal) → CLI design skill: "Composability Patterns"
+- **Signal handling** (Ctrl-C: exit fast, bounded cleanup, crash-only) → `resources/stream-contracts.md`
+
+### Jeff Dickey (oclif creator) — ["12 Factor CLI Apps"](https://medium.com/@jdxcode/12-factor-cli-apps-dd3c227a0e46) (2018)
+- **12 principles for CLI excellence** → CLI design skill: informed multiple sections
+- **"Using stdout for informational messages makes utilities unusable for pipeable CLIs"** → CLI design skill: core principle
+- **Prefer flags to args** (1 OK, 2 suspicious, 3+ never) → CLI design skill: "Input Design"
+- **Target < 500ms startup** → CLI design skill: verification checklist
+- **Error messages: code + title + description + fix + URL** → CLI design skill: "Error Design"
+- **Follow XDG-spec** for config file locations → CLI design skill: "Config Precedence"
+
+### Heroku Engineering — [Heroku CLI Style Guide](https://devcenter.heroku.com/articles/cli-style-guide)
+- **stdout stability guarantee** — "commands must not change their stdout after GA in ways that break scripts" → CLI design skill: "Output Stability Contract"
+- **Human output should be grep-parseable** (flat rows, no borders) → CLI design skill: `--plain` format
+- **Color conventions** (red/yellow for errors/warnings, respect `NO_COLOR`) → CLI design skill: "TTY Detection"
+
+### galligan — ["Console vs. Logger: Best Practices for CLI Tools & TypeScript Libraries"](https://gist.github.com/galligan/8caddedbdbd830c9731de03eb177e4fd)
+- **Three-layer architecture** (presentation, handler, infrastructure) → CLI design skill: "Keep Handlers Pure"
+- **Silent library principle** — zero output unless app configures logging → `resources/output-architecture.md`: logger interface
+- **`--json` contract** — stdout only valid JSON, stderr continues, errors JSON too, schema versioned → CLI design skill: "Format Flag Contract"
+- **noConsole lint rules per layer** → `resources/output-architecture.md`: lint configuration
+
+### yogin16 — [better-cli](https://github.com/yogin16/better-cli)
+- **17 rules** (P0/P1/P2 priority-ordered) and **8 anti-patterns** → CLI design skill: "Anti-Patterns" section, verification checklist
+- **Agent-readiness checklist** (18 items) → CLI design skill: "Verification Checklist"
+- **Exit code taxonomy** (0/1/2/3/4/5/75/78) including transient distinction → CLI design skill: "Exit Codes"
+- **Error code taxonomy** (domain-prefixed: AUTH_EXPIRED, CONFIG_MISSING, etc.) → CLI design skill: "Error Design"
+- **Token efficiency benchmarks** (full JSON 626K tokens → `--fields` 13K → `--quiet` 1.6K) → CLI design skill: anti-pattern #11
+
+### steipete — [create-cli](https://github.com/openclaw/skills/blob/main/skills/steipete/create-cli/SKILL.md) (via openclaw/skills)
+- **CLI spec template** — structured format for designing CLI surface area before implementation → CLI design skill: overall structure follows this template
+- **Deliverables checklist** (command tree, flags table, I/O contract, exit codes, examples) → CLI design skill: "Verification Checklist"
+
+### Liran Tal — [Node.js CLI Apps Best Practices](https://github.com/lirantal/nodejs-cli-apps-best-practices)
+- **37 best practices** organized across 12 sections → `resources/output-architecture.md`, `resources/testing-cli.md`: Node.js-specific patterns
+- **POSIX signal handling** (SIGINT, SIGTERM) → `resources/stream-contracts.md`: "Signal Handling"
+- **Cross-platform etiquette** (path.join, double quotes, node prefix) → `resources/stream-contracts.md`
+- **Graceful degradation** (detect TTY, skip prompts/colors when piped) → CLI design skill: "TTY Detection"
+
+### Orhun Parmaksız — ["Why stdout is faster than stderr?"](https://blog.orhun.dev/stdout-vs-stderr/) (2023)
+- **stdout ~2x faster than stderr** due to buffering: stdout is line-buffered (TTY) or block-buffered (pipe), stderr is unbuffered → `resources/stream-contracts.md`: "Buffering Behavior"
+- **Performance difference is entirely userspace buffering** — raw write() syscalls perform identically → `resources/stream-contracts.md`
+- **isatty() determines buffering strategy at program startup** → CLI design skill: "The Unix Stream Contract"
+
+---
+
 ## Cross-Cutting Patterns
 
 ### Dave Farley — "Modern Software Engineering" (2022)

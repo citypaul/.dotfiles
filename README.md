@@ -34,7 +34,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 17 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 18 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -89,6 +89,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
 | **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 2 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
+| **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 3 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -128,6 +129,9 @@ Unlike typical style guides, CLAUDE.md provides:
 | UI looks generic or AI-generated | [frontend-design](claude/.claude/skills/frontend-design/SKILL.md) | Distinctive design, production-grade quality, avoid template aesthetics |
 | Designing REST APIs or module contracts | [api-design](claude/.claude/skills/api-design/SKILL.md) | Contract-first, Hyrum's Law, consistent error semantics, pagination |
 | Breaking changes keep surprising consumers | [api-design](claude/.claude/skills/api-design/SKILL.md) | Additive-only changes, One-Version Rule, input/output separation |
+| CLI output breaks when piped to jq | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | stdout for data only, stderr for everything else |
+| JSON mode includes spinners or progress | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | Format flag contract, TTY detection, stream separation |
+| Building a CLI that composes with Unix tools | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | --json/--plain flags, exit codes, NDJSON streaming, stdin support |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
