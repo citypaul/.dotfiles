@@ -170,7 +170,7 @@ Check priority order (first match wins):
 | 4 | `FORCE_COLOR` env | Enable color regardless |
 | 5 | `TERM=dumb` | Disable color and animations |
 | 6 | `CI=true` | No interactive prompts |
-| 7 | `!process.stdout.isTTY` | Plain output, no animations on stdout |
+| 7 | stdout is not a TTY (`!isatty(stdout)`) | Plain output, no animations on stdout |
 | 8 | Default | Full interactive with colors |
 
 **Check stdout and stderr independently.** When stdout is piped but stderr is a TTY, you can still show spinners on stderr while keeping stdout clean for the pipe consumer.
@@ -391,7 +391,7 @@ When in doubt, add alongside — don't modify. Deprecate with stderr warnings be
 | 6 | Output that doesn't guide the next action | Every output is a signpost: success = next command, failure = fix command |
 | 7 | Breaking existing CLI contracts | Flag names, exit codes, output shape are contracts. Add alongside, never modify |
 | 8 | `console.log` anywhere except the CLI adapter | Handlers must return data; only the presentation layer writes to streams |
-| 9 | Handlers that call `process.exit()` | Let the adapter decide. Handlers return `Result.err(...)` |
+| 9 | Handlers that exit the process directly | Let the entry point decide. Handlers return errors as data |
 | 10 | Non-zero exit without stderr explanation | Scripts need both the code and the reason |
 | 11 | Verbose default output | A single test run can generate 419KB. Support `--fields`, `--quiet`, `--json` |
 

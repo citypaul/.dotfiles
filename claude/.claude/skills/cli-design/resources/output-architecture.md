@@ -57,7 +57,7 @@ The `transient` boolean is critical for retry logic -- it tells callers whether 
 
 ---
 
-## 3. CLI Entry Point
+## 2. CLI Entry Point
 
 The entry point wires everything together: parse args, detect format, call handler, format the result, write to stdout, set exit code. No business logic lives here.
 
@@ -81,6 +81,7 @@ type CliDeps = {
 
 const run = async (deps: CliDeps): Promise<number> => {
   const { values, positionals } = parseArgs({
+    // Node.js types argv as string[] but parseArgs expects mutable array
     args: deps.argv.slice(2) as string[],
     options: {
       json: { type: 'boolean', default: false },
@@ -132,6 +133,7 @@ const run = async (deps: CliDeps): Promise<number> => {
 const main = async (): Promise<void> => {
   const exitCode = await run({
     argv: process.argv,
+    // process.env values are string | undefined; Record type aligns with detectOutputConfig
     env: process.env as Record<string, string | undefined>,
     stdout: process.stdout,
     stderr: process.stderr,
@@ -154,7 +156,7 @@ Key design decisions:
 
 ---
 
-## 4. Logger Interface
+## 3. Logger Interface
 
 Structured diagnostics that route to stderr. Silent by default -- if no one configures logging, the library produces zero output.
 
@@ -215,7 +217,7 @@ The no-op logger is not a mock -- it is a legitimate implementation used in prod
 
 ---
 
-## 5. Example Handler
+## 4. Example Handler
 
 A function that takes input, returns structured data. No I/O, no side effects, no knowledge of output format. The logger parameter is optional -- pass it when you need diagnostics.
 
@@ -270,7 +272,7 @@ The handler never calls `console.log`, never writes to a stream, never formats o
 
 ---
 
-## 6. Example Formatters
+## 5. Example Formatters
 
 The same `Result` renders differently depending on format. Each formatter is a pure function -- data in, string out.
 
@@ -414,7 +416,7 @@ const streamAnalysis = async (
 
 ---
 
-## 7. TTY Detection Utility
+## 6. TTY Detection Utility
 
 A pure function that takes environment signals and returns output configuration. No side effects, no global reads.
 
@@ -493,7 +495,7 @@ Each resolver is a separate pure function -- easy to test each priority chain in
 
 ---
 
-## 8. noConsole Lint Rules
+## 7. noConsole Lint Rules
 
 Enforce stream discipline through ESLint configuration. `console.log` in a handler is a bug -- it bypasses the output port and breaks stream separation.
 
@@ -562,7 +564,7 @@ If a handler needs diagnostics, it calls `ctx.logger.info()`. If it needs to pro
 
 ---
 
-## 9. JSON Envelope Design
+## 8. JSON Envelope Design
 
 Every JSON response from the CLI follows a consistent envelope. Consumers can rely on the top-level shape without knowing the specific command.
 

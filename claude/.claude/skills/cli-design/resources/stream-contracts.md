@@ -181,13 +181,13 @@ type NdjsonParseResult<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly error: string; readonly line: string };
 
-const parseNdjsonLine = <T>(line: string): NdjsonParseResult<T> => {
+const parseNdjsonLine = <T>(line: string): NdjsonParseResult<T> | undefined => {
   const trimmed = line.trim();
-  if (trimmed === '') {
-    return { ok: true, value: undefined as T };
-  }
+  if (trimmed === '') return undefined;
   try {
-    return { ok: true, value: JSON.parse(trimmed) as T };
+    // In production, validate with a Zod schema rather than trusting JSON.parse
+    const value: unknown = JSON.parse(trimmed);
+    return { ok: true, value: value as T };
   } catch {
     return { ok: false, error: 'Invalid JSON', line: trimmed };
   }
@@ -198,9 +198,9 @@ const readNdjson = async function* <T>(
 ): AsyncGenerator<T> {
   const rl = createInterface({ input, crlfDelay: Infinity });
   for await (const line of rl) {
-    if (line.trim() === '') continue;
     const result = parseNdjsonLine<T>(line);
-    if (result.ok && result.value !== undefined) {
+    if (result === undefined) continue;
+    if (result.ok) {
       yield result.value;
     }
   }

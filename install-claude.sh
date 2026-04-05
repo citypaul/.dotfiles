@@ -394,7 +394,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (17 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design)"
+  echo -e "  ${GREEN}✓${NC} skills/ (18 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design, cli-design)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "  ${GREEN}✓${NC} skills/ (6 web quality patterns: accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)"
   fi
