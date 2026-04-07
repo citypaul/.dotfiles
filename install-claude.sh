@@ -164,7 +164,9 @@ mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skill
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
 mkdir -p ~/.claude/skills/ci-debugging ~/.claude/skills/hexagonal-architecture ~/.claude/skills/domain-driven-design ~/.claude/skills/twelve-factor ~/.claude/skills/frontend-design ~/.claude/skills/api-design
+mkdir -p ~/.claude/skills/finding-seams ~/.claude/skills/characterisation-tests
 mkdir -p ~/.claude/skills/hexagonal-architecture/resources ~/.claude/skills/domain-driven-design/resources ~/.claude/skills/api-design/resources ~/.claude/skills/cli-design/resources
+mkdir -p ~/.claude/skills/finding-seams/resources ~/.claude/skills/characterisation-tests/resources
 if [[ "$INSTALL_EXTERNAL" == true ]]; then
   mkdir -p ~/.claude/skills/accessibility ~/.claude/skills/best-practices ~/.claude/skills/core-web-vitals
   mkdir -p ~/.claude/skills/performance ~/.claude/skills/seo ~/.claude/skills/web-quality-audit
@@ -206,6 +208,8 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "frontend-design/SKILL.md"
     "api-design/SKILL.md"
     "cli-design/SKILL.md"
+    "finding-seams/SKILL.md"
+    "characterisation-tests/SKILL.md"
   )
 
   for skill in "${skills[@]}"; do
@@ -236,6 +240,10 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "cli-design/resources/output-architecture.md"
     "cli-design/resources/testing-cli.md"
     "cli-design/resources/stream-contracts.md"
+    "finding-seams/resources/seam-types.md"
+    "finding-seams/resources/creating-seams.md"
+    "characterisation-tests/resources/writing-process.md"
+    "characterisation-tests/resources/modern-tooling.md"
   )
 
   for resource in "${resources[@]}"; do
@@ -394,7 +402,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (18 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design, cli-design)"
+  echo -e "  ${GREEN}✓${NC} skills/ (20 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design, cli-design, finding-seams, characterisation-tests)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "  ${GREEN}✓${NC} skills/ (6 web quality patterns: accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)"
   fi

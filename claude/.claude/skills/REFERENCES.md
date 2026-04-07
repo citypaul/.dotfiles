@@ -264,6 +264,37 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
 
 ---
 
+## Legacy Code
+
+### Michael Feathers — *Working Effectively with Legacy Code* (2004)
+- **Seam model** (Chapter 4) — a seam is a place where you can alter behavior without editing in that place; every seam has an enabling point → Finding seams skill: "Core Concept" + all seam types
+- **Preprocessing seams, link seams, object seams** — three categories mapped to TypeScript equivalents (module seams, object seams, function parameter seams, configuration seams) → `finding-seams/resources/seam-types.md`
+- **Dependency-breaking techniques** (Extract and Override Method, Parameterize Constructor/Method, Extract Interface, Introduce Instance Delegator, Replace Function with Function Pointer) → `finding-seams/resources/creating-seams.md`
+- **Sensing vs separation** — the two reasons to break dependencies → Finding seams skill: used throughout technique examples
+- **Characterization tests** (Chapter 13) — tests that document actual behavior, not intended behavior → Characterisation tests skill: "Core Concept" + algorithm
+- **The 5-step algorithm** (use in harness, fail, observe, record, repeat) → Characterisation tests skill: "The Algorithm"
+- **Heuristics for writing characterization tests** (coverage-guided, production behavior as spec, focus on change area) → Characterisation tests skill: "Heuristics"
+- **Targeted testing** — after characterising, verify tests exercise paths you're about to change; type conversion traps → `characterisation-tests/resources/writing-process.md`
+- **Pinch points** — narrowings in effect graphs where tests against few methods detect changes in many → `characterisation-tests/resources/writing-process.md`
+- **The Method Use Rule** — before using a method in legacy code, check for tests; if none, write them → `characterisation-tests/resources/writing-process.md`
+- **Legacy code definition** — "code without tests" → Characterisation tests skill: motivating context
+
+### Martin Fowler — ["Legacy Seam"](https://martinfowler.com/bliki/LegacySeam.html)
+- **Three uses of seams beyond testing** — breaking dependencies for testing (original), observability (monitoring probes), legacy displacement (redirecting flow to modern systems) → Finding seams skill: informed the broader perspective on seam utility
+
+### Mike Pennisi (Bocoup) — ["Seams in JavaScript"](https://www.bocoup.com/blog/seams-in-javascript)
+- **Four seam types adapted for JavaScript** — preprocessing, method, function parameter, module seams → `finding-seams/resources/seam-types.md`: JavaScript-specific seam taxonomy
+
+### Mike Bland — ["Legacy Code, Seams, and the Most Important Design Guideline"](https://mike-bland.com/2023/08/23/legacy-code-seams-and-the-most-important-design-guideline.html) (2023)
+- **Electrical outlet analogy** — well-designed seams define contracts, isolate components, include safety infrastructure, enable testability → Finding seams skill: design philosophy
+- **"Testable interfaces inherently constitute good interfaces regardless of testing contexts"** → Finding seams skill: seams as design improvement, not just test scaffolding
+
+### Nicolas Carlo (understandlegacycode.com) — ["Key Points of Working Effectively with Legacy Code"](https://understandlegacycode.com/blog/key-points-of-working-effectively-with-legacy-code/)
+- **3-step characterization process under deadline pressure** (generate output, achieve coverage, verify with mutation testing) → `characterisation-tests/resources/writing-process.md`
+- **Coverage-guided + mutation-verified characterisation** → `characterisation-tests/resources/modern-tooling.md`
+
+---
+
 ## Cross-Cutting Patterns
 
 ### Dave Farley — "Modern Software Engineering" (2022)
