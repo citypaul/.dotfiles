@@ -91,7 +91,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
 | **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 2 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
 | **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 3 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
-| **Finding Seams** | Identifying substitution points in untestable code -- module, object, function parameter, and configuration seams for TypeScript/JS. Techniques for creating seams where none exist. Based on Michael Feathers' *Working Effectively with Legacy Code*. 2 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
+| **Finding Seams** | Identifying substitution points in untestable code -- function parameter, configuration, module, and object seams for TypeScript/JS. FP-first with OOP patterns in a separate resource for legacy class-based code. Based on Michael Feathers' *Working Effectively with Legacy Code*. 3 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
 | **Characterisation Tests** | Documenting actual behavior of existing code before making changes. The 5-step algorithm, heuristics, modern tooling (Vitest snapshots, combination testing, approval testing). Based on Michael Feathers' *Working Effectively with Legacy Code*. 2 deep-dive resources | [→ skills/characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -553,13 +553,15 @@ refactoring            → Improve structure with confidence
 
 **Problem it solves:** Code has dependencies you can't test around -- direct construction of collaborators, static/global calls, tight coupling to databases or external services, singleton access patterns
 
-**What's inside (main skill + 2 deep-dive resources):**
+**What's inside (main skill + 3 deep-dive resources):**
 - **Core concept** -- Feathers' definition: "A seam is a place where you can alter behavior in your program without editing in that place." Every seam has an enabling point.
-- **4 seam types for TypeScript/JS** -- module seams (`vi.mock()`), object seams (subclass/DI), function parameter seams (FP approach), configuration seams (env vars, flags)
-- **How to find seams** -- 6 things to look for in existing code (parameters, constructors, overridable methods, imports, config, `new` keywords)
-- **The progression** -- from quick-fix to proper design (extract & override → module mocking → parameter injection → constructor injection → full DI)
-- **6 techniques for creating seams** -- extract and override, parameterize method/constructor, extract interface, wrap static calls, module indirection
-- **Sensing vs separation** -- the two reasons to break dependencies, with examples of each
+- **4 seam types for TypeScript/JS** -- function parameter seams (primary), configuration seams, module seams (`vi.mock()` -- last resort), object seams (legacy OOP only)
+- **How to find seams** -- 6 things to look for in existing code (function parameters, default values, imports, config, React props/context, hard-coded `new`)
+- **The progression** -- FP-first ordering (parameter injection → higher-order functions → configuration injection → module mocking → subclass override)
+- **FP-first creation techniques** -- parameterize function, higher-order factory, extract type, wrap calls, module indirection
+- **OOP patterns in separate resource** -- for legacy class-based code: object seams, extract and override, parameterize constructor
+- **React/Next.js seams** -- props as seams, context as seams, MSW as API boundary seam
+- **Connection to hexagonal architecture** -- ports are designed-in seams
 
 **Concrete example from the docs:**
 
@@ -598,10 +600,11 @@ expect(result.total).toBe(108);
 - **Core concept** -- "A characterisation test characterizes the actual behavior of a piece of code. There's no 'it should do this' -- the tests document what the system really does."
 - **The 5-step algorithm** -- use code in test harness, write assertion you know will fail, let failure tell you the behavior, change test to expect actual behavior, repeat
 - **Feathers' heuristics** -- use coverage as guide, production behavior IS the specification, focus on the change area, mark suspicious behavior
+- **When to stop** -- cover every branch your change touches + one layer out, then validate with mutation testing
 - **Bug handling** -- if system is deployed, someone may depend on the "bug"; document it, mark as suspicious, escalate
-- **Targeted testing** -- after characterising, verify tests exercise the specific paths you're about to change; watch for type conversion traps
+- **Mutation testing validation** -- after characterising, run mutation testing on the change area to verify tests would catch real bugs
+- **Sensing via parameter injection** -- prefer function parameters over monkey-patching for observing code behavior
 - **Modern tooling** -- Vitest inline snapshots (`toMatchInlineSnapshot()`), combination testing, approval testing, coverage-guided characterisation
-- **Pinch points** -- narrowings where tests against a few methods detect changes in many; ideal locations for characterisation tests
 
 **Concrete example from the docs:**
 

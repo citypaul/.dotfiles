@@ -11,7 +11,7 @@ For making untestable code testable first, load the `finding-seams` skill. For t
 
 | Resource | Load when... |
 |----------|-------------|
-| `writing-process.md` | Need a worked example of the full characterisation process with targeted testing and pinch points |
+| `writing-process.md` | Need a worked example of the full characterisation process with targeted testing and when-to-stop guidance |
 | `modern-tooling.md` | Need guidance on Vitest snapshots, combination testing, approval testing, or handling non-determinism |
 
 ## Core Concept
@@ -58,6 +58,17 @@ it('characterises formatPrice', () => {
 3. **Focus on the change area** -- you don't need to characterise the entire codebase, only the code you're about to modify
 4. **Mark suspicious behavior** -- when you find something that looks like a bug, document it in the test but mark it as suspicious; don't silently "fix" it
 5. **Look at the code** -- these aren't black-box tests; read the code to guide which paths to characterise
+6. **Validate with mutation testing** -- after characterising, run the `mutation-testing` skill against the change area to verify your tests would catch real bugs. Coverage tells you which paths are *exercised*; mutation testing tells you which are *protected*.
+
+## When to Stop
+
+You don't need 100% coverage of the entire codebase. Stop when:
+
+- **Every branch your upcoming change touches** has a characterisation test exercising it
+- **One layer out** from the change point is also covered (the branches that call into or are called by the code you're changing)
+- **Mutation testing** on the change area shows no surviving mutants in paths you'll modify
+
+If you can't feel confident that your tests would detect a mistake in the specific code you're about to change, add more tests. If you can, stop.
 
 ## When You Find Bugs
 
@@ -84,7 +95,8 @@ They enable refactoring, then get replaced by proper behavior-driven tests:
 |---------|-----|
 | Treating characterisation tests as permanent | They are scaffolding -- replace with behavior-driven tests as you refactor |
 | "Fixing" bugs in characterisation tests | Document the actual behavior, mark as suspicious, escalate |
-| Trying to characterise the entire codebase | Focus on the area you're about to change |
+| Trying to characterise the entire codebase | Focus on the area you're about to change + one layer out |
 | Writing characterisation tests based on what code *should* do | Let the code tell you what it does -- use the algorithm above |
-| Skipping coverage checks after characterising | Use coverage + mutation testing to verify your safety net is adequate |
+| Skipping mutation testing after characterising | Coverage says paths ran; mutation testing says tests would catch changes |
 | Using characterisation tests for new code | New code should be test-driven (see `tdd` skill) |
+| Using `vi.mock()` for sensing instead of parameter injection | Pass a sensing function as a parameter (see `finding-seams` skill) |
