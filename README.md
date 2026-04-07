@@ -16,6 +16,7 @@
 - [Slash Commands](#-slash-commands)
 - [How to Use This in Your Projects](#-how-to-use-this-in-your-projects)
   - [OpenCode Support](#optional-enable-opencode-support)
+- [Working with Legacy Code](#-working-with-legacy-code)
 - [Documentation](#-documentation)
 - [Who This Is For](#-who-this-is-for)
 - [Philosophy](#-philosophy)
@@ -34,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 18 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 20 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -90,6 +91,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
 | **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 2 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
 | **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 3 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
+| **Finding Seams** | Identifying substitution points in untestable code -- module, object, function parameter, and configuration seams for TypeScript/JS. Techniques for creating seams where none exist. Based on Michael Feathers' *Working Effectively with Legacy Code*. 2 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
+| **Characterisation Tests** | Documenting actual behavior of existing code before making changes. The 5-step algorithm, heuristics, modern tooling (Vitest snapshots, combination testing, approval testing). Based on Michael Feathers' *Working Effectively with Legacy Code*. 2 deep-dive resources | [→ skills/characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -101,7 +104,7 @@ Unlike typical style guides, CLAUDE.md provides:
 
 ## 📖 Skills Guide
 
-**v3.0 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3000+ lines to ~100 lines.
+**v3.0 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3,000+ lines to ~100 lines.
 
 ### Quick Navigation by Problem
 
@@ -132,6 +135,9 @@ Unlike typical style guides, CLAUDE.md provides:
 | CLI output breaks when piped to jq | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | stdout for data only, stderr for everything else |
 | JSON mode includes spinners or progress | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | Format flag contract, TTY detection, stream separation |
 | Building a CLI that composes with Unix tools | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | --json/--plain flags, exit codes, NDJSON streaming, stdin support |
+| Code has dependencies I can't test around | [finding-seams](claude/.claude/skills/finding-seams/SKILL.md) | Find substitution points (seams) without editing at the call site |
+| Need to understand what code does before changing it | [characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) | Let failing tests tell you what code actually does, not what it should do |
+| Modifying code that has no tests | [characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) | Pin down current behavior as a safety net, then refactor |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
@@ -146,6 +152,8 @@ Skills are **auto-discovered** by Claude when relevant:
 - After MUTATE + KILL MUTANTS? → `refactoring` skill assesses opportunities
 - Reviewing test effectiveness? → `mutation-testing` skill identifies weak tests
 - Designing API endpoints? → `api-design` skill provides contract-first patterns
+- Code with hard-to-test dependencies? → `finding-seams` skill identifies substitution points
+- Changing code with no tests? → `characterisation-tests` skill documents existing behavior
 
 **No manual invocation needed** - Claude detects when skills apply.
 
@@ -501,6 +509,116 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 - [`resources/api-security.md`](claude/.claude/skills/api-design/resources/api-security.md) — OWASP API Security Top 10 with TypeScript code examples, authentication patterns (API keys, OAuth2+PKCE, JWT tradeoffs), security checklist
 
 **Adapted from** [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), significantly expanded with RFC 9457, idempotency, rate limiting, OWASP API Security Top 10, versioning strategies, and deprecation patterns. Modified to align with existing skills: TypeScript patterns deferred to `typescript-strict`, data structures use `type` with `readonly` per `functional` skill conventions.
+
+---
+
+### 📕 Working with Legacy Code → [skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) + [skills/characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md)
+
+These two skills are adapted from Michael Feathers' *[Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/)* (2004), one of the most influential books on software testing and design. Feathers provides a specific, deliberate definition of legacy code:
+
+> **Legacy code is code without tests.**
+>
+> Code without tests is bad code. It doesn't matter how well written it is; it doesn't matter how pretty or object-oriented or well-encapsulated it is. With tests, we can change the behavior of our code quickly and verifiably. Without them, we really don't know if our code is getting better or worse.
+>
+> *-- Michael Feathers, Working Effectively with Legacy Code (2004)*
+
+This definition matters because it reframes the problem. Legacy code isn't about age, technology, or quality -- it's about the absence of a safety net. Code written yesterday without tests is legacy code. A twenty-year-old system with comprehensive tests is not.
+
+**The legacy code dilemma:** You need tests to change code safely, but the code wasn't written for testability, so you can't easily write tests. Feathers' two key techniques break this catch-22:
+
+1. **Finding seams** -- identify places where you can alter behavior *without editing at that place*, giving you substitution points to isolate code for testing
+2. **Characterisation tests** -- write tests that document what the code *actually does* (not what it should do), creating a safety net for refactoring
+
+These two skills bridge the gap between untested code and the TDD workflow that the rest of this framework assumes. Once you have seams and characterisation tests in place, the standard cycle takes over: refactor with confidence, then replace characterisation tests with proper behavior-driven tests over time.
+
+**How they fit the existing workflow:**
+
+```
+Untested code
+    ↓
+finding-seams         → Break dependencies to make code testable
+    ↓
+characterisation-tests → Document actual behavior as a safety net
+    ↓
+tdd / testing          → Write proper behavior-driven tests for new changes
+    ↓
+mutation-testing       → Verify test effectiveness
+    ↓
+refactoring            → Improve structure with confidence
+```
+
+---
+
+#### 🔍 Finding Seams → [skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md)
+
+**Problem it solves:** Code has dependencies you can't test around -- direct construction of collaborators, static/global calls, tight coupling to databases or external services, singleton access patterns
+
+**What's inside (main skill + 2 deep-dive resources):**
+- **Core concept** -- Feathers' definition: "A seam is a place where you can alter behavior in your program without editing in that place." Every seam has an enabling point.
+- **4 seam types for TypeScript/JS** -- module seams (`vi.mock()`), object seams (subclass/DI), function parameter seams (FP approach), configuration seams (env vars, flags)
+- **How to find seams** -- 6 things to look for in existing code (parameters, constructors, overridable methods, imports, config, `new` keywords)
+- **The progression** -- from quick-fix to proper design (extract & override → module mocking → parameter injection → constructor injection → full DI)
+- **6 techniques for creating seams** -- extract and override, parameterize method/constructor, extract interface, wrap static calls, module indirection
+- **Sensing vs separation** -- the two reasons to break dependencies, with examples of each
+
+**Concrete example from the docs:**
+
+```typescript
+// BEFORE -- direct dependency, no seam
+const processOrder = (order: Order): OrderResult => {
+  const tax = fetchTaxRate(order.region);  // calls external service
+  return { ...order, total: order.subtotal * (1 + tax) };
+};
+
+// AFTER -- function parameter seam (enabling point: the argument list)
+type TaxResolver = (region: string) => number;
+
+const processOrder = (
+  order: Order,
+  resolveTax: TaxResolver = fetchTaxRate,  // default = production behavior
+): OrderResult => {
+  const tax = resolveTax(order.region);
+  return { ...order, total: order.subtotal * (1 + tax) };
+};
+
+// Test -- pass a fake at the seam
+const result = processOrder(order, () => 0.08);
+expect(result.total).toBe(108);
+```
+
+**Key insight:** In functional TypeScript, functions-as-values provide natural built-in seams everywhere. Every function parameter that accepts a callable is both a seam and its own enabling point -- no mocking framework required.
+
+---
+
+#### 📋 Characterisation Tests → [skills/characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md)
+
+**Problem it solves:** Modifying code with no tests and no specifications; needing to understand what code does before changing it; facing the legacy code dilemma where you need tests to refactor safely
+
+**What's inside (main skill + 2 deep-dive resources):**
+- **Core concept** -- "A characterisation test characterizes the actual behavior of a piece of code. There's no 'it should do this' -- the tests document what the system really does."
+- **The 5-step algorithm** -- use code in test harness, write assertion you know will fail, let failure tell you the behavior, change test to expect actual behavior, repeat
+- **Feathers' heuristics** -- use coverage as guide, production behavior IS the specification, focus on the change area, mark suspicious behavior
+- **Bug handling** -- if system is deployed, someone may depend on the "bug"; document it, mark as suspicious, escalate
+- **Targeted testing** -- after characterising, verify tests exercise the specific paths you're about to change; watch for type conversion traps
+- **Modern tooling** -- Vitest inline snapshots (`toMatchInlineSnapshot()`), combination testing, approval testing, coverage-guided characterisation
+- **Pinch points** -- narrowings where tests against a few methods detect changes in many; ideal locations for characterisation tests
+
+**Concrete example from the docs:**
+
+```typescript
+// Step 1: Write an assertion you know will fail
+it('characterises formatPrice', () => {
+  expect(formatPrice(1999)).toBe('PLACEHOLDER');
+});
+// Test output: expected 'PLACEHOLDER' but received '$19.99'
+
+// Step 2: Change test to expect actual behavior
+it('characterises formatPrice', () => {
+  expect(formatPrice(1999)).toBe('$19.99');
+});
+```
+
+**Key insight:** Characterisation tests have no moral authority -- they don't assert correctness, they detect *change*. They are temporary scaffolding: once you understand the code and have proper behavior-driven tests, the characterisation tests can be retired. Like "walking into a forest and drawing a line -- after you own that area, you can develop it."
 
 ---
 
@@ -1038,7 +1156,7 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (18 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design, cli-design)
+- ✅ `~/.claude/skills/` (20 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design, cli-design, finding-seams, characterisation-tests)
 - ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
@@ -1252,7 +1370,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 18 auto-discovered skills + 5 slash commands + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 20 auto-discovered skills + 5 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1275,7 +1393,7 @@ The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `-
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (18 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (20 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1452,7 +1570,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 24 skills (18 built-in + 6 web quality) + 10 agents (development guidelines)
+- ✅ CLAUDE.md + 26 skills (20 built-in + 6 web quality) + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
@@ -1529,6 +1647,8 @@ Please open issues or PRs on GitHub.
 ## 🙏 Acknowledgments
 
 Special thanks to contributors who have shared their work:
+
+- **[Michael Feathers](https://michaelfeathers.silvrback.com/)** - The `finding-seams` and `characterisation-tests` skills are adapted from *[Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/)* (2004). Feathers' concepts of seams, enabling points, and characterization tests are foundational techniques for making untestable code testable. The skills adapt his C++/Java examples to modern TypeScript/JavaScript patterns.
 
 - **[Addy Osmani](https://github.com/addyosmani)** - The web quality skills (accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit) are sourced from [Addy's web-quality-skills repository](https://github.com/addyosmani/web-quality-skills). These skills are fetched directly from the upstream repository at install time so you always get the latest version. Licensed under the [MIT License](https://github.com/addyosmani/web-quality-skills/blob/main/LICENSE). The `api-design` skill is adapted from [Addy's agent-skills repository](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), modified to align with existing skill conventions.
 
