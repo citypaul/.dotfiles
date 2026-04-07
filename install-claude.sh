@@ -242,6 +242,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "cli-design/resources/stream-contracts.md"
     "finding-seams/resources/seam-types.md"
     "finding-seams/resources/creating-seams.md"
+    "finding-seams/resources/oop-patterns.md"
     "characterisation-tests/resources/writing-process.md"
     "characterisation-tests/resources/modern-tooling.md"
   )

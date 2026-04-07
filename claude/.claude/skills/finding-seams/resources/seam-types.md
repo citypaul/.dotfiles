@@ -1,29 +1,191 @@
 # Seam Types for TypeScript/JavaScript
 
-Deep dive on each seam type with examples. See the main `finding-seams` skill for overview and when-to-use guidance.
+FP-first examples of each seam type. See the main `finding-seams` skill for overview. For class-based patterns (object seams, subclass and override), see `oop-patterns.md`.
 
-## Module Seams
+## Function Parameter Seams (Primary Technique)
 
-The modern equivalent of Feathers' "link seams." The module system resolves imports at load time -- you can intercept this to substitute behavior.
+The **default choice** in functional TypeScript. Every function parameter that accepts a callable is both a seam and its own enabling point. No mocking framework required.
+
+### Basic: Default Parameter
 
 ```typescript
-// production code: order-service.ts
-import { sendConfirmation } from './email-client';
+type TaxResolver = (region: string) => number;
 
-export const placeOrder = (order: Order): OrderResult => {
-  const result = processPayment(order);
-  if (result.success) {
-    sendConfirmation(order.customerEmail, result.receipt);
-  }
-  return result;
+const calculateTotal = (
+  items: ReadonlyArray<LineItem>,
+  resolveTax: TaxResolver = fetchTaxRate,  // production default
+): Money => {
+  const subtotal = items.reduce(
+    (sum, item) => addMoney(sum, multiplyMoney(item.price, item.quantity)),
+    zeroMoney,
+  );
+  const tax = resolveTax(items[0]?.region ?? 'default');
+  return addMoney(subtotal, multiplyMoney(subtotal, tax));
 };
+
+// Test -- enabling point is the argument list
+const fixedTax: TaxResolver = () => 0.08;
+const result = calculateTotal(threeItems, fixedTax);
+expect(result).toEqual(createMoney(3240, 'USD'));
 ```
 
-```typescript
-// test: order-service.test.ts
-import { vi, describe, it, expect } from 'vitest';
+### Higher-Order Function: Factory Pattern
 
-// The MODULE SEAM -- replacing the import
+When a function needs multiple dependencies, return a configured function:
+
+```typescript
+type Dependencies = {
+  readonly resolvePrice: (sku: string) => Money;
+  readonly applyDiscount: (total: Money, code: string) => Money;
+};
+
+const createOrderCalculator = ({
+  resolvePrice,
+  applyDiscount,
+}: Dependencies) => (
+  items: ReadonlyArray<LineItem>,
+  discountCode?: string,
+): Money => {
+  const total = items.reduce(
+    (sum, item) => addMoney(sum, multiplyMoney(resolvePrice(item.sku), item.quantity)),
+    zeroMoney,
+  );
+  return discountCode ? applyDiscount(total, discountCode) : total;
+};
+
+// Production
+const calculateOrder = createOrderCalculator({
+  resolvePrice: lookupCatalogPrice,
+  applyDiscount: fetchDiscountFromApi,
+});
+
+// Test -- wire in fakes
+const calculateOrder = createOrderCalculator({
+  resolvePrice: () => createMoney(1000, 'USD'),
+  applyDiscount: (total) => multiplyMoney(total, 0.9),
+});
+```
+
+### Sensing: Capturing Calls Without Mocks
+
+When you need to observe what a dependency was called with (sensing), use a simple closure:
+
+```typescript
+const createSensingNotifier = () => {
+  const calls: ReadonlyArray<{ readonly to: string; readonly body: string }> = [];
+  const notify = (to: string, body: string): void => {
+    (calls as Array<typeof calls[number]>).push({ to, body });
+  };
+  return { notify, calls: () => calls };
+};
+
+// Test
+const sensing = createSensingNotifier();
+processOrder(testOrder, { notify: sensing.notify });
+expect(sensing.calls()).toEqual([
+  { to: 'customer@example.com', body: expect.stringContaining('Order confirmed') },
+]);
+```
+
+## React/Next.js Seams
+
+In React, **props are function parameter seams** and **context providers are configuration seams**.
+
+### Props as Seams
+
+```typescript
+type OrderSummaryProps = {
+  readonly items: ReadonlyArray<LineItem>;
+  readonly formatCurrency?: (amount: Money) => string;  // seam
+};
+
+const OrderSummary = ({
+  items,
+  formatCurrency = defaultFormatCurrency,
+}: OrderSummaryProps) => (
+  <div>{items.map(item => (
+    <span key={item.id}>{formatCurrency(item.price)}</span>
+  ))}</div>
+);
+
+// Test -- swap the formatter
+render(<OrderSummary items={testItems} formatCurrency={() => '$10.00'} />);
+```
+
+### Context as Seams
+
+```typescript
+// Production context provides real API client
+const ApiContext = createContext<ApiClient>(realApiClient);
+
+// Test -- wrap with fake provider
+render(
+  <ApiContext.Provider value={fakeApiClient}>
+    <OrderPage />
+  </ApiContext.Provider>
+);
+```
+
+### MSW as a Module-Level Seam for API Boundaries
+
+MSW intercepts network requests at the service worker level -- effectively a link seam for HTTP boundaries:
+
+```typescript
+const handlers = [
+  http.get('/api/orders', () => HttpResponse.json(testOrders)),
+];
+const server = setupServer(...handlers);
+beforeAll(() => server.listen());
+afterAll(() => server.close());
+```
+
+## Configuration Seams
+
+Behavior varies based on external configuration. Use a function parameter with a production default instead of reading `process.env` directly.
+
+```typescript
+// ❌ Hard-coded env access -- no seam
+const getApiUrl = () => process.env.API_URL!;
+
+// ✅ Default parameter seam
+const createClient = (
+  getApiUrl = () => process.env.API_URL!,
+) => ({
+  fetch: (path: string) => fetch(`${getApiUrl()}${path}`),
+});
+
+// Test
+const client = createClient(() => 'http://localhost:3001');
+```
+
+For feature flags:
+
+```typescript
+type FeatureFlags = {
+  readonly isEnabled: (flag: string) => boolean;
+};
+
+const processCheckout = (
+  cart: Cart,
+  features: FeatureFlags = productionFlags,
+): CheckoutResult => {
+  const discount = features.isEnabled('holiday-sale')
+    ? applyHolidayDiscount(cart)
+    : cart;
+  return finalize(discount);
+};
+
+// Test
+const allEnabled: FeatureFlags = { isEnabled: () => true };
+const result = processCheckout(testCart, allEnabled);
+```
+
+## Module Seams (Last Resort)
+
+`vi.mock()` / `jest.mock()` replaces imports at the module level. **Use only as temporary scaffolding** when you cannot modify the production code yet.
+
+```typescript
+// ⚠️ SCAFFOLDING ONLY -- migrate to parameter injection
 vi.mock('./email-client', () => ({
   sendConfirmation: vi.fn(),
 }));
@@ -31,123 +193,30 @@ vi.mock('./email-client', () => ({
 import { placeOrder } from './order-service';
 import { sendConfirmation } from './email-client';
 
-describe('placeOrder', () => {
-  it('sends confirmation on successful payment', () => {
-    const result = placeOrder(validOrder);
-    expect(sendConfirmation).toHaveBeenCalledWith(
-      validOrder.customerEmail,
-      expect.objectContaining({ id: expect.any(String) }),
-    );
-  });
-});
-```
-
-**Enabling point:** The `vi.mock()` call in the test file.
-
-**Trade-offs:** Fast to apply, no production code changes. But implicit -- bypasses TypeScript's type system, requires `clearAllMocks()` between tests, and the seam is invisible from the production code.
-
-## Object Seams
-
-Exploit polymorphism -- the fact that a method call does not define which implementation runs at runtime.
-
-```typescript
-// production code: report-generator.ts
-class ReportGenerator {
-  constructor(private readonly dataSource: DataSource) {}
-
-  generate(period: DateRange): Report {
-    const data = this.dataSource.fetch(period);  // SEAM
-    return this.format(data);
-  }
-
-  // Also a seam -- protected method can be overridden
-  protected format(data: RawData): Report {
-    return { sections: data.rows.map(this.formatRow) };
-  }
-}
-```
-
-```typescript
-// test: using constructor injection (enabling point: constructor arg)
-const fakeDataSource: DataSource = {
-  fetch: (period) => ({ rows: [testRow] }),
-};
-const generator = new ReportGenerator(fakeDataSource);
-
-// test: using subclass override (enabling point: which class is instantiated)
-class TestableReportGenerator extends ReportGenerator {
-  protected override format(data: RawData): Report {
-    return { sections: [{ raw: data }] };  // simplified for testing
-  }
-}
-```
-
-**Enabling point:** The constructor argument list, or the choice of which class to instantiate.
-
-**Trade-offs:** Explicit, type-safe, visible in production code. Requires the dependency to be injectable (not constructed internally).
-
-## Function Parameter Seams
-
-In functional TypeScript, functions-as-values provide natural built-in seams. Every function parameter that accepts a callable is both a seam and its own enabling point.
-
-```typescript
-// production code: pricing.ts
-type PriceResolver = (sku: string) => Money;
-
-export const calculateTotal = (
-  items: ReadonlyArray<LineItem>,
-  resolvePrice: PriceResolver = lookupCatalogPrice,  // default = production behavior
-): Money => {
-  return items.reduce(
-    (sum, item) => addMoney(sum, multiplyMoney(resolvePrice(item.sku), item.quantity)),
-    zeroMoney,
+it('sends confirmation on successful payment', () => {
+  placeOrder(validOrder);
+  expect(sendConfirmation).toHaveBeenCalledWith(
+    validOrder.customerEmail,
+    expect.objectContaining({ id: expect.any(String) }),
   );
-};
-```
-
-```typescript
-// test: pricing.test.ts -- enabling point is the argument
-const fixedPrice: PriceResolver = () => createMoney(1000, 'USD');
-
-it('sums line items', () => {
-  const total = calculateTotal(threeItems, fixedPrice);
-  expect(total).toEqual(createMoney(3000, 'USD'));
 });
 ```
 
-**Enabling point:** The argument list -- caller decides which implementation to pass.
+**Why last resort:**
+- Bypasses TypeScript's type system entirely
+- Creates implicit coupling between test and implementation
+- Requires `vi.clearAllMocks()` between tests (shared mutable state)
+- The seam is invisible from production code
 
-**Trade-offs:** Most explicit approach. Fully type-safe, no shared state between tests, no mocking framework needed. Preferred for functional codebases.
-
-## Configuration Seams
-
-Behavior varies based on external configuration rather than code substitution.
-
-```typescript
-// production code: feature-flags.ts
-export const createFeatureFlags = (config: FeatureConfig) => ({
-  isEnabled: (flag: string): boolean => config.flags[flag] ?? false,
-});
-
-// usage in production
-const flags = createFeatureFlags(loadFromEnv());
-
-// usage in test -- enabling point: the config object
-const flags = createFeatureFlags({ flags: { 'new-checkout': true } });
-```
-
-**Enabling point:** The config source (env vars, config file, constructor argument).
-
-**Trade-offs:** Good for infrastructure-level concerns. Less precise than other seam types -- affects broad behavior rather than specific dependencies.
+**Migration path:** Once you have characterisation tests via `vi.mock()`, refactor the production code to accept the dependency as a parameter, then remove the mock.
 
 ## Comparison: When to Prefer Each Type
 
-| Criterion | Module | Object | Function Param | Configuration |
-|-----------|--------|--------|---------------|--------------|
-| Speed to apply | Fast | Medium | Medium | Fast |
-| Type safety | None (bypasses TS) | Full | Full | Full |
-| Production code changes | None | May need refactoring | May need refactoring | Usually exists |
-| Explicitness | Implicit | Explicit | Most explicit | Varies |
-| Test isolation | Requires cleanup | Natural | Natural | Natural |
-| Best for | Quick scaffolding | Class-based DI | Functional code | Feature toggling |
-| Temporary or permanent | Temporary | Permanent | Permanent | Permanent |
+| Criterion | Function Parameter | Configuration | Module Mock | Object (OOP) |
+|-----------|-------------------|---------------|-------------|-------------|
+| Type safety | Full | Full | None | Full |
+| Explicitness | Most explicit | Explicit | Implicit | Explicit |
+| Test isolation | Natural | Natural | Requires cleanup | Natural |
+| Production changes | May need refactoring | Usually exists | None | May need refactoring |
+| Permanence | Permanent | Permanent | **Temporary only** | Permanent |
+| Best for | **Default choice** | Infrastructure | Quick scaffolding | Legacy class code |
