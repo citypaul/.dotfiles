@@ -221,6 +221,51 @@ vi.mock('./image-analyzer', () => ({
 
 **When to use:** When you cannot change the function signature yet but need to isolate a heavy/slow dependency. Convert to parameter injection next.
 
+## Technique 6: Parameterize Async Function
+
+The same as Technique 1, but for `async` dependencies. The type signature returns a `Promise`:
+
+```typescript
+// BEFORE -- hidden async dependency, no seam
+const getOrderSummary = async (userId: string): Promise<Summary> => {
+  const orders = await db.query('SELECT * FROM orders WHERE user_id = $1', [userId]);
+  const total = orders.reduce((sum, o) => sum + o.amount, 0);
+  return { userId, orderCount: orders.length, totalSpent: total };
+};
+```
+
+```typescript
+// AFTER -- async dependency as parameter with production default
+type OrderFetcher = (userId: string) => Promise<ReadonlyArray<Order>>;
+
+const getOrderSummary = async (
+  userId: string,
+  fetchOrders: OrderFetcher = (id) => db.query('SELECT * FROM orders WHERE user_id = $1', [id]),
+): Promise<Summary> => {
+  const orders = await fetchOrders(userId);
+  const total = orders.reduce((sum, o) => sum + o.amount, 0);
+  return { userId, orderCount: orders.length, totalSpent: total };
+};
+
+// Test -- for SEPARATION (skip the real database)
+const result = await getOrderSummary('user-1', async () => [
+  { id: 'o-1', amount: 50 },
+  { id: 'o-2', amount: 75 },
+]);
+expect(result).toEqual({ userId: 'user-1', orderCount: 2, totalSpent: 125 });
+
+// Test -- for SENSING (observe queries)
+const queries: string[] = [];
+const sensingFetcher: OrderFetcher = async (userId) => {
+  queries.push(userId);
+  return [{ id: 'o-1', amount: 100 }];
+};
+await getOrderSummary('user-1', sensingFetcher);
+expect(queries).toEqual(['user-1']);
+```
+
+**When to use:** Any function with async I/O (database, HTTP, filesystem). Same technique as Technique 1 -- the only difference is the `Promise` return type.
+
 ## Two Reasons to Break Dependencies
 
 Every technique above can serve either purpose:

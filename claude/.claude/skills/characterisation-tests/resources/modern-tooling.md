@@ -50,20 +50,26 @@ it('characterises full report output', () => {
 
 ## Combination Testing
 
-Test many input combinations at once to rapidly characterise a function's behavior. The `jest-extended-snapshot` library provides `.toVerifyAllCombinations()`:
+Test many input combinations at once to rapidly characterise a function's behavior. Use `it.each` with a generated matrix, or the `jest-extended-snapshot` library (compatible with Vitest via `vitest-compatible-jest-extended-snapshot` or by configuring Vitest's Jest compatibility mode):
 
 ```typescript
-import 'jest-extended-snapshot';
+// Option 1: it.each with inline snapshot (pure Vitest, no extra dependency)
+const amounts = [100, 1000, 10000, 15000] as const;
+const types = ['standard', 'premium', 'business'] as const;
+const years = [0, 1, 3, 5, 7, 10] as const;
 
-describe('calculateDiscount characterisation', () => {
-  it('characterises all input combinations', () => {
-    expect(calculateDiscount).toVerifyAllCombinations(
-      [100, 1000, 10000, 15000],             // amount
-      ['standard', 'premium', 'business'],    // customerType
-      [0, 1, 3, 5, 7, 10],                   // years
-    );
-    // Generates one snapshot covering all 72 combinations
-  });
+const combinations = amounts.flatMap(amount =>
+  types.flatMap(type =>
+    years.map(y => ({ amount, type, years: y })),
+  ),
+);
+
+it('characterises all input combinations', () => {
+  const results = combinations.map(
+    c => `${c.type}/${c.amount}/${c.years} → ${calculateDiscount(c.amount, c.type, c.years)}`,
+  );
+  expect(results).toMatchInlineSnapshot();
+  // Vitest fills in all 72 results on first run
 });
 ```
 
@@ -77,16 +83,25 @@ Characterisation tests must be deterministic. Common sources of non-determinism 
 
 ### Dates and Timestamps
 
+Use a helper that sets up and tears down fake timers within a single test, avoiding shared mutable state from `beforeEach`/`afterEach`:
+
 ```typescript
 import { vi } from 'vitest';
 
-beforeEach(() => {
+const withFrozenTime = (date: string, fn: () => void) => {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date('2025-01-15T10:00:00Z'));
-});
+  vi.setSystemTime(new Date(date));
+  try {
+    fn();
+  } finally {
+    vi.useRealTimers();
+  }
+};
 
-afterEach(() => {
-  vi.useRealTimers();
+it('characterises timestamp formatting', () => {
+  withFrozenTime('2025-01-15T10:00:00Z', () => {
+    expect(formatTimestamp()).toBe('Jan 15, 2025 10:00 AM');
+  });
 });
 ```
 

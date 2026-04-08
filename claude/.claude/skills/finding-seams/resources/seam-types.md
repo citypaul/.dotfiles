@@ -53,14 +53,14 @@ const createOrderCalculator = ({
   return discountCode ? applyDiscount(total, discountCode) : total;
 };
 
-// Production
+// Production -- wire real dependencies
 const calculateOrder = createOrderCalculator({
   resolvePrice: lookupCatalogPrice,
   applyDiscount: fetchDiscountFromApi,
 });
 
-// Test -- wire in fakes
-const calculateOrder = createOrderCalculator({
+// Test -- wire in fakes (separate scope, e.g. inside a test block)
+const testCalculateOrder = createOrderCalculator({
   resolvePrice: () => createMoney(1000, 'USD'),
   applyDiscount: (total) => multiplyMoney(total, 0.9),
 });
@@ -211,6 +211,57 @@ it('sends confirmation on successful payment', () => {
 - The seam is invisible from production code
 
 **Migration path:** Once you have characterisation tests via `vi.mock()`, refactor the production code to accept the dependency as a parameter, then remove the mock.
+
+## Async Seams
+
+Async dependencies (API calls, database queries, file I/O) use the same patterns -- the function type is just `async` / returns a `Promise`:
+
+```typescript
+type OrderRepository = {
+  readonly findByUser: (userId: string) => Promise<ReadonlyArray<Order>>;
+};
+
+const getUserOrders = async (
+  userId: string,
+  repo: OrderRepository = productionOrderRepo,
+): Promise<ReadonlyArray<Order>> =>
+  repo.findByUser(userId);
+
+// Test -- async fake
+const fakeRepo: OrderRepository = {
+  findByUser: async () => [{ id: 'o-1', status: 'shipped' }],
+};
+const orders = await getUserOrders('user-1', fakeRepo);
+```
+
+For streams or event emitters, define the seam as a function that returns the stream/emitter:
+
+```typescript
+type LogStreamProvider = () => ReadableStream<string>;
+
+const processLogs = async (
+  getStream: LogStreamProvider = () => connectToLogService(),
+): Promise<ReadonlyArray<LogEntry>> => {
+  const stream = getStream();
+  // ... process stream
+};
+```
+
+## Seam Granularity
+
+Not every function call needs a seam. Too many seams make code harder to read; too few make it untestable.
+
+**Create a seam when the dependency:**
+- Reaches outside the process (network, filesystem, database, clock, randomness)
+- Is slow, non-deterministic, or has side effects
+- Belongs to a different bounded context or domain
+
+**Don't create a seam for:**
+- Pure utility functions (`map`, `filter`, string formatting, math)
+- Functions in the same module that have no external effects
+- Standard library operations that are fast and deterministic
+
+**Rule of thumb:** If you can call it in a test without any setup or teardown, it doesn't need a seam.
 
 ## Comparison: When to Prefer Each Type
 

@@ -11,14 +11,14 @@ For making untestable code testable first, load the `finding-seams` skill. For t
 
 | Resource | Load when... |
 |----------|-------------|
-| `writing-process.md` | Need a worked example of the full characterisation process with targeted testing and when-to-stop guidance |
+| `writing-process.md` | Need a worked example of the full characterisation process with targeted testing, async code, and when-to-stop guidance |
 | `modern-tooling.md` | Need guidance on Vitest snapshots, combination testing, approval testing, or handling non-determinism |
 
 ## Core Concept
 
 > A **characterisation test** is a test that characterizes the actual behavior of a piece of code. There's no "it should do this" -- the tests document what the system really does.
 
-Characterisation tests have no moral authority. They don't assert correctness -- they detect *change*. When a characterisation test breaks, a human decides whether the change was intended.
+Characterisation tests have no moral authority. They don't assert correctness -- they detect *change*. When a characterisation test breaks, a human decides whether the change was intended. Also known as **golden master testing** or **approval testing** -- same concept, different names.
 
 *-- Michael Feathers, Working Effectively with Legacy Code (2004)*
 
@@ -155,6 +155,43 @@ They enable refactoring, then get replaced by proper behavior-driven tests:
 
 > Like walking into a forest and drawing a line: "I own all of this area." After you know that, you can develop it by refactoring and writing more tests. Over time, the characterisation tests can go away.
 
+## Characterising Async Code
+
+Async legacy code requires the same algorithm -- the key difference is awaiting results and controlling timing.
+
+```typescript
+// Step 1: dummy assertion, same algorithm
+it('characterises fetchUserOrders', async () => {
+  const result = await fetchUserOrders('user-123');
+  expect(result).toBe('PLACEHOLDER');
+});
+// Output: expected 'PLACEHOLDER' but received [{ id: 'order-1', ... }]
+
+// Step 2: record actual behavior
+it('characterises fetchUserOrders for known user', async () => {
+  const result = await fetchUserOrders('user-123');
+  expect(result).toEqual([
+    expect.objectContaining({ id: 'order-1', status: 'shipped' }),
+  ]);
+});
+```
+
+**Key concerns for async characterisation:**
+- **Use real seams for I/O** -- pass async dependencies as parameters rather than hitting real services (see `finding-seams` skill)
+- **Error paths** -- characterise both resolved and rejected states: `await expect(fn()).rejects.toThrow()`
+- **Timing-dependent behavior** -- use `vi.useFakeTimers()` and `vi.advanceTimersByTime()` to control time (see `modern-tooling.md`)
+- **Streams and events** -- collect emitted values into an array, then assert on the collected result
+
+```typescript
+// Characterising an event emitter
+it('characterises order processor events', async () => {
+  const events: string[] = [];
+  processor.on('status', (s: string) => events.push(s));
+  await processor.process(testOrder);
+  expect(events).toEqual(['validating', 'processing', 'complete']);
+});
+```
+
 ## Common Mistakes
 
 | Mistake | Fix |
@@ -166,3 +203,4 @@ They enable refactoring, then get replaced by proper behavior-driven tests:
 | Skipping mutation testing after characterising | Coverage says paths ran; mutation testing says tests would catch changes |
 | Using characterisation tests for new code | New code should be test-driven (see `tdd` skill) |
 | Using `vi.mock()` for sensing instead of parameter injection | Pass a sensing function as a parameter (see `finding-seams` skill) |
+| Not awaiting async results | Use `async`/`await` in characterisation tests -- a synchronous assertion on a promise always passes |
