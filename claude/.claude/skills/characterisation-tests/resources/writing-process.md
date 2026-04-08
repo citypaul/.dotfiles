@@ -37,29 +37,35 @@ it('characterises calculateDiscount', () => {
 
 ### Step 2: Record the actual value, expand
 
+Name the file `calculate-discount.characterisation.test.ts` and use `characterises` in test names:
+
 ```typescript
+/**
+ * CHARACTERISATION TESTS -- documenting actual behavior of calculateDiscount.
+ * Replace with behavior-driven tests as the code is refactored.
+ */
 describe('calculateDiscount characterisation', () => {
-  it('premium customer, < 5 years', () => {
+  it('characterises premium customer discount for < 5 years', () => {
     expect(calculateDiscount(1000, 'premium', 3)).toBe(150);
   });
 
-  it('premium customer, > 5 years gets loyalty bonus', () => {
+  it('characterises premium customer loyalty bonus for > 5 years', () => {
     expect(calculateDiscount(1000, 'premium', 7)).toBe(200);
   });
 
-  it('business customer, < 3 years', () => {
+  it('characterises business customer discount for < 3 years', () => {
     expect(calculateDiscount(1000, 'business', 2)).toBe(100);
   });
 
-  it('business customer, > 3 years gets loyalty bonus', () => {
+  it('characterises business customer loyalty bonus for > 3 years', () => {
     expect(calculateDiscount(1000, 'business', 5)).toBe(130);
   });
 
-  it('unknown customer type gets no discount', () => {
+  it('characterises unknown customer type as zero discount', () => {
     expect(calculateDiscount(1000, 'standard', 10)).toBe(0);
   });
 
-  it('high-value orders get flat bonus', () => {
+  it('characterises high-value order flat bonus', () => {
     expect(calculateDiscount(15000, 'premium', 3)).toBe(2750);
   });
 });

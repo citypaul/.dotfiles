@@ -139,15 +139,17 @@ const s3Storage: FileStorage = {
 };
 
 // Test fake -- for SENSING
-const inMemoryStorage = (): FileStorage & { readonly uploads: () => ReadonlyArray<{ key: string; content: string }> } => {
-  const stored: Array<{ key: string; content: string }> = [];
+type Upload = { readonly key: string; readonly content: string };
+
+const createInMemoryStorage = () => {
+  const stored: Upload[] = [];
   return {
-    upload: async (key, content) => { stored.push({ key, content }); return `mem://${key}`; },
-    uploads: () => stored,
+    upload: async (key: string, content: string) => { stored.push({ key, content }); return `mem://${key}`; },
+    uploads: (): ReadonlyArray<Upload> => [...stored],
   };
 };
 
-const storage = inMemoryStorage();
+const storage = createInMemoryStorage();
 await uploadReport(testReport, storage);
 expect(storage.uploads()).toEqual([{ key: 'report-1', content: 'data' }]);
 ```

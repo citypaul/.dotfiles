@@ -30,6 +30,72 @@ Characterisation tests have no moral authority. They don't assert correctness --
 - Facing the **legacy code dilemma**: need tests to refactor safely, but code resists testing
 - Need to understand what a function actually returns before changing it
 
+## When NOT to Use
+
+- **Greenfield code** -- new code should be test-driven from the start (see `tdd` skill)
+- **You already have specs** -- if requirements are clear and code is new, write behavior-driven tests that assert intended behavior, not characterisation tests that document whatever the code does
+- **Code already has adequate tests** -- characterise only the untested parts; don't duplicate existing coverage
+- **As a permanent testing strategy** -- characterisation tests are scaffolding; replace them with proper tests as you refactor
+
+## Naming and Identification
+
+Characterisation tests must be **immediately recognisable** as characterisation tests -- to other LLMs, to humans, and to your future self. Someone reading the test file should understand at a glance: these tests document actual behavior, they are not assertions of correctness, and they are intended to be temporary.
+
+### Test Naming
+
+Use `characterises` in the test name to distinguish from behavior-driven tests:
+
+```typescript
+// ✅ Clearly identified as characterisation tests
+describe('calculateDiscount characterisation', () => {
+  it('characterises premium customer discount for < 5 years', () => { ... });
+  it('characterises business customer loyalty bonus threshold', () => { ... });
+});
+
+// ❌ Indistinguishable from behavior-driven tests
+describe('calculateDiscount', () => {
+  it('should apply 15% discount for premium customers', () => { ... });
+});
+```
+
+### File Naming
+
+Use a distinct file suffix so characterisation tests are visually separable in the file tree:
+
+```
+pricing.characterisation.test.ts    ← characterisation tests (temporary)
+pricing.test.ts                     ← behavior-driven tests (permanent)
+```
+
+### Documentation Within Tests
+
+Add a block comment at the top of each characterisation test file explaining the purpose and the planned lifecycle. This is one of the few places where comments are essential -- the tests themselves document *what* the code does, but the comment documents *why these tests exist and when to remove them*:
+
+```typescript
+/**
+ * CHARACTERISATION TESTS -- documenting actual behavior, NOT asserting correctness.
+ *
+ * These tests pin down the current behavior of calculateDiscount so we can
+ * safely refactor it. They should be replaced with behavior-driven tests
+ * as the code is understood and restructured.
+ *
+ * See: characterisation-tests skill for the methodology.
+ */
+describe('calculateDiscount characterisation', () => { ... });
+```
+
+### Suspicious Behavior
+
+When a characterisation test captures behavior that looks like a bug, mark it explicitly:
+
+```typescript
+it('characterises negative quantity handling -- SUSPICIOUS: returns negative discount', () => {
+  // This may be a bug -- negative quantities produce negative discounts.
+  // Documented as-is; escalate before changing.
+  expect(calculateDiscount(-5, 'premium', 3)).toBe(-0.75);
+});
+```
+
 ## The Algorithm
 
 1. **Use** a piece of code in a test harness
