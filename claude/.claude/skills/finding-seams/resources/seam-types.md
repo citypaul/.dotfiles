@@ -68,15 +68,17 @@ const calculateOrder = createOrderCalculator({
 
 ### Sensing: Capturing Calls Without Mocks
 
-When you need to observe what a dependency was called with (sensing), use a simple closure:
+When you need to observe what a dependency was called with (sensing), use a closure that accumulates calls internally and returns a snapshot when queried:
 
 ```typescript
+type NotifyCall = { readonly to: string; readonly body: string };
+
 const createSensingNotifier = () => {
-  const calls: ReadonlyArray<{ readonly to: string; readonly body: string }> = [];
-  const notify = (to: string, body: string): void => {
-    (calls as Array<typeof calls[number]>).push({ to, body });
+  const recorded: NotifyCall[] = [];
+  return {
+    notify: (to: string, body: string): void => { recorded.push({ to, body }); },
+    calls: (): ReadonlyArray<NotifyCall> => [...recorded],
   };
-  return { notify, calls: () => calls };
 };
 
 // Test

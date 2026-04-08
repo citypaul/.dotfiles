@@ -105,7 +105,7 @@ expect(result).toMatchSnapshot({
 
 ### External Service Responses
 
-Use the `finding-seams` skill to identify and break the dependency before characterising. Module seams (`vi.mock()`) are the fastest path to isolating external calls.
+Use the `finding-seams` skill to introduce a seam (preferably a function parameter) before characterising. If you cannot modify the production code yet, `vi.mock()` can be used as temporary scaffolding -- but migrate to parameter injection once you have tests in place.
 
 ## Approval Testing Workflow
 
