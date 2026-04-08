@@ -65,6 +65,47 @@ Ordered from preferred to last-resort. Start with the most explicit option that 
 
 Steps 1-3 are permanent design improvements. Steps 4-5 are temporary scaffolding.
 
+## Quick Example
+
+Before you can characterise `processOrder`, you need a seam for its hidden dependency:
+
+```typescript
+// BEFORE -- no seam, can't test without hitting real API
+const processOrder = (order: Order): OrderResult => {
+  const tax = fetchTaxRate(order.region);
+  return { ...order, total: order.subtotal * (1 + tax) };
+};
+
+// AFTER -- function parameter seam with production default
+type TaxResolver = (region: string) => number;
+
+const processOrder = (
+  order: Order,
+  resolveTax: TaxResolver = fetchTaxRate,
+): OrderResult => {
+  const tax = resolveTax(order.region);
+  return { ...order, total: order.subtotal * (1 + tax) };
+};
+
+// Test -- swap in a fake at the enabling point (the argument list)
+const result = processOrder(testOrder, () => 0.08);
+```
+
+Production code is unchanged at every call site (the default kicks in). Tests pass a fake. The seam is the parameter; the enabling point is the argument list.
+
+## Code Smell → Technique
+
+| You see this in the code | Technique | Example |
+|--------------------------|-----------|---------|
+| `new Foo()` inside a function | Parameterize function | Pass the dependency as a parameter with a default |
+| `process.env.X` read directly | Wrap global call | `(getEnv = () => process.env.X)` |
+| `import { thing } from './heavy-lib'` used directly | Extract type + parameterize | Define a narrow `type`, pass as parameter |
+| Multiple hard-coded deps in one function | Higher-order function factory | `createFn(deps) => (args) => result` |
+| `SingletonClass.getInstance()` | Wrap global call | `(getSingleton = () => SingletonClass.getInstance())` |
+| `Date.now()` / `Math.random()` | Wrap global call | `(now = Date.now)` as parameter |
+| Class constructs its own collaborators | Parameterize constructor (OOP) | Accept via constructor, see `oop-patterns.md` |
+| Can't change function signature yet | Module indirection (scaffolding) | Thin wrapper module + `vi.mock()`, migrate later |
+
 ## Common Mistakes
 
 | Mistake | Fix |

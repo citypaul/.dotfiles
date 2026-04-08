@@ -128,6 +128,64 @@ it('exercises the rounding path', () => {
 
 Pick inputs that exercise conversions. If all your test inputs produce round numbers, a missing `Math.round` after refactoring would go undetected.
 
+## Characterising Async Paths
+
+Legacy code often has async operations (database queries, API calls, file I/O). The algorithm is identical -- use a dummy assertion, let the failure tell you the behavior -- but you must await results and may need to introduce seams for I/O.
+
+### Async Function with Seam
+
+```typescript
+// Legacy function that calls an API directly
+// Step 1: introduce a seam (see finding-seams skill) so you can test without the real API
+type OrderFetcher = (userId: string) => Promise<ReadonlyArray<Order>>;
+
+const getUserSummary = async (
+  userId: string,
+  fetchOrders: OrderFetcher = fetchOrdersFromApi,
+): Promise<UserSummary> => {
+  const orders = await fetchOrders(userId);
+  return { userId, totalOrders: orders.length, lastOrderDate: orders[0]?.date };
+};
+
+// Step 2: characterise with a fake that returns known data
+const fakeFetcher: OrderFetcher = async () => [
+  { id: 'o-1', date: '2025-01-10', total: 50 },
+  { id: 'o-2', date: '2024-06-15', total: 120 },
+];
+
+it('characterises summary for user with orders', async () => {
+  const result = await getUserSummary('user-1', fakeFetcher);
+  expect(result).toEqual({
+    userId: 'user-1',
+    totalOrders: 2,
+    lastOrderDate: '2025-01-10',
+  });
+});
+
+it('characterises summary for user with no orders', async () => {
+  const result = await getUserSummary('user-1', async () => []);
+  expect(result).toEqual({
+    userId: 'user-1',
+    totalOrders: 0,
+    lastOrderDate: undefined,
+  });
+});
+```
+
+### Error Paths
+
+Always characterise both resolved and rejected states:
+
+```typescript
+it('characterises error when fetcher rejects', async () => {
+  const failingFetcher: OrderFetcher = async () => {
+    throw new Error('Service unavailable');
+  };
+  await expect(getUserSummary('user-1', failingFetcher))
+    .rejects.toThrow('Service unavailable');
+});
+```
+
 ## Sensing Without Monkey-Patching
 
 When you need to verify a code path is exercised but can't tell from the return value alone, prefer **parameter injection** over monkey-patching:
