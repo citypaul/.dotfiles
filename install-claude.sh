@@ -337,7 +337,7 @@ if [[ "$INSTALL_IMPECCABLE" == true && "$INSTALL_SKILLS" == true ]]; then
   echo -e "    /delight   Add moments of joy             /optimize  Performance improvements"
   echo -e "    /overdrive Extraordinary effects"
   echo ""
-  echo -e "  ${BLUE}Learn more: https://github.com/pbakaus/impeccable${NC}"
+  echo -e "  ${BLUE}Learn more: https://impeccable.style/skills/${NC}"
   echo ""
 
   # Core skill
@@ -652,7 +652,7 @@ if [[ "$INSTALL_IMPECCABLE" == true && "$INSTALL_SKILLS" == true ]]; then
   echo -e "    and design tokens into your design system."
   echo ""
   echo -e "  ${BLUE}Full documentation:${NC}"
-  echo -e "    ${YELLOW}https://github.com/pbakaus/impeccable${NC}"
+  echo -e "    ${YELLOW}https://impeccable.style/skills/${NC}"
   echo -e "    ${YELLOW}https://github.com/citypaul/.dotfiles#-impeccable-design${NC}"
   echo ""
 fi
@@ -675,7 +675,7 @@ echo -e "  • ${YELLOW}Paul Bakaus${NC} - Impeccable frontend design skills (im
 echo -e "    + 17 steering commands: shape, critique, audit, polish, harden, typeset,"
 echo -e "    colorize, animate, layout, clarify, adapt, bolder, quieter, distill,"
 echo -e "    delight, optimize, overdrive)"
-echo -e "    ${BLUE}https://github.com/pbakaus/impeccable${NC} (Apache 2.0 License)"
+echo -e "    ${BLUE}https://impeccable.style/skills/${NC} (Apache 2.0 License)"
 echo ""
 echo -e "${BLUE}For help or issues:${NC}"
 echo -e "  ${YELLOW}https://github.com/citypaul/.dotfiles${NC}"

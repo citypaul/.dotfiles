@@ -88,7 +88,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 5 deep-dive resources | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
 | **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
-| **Impeccable Design** | Comprehensive frontend design vocabulary: distinctive interfaces, systematic typography, OKLCH color, anti-AI-slop methodology + 17 steering commands | [→ impeccable](https://github.com/pbakaus/impeccable) |
+| **Impeccable Design** | Comprehensive frontend design vocabulary: distinctive interfaces, systematic typography, OKLCH color, anti-AI-slop methodology + 17 steering commands | [→ impeccable](https://impeccable.style/skills/) |
 | **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 2 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
 | **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 3 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
 | **Finding Seams** | Identifying substitution points in untestable code -- function parameter, configuration, module, and object seams for TypeScript/JS. FP-first with OOP patterns in a separate resource for legacy class-based code. Based on Michael Feathers' *Working Effectively with Legacy Code*. 3 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
@@ -129,10 +129,10 @@ Unlike typical style guides, CLAUDE.md provides:
 | Complex business rules need modeling | [domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) | Ubiquitous language, glossary enforcement, value objects, aggregates |
 | Config scattered in code, not env vars | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Validate config at startup with Zod, inject via options objects |
 | Service won't scale horizontally | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Stateless processes, external backing services, graceful shutdown |
-| UI looks generic or AI-generated | [impeccable](https://github.com/pbakaus/impeccable) | `/impeccable teach` to set context, `/impeccable craft` to build with design methodology |
-| Need to plan UX before coding | [impeccable](https://github.com/pbakaus/impeccable) | `/shape` produces a design brief; `/impeccable craft` runs the full shape-build-iterate flow |
-| Design needs professional polish | [impeccable](https://github.com/pbakaus/impeccable) | `/critique` for UX review, `/polish` for final pass, `/harden` for production readiness |
-| Typography or color needs work | [impeccable](https://github.com/pbakaus/impeccable) | `/typeset` for font selection and hierarchy, `/colorize` for strategic OKLCH color |
+| UI looks generic or AI-generated | [impeccable](https://impeccable.style/skills/) | `/impeccable teach` to set context, `/impeccable craft` to build with design methodology |
+| Need to plan UX before coding | [impeccable](https://impeccable.style/skills/) | `/shape` produces a design brief; `/impeccable craft` runs the full shape-build-iterate flow |
+| Design needs professional polish | [impeccable](https://impeccable.style/skills/) | `/critique` for UX review, `/polish` for final pass, `/harden` for production readiness |
+| Typography or color needs work | [impeccable](https://impeccable.style/skills/) | `/typeset` for font selection and hierarchy, `/colorize` for strategic OKLCH color |
 | Designing REST APIs or module contracts | [api-design](claude/.claude/skills/api-design/SKILL.md) | Contract-first, Hyrum's Law, consistent error semantics, pagination |
 | Breaking changes keep surprising consumers | [api-design](claude/.claude/skills/api-design/SKILL.md) | Additive-only changes, One-Version Rule, input/output separation |
 | CLI output breaks when piped to jq | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | stdout for data only, stderr for everything else |
@@ -629,13 +629,13 @@ it('characterises formatPrice', () => {
 
 ---
 
-### 🎨 Impeccable Design → [impeccable](https://github.com/pbakaus/impeccable)
+### 🎨 Impeccable Design → [impeccable.style](https://impeccable.style/skills/)
 
 **Problem it solves:** UI that looks generic or "AI-generated", inconsistent design quality, lack of systematic design methodology
 
 **What's inside (1 core skill + 9 reference files + 17 steering commands):**
 
-A comprehensive frontend design vocabulary and quality system from [Paul Bakaus](https://github.com/pbakaus/impeccable), replacing the original `frontend-design` skill with a much deeper methodology. These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE).
+A comprehensive frontend design vocabulary and quality system from [Paul Bakaus](https://impeccable.style/skills/), replacing the original `frontend-design` skill with a much deeper methodology. These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE). Full documentation at [impeccable.style/skills](https://impeccable.style/skills/).
 
 #### Getting Started: Design Context
 
@@ -780,7 +780,7 @@ Use steering commands (`/typeset`, `/colorize`, `/layout`, `/animate`, etc.) at 
 
 - **Reference Library** - 9 deep-dive reference files loaded on-demand when relevant. These contain specific CSS examples, technique catalogs, and decision frameworks for typography (OpenType, font loading, modular scales), color (OKLCH, tinted neutrals, dark mode), spatial design (4pt grid, container queries), motion (easing curves, staggering, reduced motion), interactions (8 states, focus rings, popovers), responsive design (input method detection, safe areas), and UX writing (error formulas, translation planning).
 
-**Attribution:** [pbakaus/impeccable](https://github.com/pbakaus/impeccable) by Paul Bakaus, licensed under Apache 2.0. Based on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution.
+**Attribution:** [impeccable](https://impeccable.style/skills/) by Paul Bakaus ([GitHub](https://github.com/pbakaus/impeccable)), licensed under Apache 2.0. Based on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution.
 
 ---
 
@@ -1820,7 +1820,7 @@ Special thanks to contributors who have shared their work:
 
 - **[Andrea Laforgia](https://github.com/andlaf-ak)** - The `test-design-reviewer` skill is adapted from [Andrea's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md). Thank you for creating and sharing this comprehensive test design review framework based on Dave Farley's testing principles.
 
-- **[Paul Bakaus](https://github.com/pbakaus)** - The impeccable design skills (core skill + 17 steering commands: shape, critique, audit, polish, harden, typeset, colorize, animate, layout, clarify, adapt, bolder, quieter, distill, delight, optimize, overdrive) are sourced from [Paul's impeccable repository](https://github.com/pbakaus/impeccable). These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE). Impeccable builds on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution chain.
+- **[Paul Bakaus](https://github.com/pbakaus)** - The impeccable design skills (core skill + 17 steering commands: shape, critique, audit, polish, harden, typeset, colorize, animate, layout, clarify, adapt, bolder, quieter, distill, delight, optimize, overdrive) are sourced from [impeccable.style](https://impeccable.style/skills/). These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE). Impeccable builds on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution chain.
 
 ---
 
