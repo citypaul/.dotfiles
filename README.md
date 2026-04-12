@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 20 auto-discovered skill patterns + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 19 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -88,7 +88,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 5 deep-dive resources | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
 | **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
-| **Frontend Design** | Production-grade UI design, distinctive interfaces, avoiding generic AI aesthetics | [→ skills/frontend-design](claude/.claude/skills/frontend-design/SKILL.md) |
+| **Impeccable Design** | Comprehensive frontend design vocabulary: distinctive interfaces, systematic typography, OKLCH color, anti-AI-slop methodology + 17 steering commands | [→ impeccable](https://github.com/pbakaus/impeccable) |
 | **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 2 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
 | **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 3 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
 | **Finding Seams** | Identifying substitution points in untestable code -- function parameter, configuration, module, and object seams for TypeScript/JS. FP-first with OOP patterns in a separate resource for legacy class-based code. Based on Michael Feathers' *Working Effectively with Legacy Code*. 3 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
@@ -129,7 +129,10 @@ Unlike typical style guides, CLAUDE.md provides:
 | Complex business rules need modeling | [domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) | Ubiquitous language, glossary enforcement, value objects, aggregates |
 | Config scattered in code, not env vars | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Validate config at startup with Zod, inject via options objects |
 | Service won't scale horizontally | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Stateless processes, external backing services, graceful shutdown |
-| UI looks generic or AI-generated | [frontend-design](claude/.claude/skills/frontend-design/SKILL.md) | Distinctive design, production-grade quality, avoid template aesthetics |
+| UI looks generic or AI-generated | [impeccable](https://github.com/pbakaus/impeccable) | `/impeccable teach` to set context, `/impeccable craft` to build with design methodology |
+| Need to plan UX before coding | [impeccable](https://github.com/pbakaus/impeccable) | `/shape` produces a design brief; `/impeccable craft` runs the full shape-build-iterate flow |
+| Design needs professional polish | [impeccable](https://github.com/pbakaus/impeccable) | `/critique` for UX review, `/polish` for final pass, `/harden` for production readiness |
+| Typography or color needs work | [impeccable](https://github.com/pbakaus/impeccable) | `/typeset` for font selection and hierarchy, `/colorize` for strategic OKLCH color |
 | Designing REST APIs or module contracts | [api-design](claude/.claude/skills/api-design/SKILL.md) | Contract-first, Hyrum's Law, consistent error semantics, pagination |
 | Breaking changes keep surprising consumers | [api-design](claude/.claude/skills/api-design/SKILL.md) | Additive-only changes, One-Version Rule, input/output separation |
 | CLI output breaks when piped to jq | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | stdout for data only, stderr for everything else |
@@ -154,8 +157,9 @@ Skills are **auto-discovered** by Claude when relevant:
 - Designing API endpoints? → `api-design` skill provides contract-first patterns
 - Code with hard-to-test dependencies? → `finding-seams` skill identifies substitution points
 - Changing code with no tests? → `characterisation-tests` skill documents existing behavior
+- Building a UI? → `impeccable` skill loads design methodology and anti-slop patterns
 
-**No manual invocation needed** - Claude detects when skills apply.
+**No manual invocation needed** - Claude detects when skills apply. Impeccable steering commands (`/shape`, `/critique`, `/polish`, etc.) can also be invoked directly.
 
 ---
 
@@ -622,6 +626,61 @@ it('characterises formatPrice', () => {
 ```
 
 **Key insight:** Characterisation tests have no moral authority -- they don't assert correctness, they detect *change*. They are temporary scaffolding: once you understand the code and have proper behavior-driven tests, the characterisation tests can be retired. Like "walking into a forest and drawing a line -- after you own that area, you can develop it."
+
+---
+
+### 🎨 Impeccable Design → [impeccable](https://github.com/pbakaus/impeccable)
+
+**Problem it solves:** UI that looks generic or "AI-generated", inconsistent design quality, lack of systematic design methodology
+
+**What's inside (1 core skill + 9 reference files + 17 steering commands):**
+
+A comprehensive frontend design vocabulary and quality system from [Paul Bakaus](https://github.com/pbakaus/impeccable), replacing the original `frontend-design` skill with a much deeper methodology. These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE).
+
+**Three operating modes:**
+
+| Mode | Command | What it does |
+|------|---------|-------------|
+| **Teach** | `/impeccable teach` | Set up design context for your project (audience, brand, tone). Run once per project. |
+| **Craft** | `/impeccable craft [feature]` | Full design flow: shape the UX, load references, build, visually iterate, present |
+| **Extract** | `/impeccable extract [target]` | Pull reusable components and design tokens into your design system |
+
+**17 steering commands** for targeted improvements:
+
+| Command | Purpose | Command | Purpose |
+|---------|---------|---------|---------|
+| `/shape` | Plan UX/UI before code | `/critique` | Full UX review with Nielsen's heuristics |
+| `/audit` | Technical quality scoring (5 dimensions) | `/polish` | Final quality pass checklist |
+| `/typeset` | Fix typography, font selection | `/colorize` | Add strategic color (OKLCH model) |
+| `/animate` | Purposeful animations, micro-interactions | `/layout` | Fix spacing, rhythm, visual hierarchy |
+| `/harden` | Production hardening (i18n, edge cases) | `/clarify` | Improve UX copy, error messages |
+| `/adapt` | Cross-device/platform adaptation | `/bolder` | Amplify safe or boring designs |
+| `/quieter` | Tone down aggressive designs | `/distill` | Strip to essence, simplify |
+| `/delight` | Add moments of joy and personality | `/optimize` | Frontend performance improvements |
+| `/overdrive` | Extraordinary effects (shaders, WebGL) | | |
+
+**Recommended workflow:**
+
+```
+/impeccable teach           → Establish design context (run once per project)
+    ↓
+/shape [feature]            → Plan UX/UI before writing code
+    ↓
+/impeccable craft [feature] → Build with full design methodology
+    ↓
+/critique                   → Review with Nielsen's heuristics scoring
+    ↓
+/polish                     → Final quality pass
+    ↓
+/harden                     → Production-ready hardening (i18n, edge cases)
+```
+
+**Key concepts:**
+- **Context Gathering Protocol** - Every design skill checks for project context (audience, brand, tone) before proceeding. Run `/impeccable teach` once per project to set this up in `.impeccable.md`.
+- **AI Slop Test** - Structured checklist to detect generic AI aesthetics (purple gradients, Inter font, glassmorphism, bounce easing, etc.)
+- **Reference library** - 9 deep-dive references on typography, color (OKLCH), spatial design, motion, interactions, responsive design, UX writing, and the craft/extract flows. Loaded on-demand when relevant.
+
+**Attribution:** [pbakaus/impeccable](https://github.com/pbakaus/impeccable) by Paul Bakaus, licensed under Apache 2.0. Based on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution.
 
 ---
 
@@ -1151,7 +1210,8 @@ chmod +x install-claude.sh
 ./install-claude.sh --claude-only      # Install only CLAUDE.md
 ./install-claude.sh --skills-only      # Install only skills
 ./install-claude.sh --no-agents        # Install without agents
-./install-claude.sh --no-external      # Skip external community skills (web-quality-skills)
+./install-claude.sh --no-external      # Skip all external community skills (web-quality-skills + impeccable)
+./install-claude.sh --no-impeccable    # Skip impeccable design skills only
 ./install-claude.sh --with-opencode    # Also install OpenCode configuration
 ./install-claude.sh --version v2.0.0   # Install v2.0.0 (modular docs)
 ./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
@@ -1159,7 +1219,8 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (20 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, frontend-design, api-design, cli-design, finding-seams, characterisation-tests)
+- ✅ `~/.claude/skills/` (19 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests)
+- ✅ `~/.claude/skills/` (18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable): impeccable core + 17 steering commands)
 - ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
@@ -1658,6 +1719,8 @@ Special thanks to contributors who have shared their work:
 - **[Kieran O'Hara](https://github.com/kieran-ohara)** - The `use-case-data-patterns` agent is adapted from [Kieran's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you for creating and sharing this excellent agent specification.
 
 - **[Andrea Laforgia](https://github.com/andlaf-ak)** - The `test-design-reviewer` skill is adapted from [Andrea's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md). Thank you for creating and sharing this comprehensive test design review framework based on Dave Farley's testing principles.
+
+- **[Paul Bakaus](https://github.com/pbakaus)** - The impeccable design skills (core skill + 17 steering commands: shape, critique, audit, polish, harden, typeset, colorize, animate, layout, clarify, adapt, bolder, quieter, distill, delight, optimize, overdrive) are sourced from [Paul's impeccable repository](https://github.com/pbakaus/impeccable). These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE). Impeccable builds on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution chain.
 
 ---
 
