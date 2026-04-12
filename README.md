@@ -637,48 +637,148 @@ it('characterises formatPrice', () => {
 
 A comprehensive frontend design vocabulary and quality system from [Paul Bakaus](https://github.com/pbakaus/impeccable), replacing the original `frontend-design` skill with a much deeper methodology. These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE).
 
-**Three operating modes:**
+#### Getting Started: Design Context
 
-| Mode | Command | What it does |
-|------|---------|-------------|
-| **Teach** | `/impeccable teach` | Set up design context for your project (audience, brand, tone). Run once per project. |
-| **Craft** | `/impeccable craft [feature]` | Full design flow: shape the UX, load references, build, visually iterate, present |
-| **Extract** | `/impeccable extract [target]` | Pull reusable components and design tokens into your design system |
-
-**17 steering commands** for targeted improvements:
-
-| Command | Purpose | Command | Purpose |
-|---------|---------|---------|---------|
-| `/shape` | Plan UX/UI before code | `/critique` | Full UX review with Nielsen's heuristics |
-| `/audit` | Technical quality scoring (5 dimensions) | `/polish` | Final quality pass checklist |
-| `/typeset` | Fix typography, font selection | `/colorize` | Add strategic color (OKLCH model) |
-| `/animate` | Purposeful animations, micro-interactions | `/layout` | Fix spacing, rhythm, visual hierarchy |
-| `/harden` | Production hardening (i18n, edge cases) | `/clarify` | Improve UX copy, error messages |
-| `/adapt` | Cross-device/platform adaptation | `/bolder` | Amplify safe or boring designs |
-| `/quieter` | Tone down aggressive designs | `/distill` | Strip to essence, simplify |
-| `/delight` | Add moments of joy and personality | `/optimize` | Frontend performance improvements |
-| `/overdrive` | Extraordinary effects (shaders, WebGL) | | |
-
-**Recommended workflow:**
+Every impeccable skill checks for project design context before doing work. Without it, output is generic. Run this once per project:
 
 ```
-/impeccable teach           → Establish design context (run once per project)
-    ↓
-/shape [feature]            → Plan UX/UI before writing code
-    ↓
-/impeccable craft [feature] → Build with full design methodology
-    ↓
-/critique                   → Review with Nielsen's heuristics scoring
-    ↓
-/polish                     → Final quality pass
-    ↓
-/harden                     → Production-ready hardening (i18n, edge cases)
+/impeccable teach
 ```
 
-**Key concepts:**
-- **Context Gathering Protocol** - Every design skill checks for project context (audience, brand, tone) before proceeding. Run `/impeccable teach` once per project to set this up in `.impeccable.md`.
-- **AI Slop Test** - Structured checklist to detect generic AI aesthetics (purple gradients, Inter font, glassmorphism, bounce easing, etc.)
-- **Reference library** - 9 deep-dive references on typography, color (OKLCH), spatial design, motion, interactions, responsive design, UX writing, and the craft/extract flows. Loaded on-demand when relevant.
+This interviews you about your target audience, use cases, and brand personality, then saves the context to `.impeccable.md` in your project root. All design skills read this file automatically.
+
+If you skip this step, any design command will prompt you to run `/impeccable teach` first.
+
+#### Building Features: The Craft Flow
+
+For new features that need both UX planning and implementation:
+
+```
+/impeccable craft [feature description]
+```
+
+This runs a structured 5-step flow:
+
+1. **Shape** (`/shape`) - Produces a design brief through a discovery interview: purpose, content, design goals, constraints, anti-goals. No code is written. The brief becomes the blueprint for every implementation decision.
+
+2. **Load references** - Based on the brief's needs, relevant deep-dive guides are loaded:
+   - `typography.md` - OpenType features, modular scales, font pairing, web font loading
+   - `color-and-contrast.md` - OKLCH color model, tinted neutrals, dark mode, accessibility
+   - `spatial-design.md` - 4pt spacing systems, grids, container queries, optical adjustments
+   - `motion-design.md` - Easing curves (no bounce/elastic), staggering, reduced motion
+   - `interaction-design.md` - 8 interactive states, focus rings, forms, modals, popovers
+   - `responsive-design.md` - Mobile-first, input method detection, safe areas
+   - `ux-writing.md` - Button labels, error formulas, empty states, translation planning
+
+3. **Build** - Implements the feature following the brief, working through structure → layout → typography → interactive states → edge cases → motion → responsive.
+
+4. **Visual iteration** - Reviews the live result against the brief and the AI Slop Test. Checks every state (empty, error, loading, edge cases). Iterates until the result matches the design intent.
+
+5. **Present** - Shows the feature, walks through key states, explains design decisions that connect back to the brief, and asks for feedback.
+
+You can also run `/shape` independently when you want UX planning without implementation.
+
+#### Steering Commands: Targeted Improvements
+
+Use these any time to make specific improvements. Each one checks for design context first.
+
+**Planning & Adaptation:**
+
+| Command | What it does |
+|---------|-------------|
+| `/shape` | Plan UX/UI before code. Produces a structured design brief through a discovery interview. Does NOT write code. |
+| `/adapt` | Adapt designs across screen sizes, devices, contexts, or platforms. Covers mobile, tablet, desktop, print, and email. |
+
+**Typography & Color:**
+
+| Command | What it does |
+|---------|-------------|
+| `/typeset` | Fix typography: font selection (with a 4-step process that fights AI defaults), hierarchy, readability, OpenType features, weight consistency. |
+| `/colorize` | Add strategic color to monochromatic designs using the OKLCH color model. Covers semantic color, accent application, surfaces, data visualization. |
+
+**Layout & Motion:**
+
+| Command | What it does |
+|---------|-------------|
+| `/layout` | Fix layout, spacing, and visual rhythm. Covers spacing systems, grid/flexbox selection, card grid monotony, depth/elevation, optical adjustments. |
+| `/animate` | Add purposeful animations and micro-interactions. Specific easing curves and timing recommendations. Covers entrance animations, state transitions, feedback, delight moments. |
+
+**Content & Copy:**
+
+| Command | What it does |
+|---------|-------------|
+| `/clarify` | Improve UX copy: error messages, form labels, buttons/CTAs, help text, empty states, success messages, loading states, confirmation dialogs. |
+
+**Quality & Review:**
+
+| Command | What it does |
+|---------|-------------|
+| `/critique` | Full UX design review. Two-phase assessment using Nielsen's 10 heuristics (scored 0-40), cognitive load analysis, and persona-based testing across 5 user archetypes. Produces a scored report with severity ratings (P0-P3) and actionable recommendations mapped to other steering commands. |
+| `/audit` | Technical quality checks. Scores 5 dimensions (Accessibility, Performance, Theming, Responsive, Anti-Patterns) on a 0-4 scale. Produces actionable recommendations. |
+| `/polish` | Final quality pass. Comprehensive checklist covering design system consistency, visual alignment, typography refinement, color/contrast, interaction states, micro-interactions, content/copy, edge cases, responsiveness, performance, code quality. |
+| `/harden` | Production-ready hardening. Text overflow/wrapping, i18n (RTL, CJK, translations), error handling, edge cases, onboarding/first-run, input validation, accessibility resilience, performance resilience. |
+
+**Intensity Tuning:**
+
+| Command | What it does |
+|---------|-------------|
+| `/bolder` | Amplify designs that feel too safe or boring. Typography amplification, color intensification, spatial drama, visual effects, motion, composition boldness. Includes explicit warnings against falling into AI slop traps. |
+| `/quieter` | Tone down designs that feel too aggressive. Color refinement, visual weight reduction, simplification, motion reduction, composition refinement. |
+
+**Simplification & Personality:**
+
+| Command | What it does |
+|---------|-------------|
+| `/distill` | Strip to essence. Information architecture, visual, layout, interaction, content, and code simplification. |
+| `/delight` | Add moments of joy and personality. Micro-interactions, personality in copy, illustrations, satisfying interactions, celebration moments, easter eggs. |
+| `/optimize` | Frontend performance improvements. Loading, rendering, animation, framework optimization, network, Core Web Vitals (LCP, INP, CLS). |
+| `/overdrive` | Technically extraordinary effects. Shaders, spring physics, scroll-driven reveals, View Transitions API, WebGL/WebGPU, virtual scrolling. Proposes directions before building. |
+
+#### Extracting Reusable Patterns
+
+Once you have established patterns in your codebase:
+
+```
+/impeccable extract [target]
+```
+
+This discovers your design system structure, identifies components used 3+ times, hard-coded values that should be tokens, and inconsistent variations. It then extracts improved, reusable versions with proper TypeScript types, accessibility, and documentation.
+
+#### Recommended Workflow for Frontend Development
+
+```
+/impeccable teach             Set up design context (once per project)
+    │
+    ▼
+/shape [feature]              Plan UX/UI - produces a design brief
+    │
+    ▼
+/impeccable craft [feature]   Build with full methodology (or build manually)
+    │
+    ▼
+/critique                     UX review with Nielsen's heuristics (scored 0-40)
+    │
+    ▼
+/polish                       Final quality pass
+    │
+    ▼
+/harden                       Production hardening (i18n, edge cases, overflow)
+    │
+    ▼
+/impeccable extract           Pull reusable components into design system
+```
+
+Use steering commands (`/typeset`, `/colorize`, `/layout`, `/animate`, etc.) at any point during development for targeted improvements.
+
+#### Key Concepts
+
+- **Context Gathering Protocol** - Every design skill checks for project context before proceeding. It looks for a Design Context section in your loaded instructions, then checks `.impeccable.md` in the project root, and if neither exists, forces `/impeccable teach`. This ensures you never get generic output.
+
+- **AI Slop Test** - A structured checklist built into the craft flow to detect generic AI aesthetics: purple-to-blue gradients, Inter/Roboto font defaults, glassmorphism, bounce/elastic easing, dark mode with neon accents, side-stripe borders, gradient text. The skill actively fights these patterns.
+
+- **Absolute Bans** - Two CSS patterns are never acceptable: side-stripe borders (`border-left`/`border-right` > 1px on cards/callouts) and gradient text (`background-clip: text` with gradients). These are treated as hard failures, not style preferences.
+
+- **Reference Library** - 9 deep-dive reference files loaded on-demand when relevant. These contain specific CSS examples, technique catalogs, and decision frameworks for typography (OpenType, font loading, modular scales), color (OKLCH, tinted neutrals, dark mode), spatial design (4pt grid, container queries), motion (easing curves, staggering, reduced motion), interactions (8 states, focus rings, popovers), responsive design (input method detection, safe areas), and UX writing (error formulas, translation planning).
 
 **Attribution:** [pbakaus/impeccable](https://github.com/pbakaus/impeccable) by Paul Bakaus, licensed under Apache 2.0. Based on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution.
 
