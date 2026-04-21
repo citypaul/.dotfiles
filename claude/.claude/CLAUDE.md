@@ -104,7 +104,7 @@ For documenting existing behavior before changes, load the `characterisation-tes
 For multi-surface design audits before code (embed every mock in a scope on one reviewable page with flow diagram + gap cards + per-mock audit checklists), load the `storyboard` skill.
 For structured learning of any topic (interactive tutoring, courses, quizzes), use `/teach-me [topic]`.
 For discovering and installing agent skills from the open ecosystem (`npx skills`), load the `find-skills` skill.
-For adversarial review of plans, acceptance criteria, or design mocks to surface missing states, edge cases, and unstated assumptions before implementation, load the `find-gaps` skill.
+For adversarial review of plans, acceptance criteria, or design mocks — one question at a time, turning each answer into a new AC / plan paragraph / mock-state spec written back to the source of truth — load the `find-gaps` skill.
 
 **Project onboarding:** Run `/setup` in any new project to detect its tech stack and generate project-level CLAUDE.md, hooks, commands, and PR review agent in one shot. This replaces the need for `/init`.
 

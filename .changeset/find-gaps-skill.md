@@ -2,23 +2,43 @@
 "@paulhammond/dotfiles": minor
 ---
 
-feat: add find-gaps skill for adversarial pre-implementation review
+feat: add find-gaps skill for collaborative pre-implementation review
 
-Add a new `find-gaps` skill that systematically surfaces missing states, unhandled edge cases, unstated assumptions, and unverifiable criteria in plans, acceptance criteria, and design mocks *before* implementation begins.
+Add a new `find-gaps` skill that systematically surfaces missing states, unhandled edge cases, unstated assumptions, and unverifiable criteria in plans, acceptance criteria, and design mocks — then **works interactively with the user** to close each gap, turning answers into new acceptance criteria, plan updates, or mock-state specs written back to the source of truth.
 
-**Core principle:** what isn't on the page is more dangerous than what is. A plan that says nothing about errors doesn't handle them gracefully — it doesn't handle them at all. Treat silence as a red flag, not a green light.
+**Two core principles:**
+1. *What isn't on the page is more dangerous than what is.* Treat silence as a red flag, not a green light.
+2. *Every gap is a conversation, not a comment.* A gap list nobody answers is a todo list with extra steps. The output of this skill is a **tightened artifact**, not a gap report.
 
-**What it does:**
-- Activates on "what's missing?" / "find gaps" / "poke holes" / review requests, or when about to start implementing against a spec
-- Identifies the artifact type (plan vs acceptance criteria vs mocks — each has its own checklist)
-- Walks an artifact-specific checklist end-to-end rather than stopping at the first three issues found
-- Classifies each gap as **Blocker** / **Should-address** / **Nice-to-have**
-- Outputs actionable questions with named owners — not judgments
-- Pairs with `storyboard` for multi-mock reviews and with `characterisation-tests` when the gap is undocumented behaviour of existing code
+**The shape is a conversational loop:**
+- Survey the artifact against an artifact-specific checklist (plans / AC / mocks)
+- Triage candidates into Blocker / Should-address / Nice-to-have
+- Tell the user how many gaps and where — get agreement to proceed
+- Walk them one at a time (or a tightly-coupled pair), starting with Blockers
+- For each: ask the concrete question, refine vague answers until testable, convert to an artifact update, show it back, confirm, write to source of truth
+- Recap every 3–5 closed gaps to catch contradictions
+- Exit when Blockers + Should-addresses are closed, or park explicitly with owner if the user calls time
 
-**Per-artifact checklists include:**
-- **Plans:** scope boundary, prerequisites, sequencing, failure & recovery, state & data, observability, security, testing, unstated tribal knowledge
-- **Acceptance criteria:** measurability (vague-word hit list), given/when/then discipline, negative paths, input edge cases, time & locale, actors & roles, non-functional targets, completion definition
-- **Design mocks:** UI states (loading/empty/error/partial/disabled/offline/rate-limited), content variance (min/max strings, unicode, RTL), interaction states (hover/focus/active/dragging), responsive breakpoints, accessibility (contrast, focus order, touch targets), theme/platform, permissions & role, data lifecycle, internationalization
+**Answer-to-artifact conversion patterns** (with worked examples in the skill):
+- **AC:** Given / When / Then with a single observable outcome, actor, and any emitted events. A QA engineer should be able to execute it without follow-up questions.
+- **Plan update:** the sentence or subsection that would have been in the plan if the author had thought of it — section, trade-off, failure mode named.
+- **Mock state spec:** name / trigger / visual / behaviour / exit for each missed state, so it can be implemented without re-asking.
 
-Registered in CLAUDE.md (skills list + pointer line), README.md (skill count 23→24, Key Sections table, Quick Navigation by Problem table), and `install-claude.sh` (mkdir + skills-array entry).
+**Working-with-the-user patterns** the skill enforces:
+- One question per turn (no bundling)
+- Mirror the user's vocabulary verbatim — no silent "buyer → user" promotions
+- Every confirmed answer is visible in the artifact before moving on
+- Surface downstream trade-offs explicitly
+- Escalate gaps the user can't decide — name the actual owner, park with question
+- Don't re-ask triage — you already decided severity
+
+**Per-artifact discovery checklists** (the engine for surfacing candidates):
+- Plans: scope boundary, prerequisites, sequencing, failure & recovery, state & data, observability, security, testing, tribal knowledge
+- Acceptance criteria: measurability (vague-word hit list), G/W/T discipline, negative paths, input edge cases, time & locale, actors, non-functional targets, completion
+- Design mocks: UI states (loading/empty/error/offline/rate-limited), content variance, interaction states, responsive, accessibility, theme, permissions, i18n
+
+**Outputs:**
+- Primary: the **updated artifact** written to the source of truth (AC list, plan doc, `states.md`)
+- Secondary: a resolution log with closed gaps (→ location) and parked gaps (→ owner)
+
+Registered in CLAUDE.md (skills list + pointer), README.md (skill count 23→24, Key Sections row, two Quick Navigation by Problem rows), and `install-claude.sh` (mkdir + skills-array entry).
