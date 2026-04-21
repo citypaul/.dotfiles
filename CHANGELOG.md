@@ -1,5 +1,41 @@
 # Changelog
 
+## 3.24.0
+
+### Minor Changes
+
+- 640ee0a: feat: add find-skills skill for discovering agent skills from the open ecosystem
+
+  Add the `find-skills` skill sourced from [vercel-labs/skills](https://github.com/vercel-labs/skills/tree/main/skills/find-skills). Helps Claude discover and install skills from the open agent skills ecosystem (`npx skills`, [skills.sh](https://skills.sh/)) when the user asks "how do I do X", "find a skill for X", or expresses interest in extending capabilities.
+
+  **What it does:**
+
+  - Activates when users ask how to accomplish something that might exist as an installable skill
+  - Checks the [skills.sh leaderboard](https://skills.sh/) first for well-known skills
+  - Runs `npx skills find [query]` with domain-appropriate keywords
+  - Verifies quality before recommending (install count ≥ 1K, trusted sources, GitHub stars)
+  - Presents options with install commands and links; offers to install with `npx skills add <owner/repo@skill> -g -y`
+  - Falls back to direct help or suggesting `npx skills init` when no skill matches
+
+  **Licensing:** Vendored under MIT. The upstream repository declares MIT in its `package.json` and README but does not ship a root `LICENSE` file, so a reproduced MIT notice is included at `claude/.claude/skills/find-skills/LICENSE` to preserve attribution. The install script downloads both `SKILL.md` and `LICENSE`.
+
+### Patch Changes
+
+- 640ee0a: fix: install-claude.sh now covers storyboard, teach-me, and diagrams skills
+
+  Three skills that had been committed to the repo were never added to the installer's skill list, so they were silently missing from `~/.claude/skills/` for anyone running `install-claude.sh`:
+
+  - `storyboard` (added in #128) — multi-surface design audit
+  - `teach-me` (added in #126) — evidence-based private tutor, plus 4 resource files
+  - `diagrams` (added in #122) — Mermaid/Graphviz/Vega-Lite/etc., plus `LICENSE`, `examples.md`, and 8 reference files
+
+  The installer now creates the missing directories, downloads all three SKILL.md files, and pulls in each skill's resources/references and any vendored LICENSE file.
+
+  Also updates `README.md` to reflect the actual catalog:
+
+  - Skill count bumped 21 → 23 (summary line and detailed install breakdown)
+  - **Key Sections** and **Quick Navigation by Problem** tables both now have rows for teach-me and diagrams, with MIT attribution visible inline for diagrams
+
 ## 3.23.0
 
 ### Minor Changes
