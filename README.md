@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 20 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 21 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -94,6 +94,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Finding Seams** | Identifying substitution points in untestable code -- function parameter, configuration, module, and object seams for TypeScript/JS. FP-first with OOP patterns in a separate resource for legacy class-based code. Based on Michael Feathers' *Working Effectively with Legacy Code*. 3 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
 | **Characterisation Tests** | Documenting actual behavior of existing code before making changes. The 5-step algorithm, heuristics, modern tooling (Vitest snapshots, combination testing, approval testing). Based on Michael Feathers' *Working Effectively with Legacy Code*. 2 deep-dive resources | [→ skills/characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) |
 | **Storyboard** | Multi-surface design audit on a single HTML page. Live iframes of every mock side-by-side, ASCII flow diagram with colour-coded gaps, per-mock `/critique`+`/clarify`+`/audit`+`/polish` checklist, brainstorm-question cards for missing mocks. Use before any multi-surface feature lands code. Pairs with impeccable design skills | [→ skills/storyboard](claude/.claude/skills/storyboard/SKILL.md) |
+| **Find Skills** | Discovers and installs skills from the open agent skills ecosystem (`npx skills`, [skills.sh](https://skills.sh/)). Activates on "how do I do X" / "find a skill for X". Verifies install count, source reputation, and GitHub stars before recommending. Vendored from [vercel-labs/skills](https://github.com/vercel-labs/skills) under MIT | [→ skills/find-skills](claude/.claude/skills/find-skills/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -144,6 +145,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Modifying code that has no tests | [characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) | Pin down current behavior as a safety net, then refactor |
 | Multiple UX mocks to review before code lands | [storyboard](claude/.claude/skills/storyboard/SKILL.md) | One HTML page with live iframes + flow diagram + gap cards; forces brainstorm questions per gap |
 | Want "all the mocks in one place" for a feature | [storyboard](claude/.claude/skills/storyboard/SKILL.md) | Side-by-side embedded mocks + per-mock audit checklist, pairs with `/impeccable` pipeline |
+| Wishing an agent skill existed for this task | [find-skills](claude/.claude/skills/find-skills/SKILL.md) | Search the open skills ecosystem via `npx skills find`; verify installs and source before recommending |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
@@ -1322,7 +1324,7 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (20 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard)
+- ✅ `~/.claude/skills/` (21 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard, find-skills)
 - ✅ `~/.claude/skills/` (18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable): impeccable core + 17 steering commands)
 - ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
