@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 23 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 24 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -97,6 +97,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Teach Me** | Evidence-based private tutor for any topic. Discovery interview, structured learning plans, Socratic questioning, Bloom's Taxonomy progression, spaced repetition, confidence calibration, course generation. 4 deep-dive resources. Invoked via `/teach-me [topic]` | [→ skills/teach-me](claude/.claude/skills/teach-me/SKILL.md) |
 | **Diagrams** | Create diagrams in Markdown using Mermaid, Graphviz, Vega-Lite, PlantUML, JSON Canvas, infographics, info cards, architecture diagrams. Decision guide picks the right tool; 8 per-tool references. Vendored from [markdown-viewer/skills](https://github.com/markdown-viewer/skills) under MIT | [→ skills/diagrams](claude/.claude/skills/diagrams/SKILL.md) |
 | **Find Skills** | Discovers and installs skills from the open agent skills ecosystem (`npx skills`, [skills.sh](https://skills.sh/)). Activates on "how do I do X" / "find a skill for X". Verifies install count, source reputation, and GitHub stars before recommending. Vendored from [vercel-labs/skills](https://github.com/vercel-labs/skills) under MIT | [→ skills/find-skills](claude/.claude/skills/find-skills/SKILL.md) |
+| **Find Gaps** | Conversational pre-implementation review for plans, acceptance criteria, and design mocks. Surveys the artifact with a per-type checklist, then walks you through gaps **one question at a time**, turning each answer into a new AC (Given/When/Then), plan paragraph, or mock-state spec written back to the source of truth. Output is the tightened artifact, not a gap report. Pairs with `storyboard` for multi-mock audits | [→ skills/find-gaps](claude/.claude/skills/find-gaps/SKILL.md) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -150,6 +151,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | Want to learn a topic properly, not just read about it | [teach-me](claude/.claude/skills/teach-me/SKILL.md) | Socratic tutor, Bloom's progression, spaced repetition — invoked via `/teach-me [topic]` |
 | Need a diagram, chart, or visualization in Markdown | [diagrams](claude/.claude/skills/diagrams/SKILL.md) | Decision guide picks Mermaid / Graphviz / Vega-Lite / PlantUML / Canvas / infographic for the job |
 | Wishing an agent skill existed for this task | [find-skills](claude/.claude/skills/find-skills/SKILL.md) | Search the open skills ecosystem via `npx skills find`; verify installs and source before recommending |
+| Reviewing a plan, spec, or mocks before coding starts | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Conversational loop: asks one question at a time and writes each answer back as a new AC / plan paragraph / mock-state spec |
+| "What could go wrong?" / "What's missing?" on a design | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Forces every gap category end-to-end; each confirmed answer updates the artifact, not a todo list |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
@@ -1328,7 +1331,7 @@ chmod +x install-claude.sh
 
 **What gets installed (v3.0.0):**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (23 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard, teach-me, diagrams, find-skills)
+- ✅ `~/.claude/skills/` (24 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard, teach-me, diagrams, find-skills, find-gaps)
 - ✅ `~/.claude/skills/` (18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable): impeccable core + 17 steering commands)
 - ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)

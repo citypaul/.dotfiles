@@ -174,7 +174,7 @@ mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
 mkdir -p ~/.claude/skills/ci-debugging ~/.claude/skills/hexagonal-architecture ~/.claude/skills/domain-driven-design ~/.claude/skills/twelve-factor ~/.claude/skills/api-design
 mkdir -p ~/.claude/skills/finding-seams ~/.claude/skills/characterisation-tests ~/.claude/skills/find-skills ~/.claude/skills/storyboard
-mkdir -p ~/.claude/skills/teach-me ~/.claude/skills/diagrams
+mkdir -p ~/.claude/skills/teach-me ~/.claude/skills/diagrams ~/.claude/skills/find-gaps
 mkdir -p ~/.claude/skills/hexagonal-architecture/resources ~/.claude/skills/domain-driven-design/resources ~/.claude/skills/api-design/resources ~/.claude/skills/cli-design/resources
 mkdir -p ~/.claude/skills/finding-seams/resources ~/.claude/skills/characterisation-tests/resources
 mkdir -p ~/.claude/skills/teach-me/resources ~/.claude/skills/diagrams/references
@@ -236,6 +236,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "diagrams/SKILL.md"
     "diagrams/LICENSE" # MIT attribution — vendored from markdown-viewer/skills
     "diagrams/examples.md"
+    "find-gaps/SKILL.md"
   )
 
   for skill in "${skills[@]}"; do
