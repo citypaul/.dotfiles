@@ -1,19 +1,19 @@
 ---
 name: storyboard
-description: Produce a mock-audit storyboard — a single HTML page embedding every UX surface in a scope of work side-by-side, with per-mock audit checklists, a flow diagram, and gap cards for missing mocks. Use at wave-start or before any feature touching multiple UX surfaces begins implementation. Also use when the user says "make it easy for me to see all these mocks in one place", "audit the mocks", or "I want to review the whole flow".
+description: Produce a mock-audit storyboard — a single HTML page embedding every UX surface in a scope of work side-by-side, with per-mock audit checklists, a flow diagram, and gap cards for missing mocks. Use before any feature touching multiple UX surfaces begins implementation. Also use when the user says "make it easy for me to see all these mocks in one place", "audit the mocks", or "I want to review the whole flow".
 ---
 
 # Storyboard
 
 A **storyboard** is a single reviewable HTML page that stitches every UX surface in a scope of work into one view. Each existing mock is embedded as a live `<iframe>`. A flow diagram at the top shows how the user moves through them. Gap cards mark mocks that still need producing. Per-mock audit checklists give the reviewer a place to approve or flag concrete fixes.
 
-**Purpose:** move the design audit from "open a dozen tabs and try to hold the flow in your head" to "open one page and scroll". Gives you a reviewable artifact that pairs with whatever textual decision record you keep (`wave-N-audit.md`, a plan doc, a PR description).
+**Purpose:** move the design audit from "open a dozen tabs and try to hold the flow in your head" to "open one page and scroll". Gives you a reviewable artifact that pairs with whatever textual decision record you keep (a plan doc, an audit note, a PR description).
 
 ## When to produce one
 
 - **Before any feature whose scope touches ≥ 2 UX surfaces begins implementation.** Examples: a signup flow (signup → verify email → onboarding), a settings page (profile / notifications / delete / billing), an invitation flow (send → email → accept → landing).
-- **Wave-start audit** in projects that organise launch work into waves — when the wave's items collectively touch multiple surfaces.
-- **Single-item audit** when an item spans multiple states (a flow with loading / empty / populated / error states across 3+ steps).
+- **Before a planned chunk of work that covers multiple surfaces** — whatever the project's unit of planning (milestone, epic, phase, batch). When the chunk collectively touches multiple surfaces, storyboard the whole thing before starting.
+- **Single-feature audit** when a feature spans multiple states (a flow with loading / empty / populated / error states across 3+ steps).
 - **The user explicitly asks** for "everything in one place", "the whole flow", "audit the mocks", "I want to see all of this together".
 - **Before producing new mocks.** Storyboarding the existing ones first reveals gaps visually and forces brainstorm questions per gap before drafting.
 
@@ -28,7 +28,7 @@ A **storyboard** is a single reviewable HTML page that stitches every UX surface
 
 Before drafting the HTML, gather:
 
-1. **Scope code + title.** E.g. `Wave 1 · B2`, `Onboarding v2 — reset regression`, `Settings page — profile + notifications`. Sets the page title + breadcrumb.
+1. **Scope code + title.** E.g. `Onboarding v2 — reset regression`, `Settings page — profile + notifications`, `M3 · address book`. Sets the page title + breadcrumb.
 2. **Existing mocks in scope.** Walk the project's design-mocks folder (or equivalent) and collect the paths relevant to this scope. Each existing mock becomes an embedded panel.
 3. **User flow.** The sequence of states + transitions the user walks through. Draw as ASCII in a `<pre>` block. Mark gaps with distinctive colour / glyph.
 4. **Gaps.** New mocks the scope needs but doesn't have yet. Each gap gets its own card with brainstorm questions the user must answer before we produce it — no gap without questions.
@@ -51,11 +51,11 @@ A storyboard is a pattern, not a template. Every storyboard has these sections i
 
 ### 1. Breadcrumb
 
-Back-link to the parent index (mocks manifest, wave index, etc.).
+Back-link to the parent index (mocks manifest, planning index, etc.).
 
 ### 2. Header
 
-- Small pill with scope code (e.g. `Wave 1 · B2`) in an uppercase-tracking style.
+- Small pill with scope code (e.g. `Onboarding v2` or whatever the project uses) in an uppercase-tracking style.
 - Serif display title describing the scope.
 - Short subhead (one sentence) naming the purpose of this page.
 - Paragraph explaining what the scope is + link row to item README, design brief, and any relevant ADR.
@@ -140,7 +140,7 @@ Three rules learned the hard way:
 After producing the storyboard:
 
 1. **Link it from the project's mocks manifest or index page** under an "Active audits" or similar section so it's discoverable.
-2. **Reference it from the decision-record markdown** (the wave-audit note, plan file, or PR description) as the visual companion.
+2. **Reference it from the decision-record markdown** (the plan file, audit note, or PR description) as the visual companion.
 3. **Reference it from the item / feature README(s)** in the "Design" section.
 4. The storyboard supersedes scattered "here's the hub-list mock, click here for the archive confirm" links. One place, always.
 
@@ -213,7 +213,7 @@ User says `/storyboard <scope>` or asks one of the trigger phrases (see frontmat
 │
 ├─► WIRE UP
 │   ├─ Link from mocks manifest / index page
-│   ├─ Reference from plan / wave-audit markdown
+│   ├─ Reference from plan / audit markdown
 │   └─ Reference from feature README
 │
 └─► USER REVIEWS
