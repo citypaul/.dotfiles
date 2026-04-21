@@ -173,9 +173,11 @@ mkdir -p ~/.claude/skills/tdd ~/.claude/skills/typescript-strict ~/.claude/skill
 mkdir -p ~/.claude/skills/refactoring ~/.claude/skills/testing ~/.claude/skills/expectations ~/.claude/skills/planning
 mkdir -p ~/.claude/skills/front-end-testing ~/.claude/skills/react-testing ~/.claude/skills/mutation-testing ~/.claude/skills/test-design-reviewer
 mkdir -p ~/.claude/skills/ci-debugging ~/.claude/skills/hexagonal-architecture ~/.claude/skills/domain-driven-design ~/.claude/skills/twelve-factor ~/.claude/skills/api-design
-mkdir -p ~/.claude/skills/finding-seams ~/.claude/skills/characterisation-tests
+mkdir -p ~/.claude/skills/finding-seams ~/.claude/skills/characterisation-tests ~/.claude/skills/find-skills ~/.claude/skills/storyboard
+mkdir -p ~/.claude/skills/teach-me ~/.claude/skills/diagrams
 mkdir -p ~/.claude/skills/hexagonal-architecture/resources ~/.claude/skills/domain-driven-design/resources ~/.claude/skills/api-design/resources ~/.claude/skills/cli-design/resources
 mkdir -p ~/.claude/skills/finding-seams/resources ~/.claude/skills/characterisation-tests/resources
+mkdir -p ~/.claude/skills/teach-me/resources ~/.claude/skills/diagrams/references
 if [[ "$INSTALL_EXTERNAL" == true ]]; then
   mkdir -p ~/.claude/skills/accessibility ~/.claude/skills/best-practices ~/.claude/skills/core-web-vitals
   mkdir -p ~/.claude/skills/performance ~/.claude/skills/seo ~/.claude/skills/web-quality-audit
@@ -227,6 +229,13 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "cli-design/SKILL.md"
     "finding-seams/SKILL.md"
     "characterisation-tests/SKILL.md"
+    "find-skills/SKILL.md"
+    "find-skills/LICENSE" # MIT attribution — vendored from vercel-labs/skills
+    "storyboard/SKILL.md"
+    "teach-me/SKILL.md"
+    "diagrams/SKILL.md"
+    "diagrams/LICENSE" # MIT attribution — vendored from markdown-viewer/skills
+    "diagrams/examples.md"
   )
 
   for skill in "${skills[@]}"; do
@@ -262,6 +271,18 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     "finding-seams/resources/oop-patterns.md"
     "characterisation-tests/resources/writing-process.md"
     "characterisation-tests/resources/modern-tooling.md"
+    "teach-me/resources/assessment-patterns.md"
+    "teach-me/resources/course-generation.md"
+    "teach-me/resources/learning-science.md"
+    "teach-me/resources/session-management.md"
+    "diagrams/references/architecture.md"
+    "diagrams/references/canvas.md"
+    "diagrams/references/graphviz.md"
+    "diagrams/references/infocard.md"
+    "diagrams/references/infographic.md"
+    "diagrams/references/mermaid.md"
+    "diagrams/references/plantuml.md"
+    "diagrams/references/vega.md"
   )
 
   for resource in "${resources[@]}"; do
