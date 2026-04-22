@@ -78,10 +78,10 @@ Get explicit agreement to proceed ("shall we start with the payment errors?" or 
 For each gap:
 
 1. **State the gap** in one sentence. No preamble, no justification.
-2. **Ask the concrete question.** Never bundle unrelated questions.
-3. **If the answer is vague, ask the follow-up that makes it testable.** "The user sees an error" → "What message, and can they retry?"
+2. **Ask the concrete question.** Never bundle unrelated questions. When the answer space is enumerable — failure strategies, severity classifications, state-variance scoping, parking decisions — ask via the `AskUserQuestion` tool with structured options rather than free text. See **Asking with Structure** below for the heuristic and worked examples.
+3. **If the answer is vague, ask the follow-up that makes it testable.** "The user sees an error" → "What message, and can they retry?" Follow-ups on microcopy stay free-text; follow-ups that narrow between a small set of behaviours become structured.
 4. **Convert the refined answer into an artifact update** using the patterns below.
-5. **Show the proposed update** verbatim and ask "write this as-is, or edit?"
+5. **Show the proposed update** verbatim, then offer *write as-is / edit inline / discard and redo* via `AskUserQuestion`. If you have two phrasings worth comparing, put them in option `preview` fields for side-by-side review.
 6. **Write it** to the source of truth once confirmed.
 7. **Move on.** Don't linger.
 
@@ -192,7 +192,7 @@ For every missed state, capture **name / trigger / visual / behaviour / exit** s
 
 **Ask only what the user can answer.** "What's the error-handling strategy?" is a design spike. "When the payment declines, what message should the user see?" is a decision.
 
-**One question per turn** — unless two are tightly coupled ("what's the error, and can the user retry from it?"). If you find yourself typing "Also," stop and pick the most important one.
+**One question per turn** — unless two are tightly coupled ("what's the error, and can the user retry from it?"). A structured `AskUserQuestion` call with 2–4 tightly-related sub-questions counts as one turn; batching *unrelated* gaps into a single call reverts to a gap dump. If you find yourself typing "Also," stop and pick the most important one.
 
 **Mirror the user's vocabulary.** If they say "buyer," the AC says "buyer." Do not silently promote it to "user" or "customer." Domain language is a feature.
 
@@ -203,6 +203,73 @@ For every missed state, capture **name / trigger / visual / behaviour / exit** s
 **Know when to escalate.** If a gap needs a decision the user can't make alone, name the actual owner, park it explicitly with a question and owner, and continue.
 
 **Don't re-ask triage.** You've already decided each gap is a Blocker / Should-address / Nice-to-have. Don't ask "do you want to address this?" for every one — just ask the concrete question. The user can say "skip" if they want.
+
+---
+
+## Asking with Structure
+
+Every question you put to the user is either free-text or structured via the `AskUserQuestion` tool. Pick based on where the value lives:
+
+- **The options are the value** → `AskUserQuestion`. Picking is faster than generating, the user benefits from seeing the choice space, and the common answers are knowable.
+- **The user's specific words are the value** → free text. Domain vocabulary, microcopy, novel decisions, anything that will be copied verbatim into the artifact.
+
+### Good fits
+
+Use `AskUserQuestion` when the answer space is genuinely enumerable and recurs across projects:
+
+| Situation                  | Why a structured question helps                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Failure strategy           | Retry / fail fast / queue / fail-over — each has a named trade-off worth surfacing                    |
+| Severity re-triage         | Blocker / Should / Nice — useful when your triage and the user's disagree                             |
+| State-variance scoping     | Which states matter for v1 — `multiSelect: true` fits perfectly                                       |
+| Parking decisions          | Park with owner / escalate now / keep working — closes the gap-handling loop                          |
+| Write-back confirmation    | Write as-is / edit inline / discard — classic 3-option close after you've drafted the update          |
+| Variant comparison         | Two G/W/T drafts or two state specs in `preview` fields — side-by-side review beats prose walkthrough |
+
+### Bad fits
+
+Don't force structure where it doesn't belong:
+
+- **Microcopy** — "what error message should appear?" needs the user's exact words.
+- **Truly open questions** — "what are you trying to achieve here?" You'd be inventing the options.
+- **Domain-expert questions** — "what does 'confirmed' mean in our pricing flow?" The user knows things you don't; structured options anchor them to your guesses.
+- **Performative prompts** — if the right answer is already obvious, don't ask. Just propose it.
+
+### Structural rules
+
+- Batch **tightly-related** sub-questions in one call (up to 4). Batching unrelated gaps is a gap dump wearing a hat.
+- Option labels 1–5 words. Put the trade-off in the `description`.
+- If one option is the recommendation, put it first, add *"(Recommended)"* to the label, and name the reason in the description.
+- *"Other"* is added automatically — trust it. Don't add a synthetic "Custom…" option.
+- Use `preview` only for comparable artifacts (AC drafts, state specs, code snippets). Simple preferences don't need side-by-side layout.
+
+### Worked example — payment decline, structured
+
+**Gap:** "No spec for payment decline behaviour."
+
+Instead of free-text back-and-forth, issue one `AskUserQuestion` call with two tightly-coupled sub-questions:
+
+```
+Q1 — header: "On decline"
+  question: "What should happen when the payment provider returns a decline?"
+  options:
+    - label: "Keep card field populated (Recommended)"
+      description: "User can edit digits and retry without re-entering everything. Matches Stripe / Shopify default."
+    - label: "Clear card field"
+      description: "Forces re-entry; lower risk of accidentally retrying a stolen card but worse UX."
+    - label: "Silent retry once, then error"
+      description: "Can mask transient failures but adds ~1s latency to every decline."
+
+Q2 — header: "Telemetry"
+  question: "Should we emit a telemetry event on decline?"
+  options:
+    - label: "Emit payment.declined (Recommended)"
+      description: "With provider reason code. Supports fraud dashboards and funnel analysis."
+    - label: "No event"
+      description: "Reduces data volume; only fine if decline rate isn't a tracked metric."
+```
+
+After the user picks, draft the AC using the chosen options (plus any "Other" text verbatim for the user's own language). Then issue a second `AskUserQuestion` offering *write as-is / edit inline / discard* on the proposed G/W/T — with two drafts in `preview` fields if the scoping or event shape was worth comparing.
 
 ---
 
@@ -246,6 +313,9 @@ The log goes in the PR description, release notes, or wherever the work is being
 - **Stopping at three gaps.** If three surfaced in five minutes, there are probably thirty. Finish the checklist.
 - **Treating taste as a gap.** Stylistic preferences aren't gaps. Absence of decision is.
 - **Reviewing the artifact in isolation.** Cross-check plan ↔ AC ↔ mocks — gaps often appear as contradictions between two of them, not as absences in one.
+- **Inventing options just to use `AskUserQuestion`.** If you don't know the real choice space, ask free-text instead — fabricated options anchor the user to your guesses and hide their actual answer.
+- **Using `AskUserQuestion` for microcopy.** "What error message should appear?" must stay free-text. The user's exact words are the value; structured options destroy them.
+- **Batching unrelated gaps into one `AskUserQuestion` call.** Four sub-questions about the same gap is one turn. Four sub-questions about four different gaps is a gap dump in disguise.
 
 ## Quick reference
 
