@@ -230,6 +230,45 @@ backup_file() {
   fi
 }
 
+# Migrate skill directories left behind by the pre-skills.sh curl-based
+# installer. Those were written as regular directories at ~/.claude/skills/<name>;
+# the skills CLI will then manage them in-place as Claude-Code-specific installs
+# instead of routing them through the universal ~/.agents/skills/ cache, which
+# is where Codex (and other "universal" agents) read from. Moving them aside
+# lets the CLI install each source into the universal path on this run, so the
+# Claude-side entries become symlinks and the same skills become visible to
+# Codex/OpenCode/etc.
+#
+# The files are moved, not deleted — everything ends up under
+# ~/.claude/skills.pre-skills-sh.<timestamp>/ and can be restored manually.
+migrate_legacy_skill_dirs() {
+  local skills_dir=~/.claude/skills
+  [[ -d "$skills_dir" ]] || return 0
+
+  local stale=()
+  local entry name
+  for entry in "$skills_dir"/*/; do
+    [[ -d "$entry" ]] || continue
+    name="$(basename "$entry")"
+    [[ -L "$skills_dir/$name" ]] && continue
+    stale+=("$name")
+  done
+
+  if [[ ${#stale[@]} -eq 0 ]]; then
+    return 0
+  fi
+
+  local backup="$skills_dir.pre-skills-sh.$(date +%Y%m%d_%H%M%S)"
+  echo -e "${YELLOW}→${NC} Found ${#stale[@]} pre-skills.sh skill director$([[ ${#stale[@]} -eq 1 ]] && echo "y" || echo "ies") at ~/.claude/skills/"
+  echo -e "${YELLOW}→${NC} Moving to $backup so the skills CLI can route them through the universal path"
+  mkdir -p "$backup"
+  for name in "${stale[@]}"; do
+    mv "$skills_dir/$name" "$backup/"
+    echo -e "   • $name"
+  done
+  echo ""
+}
+
 # Install skills from a skills.sh source for the selected agents
 install_skills_from() {
   local source="$1"
@@ -251,6 +290,32 @@ install_skills_from() {
   else
     echo -e "${RED}✗${NC} Failed to install $label from $source"
     return 1
+  fi
+}
+
+# Verify skills landed in the universal cache — the path Codex and other
+# "universal agents" read from. Regular (non-symlink) directories under
+# ~/.claude/skills/ after install mean something routed through the
+# Claude-Code-specific path and won't be visible to non-Claude agents.
+verify_skills_installed() {
+  local skills_dir=~/.claude/skills
+  [[ -d "$skills_dir" ]] || return 0
+
+  local stale=() entry name
+  for entry in "$skills_dir"/*/; do
+    [[ -d "$entry" ]] || continue
+    name="$(basename "$entry")"
+    [[ -L "$skills_dir/$name" ]] && continue
+    stale+=("$name")
+  done
+
+  if [[ ${#stale[@]} -gt 0 ]]; then
+    echo -e "${YELLOW}⚠${NC}  ${#stale[@]} skill(s) ended up as regular directories under ~/.claude/skills/"
+    echo -e "    These won't be visible to non-Claude agents (Codex, etc.):"
+    for name in "${stale[@]}"; do
+      echo -e "      • $name"
+    done
+    echo -e "    Re-run ${YELLOW}$0 --skills-only${NC} to migrate them, or remove via ${YELLOW}npx skills remove -g -s <name>${NC}."
   fi
 }
 
@@ -278,6 +343,8 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "${YELLOW}→${NC} (Pass --agent <name> to target more — see skills.sh for the full list)"
   echo ""
 
+  migrate_legacy_skill_dirs
+
   install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)"
 
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
@@ -288,6 +355,8 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     install_skills_from "$IMPECCABLE_SKILLS_REPO" "impeccable design skills (pbakaus/impeccable)"
   fi
 
+  echo ""
+  verify_skills_installed
   echo ""
 fi
 
