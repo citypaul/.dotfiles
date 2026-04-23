@@ -1291,9 +1291,9 @@ Agents are invoked implicitly (Claude detects when to use them) or explicitly:
 **Why choose this:**
 - ✅ One-time setup applies everywhere automatically
 - ✅ No per-project configuration needed
-- ✅ Works with Claude Code and OpenCode (`--with-opencode`)
+- ✅ Skills install via [skills.sh](https://skills.sh) — works with Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, and 40+ other agents
 - ✅ Modular structure loads details on-demand
-- ✅ Easy updates via git pull
+- ✅ Easy updates: `npx skills update -g` for skills, `git pull` for the rest
 
 **One-liner installation:**
 ```bash
@@ -1320,22 +1320,32 @@ chmod +x install-claude.sh
 ```bash
 ./install-claude.sh                    # Install everything (CLAUDE.md + skills + commands + agents)
 ./install-claude.sh --claude-only      # Install only CLAUDE.md
-./install-claude.sh --skills-only      # Install only skills
+./install-claude.sh --skills-only      # Install only skills (via skills.sh)
 ./install-claude.sh --no-agents        # Install without agents
 ./install-claude.sh --no-external      # Skip all external community skills (web-quality-skills + impeccable)
 ./install-claude.sh --no-impeccable    # Skip impeccable design skills only
-./install-claude.sh --with-opencode    # Also install OpenCode configuration
-./install-claude.sh --version v2.0.0   # Install v2.0.0 (modular docs)
-./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
+./install-claude.sh --with-opencode    # Also target OpenCode for skills + install OpenCode config
+./install-claude.sh --version v2.0.0   # Version for CLAUDE.md/commands/agents (skills always latest)
 ```
 
-**What gets installed (v3.0.0):**
+**What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (24 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard, teach-me, diagrams, find-skills, find-gaps)
-- ✅ `~/.claude/skills/` (18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable): impeccable core + 17 steering commands)
-- ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
+- ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) (`npx skills add`):
+  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 24 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, front-end-testing, react-testing, and more)
+  - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
+  - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
+
+**Managing skills after install:**
+```bash
+npx skills list -g              # List installed skills
+npx skills update -g            # Update all skills to latest
+npx skills find <query>         # Discover more skills on skills.sh
+npx skills remove -g <name>     # Uninstall a skill
+```
+
+> **Requires Node.js** for skills install (so `npx` is available). Use `--claude-only` or `--agents-only` if you don't have Node installed.
 
 **Optional: Enable GitHub MCP Integration**
 
