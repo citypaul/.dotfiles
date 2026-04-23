@@ -40,7 +40,7 @@ This repository now serves two purposes:
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
 
-> **Using OpenCode?** All skills, slash commands, and agents in this repo work with both Claude Code and [OpenCode](https://opencode.ai). Install with `--with-opencode` to get full compatibility — see [OpenCode Support](#optional-enable-opencode-support) for details.
+> **Using another coding agent?** Skills install via [skills.sh](https://skills.sh), which supports 40+ coding agents (Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, …). Pass `--agent <name>` (repeatable) to target others, or `--with-opencode` for the OpenCode config shortcut. Slash commands and Claude-Code agents are Claude-Code-specific; `--with-opencode` also copies them into OpenCode's equivalents. See [Targeting other agents](#targeting-other-agents) for details.
 
 ---
 
@@ -1291,9 +1291,9 @@ Agents are invoked implicitly (Claude detects when to use them) or explicitly:
 **Why choose this:**
 - ✅ One-time setup applies everywhere automatically
 - ✅ No per-project configuration needed
-- ✅ Works with Claude Code and OpenCode (`--with-opencode`)
+- ✅ Skills install via [skills.sh](https://skills.sh) — works with Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, and 40+ other agents
 - ✅ Modular structure loads details on-demand
-- ✅ Easy updates via git pull
+- ✅ Easy updates: `npx skills update -g` for skills, `git pull` for the rest
 
 **One-liner installation:**
 ```bash
@@ -1318,24 +1318,74 @@ chmod +x install-claude.sh
 
 **Install options:**
 ```bash
-./install-claude.sh                    # Install everything (CLAUDE.md + skills + commands + agents)
-./install-claude.sh --claude-only      # Install only CLAUDE.md
-./install-claude.sh --skills-only      # Install only skills
-./install-claude.sh --no-agents        # Install without agents
-./install-claude.sh --no-external      # Skip all external community skills (web-quality-skills + impeccable)
-./install-claude.sh --no-impeccable    # Skip impeccable design skills only
-./install-claude.sh --with-opencode    # Also install OpenCode configuration
-./install-claude.sh --version v2.0.0   # Install v2.0.0 (modular docs)
-./install-claude.sh --version v1.0.0   # Install v1.0.0 (single file)
+./install-claude.sh                                      # Install everything (CLAUDE.md + skills + commands + agents)
+./install-claude.sh --claude-only                        # Install only CLAUDE.md
+./install-claude.sh --skills-only                        # Install only skills (via skills.sh)
+./install-claude.sh --no-agents                          # Install without agents
+./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + impeccable)
+./install-claude.sh --no-impeccable                      # Skip impeccable design skills only
+./install-claude.sh --with-opencode                      # Also target OpenCode for skills + install OpenCode config
+./install-claude.sh --agent codex --agent cursor         # Also install skills for Codex and Cursor (repeatable)
+./install-claude.sh --skills-only --no-claude-code \     # Install skills ONLY for a non-Claude agent
+                    --agent codex
+./install-claude.sh --version v2.0.0                     # Version for CLAUDE.md/commands/agents (skills always latest)
 ```
 
-**What gets installed (v3.0.0):**
+<a id="targeting-other-agents"></a>**Targeting other agents:**
+
+Skills.sh supports 40+ coding agents (Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, …). Use `--agent <name>` (repeatable) to add extra targets alongside the default `claude-code`. Use `--no-claude-code` with `--agent` to target only non-Claude agents. After install, `npx skills list -g` shows which skills each agent can see.
+
+Under the hood, the skills CLI distinguishes two kinds of agent:
+
+- **Universal agents** (Codex, OpenCode, and others whose `skillsDir` is `.agents/skills`) read directly from the shared `~/.agents/skills/` cache. Installing for these adds nothing to the agent's own config dir — the cache path is the read path.
+- **Per-agent agents** (Claude Code, Cursor, …) get a symlink into their own skills directory (e.g. `~/.claude/skills/<name> -> ~/.agents/skills/<name>`).
+
+Both patterns resolve to the same content on disk, so the first `--agent codex` install makes skills visible to Codex with no duplicate storage.
+
+**Migration from the old curl-based installer is automatic.** If `~/.claude/skills/` contains regular directories left behind by a previous install, the installer moves them to `~/.claude/skills.pre-skills-sh.<timestamp>/` before running `npx skills add`, so the CLI can route each source through the universal cache and every targeted agent (Claude Code *and* Codex, etc.) picks them up. The move is non-destructive — the timestamped backup stays on disk until you remove it.
+
+**What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
-- ✅ `~/.claude/skills/` (24 auto-discovered patterns: tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard, teach-me, diagrams, find-skills, find-gaps)
-- ✅ `~/.claude/skills/` (18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable): impeccable core + 17 steering commands)
-- ✅ `~/.claude/skills/` (6 web quality patterns from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills): accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit)
+- ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) (`npx skills add`):
+  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 24 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, front-end-testing, react-testing, and more)
+  - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
+  - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
+
+**Managing skills after install:**
+```bash
+npx skills list -g              # List installed skills
+npx skills update -g            # Update all skills to latest
+npx skills find <query>         # Discover more skills on skills.sh
+npx skills remove -g <name>     # Uninstall a skill
+```
+
+> **Requires Node.js** for skills install (so `npx` is available). Use `--claude-only` or `--agents-only` if you don't have Node installed.
+
+<details>
+<summary><b>Why does the installer use skills.sh instead of <code>curl</code>ing skills directly?</b></summary>
+
+The installer used to `curl` every `SKILL.md` straight from this repo into `~/.claude/skills/`. It worked, but it was Claude-Code-only and the file list lived inside the installer. Switching skill installs to the [skills.sh](https://skills.sh) CLI (`npx skills add`) changes four things:
+
+1. **Multi-agent portability.** The same skills are now installable against [40+ coding agents](https://github.com/vercel-labs/skills) — Claude Code, Cursor, Codex, GitHub Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, and more — via the `-a <agent>` flag. Using these skills from a non-Claude tool no longer requires a Claude-specific copy step. `--with-opencode` is now just an extra `-a opencode` on the existing install instead of a second duplicated tree.
+
+2. **Lifecycle commands.** `npx skills list -g`, `update -g`, and `remove -g <name>` manage skills after install. Previously the only way to "update" was to re-run the whole installer and overwrite everything. `npx skills find <query>` also surfaces skills beyond this repo from the open ecosystem (Vercel's `agent-skills`, community authors, etc.).
+
+3. **One source of truth on disk.** Skills live once at `~/.agents/skills/<name>` (the universal cache); Claude Code gets a symlink into `~/.claude/skills/<name>`; Codex and other "universal" agents read the cache directly. A single `npx skills update -g` propagates everywhere a skill is wired up.
+
+4. **Installer doesn't grow with the skill list.** Three `curl` loops with hard-coded file lists (including every `resources/*.md` and `references/*.md`) collapsed to three `npx skills add` calls. Adding a new skill to `claude/.claude/skills/` no longer requires a matching installer edit — the CLI discovers it.
+
+5. **Auto-migration from the old curl installer.** Before running `npx skills add`, the installer looks for regular directories under `~/.claude/skills/` (the shape the old curl installer wrote) and moves them to `~/.claude/skills.pre-skills-sh.<timestamp>/`. Without this step the CLI would treat the stale dirs as Claude-Code-specific installs and keep them invisible to non-Claude agents. A verification pass after install warns if anything still ended up as a regular directory.
+
+**Trade-offs:**
+- Requires Node.js for `npx`. `--claude-only` and `--agents-only` still work without it.
+- The skills CLI doesn't expose ref pinning yet, so skills always install from the latest upstream commit. `--version` still pins `CLAUDE.md`, commands, and agents.
+- Skills used to ship at the same `v3.x` tag as everything else in this repo; now they roll independently. Use `npx skills list -g --json` if you want to snapshot what's installed.
+
+`CLAUDE.md`, slash commands, and Claude-Code agents are still `curl`ed directly from this repo — they aren't skills and aren't part of the skills.sh ecosystem.
+
+</details>
 
 **Optional: Enable GitHub MCP Integration**
 
@@ -1562,14 +1612,14 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 - **v2.0.0 modular docs:** https://github.com/citypaul/.dotfiles/tree/v2.0.0/claude/.claude
 - **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
 
-The installation script installs v3.0.0 by default. Use `--version v2.0.0` or `--version v1.0.0` for older versions.
+The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the `main` branch by default — pass `--version v2.0.0` or `--version v1.0.0` to pin those to an older tag. Skills always install from the latest upstream commit via skills.sh, independent of this flag.
 
 ---
 
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns (20 built-in skills + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills))
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 24 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
