@@ -1347,6 +1347,28 @@ npx skills remove -g <name>     # Uninstall a skill
 
 > **Requires Node.js** for skills install (so `npx` is available). Use `--claude-only` or `--agents-only` if you don't have Node installed.
 
+<details>
+<summary><b>Why does the installer use skills.sh instead of <code>curl</code>ing skills directly?</b></summary>
+
+The installer used to `curl` every `SKILL.md` straight from this repo into `~/.claude/skills/`. It worked, but it was Claude-Code-only and the file list lived inside the installer. Switching skill installs to the [skills.sh](https://skills.sh) CLI (`npx skills add`) changes four things:
+
+1. **Multi-agent portability.** The same skills are now installable against [40+ coding agents](https://github.com/vercel-labs/skills) — Claude Code, Cursor, Codex, GitHub Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, and more — via the `-a <agent>` flag. Using these skills from a non-Claude tool no longer requires a Claude-specific copy step. `--with-opencode` is now just an extra `-a opencode` on the existing install instead of a second duplicated tree.
+
+2. **Lifecycle commands.** `npx skills list -g`, `update -g`, and `remove -g <name>` manage skills after install. Previously the only way to "update" was to re-run the whole installer and overwrite everything. `npx skills find <query>` also surfaces skills beyond this repo from the open ecosystem (Vercel's `agent-skills`, community authors, etc.).
+
+3. **One source of truth on disk.** The CLI symlinks skills from a package cache into each agent's directory, so a single `npx skills update -g` propagates everywhere a skill is wired up.
+
+4. **Installer doesn't grow with the skill list.** Three `curl` loops with hard-coded file lists (including every `resources/*.md` and `references/*.md`) collapsed to three `npx skills add` calls. Adding a new skill to `claude/.claude/skills/` no longer requires a matching installer edit — the CLI discovers it.
+
+**Trade-offs:**
+- Requires Node.js for `npx`. `--claude-only` and `--agents-only` still work without it.
+- The skills CLI doesn't expose ref pinning yet, so skills always install from the latest upstream commit. `--version` still pins `CLAUDE.md`, commands, and agents.
+- Skills used to ship at the same `v3.x` tag as everything else in this repo; now they roll independently. Use `npx skills list -g --json` if you want to snapshot what's installed.
+
+`CLAUDE.md`, slash commands, and agents are still `curl`ed directly from this repo — they aren't skills and aren't part of the skills.sh ecosystem.
+
+</details>
+
 **Optional: Enable GitHub MCP Integration**
 
 For enhanced GitHub workflows with native PR/issue integration:
