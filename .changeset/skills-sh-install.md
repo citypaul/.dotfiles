@@ -8,6 +8,7 @@ Replace the three direct-`curl` skill install blocks (own, web-quality-skills, i
 
 **Why it matters:**
 - **Multi-agent portability** — the same skills are now installable against [40+ coding agents](https://github.com/vercel-labs/skills) (Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, …) via the `-a <agent>` flag. `--with-opencode` is now just an extra `-a opencode` on the existing install rather than a duplicated tree.
+- **New `--agent <name>` flag** — repeatable, lets you target any supported agent without knowing the `npx skills add` syntax (e.g. `--agent codex --agent cursor`). Paired with `--no-claude-code` to target only non-Claude agents. Default remains claude-code.
 - **Lifecycle management** — `npx skills update -g` propagates upstream changes instead of requiring a full reinstall, and `npx skills find <query>` surfaces skills beyond this repo from the open ecosystem.
 - **Installer no longer grows with the skill list** — three `curl` loops with hard-coded file lists (including every `resources/*.md` and `references/*.md`) collapsed into three `npx skills add` calls; adding a new skill to `claude/.claude/skills/` no longer requires a matching installer edit.
 

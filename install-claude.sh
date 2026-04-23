@@ -44,6 +44,11 @@ OWN_SKILLS_REPO="citypaul/.dotfiles"
 WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills"
 IMPECCABLE_SKILLS_REPO="pbakaus/impeccable"
 
+# Agents to target when installing skills via `npx skills add`.
+# Built up from --agent/--with-opencode flags; default is claude-code only.
+SKILL_AGENTS=(claude-code)
+INCLUDE_CLAUDE_CODE=true
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -71,8 +76,21 @@ while [[ $# -gt 0 ]]; do
       INSTALL_AGENTS=true
       shift
       ;;
+    --agent)
+      if [[ -z "${2:-}" || "$2" == --* ]]; then
+        echo -e "${RED}Error: --agent requires a value (e.g. codex, cursor, copilot)${NC}"
+        exit 1
+      fi
+      SKILL_AGENTS+=("$2")
+      shift 2
+      ;;
+    --no-claude-code)
+      INCLUDE_CLAUDE_CODE=false
+      shift
+      ;;
     --with-opencode)
       INSTALL_OPENCODE=true
+      SKILL_AGENTS+=(opencode)
       shift
       ;;
     --opencode-only)
@@ -107,23 +125,31 @@ Usage:
   $0 [OPTIONS]
 
 Options:
-  --claude-only      Install only CLAUDE.md
-  --no-agents        Install without agents
-  --skills-only      Install only skills (via skills.sh)
-  --agents-only      Install only agents
-  --with-opencode    Also target the OpenCode agent for skills + install OpenCode config
-  --opencode-only    Install only OpenCode configuration (commands + agents + skills)
-  --no-external      Skip all external community skills (web-quality-skills + impeccable)
-  --no-impeccable    Skip impeccable design skills only
-  --version VERSION  Version for CLAUDE.md/commands/agents (default: main). Skills always latest.
-  --help, -h         Show this help message
+  --claude-only        Install only CLAUDE.md
+  --no-agents          Install without agents
+  --skills-only        Install only skills (via skills.sh)
+  --agents-only        Install only agents
+  --agent NAME         Also install skills for agent NAME (repeatable:
+                       --agent codex --agent cursor). Default target is
+                       claude-code. See skills.sh for the full agent list.
+  --no-claude-code     Skip the default claude-code target for skills
+                       (use with --agent to target other agents only)
+  --with-opencode      Shorthand for --agent opencode + install OpenCode config
+  --opencode-only      Install only OpenCode configuration (no skills/agents/commands)
+  --no-external        Skip all external community skills (web-quality-skills + impeccable)
+  --no-impeccable      Skip impeccable design skills only
+  --version VERSION    Version for CLAUDE.md/commands/agents (default: main). Skills always latest.
+  --help, -h           Show this help message
 
 Examples:
   # Install everything (recommended)
   $0
 
-  # Install only skills for both Claude Code and OpenCode
-  $0 --skills-only --with-opencode
+  # Install skills for Claude Code + Codex + Cursor
+  $0 --skills-only --agent codex --agent cursor
+
+  # Install only skills for Codex (no Claude Code)
+  $0 --skills-only --no-claude-code --agent codex
 
   # One-liner installation
   curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
@@ -138,6 +164,28 @@ EOF
       ;;
   esac
 done
+
+# Honour --no-claude-code by stripping claude-code from the target list
+if [[ "$INCLUDE_CLAUDE_CODE" == false ]]; then
+  _filtered=()
+  for agent in "${SKILL_AGENTS[@]}"; do
+    [[ "$agent" == "claude-code" ]] && continue
+    _filtered+=("$agent")
+  done
+  SKILL_AGENTS=("${_filtered[@]}")
+fi
+
+# De-duplicate agent list while preserving order
+if [[ ${#SKILL_AGENTS[@]} -gt 0 ]]; then
+  SKILL_AGENTS=($(printf "%s\n" "${SKILL_AGENTS[@]}" | awk '!seen[$0]++'))
+fi
+
+# Validate: if we're installing skills, we need at least one agent to target
+if [[ "$INSTALL_SKILLS" == true && ${#SKILL_AGENTS[@]} -eq 0 ]]; then
+  echo -e "${RED}Error: no agents selected for skill install${NC}"
+  echo -e "${YELLOW}Pass --agent <name> or drop --no-claude-code${NC}"
+  exit 1
+fi
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║  CLAUDE.md Development Framework Installer         ║${NC}"
@@ -187,15 +235,15 @@ install_skills_from() {
   local source="$1"
   local label="$2"
 
-  echo -e "${YELLOW}→${NC} Installing $label from $source..."
+  echo -e "${YELLOW}→${NC} Installing $label from $source for: ${SKILL_AGENTS[*]}"
 
-  # Build agent flags based on install flags
-  local agent_args=(-a claude-code)
-  if [[ "$INSTALL_OPENCODE" == true ]]; then
-    agent_args+=(-a opencode)
-  fi
+  # Build -a flags from the SKILL_AGENTS array
+  local agent_args=()
+  for agent in "${SKILL_AGENTS[@]}"; do
+    agent_args+=(-a "$agent")
+  done
 
-  # -g: install globally (~/.claude/skills, ~/.config/opencode/...)
+  # -g: install globally (per-agent paths managed by the skills CLI)
   # -s '*': install all skills from the source
   # -y: skip prompts
   if npx --yes skills add "$source" -g "${agent_args[@]}" -s '*' -y; then
@@ -223,10 +271,11 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
   echo ""
 fi
 
-# Install skills via skills.sh CLI (multi-agent: Claude Code, OpenCode, ...)
+# Install skills via skills.sh CLI (multi-agent)
 if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "${BLUE}Installing skills via skills.sh...${NC}"
-  echo -e "${YELLOW}→${NC} Multi-agent CLI — supports Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, and 40+ others"
+  echo -e "${YELLOW}→${NC} Target agents: ${SKILL_AGENTS[*]}"
+  echo -e "${YELLOW}→${NC} (Pass --agent <name> to target more — see skills.sh for the full list)"
   echo ""
 
   install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)"
@@ -349,7 +398,7 @@ if [[ "$INSTALL_CLAUDE" == true ]]; then
 fi
 
 if [[ "$INSTALL_SKILLS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} skills/ (own + external, installed via skills.sh)"
+  echo -e "  ${GREEN}✓${NC} skills (installed via skills.sh for: ${SKILL_AGENTS[*]})"
   echo -e "     • citypaul/.dotfiles — auto-discovered patterns (tdd, testing, typescript-strict, ...)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "     • addyosmani/web-quality-skills — accessibility, performance, SEO, ..."
@@ -357,7 +406,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
     echo -e "     • pbakaus/impeccable — design vocabulary + steering commands"
   fi
-  echo -e "     Run ${YELLOW}npx skills list -g${NC} to see everything installed."
+  echo -e "     Run ${YELLOW}npx skills list -g${NC} to see paths for each agent."
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
@@ -412,12 +461,12 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
   echo ""
 fi
 
-if [[ "$INSTALL_OPENCODE" == false && "$INSTALL_SKILLS" == true ]]; then
-  echo -e "${BLUE}Using OpenCode (or another agent)?${NC}"
+if [[ "$INSTALL_SKILLS" == true ]]; then
+  echo -e "${BLUE}Want to target more agents?${NC}"
   echo ""
-  echo -e "  Skills installed via skills.sh work with 40+ agents."
-  echo -e "  Re-run with ${YELLOW}--with-opencode${NC} to also target OpenCode, or run"
-  echo -e "  ${YELLOW}npx skills add $OWN_SKILLS_REPO -g -a <agent>${NC} to add another agent."
+  echo -e "  Skills via skills.sh work with 40+ agents (Codex, Cursor, Copilot, Gemini CLI, ...)."
+  echo -e "  Re-run with ${YELLOW}--agent <name>${NC} (repeatable) to add more:"
+  echo -e "     ${YELLOW}$0 --skills-only --agent codex --agent cursor${NC}"
   echo ""
 fi
 
