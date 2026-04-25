@@ -43,6 +43,8 @@ BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 OWN_SKILLS_REPO="citypaul/.dotfiles"
 WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills"
 IMPECCABLE_SKILLS_REPO="pbakaus/impeccable"
+MATTPOCOCK_SKILLS_REPO="https://github.com/mattpocock/skills"
+GRILL_ME_SKILL="grill-me"
 
 # Agents to target when installing skills via `npx skills add`.
 # Built up from --agent/--with-opencode flags; default is claude-code only.
@@ -136,10 +138,15 @@ Options:
                        (use with --agent to target other agents only)
   --with-opencode      Shorthand for --agent opencode + install OpenCode config
   --opencode-only      Install only OpenCode configuration (no skills/agents/commands)
-  --no-external        Skip all external community skills (web-quality-skills + impeccable)
+  --no-external        Skip all external community skills (web-quality-skills + impeccable + grill-me)
   --no-impeccable      Skip impeccable design skills only
   --version VERSION    Version for CLAUDE.md/commands/agents (default: main). Skills always latest.
   --help, -h           Show this help message
+
+Default external skill sources:
+  addyosmani/web-quality-skills
+  pbakaus/impeccable
+  mattpocock/skills --skill grill-me
 
 Examples:
   # Install everything (recommended)
@@ -273,6 +280,7 @@ migrate_legacy_skill_dirs() {
 install_skills_from() {
   local source="$1"
   local label="$2"
+  local skill="${3:-*}"
 
   echo -e "${YELLOW}→${NC} Installing $label from $source for: ${SKILL_AGENTS[*]}"
 
@@ -283,9 +291,9 @@ install_skills_from() {
   done
 
   # -g: install globally (per-agent paths managed by the skills CLI)
-  # -s '*': install all skills from the source
+  # -s '*': install all skills from the source, or a named skill when provided
   # -y: skip prompts
-  if npx --yes skills add "$source" -g "${agent_args[@]}" -s '*' -y; then
+  if npx --yes skills add "$source" -g "${agent_args[@]}" -s "$skill" -y; then
     echo -e "${GREEN}✓${NC} $label installed"
   else
     echo -e "${RED}✗${NC} Failed to install $label from $source"
@@ -349,6 +357,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
 
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     install_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)"
+    install_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "$GRILL_ME_SKILL"
   fi
 
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
@@ -471,6 +480,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "     • citypaul/.dotfiles — auto-discovered patterns (tdd, testing, typescript-strict, ...)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "     • addyosmani/web-quality-skills — accessibility, performance, SEO, ..."
+    echo -e "     • mattpocock/skills/grill-me — relentless plan and design interviewing"
   fi
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
     echo -e "     • pbakaus/impeccable — design vocabulary + steering commands"
@@ -570,6 +580,9 @@ echo -e "    ${BLUE}https://github.com/addyosmani/web-quality-skills${NC} (MIT)"
 echo ""
 echo -e "  • ${YELLOW}Paul Bakaus${NC} — impeccable frontend design skills"
 echo -e "    ${BLUE}https://impeccable.style/skills/${NC} (Apache 2.0)"
+echo ""
+echo -e "  • ${YELLOW}Matt Pocock${NC} — grill-me planning interview skill"
+echo -e "    ${BLUE}https://skills.sh/mattpocock/skills/grill-me${NC}"
 echo ""
 echo -e "  • ${YELLOW}Kieran O'Hara${NC} — use-case-data-patterns agent"
 echo -e "    ${BLUE}https://github.com/kieran-ohara/dotfiles${NC}"

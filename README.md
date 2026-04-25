@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 24 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 24 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -98,6 +98,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Diagrams** | Create diagrams in Markdown using Mermaid, Graphviz, Vega-Lite, PlantUML, JSON Canvas, infographics, info cards, architecture diagrams. Decision guide picks the right tool; 8 per-tool references. Vendored from [markdown-viewer/skills](https://github.com/markdown-viewer/skills) under MIT | [→ skills/diagrams](claude/.claude/skills/diagrams/SKILL.md) |
 | **Find Skills** | Discovers and installs skills from the open agent skills ecosystem (`npx skills`, [skills.sh](https://skills.sh/)). Activates on "how do I do X" / "find a skill for X". Verifies install count, source reputation, and GitHub stars before recommending. Vendored from [vercel-labs/skills](https://github.com/vercel-labs/skills) under MIT | [→ skills/find-skills](claude/.claude/skills/find-skills/SKILL.md) |
 | **Find Gaps** | Conversational pre-implementation review for plans, acceptance criteria, and design mocks. Surveys the artifact with a per-type checklist, then walks you through gaps **one question at a time**, turning each answer into a new AC (Given/When/Then), plan paragraph, or mock-state spec written back to the source of truth. Output is the tightened artifact, not a gap report. Pairs with `storyboard` for multi-mock audits | [→ skills/find-gaps](claude/.claude/skills/find-gaps/SKILL.md) |
+| **Grill Me** | Relentless one-question-at-a-time plan and design interviews. Stress-tests decisions branch-by-branch, explores the codebase when it can answer questions directly, and recommends an answer for each unresolved question | [→ skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -153,6 +154,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Wishing an agent skill existed for this task | [find-skills](claude/.claude/skills/find-skills/SKILL.md) | Search the open skills ecosystem via `npx skills find`; verify installs and source before recommending |
 | Reviewing a plan, spec, or mocks before coding starts | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Conversational loop: asks one question at a time and writes each answer back as a new AC / plan paragraph / mock-state spec |
 | "What could go wrong?" / "What's missing?" on a design | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Forces every gap category end-to-end; each confirmed answer updates the artifact, not a todo list |
+| Want a plan interrogated before implementation | [grill-me](https://skills.sh/mattpocock/skills/grill-me) | Relentless one-question-at-a-time review that explores the codebase when possible and recommends an answer for each decision |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
@@ -170,8 +172,9 @@ Skills are **auto-discovered** by Claude when relevant:
 - Code with hard-to-test dependencies? → `finding-seams` skill identifies substitution points
 - Changing code with no tests? → `characterisation-tests` skill documents existing behavior
 - Building a UI? → `impeccable` skill loads design methodology and anti-slop patterns
+- Stress-testing a plan or design? → `grill-me` asks one question at a time and recommends answers
 
-**No manual invocation needed** - Claude detects when skills apply. Impeccable steering commands (`/shape`, `/critique`, `/polish`, etc.) can also be invoked directly.
+**No manual invocation needed** - Claude detects when skills apply. Impeccable steering commands (`/shape`, `/critique`, `/polish`, etc.) can also be invoked directly, and you can explicitly ask to be "grilled" on a plan when you want a deeper interview.
 
 ---
 
@@ -796,6 +799,29 @@ Use steering commands (`/typeset`, `/colorize`, `/layout`, `/animate`, etc.) at 
 
 ---
 
+### 🔥 Grill Me → [skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me)
+
+**Problem it solves:** Plans and designs that sound plausible but need ruthless pre-implementation questioning before they become expensive to change
+
+**What's inside:** A focused external skill from [Matt Pocock's skills repo](https://github.com/mattpocock/skills) that interviews you one question at a time until the plan, design tree, and decision dependencies are clear.
+
+Use it when you want the assistant to:
+
+- Stress-test a plan or design branch-by-branch
+- Ask the next most important unresolved question, not a long checklist
+- Explore the codebase first when code context can answer the question
+- Provide a recommended answer with each question
+
+Example prompt:
+
+```text
+Use grill-me on this checkout refactor plan before I start implementation.
+```
+
+Use `find-gaps` when you want confirmed answers written back into a plan, acceptance criteria, or mock spec. Use `grill-me` when you want a sharper interview that pressure-tests the plan first.
+
+---
+
 ## 🎯 Why These Skills Are Different
 
 Unlike typical style guides, these skills provide:
@@ -1322,7 +1348,7 @@ chmod +x install-claude.sh
 ./install-claude.sh --claude-only                        # Install only CLAUDE.md
 ./install-claude.sh --skills-only                        # Install only skills (via skills.sh)
 ./install-claude.sh --no-agents                          # Install without agents
-./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + impeccable)
+./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + impeccable + grill-me)
 ./install-claude.sh --no-impeccable                      # Skip impeccable design skills only
 ./install-claude.sh --with-opencode                      # Also target OpenCode for skills + install OpenCode config
 ./install-claude.sh --agent codex --agent cursor         # Also install skills for Codex and Cursor (repeatable)
@@ -1350,6 +1376,7 @@ Both patterns resolve to the same content on disk, so the first `--agent codex` 
   - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 24 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, front-end-testing, react-testing, and more)
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
+  - [mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) — one-question-at-a-time plan and design interrogation
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
 
@@ -1374,7 +1401,7 @@ The installer used to `curl` every `SKILL.md` straight from this repo into `~/.c
 
 3. **One source of truth on disk.** Skills live once at `~/.agents/skills/<name>` (the universal cache); Claude Code gets a symlink into `~/.claude/skills/<name>`; Codex and other "universal" agents read the cache directly. A single `npx skills update -g` propagates everywhere a skill is wired up.
 
-4. **Installer doesn't grow with the skill list.** Three `curl` loops with hard-coded file lists (including every `resources/*.md` and `references/*.md`) collapsed to three `npx skills add` calls. Adding a new skill to `claude/.claude/skills/` no longer requires a matching installer edit — the CLI discovers it.
+4. **Installer doesn't grow with the skill list.** Three `curl` loops with hard-coded file lists (including every `resources/*.md` and `references/*.md`) collapsed to a small set of `npx skills add` calls. Adding a new skill to `claude/.claude/skills/` no longer requires a matching installer edit — the CLI discovers it.
 
 5. **Auto-migration from the old curl installer.** Before running `npx skills add`, the installer looks for regular directories under `~/.claude/skills/` (the shape the old curl installer wrote) and moves them to `~/.claude/skills.pre-skills-sh.<timestamp>/`. Without this step the CLI would treat the stale dirs as Claude-Code-specific installs and keep them invisible to non-Claude agents. A verification pass after install warns if anything still ended up as a regular directory.
 
