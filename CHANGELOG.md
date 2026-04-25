@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.27.0
+
+### Minor Changes
+
+- 4d08be3: Add Matt Pocock's `grill-me` skill to the default skills installer.
+
+  The installer now adds `grill-me` from `mattpocock/skills` alongside the existing external skill sources, and the docs explain when to use it for plan and design interrogation.
+
 ## 3.26.0
 
 ### Minor Changes
