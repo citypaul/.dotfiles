@@ -1,6 +1,6 @@
 ---
 name: mutation-testing
-description: Mutation testing patterns for verifying test effectiveness. Use when analyzing branch code to find weak or missing tests.
+description: Mutation testing patterns for verifying test effectiveness. Use when analyzing branch code to find weak or missing tests. Prefers Stryker with an incremental diff-vs-main run and a visual surviving-mutants report; falls back to manual mutation-by-hand when Stryker is unavailable; can scaffold a nightly CI pipeline against mainline.
 ---
 
 # Mutation Testing
@@ -17,570 +17,628 @@ Code coverage tells you what code your tests execute. Mutation testing tells you
 
 **The Mutation Testing Process:**
 
-1. **Generate mutants**: Introduce small bugs (mutations) into production code
-2. **Run tests**: Execute your test suite against each mutant
-3. **Evaluate results**: If tests fail, the mutant is "killed" (good). If tests pass, the mutant "survived" (bad - your tests missed the bug)
+1. **Generate mutants** — introduce small bugs (mutations) into production code.
+2. **Run tests** — execute the suite against each mutant.
+3. **Evaluate** — if tests fail, the mutant is *killed* (good). If tests pass, the mutant *survived* (bad — your tests missed the bug).
 
-**The Insight**: A surviving mutant represents a bug your tests wouldn't catch.
-
----
-
-## When to Use This Skill
-
-Use mutation testing analysis when:
-
-- Reviewing code changes on a branch
-- Verifying test effectiveness after TDD
-- Identifying weak tests that appear to have coverage
-- Finding missing edge case tests
-- Validating that refactoring didn't weaken test suite
+**The Insight:** a surviving mutant represents a bug your tests wouldn't catch.
 
 **Integration with TDD:**
 
 ```
-RED-GREEN-MUTATE-REFACTOR Cycle
-┌─────────────────────────────────────────────────┐
-│ 1. RED:      Write failing test                 │
-│ 2. GREEN:    Minimum code to pass               │
-│ 3. MUTATE:   Verify tests catch real bugs  ◄──  │  ← You are here
-│ 4. REFACTOR: Improve structure with confidence  │
-└─────────────────────────────────────────────────┘
+RED → GREEN → MUTATE → KILL MUTANTS → REFACTOR
 ```
 
-**Why MUTATE before REFACTOR:** Mutation testing validates test strength *before* you restructure code. Refactoring with unverified tests means restructuring code whose safety net you haven't checked.
+Mutation testing validates test strength *before* you restructure code. Refactoring with unverified tests means restructuring code whose safety net you haven't checked.
 
 ---
 
-## Execution Process
+## Two Modes
 
-When verifying test effectiveness, **actually mutate the code and run the tests.** Do not just reason about whether tests would catch mutations — prove it.
+This skill runs in one of two modes. Choose the first that applies:
 
-### Step 1: Identify Changed Code
+| | **Stryker mode (preferred)** | **Manual mode (fallback)** |
+|---|---|---|
+| When | Project uses JS/TS and Stryker is installed — or can be — and the user agrees | Non-JS project, Stryker cannot/should-not be installed, or quick ad-hoc check on a handful of lines |
+| Scope | Every mutation operator Stryker supports, applied to changed files | Hand-picked mutations on the diff hotspots |
+| Speed | Seconds–minutes (incremental) | Minutes of human-driven edits |
+| Output | Parsed JSON → visual report + suggested behavior-driven tests | Same visual report, produced by hand |
+
+**Always open the conversation by asking which mode to use.** Detect what's available first (see "Mode Selection" below) so the recommendation is concrete, not generic.
+
+### Mode Selection
+
+Run these checks and report what you found, then propose a mode:
 
 ```bash
-# Get files changed on the branch
-git diff main...HEAD --name-only | grep -E '\.(ts|js|tsx|jsx)$' | grep -v '\.test\.'
+# Is there a JS/TS project?
+test -f package.json && jq -r '.name // "no-name"' package.json
 
-# Get detailed diff for analysis
-git diff main...HEAD -- src/
+# Is Stryker already configured?
+ls stryker.conf.{json,js,cjs,mjs,ts} 2>/dev/null
+jq -r '.devDependencies // {} | keys[] | select(startswith("@stryker-mutator/"))' package.json 2>/dev/null
+
+# Which test runner is in use? (informs Stryker plugin choice)
+jq -r '.devDependencies // {} | keys[] | select(. == "vitest" or . == "jest" or . == "mocha" or . == "jasmine")' package.json 2>/dev/null
 ```
 
-### Step 2: Apply Mutations and Run Tests
+**Decision tree:**
 
-For each changed function/method, work through the mutation operators (see Mutation Operators section below). For each applicable mutation:
+- Stryker **already installed** → go to Stryker mode, skip install.
+- JS/TS project, Stryker **not installed** → ask: *"Shall I set up Stryker? Alternative is to run mutations by hand."* Respect the answer.
+- Non-JS project, or user declines Stryker → Manual mode.
 
-1. **Mutate**: Change the production code (e.g., flip `*` to `/`, negate a condition)
-2. **Run**: Execute the test suite
-3. **Evaluate**: Did a test fail?
-   - **Yes** → mutant killed (good). Revert the mutation.
-   - **No** → mutant survived (bad). Revert the mutation, then add or strengthen a test.
-4. **Revert**: Always restore the original code before the next mutation
-
-**Always revert each mutation before applying the next.** Never leave mutated code in place.
-
-You do not need to apply every possible mutation to every line. Focus on:
-- Changed code on the branch
-- Operators most likely to have surviving mutants (see Quick Reference)
-- Conditions with boundary values
-- Boolean logic with multiple operands
-
-### Step 3: Produce a Report
-
-After working through the mutations, produce a summary:
-
-```markdown
-## Mutation Testing Report
-
-### Killed (tests caught the mutation)
-- `calculateTotal`: `*` → `/` — killed by "calculates total for multiple items"
-- `isEligible`: `>=` → `>` — killed by "returns true at exact boundary"
-
-### Survived (tests DID NOT catch the mutation)
-- `applyDiscount`: `>` → `>=` — no test for boundary value at exactly 100
-  → **Action**: Add boundary test for discount threshold
-
-### Summary
-- Mutations applied: 8
-- Killed: 6
-- Survived: 2
-- Mutation score: 75%
-```
-
-### Step 4: Kill Surviving Mutants
-
-Not every surviving mutant warrants a new test. Some mutations produce equivalent behavior, and some boundary cases are low-risk enough that the test would add noise without meaningful protection.
-
-**Fix immediately** when:
-- The mutation represents a realistic bug (wrong operator, inverted condition)
-- The surviving mutant is in critical business logic (money, permissions, eligibility)
-- The fix is a simple boundary test or stronger assertion
-
-**Ask the human** when:
-- You're unsure whether the mutation represents a real risk
-- The test to kill it would be complex or hard to name clearly
-- The mutation is in a code path that's also covered by integration/E2E tests
-- The surviving mutant feels like an equivalent mutant but you're not certain
-
-Present the mutation, explain why the current tests don't catch it, and let the human decide whether it's worth a new test.
-
-When fixing, follow TDD — write the failing test first, verify it fails against the mutated code, then verify it passes against the original code.
+Never install Stryker silently. It adds a dev dependency and a config file; the user must approve.
 
 ---
 
-## Mutation Operators
+## Stryker Mode
 
-### Arithmetic Operator Mutations
+### Step 1 — Install and configure (only if not already set up)
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `a + b` | `a - b` | Addition behavior |
-| `a - b` | `a + b` | Subtraction behavior |
-| `a * b` | `a / b` | Multiplication behavior |
-| `a / b` | `a * b` | Division behavior |
-| `a % b` | `a * b` | Modulo behavior |
+Pick the runner plugin that matches the project. For a Vitest project:
 
-**Example Analysis:**
-
-```typescript
-// Production code
-const calculateTotal = (price: number, quantity: number): number => {
-  return price * quantity;
-};
-
-// Mutant: price / quantity
-// Question: Would tests fail if * became /?
-
-// ❌ WEAK TEST - Would NOT catch mutant
-it('calculates total', () => {
-  expect(calculateTotal(10, 1)).toBe(10); // 10 * 1 = 10, 10 / 1 = 10 (SAME!)
-});
-
-// ✅ STRONG TEST - Would catch mutant
-it('calculates total', () => {
-  expect(calculateTotal(10, 3)).toBe(30); // 10 * 3 = 30, 10 / 3 = 3.33 (DIFFERENT!)
-});
+```bash
+npm i -D @stryker-mutator/core @stryker-mutator/vitest-runner
 ```
 
-### Conditional Expression Mutations
+For Jest:
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `a < b` | `a <= b` | Boundary value at equality |
-| `a < b` | `a >= b` | Both sides of condition |
-| `a <= b` | `a < b` | Boundary value at equality |
-| `a <= b` | `a > b` | Both sides of condition |
-| `a > b` | `a >= b` | Boundary value at equality |
-| `a > b` | `a <= b` | Both sides of condition |
-| `a >= b` | `a > b` | Boundary value at equality |
-| `a >= b` | `a < b` | Both sides of condition |
-
-**Example Analysis:**
-
-```typescript
-// Production code
-const isAdult = (age: number): boolean => {
-  return age >= 18;
-};
-
-// Mutant: age > 18
-// Question: Would tests fail if >= became >?
-
-// ❌ WEAK TEST - Would NOT catch boundary mutant
-it('returns true for adults', () => {
-  expect(isAdult(25)).toBe(true);  // 25 >= 18 = true, 25 > 18 = true (SAME!)
-});
-
-// ✅ STRONG TEST - Would catch boundary mutant
-it('returns true for exactly 18', () => {
-  expect(isAdult(18)).toBe(true);  // 18 >= 18 = true, 18 > 18 = false (DIFFERENT!)
-});
+```bash
+npm i -D @stryker-mutator/core @stryker-mutator/jest-runner
 ```
 
-### Equality Operator Mutations
+Write `stryker.conf.json` (Vitest example):
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `a === b` | `a !== b` | Both equal and not equal cases |
-| `a !== b` | `a === b` | Both equal and not equal cases |
-| `a == b` | `a != b` | Both equal and not equal cases |
-| `a != b` | `a == b` | Both equal and not equal cases |
-
-### Logical Operator Mutations
-
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `a && b` | `a \|\| b` | Case where one is true, other is false |
-| `a \|\| b` | `a && b` | Case where one is true, other is false |
-| `a ?? b` | `a && b` | Nullish coalescing behavior |
-
-**Example Analysis:**
-
-```typescript
-// Production code
-const canAccess = (isAdmin: boolean, isOwner: boolean): boolean => {
-  return isAdmin || isOwner;
-};
-
-// Mutant: isAdmin && isOwner
-// Question: Would tests fail if || became &&?
-
-// ❌ WEAK TEST - Would NOT catch mutant
-it('returns true when both conditions met', () => {
-  expect(canAccess(true, true)).toBe(true);  // true || true = true && true (SAME!)
-});
-
-// ✅ STRONG TEST - Would catch mutant
-it('returns true when only admin', () => {
-  expect(canAccess(true, false)).toBe(true);  // true || false = true, true && false = false (DIFFERENT!)
-});
+```json
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "reporters": ["json", "html", "clear-text", "progress"],
+  "jsonReporter": { "fileName": "reports/mutation/mutation.json" },
+  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "mutate": ["src/**/*.ts", "!src/**/*.test.ts", "!src/**/*.spec.ts"],
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json",
+  "thresholds": { "high": 85, "low": 70, "break": 60 },
+  "timeoutMS": 15000,
+  "concurrency": 4
+}
 ```
 
-### Boolean Literal Mutations
+Key settings to explain to the user:
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `true` | `false` | Both true and false outcomes |
-| `false` | `true` | Both true and false outcomes |
-| `!(a)` | `a` | Negation is necessary |
+- `reporters: ["json", ...]` — the **json** reporter is how we build the visual report in Step 3. Do not remove it.
+- `incremental: true` — Stryker caches per-mutant results so re-runs only re-test what changed. Commit `reports/stryker-incremental.json` to speed up subsequent runs, or gitignore it and rebuild each time — user's call.
+- `thresholds.break` — fail the run below this score. Start forgiving (60) and tighten over time.
 
-### Block Statement Mutations
+Add a script:
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `{ code }` | `{ }` | Side effects of the block |
-
-**Example Analysis:**
-
-```typescript
-// Production code
-const processOrder = (order: Order): void => {
-  validateOrder(order);
-  saveOrder(order);
-  sendConfirmation(order);
-};
-
-// Mutant: Empty function body
-// Question: Would tests fail if all statements removed?
-
-// ❌ WEAK TEST - Would NOT catch mutant
-it('processes order without error', () => {
-  expect(() => processOrder(order)).not.toThrow();  // Empty function also doesn't throw!
-});
-
-// ✅ STRONG TEST - Would catch mutant
-it('saves order to database', () => {
-  processOrder(order);
-  expect(mockDatabase.save).toHaveBeenCalledWith(order);
-});
+```json
+{ "scripts": { "test:mutation": "stryker run" } }
 ```
 
-### String Literal Mutations
+Add to `.gitignore`:
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `"text"` | `""` | Non-empty string behavior |
-| `""` | `"Stryker was here!"` | Empty string behavior |
+```
+reports/mutation/
+.stryker-tmp/
+```
 
-### Array Declaration Mutations
+### Step 2 — Incremental run: diff-vs-main only
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `[1, 2, 3]` | `[]` | Non-empty array behavior |
-| `new Array(1, 2)` | `new Array()` | Array contents matter |
+The point of running on a branch is to test **only what changed**. Stryker accepts an explicit file list via `--mutate`, so derive it from the diff:
 
-### Unary Operator Mutations
+```bash
+# Files changed on this branch vs main, restricted to source
+CHANGED=$(git diff --name-only --diff-filter=AM origin/main...HEAD \
+  | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' \
+  | grep -vE '\.(test|spec)\.' \
+  | grep -v node_modules \
+  | paste -sd, -)
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `+a` | `-a` | Sign matters |
-| `-a` | `+a` | Sign matters |
-| `++a` | `--a` | Increment vs decrement |
-| `a++` | `a--` | Increment vs decrement |
+# No changes? Nothing to mutate — exit quietly.
+if [ -z "$CHANGED" ]; then
+  echo "No source files changed vs main. Skipping mutation run."
+  exit 0
+fi
 
-### Method Expression Mutations (TypeScript/JavaScript)
+echo "Mutating: $CHANGED"
+npx stryker run --mutate "$CHANGED"
+```
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
-| `startsWith()` | `endsWith()` | Correct string position |
-| `endsWith()` | `startsWith()` | Correct string position |
-| `toUpperCase()` | `toLowerCase()` | Case transformation |
-| `toLowerCase()` | `toUpperCase()` | Case transformation |
+Notes:
+
+- `origin/main...HEAD` (three dots) — files changed on the branch since it forked. Prefer this to `main..HEAD` so you don't re-mutate code main moved on from.
+- `--diff-filter=AM` — added + modified only. Deleted files can't be mutated.
+- If the project supports it, `--mutate` can also accept `path:startLine-endLine` ranges to mutate only the changed lines within a file. This is faster but hides weak tests around changed code; start with whole-file and narrow later if runs are too slow.
+
+**For deeper change scoping**, Stryker's own `since` feature (`--since main`) also works — but the explicit `--mutate` approach is transparent and portable across Stryker versions.
+
+### Step 3 — The visual report
+
+After the run, parse `reports/mutation/mutation.json` and print a report to the terminal. This is the artifact that gets shown back to the user on **every** run — not just buried as an HTML file.
+
+**Required sections, in order:**
+
+1. **Header** — branch, base ref, files included.
+2. **Summary** — mutation score, killed / survived / timeout / no-coverage counts, vs. threshold.
+3. **Surviving mutants** — numbered, one card per survivor (see format below).
+4. **Next actions** — short list of what to do now (add test, investigate equivalence, adjust threshold).
+
+**Surviving-mutant card format:**
+
+```
+[1/5]  src/pricing/discount.ts:23  (ConditionalExpression)
+──────────────────────────────────────────────────────────────────────
+Mutation:
+    -  if (order.total >= 100) {
+    +  if (order.total >  100) {
+
+Business behavior missed:
+    Orders totalling EXACTLY £100 qualify for the discount. No test
+    covers the boundary; a regression that shifted ">=" to ">" would
+    ship undetected and silently deny the discount to £100 orders.
+
+Suggested test (behavior-driven — name describes the rule, not the code):
+    it("applies the discount at the exact £100 threshold", () => {
+      const order = anOrder({ total: 100 });
+      expect(applyDiscount(order).discounted).toBe(true);
+    });
+
+Why this test kills the mutant:
+    100 >= 100 → true (original). 100 > 100 → false (mutant). The
+    assertion diverges, so the test fails against the mutated code.
+```
+
+**Rules for the "Business behavior missed" line:**
+
+- State the *rule* in domain language, not in code terms. "Orders totalling exactly £100 qualify" — not "the `>=` comparison at line 23 is untested."
+- Name the *consequence* of the un-caught bug — what would the user/customer actually experience?
+- If you cannot articulate a business rule for the surviving mutant, flag it as a candidate **equivalent mutant** (see below) rather than invent one.
+
+**Rules for the "Suggested test":**
+
+- The test name is a sentence about the rule, in the system's voice ("applies the discount at the exact £100 threshold") — not about the code ("returns true when `>=` path is taken").
+- The test sets up a concrete, non-identity input (e.g. £100, not £0; quantity 3, not 1) so it can actually distinguish the mutant from the original.
+- Use the project's factory/arrange style if you can see one in `src/**/*.{test,spec}.*`. Match their vocabulary.
+- One assertion that names the observable outcome. Don't assert on internals or on whether a function was called — those tests also survive mutations.
+- **Never** suggest a test that asserts on the *code* ("expect the `>=` branch to run"). That's the implementation trap this skill exists to avoid.
+
+**Equivalent mutant handling:** if the mutation has no observable effect (e.g. `a + 0` → `a - 0`, or a branch that's dead given upstream invariants), print it in a separate "Likely equivalent — no test needed" section with a one-line justification. Do not pad the suggested-test list with tests that can't be written meaningfully.
+
+### Step 4 — Kill surviving mutants (TDD)
+
+Work through survivors in order. For each:
+
+1. Write the suggested test. Run it — confirm it **passes** against current code.
+2. Apply the mutation by hand (revert after) — confirm the test now **fails**. This proves the test actually kills the mutant rather than passing vacuously.
+3. Revert the mutation. Commit the new test.
+4. Re-run `npm run test:mutation` (incremental mode skips already-killed mutants).
+
+Ask the human before adding a test when:
+- You suspect the mutant is equivalent.
+- The value of the test is ambiguous (boundary nobody has a business opinion about).
+- Killing the mutant would require mocking something that isn't normally mocked.
+
+### Step 5 — The CI nightly pipeline (optional, offer once per project)
+
+Incremental per-branch runs catch regressions on changed code. A **nightly full run on main** catches test suite rot across the rest of the codebase.
+
+Offer this to the user once per project. If they accept, write `.github/workflows/mutation-nightly.yml`:
+
+```yaml
+name: Mutation Testing (nightly)
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # 03:00 UTC daily
+  workflow_dispatch: {}
+
+jobs:
+  stryker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      issues: write        # for filing a report issue on threshold break
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run Stryker on full repo
+        run: npx stryker run
+        # Uses stryker.conf.json — mutates everything under `mutate` globs.
+
+      - name: Upload HTML + JSON reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 30
+
+      - name: Open issue if threshold broken
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              "Nightly mutation run dropped below threshold.",
+              "",
+              "- Run: " + context.runId,
+              "- Report artifact: `mutation-report`",
+              "",
+              "Review surviving mutants in the HTML report; add behavior-driven tests.",
+            ].join("\n");
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              title: "Mutation score below threshold on main",
+              body,
+              labels: ["tests", "quality"],
+            });
+```
+
+Explain to the user:
+
+- This runs a **full** mutation pass on main, not the incremental branch one.
+- It uploads the HTML report as an artifact so anyone can download and read it.
+- It opens a GitHub issue only on threshold break, to avoid nightly noise.
+- Runtime scales with codebase size. If this exceeds the GitHub runner's 6-hour limit, split by directory or shard with `--mutate` globs per job.
+
+Do not enable this for repos where the test suite itself is flaky — fix flake first; mutation testing magnifies flake into false survivors.
+
+---
+
+## Manual Mode (fallback)
+
+Use this when Stryker isn't an option — non-JS projects, or a quick sanity check on a handful of changed lines. The deliverable is the **same visual report** as Stryker mode (Step 3). Only the data collection is different.
+
+### Step 1 — Identify changed code
+
+```bash
+git diff --name-only origin/main...HEAD \
+  | grep -vE '(test|spec)\.' \
+  | xargs -I{} echo "CHANGED: {}"
+
+git diff origin/main...HEAD -- src/
+```
+
+### Step 2 — Apply mutations and run tests
+
+For each changed function, walk the mutation operators (see Operators Reference below). For each mutation:
+
+1. **Mutate** — edit the production code (flip `*` to `/`, negate a condition, empty a block).
+2. **Run** — execute the test suite.
+3. **Evaluate** — did a test fail?
+   - **Yes** → mutant killed (good). Revert and move on.
+   - **No** → mutant survived. Revert, then queue it for the report.
+4. **Revert** — always restore the original code before the next mutation. **Never leave mutated code in place.**
+
+Focus on:
+
+- Changed code on the branch — not the whole file.
+- Operators most likely to have survivors (see Quick Reference at the bottom).
+- Boundary values on conditions.
+- Boolean logic with multiple operands.
+
+You do not need to apply every possible mutation to every line. Aim for coverage of the high-signal operators on the changed lines.
+
+### Step 3 — Produce the same visual report
+
+Format survivors exactly as in Stryker mode Step 3 — the user sees one consistent report regardless of mode. Section headers, card format, and the "business behavior missed" / "suggested test" fields are identical.
+
+### Step 4 — Kill survivors (TDD)
+
+Same TDD loop as Stryker mode Step 4: write the suggested test, apply the mutation by hand to confirm the test fails against it, revert the mutation, commit the test.
+
+---
+
+## Operators Reference
+
+Used by both modes. Stryker applies these automatically; in manual mode pick from the table.
+
+### Arithmetic
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `a + b` | `a - b` | Addition matters |
+| `a - b` | `a + b` | Subtraction matters |
+| `a * b` | `a / b` | Multiplication matters |
+| `a / b` | `a * b` | Division matters |
+| `a % b` | `a * b` | Modulo matters |
+
+```typescript
+const calculateTotal = (price: number, quantity: number): number =>
+  price * quantity;
+
+// Weak — identity value makes * and / indistinguishable
+expect(calculateTotal(10, 1)).toBe(10);
+
+// Strong — non-identity input reveals the operator
+expect(calculateTotal(10, 3)).toBe(30);
+```
+
+### Conditional / Comparison
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `a < b` | `a <= b`, `a >= b` | Boundary at equality; both sides |
+| `a <= b` | `a < b`, `a > b` | Boundary at equality; both sides |
+| `a > b` | `a >= b`, `a <= b` | Boundary at equality; both sides |
+| `a >= b` | `a > b`, `a < b` | Boundary at equality; both sides |
+
+```typescript
+const isAdult = (age: number): boolean => age >= 18;
+
+// Weak — doesn't test the boundary
+expect(isAdult(25)).toBe(true);
+
+// Strong — boundary
+expect(isAdult(18)).toBe(true);   // mutant `>` returns false here
+expect(isAdult(17)).toBe(false);  // mutant `<` returns true here
+```
+
+### Equality
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `a === b` | `a !== b` | Both equal and not-equal cases |
+| `a !== b` | `a === b` | Both equal and not-equal cases |
+
+### Logical
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `a && b` | `a \|\| b` | One true, one false |
+| `a \|\| b` | `a && b` | One true, one false |
+| `a ?? b` | `a && b` | Nullish vs falsy distinction |
+
+```typescript
+const canAccess = (isAdmin: boolean, isOwner: boolean): boolean =>
+  isAdmin || isOwner;
+
+// Weak — both true means || and && agree
+expect(canAccess(true, true)).toBe(true);
+
+// Strong — mixed inputs distinguish || from &&
+expect(canAccess(true, false)).toBe(true);
+expect(canAccess(false, true)).toBe(true);
+expect(canAccess(false, false)).toBe(false);
+```
+
+### Boolean / Negation
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `true` | `false` | Both outcomes |
+| `false` | `true` | Both outcomes |
+| `!x` | `x` | Negation is load-bearing |
+
+### Block statements
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `{ side effects }` | `{ }` | Observable side effect occurs |
+
+Removing a function body is a brutal test — if the suite doesn't notice, the function has no verified effect.
+
+```typescript
+// Weak — an empty function body also doesn't throw
+expect(() => processOrder(order)).not.toThrow();
+
+// Strong — verifies the observable outcome
+processOrder(order);
+expect(orderRepository.save).toHaveBeenCalledWith(order);
+```
+
+### String / Array literals
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `"text"` | `""` | Non-empty string matters |
+| `""` | `"Stryker was here!"` | Empty string matters |
+| `[1, 2, 3]` | `[]` | Non-empty array matters |
+
+### Unary
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `+a` / `-a` | swap sign | Sign matters |
+| `++a` / `--a` | swap direction | Direction matters |
+
+### Method / call expressions
+
+| Original | Mutated | Test should verify |
+|---|---|---|
+| `startsWith()` | `endsWith()` | Position matters |
+| `toUpperCase()` | `toLowerCase()` | Case matters |
 | `some()` | `every()` | Partial vs full match |
-| `every()` | `some()` | Full vs partial match |
-| `filter()` | (removed) | Filtering is necessary |
-| `reverse()` | (removed) | Order matters |
-| `sort()` | (removed) | Ordering is necessary |
-| `min()` | `max()` | Correct extremum |
-| `max()` | `min()` | Correct extremum |
-| `trim()` | `trimStart()` | Correct trim behavior |
+| `every()` | `some()` | Partial vs full match |
+| `filter()` | removed | Filter matters |
+| `sort()` / `reverse()` | removed | Order matters |
+| `min()` / `max()` | swap | Extremum matters |
+| `trim()` | `trimStart()` / `trimEnd()` | Trim direction matters |
 
-### Optional Chaining Mutations
+### Optional chaining
 
-| Original | Mutated | Test Should Verify |
-|----------|---------|-------------------|
+| Original | Mutated | Test should verify |
+|---|---|---|
 | `foo?.bar` | `foo.bar` | Null/undefined handling |
-| `foo?.[i]` | `foo[i]` | Null/undefined handling |
 | `foo?.()` | `foo()` | Null/undefined handling |
 
 ---
 
-## Mutant States and Metrics
-
-### Mutant States
+## Mutant states and metrics
 
 | State | Meaning | Action |
-|-------|---------|--------|
-| **Killed** | Test failed when mutant applied | Good - tests are effective |
-| **Survived** | Tests passed with mutant active | Bad - add/strengthen test |
-| **No Coverage** | No test exercises this code | Add behavior test |
-| **Timeout** | Tests timed out (infinite loop) | Counted as detected |
-| **Equivalent** | Mutant produces same behavior | No action - not a real bug |
+|---|---|---|
+| Killed | A test failed under the mutant | Good |
+| Survived | Tests passed with the mutant active | Add / strengthen a test |
+| No coverage | No test executes this code | Add a behavior test |
+| Timeout | Tests timed out (e.g., infinite loop) | Counted as detected |
+| Equivalent | Mutant can't change observable behavior | No test — document |
 
-### Metrics
+- **Mutation score** = killed / (killed + survived + no-coverage) × 100
+- **Detected** = killed + timeout
+- **Undetected** = survived + no coverage
 
-- **Mutation Score**: `killed / valid * 100` - The higher, the better
-- **Detected**: `killed + timeout`
-- **Undetected**: `survived + no coverage`
-
-### Target Mutation Score
-
-| Score | Quality |
-|-------|---------|
-| < 60% | Weak test suite - significant gaps |
-| 60-80% | Moderate - many improvements possible |
-| 80-90% | Good - but still gaps to address |
-| > 90% | Strong - but watch for equivalent mutants |
+Target bands: `<60%` weak · `60–80%` moderate · `80–90%` good · `>90%` strong (watch for equivalents).
 
 ---
 
-## Equivalent Mutants
+## Equivalent mutants
 
-Equivalent mutants produce the same behavior as the original code. They cannot be killed because there is no observable difference.
+Equivalent mutants produce identical observable behavior — they cannot be killed. The skill's job is to **recognise** them, not to invent a test.
 
-### Common Equivalent Mutant Patterns
-
-**Pattern 1: Operations with identity elements**
+Common patterns:
 
 ```typescript
-// Mutant in conditional where both branches have same effect
-if (whatever) {
-  number += 0;  // Can mutate to -= 0, *= 1, /= 1 - all equivalent!
-} else {
-  number += 0;
+// Identity element — mutating +0 to -0 does nothing observable
+number += 0;
+
+// Dead branch — given upstream invariants, this is unreachable
+if (a >= b) {
+  result = 10 ** (max - min);  // max - min is 0 when a === b
 }
+
+// Defensive check that is always hit in practice
+if (typeof x === "object" && x !== null) { /* ... */ }
 ```
 
-**Pattern 2: Boundary conditions that don't affect outcome**
+How to handle:
 
-```typescript
-// When max equals min, condition doesn't matter
-const max = Math.max(a, b);
-const min = Math.min(a, b);
-if (a >= b) {  // Mutating to <= or < has no effect when a === b
-  result = 10 ** (max - min);  // 10 ** 0 = 1 regardless
-}
-```
-
-**Pattern 3: Dead code paths**
-
-```typescript
-// If this path is never reached, mutations don't matter
-if (impossibleCondition) {
-  doSomething();  // Mutating this won't affect behavior
-}
-```
-
-### How to Handle Equivalent Mutants
-
-1. **Identify**: Analyze if mutation truly changes observable behavior
-2. **Document**: Note why mutant is equivalent
-3. **Accept**: 100% mutation score may not be achievable
-4. **Consider refactoring**: Sometimes equivalent mutants indicate unclear code
+1. **Identify** — analyse whether the mutation changes any observable outcome.
+2. **Document** — in the report, list it under "Likely equivalent" with a one-line justification.
+3. **Accept** — 100% mutation score is often not achievable. Aim high; don't pad tests.
+4. **Consider refactoring** — persistent equivalents sometimes indicate dead code worth removing.
 
 ---
 
-## Branch Analysis Checklist
+## Branch analysis checklist
 
-When analyzing code changes on a branch:
+For each changed function:
 
-### For Each Function/Method Changed:
+- [ ] Arithmetic operators — would `+ − × ÷` swaps be detected?
+- [ ] Conditionals — are boundary values tested on `<= < > >=`?
+- [ ] Boolean logic — are mixed-input cases tested on `&& ||`?
+- [ ] Return statements — would a different return value be detected?
+- [ ] Method calls — would swapping `some` ↔ `every`, `startsWith` ↔ `endsWith` be detected?
+- [ ] String / array literals — would emptying them be detected?
 
-- [ ] **Arithmetic operators**: Would changing +, -, *, / be detected?
-- [ ] **Conditionals**: Are boundary values tested (>=, <=)?
-- [ ] **Boolean logic**: Are all branches of &&, || tested?
-- [ ] **Return statements**: Would changing return value be detected?
-- [ ] **Method calls**: Would removing or swapping methods be detected?
-- [ ] **String literals**: Would empty strings be detected?
-- [ ] **Array operations**: Would empty arrays be detected?
+Red flags (likely survivors):
 
-### Red Flags (Likely Surviving Mutants):
-
-- [ ] Tests only verify "no error thrown"
-- [ ] Tests only check one side of a condition
-- [ ] Tests use identity values (0, 1, empty string)
-- [ ] Tests only verify function was called, not with what
-- [ ] Tests don't verify return values
-- [ ] Boundary values not tested
-
-### Questions to Ask:
-
-1. "If I changed this operator, would a test fail?"
-2. "If I negated this condition, would a test fail?"
-3. "If I removed this line, would a test fail?"
-4. "If I returned early here, would a test fail?"
+- Tests only assert "no error thrown".
+- Tests only exercise one side of a condition.
+- Tests use identity values (`0`, `1`, `""`, `[]`) for operators.
+- Tests only verify a function was called, not with what.
+- Tests don't verify the return value.
+- Boundary values are missing.
 
 ---
 
-## Strengthening Weak Tests
+## Strengthening weak tests
 
-### Pattern: Add Boundary Value Tests
+**Boundary values**
 
 ```typescript
-// Original weak test
-it('validates age', () => {
-  expect(isAdult(25)).toBe(true);
-  expect(isAdult(10)).toBe(false);
-});
+// Weak
+expect(isAdult(25)).toBe(true);
+expect(isAdult(10)).toBe(false);
 
-// Strengthened with boundary values
-it('validates age at boundary', () => {
-  expect(isAdult(17)).toBe(false);  // Just below
-  expect(isAdult(18)).toBe(true);   // Exactly at boundary
-  expect(isAdult(19)).toBe(true);   // Just above
-});
+// Strong
+expect(isAdult(17)).toBe(false);
+expect(isAdult(18)).toBe(true);
+expect(isAdult(19)).toBe(true);
 ```
 
-### Pattern: Test Both Branches of Conditions
+**Both branches of conditions**
 
 ```typescript
-// Original weak test - only tests one branch
-it('returns access result', () => {
-  expect(canAccess(true, true)).toBe(true);
-});
+// Weak — only tests one combination
+expect(canAccess(true, true)).toBe(true);
 
-// Strengthened - tests all meaningful combinations
-it('grants access when admin', () => {
-  expect(canAccess(true, false)).toBe(true);
-});
-
-it('grants access when owner', () => {
-  expect(canAccess(false, true)).toBe(true);
-});
-
-it('denies access when neither', () => {
-  expect(canAccess(false, false)).toBe(false);
-});
+// Strong — tests the rule, not one happy path
+expect(canAccess(true,  false)).toBe(true);   // admin-only grants
+expect(canAccess(false, true )).toBe(true);   // owner-only grants
+expect(canAccess(false, false)).toBe(false);  // neither denies
 ```
 
-### Pattern: Avoid Identity Values
+**Non-identity values**
 
 ```typescript
-// Weak - uses identity values
-it('calculates', () => {
-  expect(multiply(10, 1)).toBe(10);  // x * 1 = x / 1
-  expect(add(5, 0)).toBe(5);         // x + 0 = x - 0
-});
+// Weak — 1 and 0 are identity for * and +
+expect(multiply(10, 1)).toBe(10);
+expect(add(5, 0)).toBe(5);
 
-// Strong - uses values that reveal operator differences
-it('calculates', () => {
-  expect(multiply(10, 3)).toBe(30);  // 10 * 3 != 10 / 3
-  expect(add(5, 3)).toBe(8);         // 5 + 3 != 5 - 3
-});
+// Strong — values the operators disagree on
+expect(multiply(10, 3)).toBe(30);
+expect(add(5, 3)).toBe(8);
 ```
 
-### Pattern: Verify Side Effects
+**Observable side effects**
 
 ```typescript
-// Weak - no verification of side effects
-it('processes order', () => {
-  processOrder(order);
-  // No assertions!
-});
+// Weak — no assertion at all
+processOrder(order);
 
-// Strong - verifies observable outcomes
-it('processes order', () => {
-  processOrder(order);
-  expect(orderRepository.save).toHaveBeenCalledWith(order);
-  expect(emailService.send).toHaveBeenCalledWith(
-    expect.objectContaining({ to: order.customerEmail })
-  );
-});
+// Strong — verifies what the business cares about
+processOrder(order);
+expect(orderRepository.save).toHaveBeenCalledWith(order);
+expect(emailService.send).toHaveBeenCalledWith(
+  expect.objectContaining({ to: order.customerEmail }),
+);
 ```
 
 ---
 
-## Integration with Stryker (Optional)
+## Summary
 
-For automated mutation testing, use Stryker:
-
-### Installation
-
-```bash
-npm init stryker
-```
-
-### Configuration (stryker.conf.json)
-
-```json
-{
-  "testRunner": "jest",
-  "coverageAnalysis": "perTest",
-  "reporters": ["html", "clear-text", "progress"],
-  "mutate": ["src/**/*.ts", "!src/**/*.test.ts"]
-}
-```
-
-### Running
-
-```bash
-npx stryker run
-```
-
-### Incremental Mode (for branches)
-
-```bash
-npx stryker run --incremental
-```
-
----
-
-## Summary: Mutation Testing Mindset
-
-**The key question for every line of code:**
+**The question for every line of changed code:**
 
 > "If I introduced a bug here, would my tests catch it?"
 
-**For each test, verify it would catch:**
-- Arithmetic operator changes
-- Boundary condition shifts
-- Boolean logic inversions
-- Removed statements
-- Changed return values
+**For each surviving mutant, the report must answer:**
+
+1. What business rule is no longer protected?
+2. What would a user/customer experience if this mutation shipped?
+3. What behavior-driven test would kill it — named after the rule, not the code?
 
 **Remember:**
-- Coverage measures execution, mutation testing measures detection
-- A test that doesn't make assertions can't kill mutants
-- Boundary values are critical for conditional mutations
-- Avoid identity values that make operators interchangeable
+
+- Coverage measures execution. Mutation testing measures detection.
+- Prefer Stryker with an incremental diff-vs-main run. Fall back to manual only when Stryker is unavailable or refused.
+- Offer the nightly CI pipeline once per project, not every run.
+- Suggested tests are always **behavior-driven**: named after the rule, asserting the observable outcome, on a non-identity input.
 
 ---
 
 ## Quick Reference
 
-### Operators Most Likely to Have Surviving Mutants
+**Operators most likely to leave survivors**
 
 1. `>=` vs `>` (boundary not tested)
-2. `&&` vs `||` (only tested when both true/false)
+2. `&&` vs `||` (no mixed-input case)
 3. `+` vs `-` (only tested with 0)
 4. `*` vs `/` (only tested with 1)
-5. `some()` vs `every()` (only tested with all matching)
+5. `some()` vs `every()` (only tested with all-match inputs)
 
-### Test Values That Kill Mutants
+**Test values that kill mutants**
 
-| Avoid | Use Instead |
-|-------|-------------|
-| 0 (for +/-) | Non-zero values |
-| 1 (for */) | Values > 1 |
+| Avoid | Use instead |
+|---|---|
+| `0` for `+ −` | Non-zero values |
+| `1` for `× ÷` | Values > 1 |
 | Empty arrays | Arrays with multiple items |
 | Identical values for comparisons | Distinct values |
-| All true/false for logical ops | Mixed true/false |
+| All-true / all-false for logical ops | Mixed true/false |
