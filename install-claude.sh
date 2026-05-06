@@ -187,7 +187,19 @@ fi
 
 # De-duplicate agent list while preserving order
 if [[ ${#SKILL_AGENTS[@]} -gt 0 ]]; then
-  mapfile -t SKILL_AGENTS < <(printf "%s\n" "${SKILL_AGENTS[@]}" | awk '!seen[$0]++')
+  _deduped=()
+  for agent in "${SKILL_AGENTS[@]}"; do
+    _seen=false
+    for existing in "${_deduped[@]}"; do
+      if [[ "$existing" == "$agent" ]]; then
+        _seen=true
+        break
+      fi
+    done
+    [[ "$_seen" == true ]] && continue
+    _deduped+=("$agent")
+  done
+  SKILL_AGENTS=("${_deduped[@]}")
 fi
 
 # Validate: if we're installing skills, we need at least one agent to target
