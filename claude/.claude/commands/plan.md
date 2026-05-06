@@ -12,7 +12,7 @@ Current branch:
 Active plans:
 !`ls plans/ 2>/dev/null || echo "No plans/ directory found"`
 
-Create a plan for the requested work:
+Create a vertical-slice plan for the requested work:
 
 1. If on main, create a new feature branch first
 2. Explore the codebase to understand the relevant areas
@@ -41,13 +41,17 @@ Tests at every level (unit, browser, integration) should verify behaviour.]
 - [ ] Criterion 1
 - [ ] Criterion 2
 
-## Steps
+## Slices
 
-Every step follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. No production code without a failing test.
-Read the project's CLAUDE.md and testing rules before writing steps.
+Every slice should be the thinnest useful end-to-end behaviour: actor, trigger, observable outcome, production path, and smallest deployable value.
+Every slice follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. No production code without a failing test.
+Read the project's CLAUDE.md and testing rules before writing slices.
 
-### Step 1: [One sentence description]
+### Slice 1: [One sentence observable behaviour]
 
+**Value**: Who gets what value?
+**Path**: Entry point -> business path -> state/output -> observability. Name any intentionally skipped states.
+**Acceptance criteria**: What observable behaviour proves this slice is done? Present to human and get confirmation before writing any code.
 **RED**: What failing test will we write? (Describes expected behaviour, not implementation.)
 **GREEN**: What minimum code makes the test pass?
 **MUTATE**: Run `mutation-testing` skill — produce a report.
@@ -55,7 +59,7 @@ Read the project's CLAUDE.md and testing rules before writing steps.
 **REFACTOR**: Assess improvements (only if they add value).
 **Done when**: How do we know it's complete?
 
-### Step 2: ...
+### Slice 2: ...
 
 ## Pre-PR Quality Gate
 
@@ -74,8 +78,9 @@ Before each PR:
 - **Do NOT write any production code, test code, or implementation files**
 - **Plan document only** — the only file you should create/modify is in `plans/`
 - Write the plan to a file, never present it inline in chat
-- **Prefer multiple small PRs** — break work into the smallest independently mergeable units. Each PR should be reviewable in isolation.
-- Each step in the plan must be small enough for a single commit
-- **TDD is mandatory** — every step must specify the failing test first (RED), then the minimum implementation (GREEN), then mutation testing to verify test effectiveness, then kill surviving mutants, then refactoring assessment. No exceptions.
+- **Prefer vertical slices** — break work into the smallest independently mergeable units that deliver observable value through the real production path.
+- **Avoid layer-cake plans** — database-only, API-only, UI-only, and "do all plumbing first" work is allowed only when it names the next vertical slice it unlocks and has independent verification.
+- Each slice in the plan must be small enough for a single commit
+- **TDD is mandatory** — every slice must specify the failing test first (RED), then the minimum implementation (GREEN), then mutation testing to verify test effectiveness, then kill surviving mutants, then refactoring assessment. No exceptions.
 - **Test behaviour, not implementation** — acceptance criteria and test descriptions must describe observable outcomes (what the user sees, what the API returns), never internal details (what function was called, what query was run)
-- **Read project testing rules** — before writing steps, read the project's CLAUDE.md and any testing guidelines to ensure tests follow the project's conventions (factories, MSW vs mocks, real DB vs stubs, etc.)
+- **Read project testing rules** — before writing slices, read the project's CLAUDE.md and any testing guidelines to ensure tests follow the project's conventions (factories, MSW vs mocks, real DB vs stubs, etc.)

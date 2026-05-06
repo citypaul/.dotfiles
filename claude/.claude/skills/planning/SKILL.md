@@ -1,11 +1,13 @@
 ---
 name: planning
-description: Planning work in small, known-good increments. Use when starting significant work or breaking down complex tasks.
+description: Planning work as vertical slices in small, known-good increments. Use when starting significant work, slicing features, planning PRs, or breaking down complex tasks.
 ---
 
-# Planning in Small Increments
+# Planning in Vertical Slices
 
-**All work must be done in small, known-good increments.** Each increment leaves the codebase in a working state where all tests pass.
+**Plan by vertical slices wherever possible.** Each slice delivers the smallest end-to-end behavior a real actor can observe, while leaving the codebase in a known-good state where all tests pass.
+
+Horizontal work is allowed only when it explicitly unblocks the next vertical slice and is independently verifiable.
 
 Use the `/plan` command to create plans. Use the `/continue` command to resume work after a merged PR.
 
@@ -29,40 +31,85 @@ Multiple plans can coexist — each is independent and won't conflict across bra
 
 There will be exceptions — some changes are inherently coupled and splitting them would create broken intermediate states. Use judgement. But the default should always be to ask "can this be split?"
 
-## What Makes a "Known-Good Increment"
+## What Makes a Vertical Slice
 
-Each step MUST:
+A vertical slice is not "small because it touches one layer." It is small because it delivers one observable behavior through the real production path.
+
+Each slice MUST name:
+- **Actor**: who receives the value (user, admin, API client, scheduled job, support operator)
+- **Trigger**: what starts the behavior (click, request, event, command, timer)
+- **Observable outcome**: what proves the behavior happened
+- **Production path**: the real surfaces, use case, domain logic, persistence, and external adapters involved
+- **Smallest deployable value**: the narrowest useful version that can ship safely
+
+Good slices are often thin but complete:
+- A form submits one valid field through the real API and persists it
+- A background job handles one event type and emits the expected audit result
+- A CLI command supports one input shape and returns stable stdout/stderr
+- A read-only screen shows one real state using production data loading
+
+## Choosing Slices
+
+Before writing plan slices:
+
+1. **Name the outcome** — describe the user- or system-visible result in one sentence.
+2. **Map the path** — list the real entry point, business path, state change, output, and observability.
+3. **Pick the walking skeleton** — choose the thinnest end-to-end version that proves the path works.
+4. **Add one behavior or state at a time** — validation, permissions, error states, empty states, retries, analytics, and polish become later slices.
+5. **Check reversibility** — each slice should be easy to revert or disable without undoing unrelated work.
+
+Ask "what is the smallest real behavior we can ship?" before asking "what files need to change?"
+
+## Horizontal Work Exceptions
+
+Avoid plans that do all database, API, UI, or infrastructure work up front. Horizontal work may be its own slice only when all of these are true:
+
+- It names the next vertical slice it unlocks
+- It leaves the codebase deployable
+- It has observable verification (test, command output, migration dry-run, or runtime check)
+- It is smaller than doing it inside the vertical slice
+- It does not introduce unused abstractions or speculative flexibility
+
+Valid horizontal exceptions include dependency upgrades, migrations, test harness setup, infrastructure wiring, mechanical refactors, and safety fixes. Keep them rare and explicit.
+
+## What Makes a Known-Good Slice
+
+Each slice MUST:
 - Leave all tests passing
 - Be independently deployable
 - Have clear done criteria
 - Fit in a single commit
 - Be describable in one sentence
+- Deliver or directly unblock observable behavior
 
-**If you can't describe a step in one sentence, break it down further.**
+**If you can't describe a slice in one sentence, break it down further.**
 
-## Step Size Heuristics
+## Slice Size Heuristics
 
 **Too big if:**
 - Takes more than one session
 - Requires multiple commits to complete
 - Has multiple "and"s in description
 - You're unsure how to test it
+- Needs many unrelated fixtures, mocks, screens, or endpoints
+- Builds a layer without proving an outcome
 
 **Right size if:**
-- One clear test case
-- One logical change
+- One clear behavior
+- One primary test case plus focused edge cases
 - Can explain to someone quickly
 - Obvious when done
-- Single responsibility
+- Touches only the path needed for the behavior
+- Leaves a useful checkpoint even if later slices never happen
 
 ## TDD Integration
 
-**Every step follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR.** See `tdd` skill for the workflow, `testing` skill for factory patterns.
+**Every slice follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR.** See `tdd` skill for the workflow, `testing` skill for factory patterns.
 
 ```
-FOR EACH STEP:
+FOR EACH SLICE:
     │
-    ├─► CONFIRM: Present acceptance criteria for this step
+    ├─► CONFIRM: Present acceptance criteria for this slice
     │   - Human must approve criteria before any code is written
     │   - Criteria must be specific and observable
     │   - Do NOT proceed until human confirms
@@ -102,7 +149,7 @@ FOR EACH STEP:
 
 **NEVER commit without user approval.**
 
-After completing a step (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR):
+After completing a slice (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR):
 
 1. Verify all tests pass
 2. Verify static analysis passes
@@ -141,14 +188,16 @@ Test at the lowest level that gives confidence: prefer unit tests (vitest) for l
 - [ ] Criterion 2
 - [ ] Criterion 3
 
-## Steps
+## Slices
 
-Every step follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. No production code without a failing test.
-Read the project's CLAUDE.md and testing rules before writing steps.
+Every slice follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. No production code without a failing test.
+Read the project's CLAUDE.md and testing rules before writing slices.
 
-### Step 1: [One sentence description]
+### Slice 1: [One sentence observable behaviour]
 
-**Acceptance criteria**: [What observable behaviour proves this step is done? Be specific — "user sees X", "API returns Y", "test covers Z". Vague criteria like "it works" are not acceptable. **Present to human and get confirmation before writing any code.**]
+**Value**: [Who gets what value?]
+**Path**: [Entry point -> business path -> state/output -> observability. Name any intentionally skipped states.]
+**Acceptance criteria**: [What observable behaviour proves this slice is done? Be specific — "user sees X", "API returns Y", "test covers Z". Vague criteria like "it works" are not acceptable. **Present to human and get confirmation before writing any code.**]
 **RED**: What failing test will we write? (Describes expected behaviour, not implementation. Include likely mutator gaps from the `mutation-testing` skill's `resources/mutator-rules.md` resource.)
 **GREEN**: What minimum code makes the test pass?
 **MUTATE**: Run `mutation-testing` skill — produce a report.
@@ -156,8 +205,10 @@ Read the project's CLAUDE.md and testing rules before writing steps.
 **REFACTOR**: Assess improvements (only if they add value).
 **Done when**: All acceptance criteria met, mutation report reviewed, human approves commit.
 
-### Step 2: [One sentence description]
+### Slice 2: [One sentence observable behaviour]
 
+**Value**: ...
+**Path**: ...
 **Acceptance criteria**: ...
 **RED**: ...
 **GREEN**: ...
@@ -183,14 +234,14 @@ Before each PR:
 If the plan needs to change:
 
 1. Explain what changed and why
-2. Propose updated steps
+2. Propose updated slices
 3. **Wait for approval** before proceeding
 
 Plans are not immutable, but changes must be explicit and approved.
 
 ## End of Feature
 
-When all steps are complete:
+When all slices are complete:
 
 1. **Verify completion** — all acceptance criteria met, all tests passing
 2. **Merge learnings** — if significant insights were gained, use the `learn` agent for CLAUDE.md updates or `adr` agent for architectural decisions
@@ -201,8 +252,20 @@ When all steps are complete:
 ❌ **Committing without approval**
 - Always wait for explicit "yes" before committing
 
-❌ **Steps that span multiple commits**
-- Break down further until one step = one commit
+❌ **Layer-cake plans**
+- "Build database, then API, then UI" delays learning and hides broken integration
+
+❌ **Foundation work with no named slice**
+- If setup is needed, name the vertical slice it unlocks and how the setup is verified
+
+❌ **Database-only, API-only, or UI-only slices by default**
+- These are usually implementation tasks, not independently valuable behavior
+
+❌ **Do all plumbing first**
+- Prefer a walking skeleton that proves the real path, then widen it behavior by behavior
+
+❌ **Slices that span multiple commits**
+- Break down further until one slice = one commit
 
 ❌ **Writing code before tests**
 - RED comes first, always
@@ -220,7 +283,7 @@ START FEATURE
 │
 ├─► Create plan in plans/ (get approval)
 │
-│   FOR EACH STEP:
+│   FOR EACH SLICE:
 │   │
 │   ├─► CONFIRM: Present acceptance criteria, **wait for human approval**
 │   ├─► RED: Failing test
