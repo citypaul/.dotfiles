@@ -74,7 +74,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Section | What It Provides | Detailed Patterns |
 |---------|-----------------|-------------------|
 | **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
-| **Mutation Testing** | Test effectiveness verification, mutation operators, weak test detection | [→ skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) |
+| **Mutation Testing** | Stryker setup, full/diff mutation runs, survivor triage, mutator-rule resource | [→ skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) |
 | **Test Design Review** | Dave Farley's 8 properties evaluation, Farley Score calculation, test quality assessment | [→ skills/test-design-reviewer](claude/.claude/skills/test-design-reviewer/SKILL.md) |
 | **Front-End Testing** | Vitest Browser Mode (preferred) + DOM Testing Library patterns, real browser testing with Playwright | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
 | **React Testing** | Vitest Browser Mode with vitest-browser-react (preferred) + React Testing Library patterns | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
@@ -221,12 +221,11 @@ it("should reject payments with negative amounts", () => {
 **Problem it solves:** 100% code coverage but bugs still slip through; tests that don't actually verify behavior; weak assertions that pass regardless of code correctness
 
 **What's inside:**
-- Comprehensive mutation operator reference (arithmetic, conditional, logical, boolean, method expressions)
-- Weak vs strong test examples for each operator type
-- Systematic 4-step branch analysis process
-- Equivalent mutant identification and handling
-- Test strengthening patterns
-- Integration with TDD workflow
+- Stryker-first workflow for full-project, incremental, and diff-against-main mutation runs
+- Setup guidance for projects that do not already have a mutation testing harness
+- Survivor triage: fix obvious gaps immediately, ask for human judgment on subtle domain questions
+- On-demand mutator-rule resource with operator reference and weak vs strong test examples
+- Equivalent mutant identification, CI guidance, and TDD-based test strengthening patterns
 
 **The core insight:**
 

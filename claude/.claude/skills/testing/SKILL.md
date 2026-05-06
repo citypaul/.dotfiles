@@ -5,13 +5,35 @@ description: Testing patterns for behavior-driven tests. Use when writing tests,
 
 # Testing Patterns
 
-For verifying test effectiveness through mutation analysis, load the `mutation-testing` skill. For evaluating test quality against Dave Farley's properties, load the `test-design-reviewer` skill.
+For verifying test effectiveness through mutation analysis, load the `mutation-testing` skill. Use its mutator rules while planning and writing tests, not only after tests exist. For evaluating test quality against Dave Farley's properties, load the `test-design-reviewer` skill.
 
 ## Core Principle
 
 **Test behavior, not implementation.** 100% coverage through business behavior, not implementation details.
 
 **Example:** Validation code in `payment-validator.ts` gets 100% coverage by testing `processPayment()` behavior, NOT by directly testing validator functions.
+
+---
+
+## Mutation-Aware Test Planning
+
+When planning or writing tests, automatically scan the intended behavior and changed production code against the mutator rules from the `mutation-testing` skill's `resources/mutator-rules.md` resource. A good test should fail if a realistic mutant changes the behavior.
+
+Load that resource when the code under test includes conditionals, arithmetic, equality, boolean logic, array/string operations, optional chaining, or meaningful side effects. Use it to identify likely surviving mutants before the Stryker run.
+
+When the scan finds an obvious gap, add or strengthen a behavior test immediately. When the gap depends on product or domain judgment, use the harness's ask-question facility before choosing a test. Ask one concise question with concrete choices, explain the potential mutant, and state the tradeoff.
+
+Example ask-question prompt:
+
+```markdown
+The discount rule uses `subtotal >= 100`, but current tests only cover `150`.
+Should the exact `100` boundary receive the discount?
+- Yes: add a boundary test for `100`
+- No: change/confirm the rule as `subtotal > 100`
+- Unspecified: document the behavior as intentionally not guaranteed
+```
+
+Do not ask when the gap is plainly a missing assertion, missing boundary, missing branch, or missing side-effect check. Fix those directly.
 
 ---
 

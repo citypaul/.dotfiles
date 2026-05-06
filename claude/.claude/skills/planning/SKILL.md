@@ -70,6 +70,7 @@ FOR EACH STEP:
     ├─► RED: Write failing test FIRST
     │   - Test describes expected behavior
     │   - Test fails for the right reason
+    │   - Test plan accounts for likely mutants from the `mutation-testing` skill's `resources/mutator-rules.md` resource
     │
     ├─► GREEN: Write MINIMUM code to pass
     │   - No extra features
@@ -148,7 +149,7 @@ Read the project's CLAUDE.md and testing rules before writing steps.
 ### Step 1: [One sentence description]
 
 **Acceptance criteria**: [What observable behaviour proves this step is done? Be specific — "user sees X", "API returns Y", "test covers Z". Vague criteria like "it works" are not acceptable. **Present to human and get confirmation before writing any code.**]
-**RED**: What failing test will we write? (Describes expected behaviour, not implementation.)
+**RED**: What failing test will we write? (Describes expected behaviour, not implementation. Include likely mutator gaps from the `mutation-testing` skill's `resources/mutator-rules.md` resource.)
 **GREEN**: What minimum code makes the test pass?
 **MUTATE**: Run `mutation-testing` skill — produce a report.
 **KILL MUTANTS**: Address surviving mutants (ask human when value is ambiguous).

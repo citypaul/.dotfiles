@@ -7,7 +7,7 @@ description: Test-Driven Development workflow. Use for ALL code changes - featur
 
 TDD is the fundamental practice. Every line of production code must be written in response to a failing test.
 
-**For how to write good tests**, load the `testing` skill. This skill focuses on the TDD workflow/process.
+**For how to write good tests**, load the `testing` skill. This skill focuses on the TDD workflow/process. For mutation-aware test planning, load the `mutation-testing` skill and use its `resources/mutator-rules.md` resource as the source of truth.
 
 ---
 
@@ -17,6 +17,8 @@ TDD is the fundamental practice. Every line of production code must be written i
 - NO production code until you have a failing test
 - Test describes desired behavior, not implementation
 - Test should fail for the right reason
+- Before finalizing the test, scan the intended behavior against the mutator rules: boundaries, boolean combinations, equality, arithmetic identities, array/string operations, optional chaining, and side effects
+- Add obvious missing cases immediately; use the harness's ask-question facility when the expected behavior is a product/domain judgment
 
 ### GREEN: Minimum Code to Pass
 - Write ONLY enough code to make the test pass
@@ -25,11 +27,12 @@ TDD is the fundamental practice. Every line of production code must be written i
 ### MUTATE: Verify Test Effectiveness
 - Run `mutation-testing` skill against the changed code
 - Produce a mutation testing report (killed/survived/score)
-- This validates whether your tests would catch real bugs
+- This validates whether the RED-phase mutator scan caught the important gaps
 
 ### KILL MUTANTS: Address Surviving Mutants
 - Add or strengthen tests to kill surviving mutants
-- Ask the human when a surviving mutant's value is ambiguous
+- Fix obvious gaps directly
+- Ask the human with the harness's ask-question facility when a surviving mutant's value is ambiguous
 - All tests pass after fixes
 
 ### REFACTOR: Assess Improvements
