@@ -83,7 +83,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
-| **Planning** | Small increments, plans directory, commit approval, prefer small PRs | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
+| **Planning** | Vertical slices, known-good increments, commit approval, prefer small PRs | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 5 deep-dive resources | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
 | **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
@@ -130,7 +130,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Accidental mutations breaking things | [functional](claude/.claude/skills/functional/SKILL.md) | Complete immutability violations catalog |
 | Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
 | Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
-| Planning significant work | [planning](claude/.claude/skills/planning/SKILL.md) | Three-document model (PLAN/WIP/LEARNINGS), commit approval |
+| Planning significant work | [planning](claude/.claude/skills/planning/SKILL.md) | Vertical slices through the real production path, commit approval |
 | CI pipeline keeps failing | [ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) | Every failure is real until proven otherwise, hypothesis-first diagnosis |
 | Separating domain from infrastructure | [hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) | Ports define contracts, adapters implement them, domain stays pure |
 | Complex business rules need modeling | [domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) | Ubiquitous language, glossary enforcement, value objects, aggregates |
@@ -1019,10 +1019,10 @@ Claude Code: [Launches learn agent]
 
 ### 6. `progress-guardian` - Progress Guardian
 
-**Use proactively** when starting significant multi-step work, or **reactively** to track progress through plan steps.
+**Use proactively** when starting significant vertical-slice work, or **reactively** to track progress through plan slices.
 
 **What it manages:**
-- Tracks progress through steps in plan files (`plans/<name>.md`)
+- Tracks progress through vertical slices in plan files (`plans/<name>.md`)
 - Enforces small increments, TDD, and **commit approval**
 - Never modifies plans without explicit user approval
 - At end: orchestrates learning merge, then **deletes the plan file**
@@ -1037,7 +1037,7 @@ Claude Code: [Launches progress-guardian to update plan and ask for commit appro
 ```
 
 **Output:**
-- Plan file in `plans/` with approved steps and acceptance criteria
+- Plan file in `plans/` with approved slices and acceptance criteria
 - At end: learnings merged into CLAUDE.md/ADRs, plan file deleted
 
 **Key distinction:** Plan files are TEMPORARY (deleted when done). Learnings merged into permanent knowledge base first.
@@ -1227,9 +1227,9 @@ This is the full lifecycle for working on a feature, from project setup through 
 /plan  →  Creates a plan in plans/ on a branch with a PR — no code, just the plan
 ```
 
-**Why before code:** Planning in a separate step prevents the most common friction point — Claude jumping straight to implementation before the approach is agreed. The plan becomes a PR you can review and approve before any code is written. Each step in the plan specifies the failing test to write first.
+**Why before code:** Planning in a separate phase prevents the most common friction point — Claude jumping straight to implementation before the approach is agreed. The plan becomes a PR you can review and approve before any code is written. Each slice in the plan specifies the failing test to write first.
 
-#### Phase 3: Implement (repeat for each step in the plan)
+#### Phase 3: Implement (repeat for each slice in the plan)
 
 ```
 RED          →  Write a failing test (tdd-guardian verifies test-first)
@@ -1254,13 +1254,13 @@ Before creating any PR, run these checks in order:
 
 **Why mutation testing before the PR:** 100% code coverage doesn't mean your tests are good — it just means the code ran. Mutation testing verifies your tests would actually catch bugs. Running `refactor-scan` after ensures you're not shipping code you already know could be cleaner.
 
-#### Phase 5: Continue to the Next Step
+#### Phase 5: Continue to the Next Slice
 
 ```
-/continue  →  Pulls merged PR, creates new branch, updates plan, shows next step
+/continue  →  Pulls merged PR, creates new branch, updates plan, shows next slice
 ```
 
-**Why a command for this:** After a PR is merged, you need to pull main, create a new branch, and figure out where you left off. `/continue` does all of this and updates the plan document so you have immediate context for the next step. This eliminates the repetitive "pull, branch, update plan" sequence between PRs.
+**Why a command for this:** After a PR is merged, you need to pull main, create a new branch, and figure out where you left off. `/continue` does all of this and updates the plan document so you have immediate context for the next slice. This eliminates the repetitive "pull, branch, update plan" sequence between PRs.
 
 #### Phase 6: Capture Knowledge (throughout and at the end)
 
@@ -1297,7 +1297,7 @@ docs-guardian     →  Updates user-facing documentation
 
 ### How the Workflow Works (Regardless of Installation Method)
 
-Once installed, the full development lifecycle is: `/setup` → `/plan` → RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR → `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each step.
+Once installed, the full development lifecycle is: `/setup` → `/plan` → RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR → `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each phase.
 
 **Agent invocation examples:**
 
