@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.28.2
+
+### Patch Changes
+
+- f0aaed5: Improve the planning skill to default to vertical slices.
+
+  The planning guidance now asks agents to plan thin end-to-end behaviours through
+  the real production path, while keeping existing TDD, mutation testing, and
+  commit-approval quality gates intact.
+
 ## 3.28.1
 
 ### Patch Changes
