@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.28.1
+
+### Patch Changes
+
+- 7624f8e: Fix the Claude installer on macOS Bash by avoiding the Bash 4-only `mapfile` builtin when de-duplicating skill agent targets.
+
 ## 3.28.0
 
 ### Minor Changes
