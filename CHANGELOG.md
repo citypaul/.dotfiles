@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.28.0
+
+### Minor Changes
+
+- 7f35175: Add seo-audit as an external community skill from coreyhaines31/marketingskills
+
+  The installer now adds the seo-audit skill from coreyhaines31/marketingskills via skills.sh. Documentation now lists the marketing skill alongside the existing external skills and attributes the upstream source and MIT license.
+
+- 9a774de: Improve mutation testing guidance with a Stryker-first workflow, an on-demand mutator-rules resource, full-project and diff-against-main commands, survivor triage, and mutation-aware TDD/testing guidance on when to fix issues directly versus asking for human judgment.
+
 ## 3.27.0
 
 ### Minor Changes
