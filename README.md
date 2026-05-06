@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 24 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 24 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -104,6 +104,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Accessibility** | WCAG compliance, screen reader support, keyboard navigation | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **SEO** | Search engine optimization, crawlability, structured data | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
+| **SEO Audit** | Full SEO diagnosis across crawlability, indexation, on-page optimization, content quality, and action planning | [→ marketingskills/seo-audit](https://skills.sh/coreyhaines31/marketingskills/seo-audit) |
 | **Best Practices** | Security, modern APIs, code quality patterns | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 
 ---
@@ -159,6 +160,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
 | Poor search engine visibility | [seo](https://github.com/addyosmani/web-quality-skills) | Technical SEO, structured data, meta tags, crawlability |
+| Need to diagnose rankings, traffic drops, or SEO health | [seo-audit](https://skills.sh/coreyhaines31/marketingskills/seo-audit) | Prioritized audit across technical, on-page, content, and authority signals |
 | Full site quality audit | [web-quality-audit](https://github.com/addyosmani/web-quality-skills) | Comprehensive Lighthouse audit across all categories |
 
 ### How Skills Work
@@ -1348,7 +1350,7 @@ chmod +x install-claude.sh
 ./install-claude.sh --claude-only                        # Install only CLAUDE.md
 ./install-claude.sh --skills-only                        # Install only skills (via skills.sh)
 ./install-claude.sh --no-agents                          # Install without agents
-./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + impeccable + grill-me)
+./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + impeccable + grill-me + seo-audit)
 ./install-claude.sh --no-impeccable                      # Skip impeccable design skills only
 ./install-claude.sh --with-opencode                      # Also target OpenCode for skills + install OpenCode config
 ./install-claude.sh --agent codex --agent cursor         # Also install skills for Codex and Cursor (repeatable)
@@ -1377,6 +1379,7 @@ Both patterns resolve to the same content on disk, so the first `--agent codex` 
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
   - [mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) — one-question-at-a-time plan and design interrogation
+  - [coreyhaines31/marketingskills/seo-audit](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — technical, on-page, content, and authority SEO audit workflow
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
 
@@ -1646,7 +1649,7 @@ The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 24 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), and 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 24 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1823,7 +1826,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + 26 skills (20 built-in + 6 web quality) + 10 agents (development guidelines)
+- ✅ CLAUDE.md + 27 skills (20 built-in + 6 web quality + 1 marketing) + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ Git aliases and configuration
@@ -1904,6 +1907,8 @@ Special thanks to contributors who have shared their work:
 - **[Michael Feathers](https://michaelfeathers.silvrback.com/)** - The `finding-seams` and `characterisation-tests` skills are adapted from *[Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/)* (2004). Feathers' concepts of seams, enabling points, and characterization tests are foundational techniques for making untestable code testable. The skills adapt his C++/Java examples to modern TypeScript/JavaScript patterns.
 
 - **[Addy Osmani](https://github.com/addyosmani)** - The web quality skills (accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit) are sourced from [Addy's web-quality-skills repository](https://github.com/addyosmani/web-quality-skills). These skills are fetched directly from the upstream repository at install time so you always get the latest version. Licensed under the [MIT License](https://github.com/addyosmani/web-quality-skills/blob/main/LICENSE). The `api-design` skill is adapted from [Addy's agent-skills repository](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), modified to align with existing skill conventions.
+
+- **[Corey Haines](https://github.com/coreyhaines31)** - The `seo-audit` skill is sourced from [Corey's marketingskills repository](https://github.com/coreyhaines31/marketingskills/tree/main/skills/seo-audit). It is fetched directly from upstream at install time via skills.sh, including its references, so users get the latest version. Licensed under the [MIT License](https://github.com/coreyhaines31/marketingskills/blob/main/LICENSE).
 
 - **[Kieran O'Hara](https://github.com/kieran-ohara)** - The `use-case-data-patterns` agent is adapted from [Kieran's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you for creating and sharing this excellent agent specification.
 

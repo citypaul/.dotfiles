@@ -44,7 +44,9 @@ OWN_SKILLS_REPO="citypaul/.dotfiles"
 WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills"
 IMPECCABLE_SKILLS_REPO="pbakaus/impeccable"
 MATTPOCOCK_SKILLS_REPO="https://github.com/mattpocock/skills"
+MARKETING_SKILLS_REPO="coreyhaines31/marketingskills"
 GRILL_ME_SKILL="grill-me"
+SEO_AUDIT_SKILL="seo-audit"
 
 # Agents to target when installing skills via `npx skills add`.
 # Built up from --agent/--with-opencode flags; default is claude-code only.
@@ -138,7 +140,7 @@ Options:
                        (use with --agent to target other agents only)
   --with-opencode      Shorthand for --agent opencode + install OpenCode config
   --opencode-only      Install only OpenCode configuration (no skills/agents/commands)
-  --no-external        Skip all external community skills (web-quality-skills + impeccable + grill-me)
+  --no-external        Skip all external community skills (web-quality-skills + impeccable + grill-me + seo-audit)
   --no-impeccable      Skip impeccable design skills only
   --version VERSION    Version for CLAUDE.md/commands/agents (default: main). Skills always latest.
   --help, -h           Show this help message
@@ -147,6 +149,7 @@ Default external skill sources:
   addyosmani/web-quality-skills
   pbakaus/impeccable
   mattpocock/skills --skill grill-me
+  coreyhaines31/marketingskills --skill seo-audit
 
 Examples:
   # Install everything (recommended)
@@ -184,7 +187,7 @@ fi
 
 # De-duplicate agent list while preserving order
 if [[ ${#SKILL_AGENTS[@]} -gt 0 ]]; then
-  SKILL_AGENTS=($(printf "%s\n" "${SKILL_AGENTS[@]}" | awk '!seen[$0]++'))
+  mapfile -t SKILL_AGENTS < <(printf "%s\n" "${SKILL_AGENTS[@]}" | awk '!seen[$0]++')
 fi
 
 # Validate: if we're installing skills, we need at least one agent to target
@@ -231,7 +234,8 @@ backup_file() {
   local file="$1"
 
   if [[ -f "$file" ]]; then
-    local backup="${file}.backup.$(date +%Y%m%d_%H%M%S)"
+    local backup
+    backup="${file}.backup.$(date +%Y%m%d_%H%M%S)"
     echo -e "${YELLOW}→${NC} Backing up existing file to $backup"
     mv "$file" "$backup"
   fi
@@ -265,7 +269,8 @@ migrate_legacy_skill_dirs() {
     return 0
   fi
 
-  local backup="$skills_dir.pre-skills-sh.$(date +%Y%m%d_%H%M%S)"
+  local backup
+  backup="$skills_dir.pre-skills-sh.$(date +%Y%m%d_%H%M%S)"
   echo -e "${YELLOW}→${NC} Found ${#stale[@]} pre-skills.sh skill director$([[ ${#stale[@]} -eq 1 ]] && echo "y" || echo "ies") at ~/.claude/skills/"
   echo -e "${YELLOW}→${NC} Moving to $backup so the skills CLI can route them through the universal path"
   mkdir -p "$backup"
@@ -358,6 +363,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     install_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)"
     install_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "$GRILL_ME_SKILL"
+    install_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "$SEO_AUDIT_SKILL"
   fi
 
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
@@ -481,6 +487,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "     • addyosmani/web-quality-skills — accessibility, performance, SEO, ..."
     echo -e "     • mattpocock/skills/grill-me — relentless plan and design interviewing"
+    echo -e "     • coreyhaines31/marketingskills/seo-audit — SEO audit workflow"
   fi
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
     echo -e "     • pbakaus/impeccable — design vocabulary + steering commands"
@@ -583,6 +590,9 @@ echo -e "    ${BLUE}https://impeccable.style/skills/${NC} (Apache 2.0)"
 echo ""
 echo -e "  • ${YELLOW}Matt Pocock${NC} — grill-me planning interview skill"
 echo -e "    ${BLUE}https://skills.sh/mattpocock/skills/grill-me${NC}"
+echo ""
+echo -e "  • ${YELLOW}Corey Haines${NC} — seo-audit marketing skill"
+echo -e "    ${BLUE}https://skills.sh/coreyhaines31/marketingskills/seo-audit${NC} (MIT)"
 echo ""
 echo -e "  • ${YELLOW}Kieran O'Hara${NC} — use-case-data-patterns agent"
 echo -e "    ${BLUE}https://github.com/kieran-ohara/dotfiles${NC}"
