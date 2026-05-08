@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.29.1
+
+### Patch Changes
+
+- 2c32802: Clarify that generated production parity skills must be stored directly inside the target project repository, never in user or global skill folders.
+
 ## 3.29.0
 
 ### Minor Changes
