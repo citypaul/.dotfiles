@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.29.0
+
+### Minor Changes
+
+- 8c06947: Add production-parity-skill-builder skill for creating app-specific skills that detect and fix drift between production and non-production environments. Idea credited to GitHub user @dm.
+
 ## 3.28.3
 
 ### Patch Changes
