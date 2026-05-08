@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.28.3
+
+### Patch Changes
+
+- c5e188e: Clarify that a vertical slice maps to a PR, not a single commit
+
+  The planning skill previously equated slice = commit, which contradicted the
+  reality that TDD increments within a slice naturally produce multiple commits.
+  Updated to clarify that a slice is the smallest independently mergeable PR,
+  and that multiple TDD commits within a slice are expected.
+
 ## 3.28.2
 
 ### Patch Changes
