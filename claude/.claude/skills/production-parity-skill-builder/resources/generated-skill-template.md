@@ -12,10 +12,13 @@ description: Detect, document, test, and fix drift between production and local,
 
 Production is the reference contract for <app-name>. Non-production environments may be lighter, but every difference must be explicit, justified, and covered by a guard.
 
+This skill is project-local. Keep it inside the <app-name> repository and do not move it to `~/.agents/skills`, `~/.codex/skills`, `~/.claude/skills`, `$CODEX_HOME/skills`, or any other user/global skill directory.
+
 ## App Parity Contract
 
 - Production environments: <prod names/URLs/manifest paths>
 - Non-production environments: <local/CI/PR/preview/staging names>
+- Skill location: <project-relative path to this SKILL.md>
 - Intentional divergences: <link/list, each with reason and compensating guard>
 - Blocking rule: unknown production behavior is a parity risk until sourced or answered
 
@@ -83,6 +86,7 @@ Ask only when inspection cannot answer a decision that changes parity behavior. 
 Every run must report:
 
 - files inspected
+- confirmation that this skill remains project-local
 - parity surfaces touched
 - drift found
 - fixes made
