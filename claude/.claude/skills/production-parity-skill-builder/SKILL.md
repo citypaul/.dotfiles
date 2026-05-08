@@ -77,6 +77,16 @@ How should non-production enforce this?
 
 Write a new skill for the specific app, normally named `<app-name>-production-parity` unless the user or repo naming convention suggests otherwise.
 
+Store the generated skill directly in the target application's repository. Never create the generated app-specific skill in a user/global folder such as `~/.agents/skills`, `~/.codex/skills`, `~/.claude/skills`, or `$CODEX_HOME/skills`.
+
+Choose the project-local location by inspecting the app repo:
+
+- If the app already has a project-local skills directory, use that convention.
+- Prefer `.claude/skills/<app-name>-production-parity/SKILL.md` when the repo uses Claude project config.
+- Prefer `.codex/skills/<app-name>-production-parity/SKILL.md` when the repo uses Codex project config.
+- If no project-local skill convention exists, ask one concise harness question before creating a new convention.
+- If the only available skill directories are global/user folders, do not use them; ask where in the project repo the skill should live.
+
 The generated skill must include:
 
 - frontmatter whose description triggers on parity, drift, local/prod mismatch, auth/config/infra differences, and environment setup for that app
@@ -112,14 +122,16 @@ Before finishing:
 1. Re-read the generated skill as if invoked on a fresh thread.
 2. Confirm every app-specific claim cites a repo source or a captured user answer.
 3. Confirm no generic checklist item remains unless it applies to the app.
-4. Run the skill validation command available in the harness or repository if one exists.
-5. If validation cannot be run, say exactly why.
+4. Confirm the generated skill path is inside the target app repository and not in a user/global skills folder.
+5. Run the skill validation command available in the harness or repository if one exists.
+6. If validation cannot be run, say exactly why.
 
 ## Output
 
 Return:
 
 - generated skill path
+- confirmation that the generated skill is stored inside the target project repo
 - files and directories inspected
 - highest-risk parity gaps found during creation
 - questions asked and captured decisions
