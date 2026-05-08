@@ -78,9 +78,11 @@ Each slice MUST:
 - Leave all tests passing
 - Be independently deployable
 - Have clear done criteria
-- Fit in a single commit
+- Fit in a single PR (the smallest independently mergeable unit)
 - Be describable in one sentence
 - Deliver or directly unblock observable behavior
+
+A slice is the unit of planning and review — one PR. Within a slice, TDD increments (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR) may produce multiple commits, but the slice itself is what gets reviewed and merged as a coherent unit.
 
 **If you can't describe a slice in one sentence, break it down further.**
 
@@ -88,7 +90,6 @@ Each slice MUST:
 
 **Too big if:**
 - Takes more than one session
-- Requires multiple commits to complete
 - Has multiple "and"s in description
 - You're unsure how to test it
 - Needs many unrelated fixtures, mocks, screens, or endpoints
@@ -264,8 +265,8 @@ When all slices are complete:
 ❌ **Do all plumbing first**
 - Prefer a walking skeleton that proves the real path, then widen it behavior by behavior
 
-❌ **Slices that span multiple commits**
-- Break down further until one slice = one commit
+❌ **Slices that span multiple PRs**
+- Break down further until one slice = one PR
 
 ❌ **Writing code before tests**
 - RED comes first, always
