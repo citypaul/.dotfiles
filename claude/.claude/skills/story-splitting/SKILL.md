@@ -9,6 +9,10 @@ Split work so the team can deliver, test, learn, and change direction in small b
 
 The goal is not "make smaller tickets." The goal is **N% of the system 100% done and demonstrable**, not 100% of the system N% done.
 
+## Attribution
+
+This skill is based on Tim Ottinger's [Splitting Stories - A Resource Listicle](https://agileotter.blogspot.com/2022/03/splitting-stories-resource-list.html) and synthesizes the linked story-splitting writing by Tim Ottinger, Bill Wake, Joshua Kerievsky, Gojko Adzic, Neil Killick, George Dinwiddie, Mike Cohn, Richard Lawrence, Peter Green, J. B. Rainsberger, Rachel Davies, and others. Load `resources/source-notes.md` for source-by-source provenance.
+
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
 | Resource | Load when... |
