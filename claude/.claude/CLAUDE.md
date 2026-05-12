@@ -4,7 +4,7 @@
 >
 > **Architecture:**
 > - **CLAUDE.md** (this file): Core philosophy + quick reference (~100 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard, teach-me, diagrams, find-skills, find-gaps)
+> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, story-splitting, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard, teach-me, diagrams, find-skills, find-gaps)
 > - **External skills**: Loaded on-demand from community repos (impeccable + 17 steering commands from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), grill-me from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me))
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
@@ -94,6 +94,7 @@ For detailed patterns and examples, load the `functional` skill.
 For detailed TDD workflow, load the `tdd` skill.
 For refactoring methodology, load the `refactoring` skill.
 For significant work, load the `planning` skill. Plans live in `plans/` directory.
+For splitting large stories, epics, features, or backlog items into vertical user-value slices, load the `story-splitting` skill.
 For CI failure diagnosis, load the `ci-debugging` skill.
 For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.
