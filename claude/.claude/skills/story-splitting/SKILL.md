@@ -70,6 +70,21 @@ This first slice should exercise the real production path as far as practical: e
 
 A bargain is high value at a fraction of full cost. Look for slices where one-fourth of the imagined feature gives most of the value or learning. Treat the parent story as a draft idea; be willing to discover a cheaper or better version through conversation.
 
+## Child Story Quality Bar
+
+Use INVEST as a quality check, not a template:
+
+| Letter | Check |
+|--------|-------|
+| I | Independent enough to build, test, release, reorder, or drop without waiting for every sibling |
+| N | Negotiable in scope and quality level; not a fixed solution order |
+| V | Valuable to a real user, external system, business stakeholder, operator, or learning goal |
+| E | Estimable because the behavior, unknowns, and deferrals are visible |
+| S | Small enough to finish in the target planning horizon |
+| T | Testable through observable examples |
+
+Also apply the feedback triad: a good slice **works**, **delivers value**, and **can generate user feedback**. If it only makes internal progress, it is probably a task. If it works but produces no possible feedback or learning, ask whether a thinner or different slice would be more useful.
+
 ## Workflow
 
 ### 1. Reframe The Parent
@@ -153,16 +168,20 @@ Before returning a split, check every child story:
 - Does it have a trigger and observable outcome?
 - Does it run through the real production path needed for that behavior?
 - Could it be tested without waiting for every sibling story?
+- Could it generate feedback, learning, or a visible decision if shipped, demoed, or exercised?
 - If no later story happens, did this still deliver value or learning?
 - Are dependencies explicit and small enough to manage?
 - Are deferred paths, data, rules, and qualities visible?
 - Is it safe to ship, or is the release constraint explicit?
 - Does it avoid prescribing unnecessary implementation details?
+- Is the eventual full capability still visible, so useful follow-up slices are not forgotten?
 
 Red flags:
 
+- child stories split by process activity: design, code, test, document, deploy
 - "As a database/API/frontend/service..."
 - "Build the backend" and "build the frontend" as separate stories
+- "Collect data" or "build integration" without a user-visible or feedback-generating outcome
 - every child must finish before any child can be tested
 - a spike for every story
 - acceptance criteria that say "works" or "fast" without observable detail

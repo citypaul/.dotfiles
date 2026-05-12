@@ -11,6 +11,19 @@ Use this catalog when the main workflow is not enough. Do not apply every patter
 5. **Use walking skeleton/tracer/spike** if integration, architecture, or uncertainty is the main blocker.
 6. **Reject component splits** unless they are tasks inside a whole story.
 
+## Learning Progression Anti-Pattern
+
+Teams often learn splitting in stages. Recognize the stage, then move one step closer to self-contained value:
+
+| Stage | What it looks like | Why it is not enough | Better move |
+|-------|--------------------|----------------------|-------------|
+| Process split | design, code, test, document, deploy | no item delivers value alone | keep as a task checklist inside one story |
+| Architecture split | UI, business logic, database, API | late integration and no independent user value | make one thin path through the layers |
+| Procedure split | collect info, integrate provider, send email | closer, but may still delay the business outcome | ask which subset can satisfy the primary objective |
+| Value split | register with one field and pay now | independently useful, negotiable, testable | intensify with later value slices |
+
+The progression is not a maturity ladder to shame the team. It is a diagnostic: name where the current split lives, then choose a smaller story that can stand alone.
+
 ## Capability Slicing
 
 Capability slicing keeps the team in the customer problem space. Ask:
@@ -22,6 +35,7 @@ What are the options for delivering some value to this actor as soon as possible
 Useful capability dimensions:
 
 - actor or customer segment
+- persona or role
 - job-to-be-done
 - workflow stage
 - market, geography, plan tier, or channel
@@ -60,6 +74,18 @@ Use these when SPIDR is too coarse:
 | Spike | Is the problem implementation uncertainty rather than story size? |
 
 Meta-pattern: find the core complexity, identify what has many variations, reduce all variations to one, then build that one complete path.
+
+## Feedback-Oriented Splits
+
+When several splits are plausible, prefer the one that can produce feedback fastest:
+
+- Which child can a real user try?
+- Which child can support decide with?
+- Which child can a stakeholder accept or reject in a demo?
+- Which child proves the riskiest assumption?
+- Which child makes the next product decision easier?
+
+If no child can generate feedback, the parent may be framed as internal construction rather than a product capability.
 
 ## Bill Wake's Split Families
 
@@ -176,3 +202,4 @@ Use these when starting a new product, major capability, or risky architecture.
 - A non-releasable slice must say why it is non-releasable and what would make it releasable.
 - A spike must be time-boxed and stop when its questions are answered.
 - A technical task belongs under the first story that proves it matters.
+- Keep the path back to the full capability visible: splitting helps sequence delivery, but later slices still need to reassemble into the coherent product experience users expect.

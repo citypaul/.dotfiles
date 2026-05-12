@@ -29,11 +29,15 @@ The shared idea across the sources: split by **thin, end-to-end product capabili
 | [The Humanizing Work Guide to Splitting User Stories](https://www.humanizingwork.com/the-humanizing-work-guide-to-splitting-user-stories/) | Good stories as vertical slices, splitting flow, simple/complex, defer performance, spike last, meta-pattern of reducing variations |
 | [Five Story-Splitting Mistakes and How to Stop Making Them](https://www.mountaingoatsoftware.com/blog/five-story-splitting-mistakes-and-how-to-stop-making-them) | Mistakes: PO-only splitting, technical boundaries, solution-specified stories, overusing spikes, enforcing all business rules first |
 | [How Tracer Bullets Speed Up Software Development](https://builtin.com/software-engineering-perspectives/what-are-tracer-bullets) | Tracer bullets answer concrete technical questions quickly, are time-boxed, may be disposable, and can validate end-to-end feasibility |
-| [What is Story Splitting?](https://agilealliance.org/glossary/story-splitting/) | Story splitting as an agile practice, lack of one universal method, further reading list |
+| [What is Story Splitting?](https://agilealliance.org/glossary/story-splitting/) | Story splitting as an agile practice, lack of one universal method, INVEST further-reading thread |
+| [How You'll Probably Learn to Split Features](https://blog.jbrains.ca/permalink/how-youll-probably-learn-to-split-features) | Learning progression from process splits, to architecture/layer splits, to procedure splits, to independent value slices; primary-objective framing |
+| [How To Split User Stories](https://www.infoq.com/news/2011/04/how-to-split-user-stories/) | Summary of community guidance: stories should work, deliver value, and potentially generate feedback; persona, risk, testability, CRUD, data-entry, performance, and spike splits |
 
 ## Unavailable Linked Article
 
 The linked TechBeacon article at `https://techbeacon.com/app-dev-testing/practical-guide-user-story-splitting-agile-teams` currently redirects to an OpenText DevOps archive page rather than the article text. Do not attribute specific guidance to that article unless it is re-fetched from an accessible archive.
+
+The Agile Alliance page links to Richard Lawrence's older `richardlawrence.info` article URL. That direct URL was not accessible during this pass, but the same pattern set is now maintained in the Humanizing Work guide and summarized by InfoQ. Prefer those accessible sources unless the original becomes available again.
 
 ## Synthesis Decisions
 
