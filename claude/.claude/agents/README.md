@@ -250,9 +250,12 @@ progress-guardian (orchestrates)
    - Get approval for the plan before writing any code
 
 3. **For each step in plan**
-   - RED: Write failing test (TDD non-negotiable)
+   - LOAD: `tdd`, `testing`, `mutation-testing`, and `refactoring` before code changes
+   - RED: Write failing behavior test (TDD non-negotiable)
    - GREEN: Minimal code to pass
-   - REFACTOR: Invoke `refactor-scan` to assess improvements
+   - MUTATE: Run `mutation-testing` skill and produce a report
+   - KILL MUTANTS: Address surviving mutants or justify equivalent mutants
+   - REFACTOR: Run `refactoring` skill and invoke `refactor-scan` to assess improvements
    - **WAIT FOR COMMIT APPROVAL**
 
 4. **When plan needs changing**
@@ -267,8 +270,9 @@ progress-guardian (orchestrates)
    - **Ask for commit approval**
 
 7. **Pre-PR quality gate**
+   - Verify `tdd`, `testing`, `mutation-testing`, and `refactoring` were loaded for implemented slices
    - Run `mutation-testing` skill: Verify tests detect changes, kill surviving mutants
-   - Invoke `refactor-scan`: Assess improvements (only if adds value)
+   - Run `refactoring` skill and invoke `refactor-scan`: Assess improvements (only if adds value)
    - Invoke `pr-reviewer`: Self-review changes
    - Fix any issues found
    - Run `/pr` to create PR with quality gates (typecheck + lint + test + build)

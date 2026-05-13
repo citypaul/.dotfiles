@@ -191,7 +191,7 @@ For product work, the skills fit together like this:
 2. **`planning`** — turn the selected child story or narrow capability into PR-sized implementation slices in `plans/`.
 3. **`storyboard`** — when UX spans multiple surfaces, create the visual review artifact that reveals missing mocks and flow gaps.
 4. **`find-gaps`** — tighten plans, acceptance criteria, and mocks; if it finds horizontal/component slices, go back to `story-splitting`.
-5. **`tdd` + `testing` + `mutation-testing` + `refactoring`** — execute each approved slice in a known-good state.
+5. **`tdd` + `testing` + `mutation-testing` + `refactoring`** — load all four before code changes for every approved slice, then execute RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR in a known-good state.
 
 Use `grill-me` at any point when the decision tree itself needs pressure-testing before the artifact is ready to split, plan, or implement.
 
@@ -1251,24 +1251,26 @@ This is the full lifecycle for working on a feature, from project setup through 
 #### Phase 3: Implement (repeat for each slice in the plan)
 
 ```
+LOAD         →  Load tdd + testing + mutation-testing + refactoring before code changes
 RED          →  Write a failing test (tdd-guardian verifies test-first)
 GREEN        →  Write minimum code to pass (ts-enforcer checks type safety)
 MUTATE       →  Run mutation testing, produce report (mutation-testing skill)
 KILL MUTANTS →  Address surviving mutants (ask human when ambiguous)
-REFACTOR     →  Assess improvements (refactor-scan identifies opportunities)
+REFACTOR     →  Assess improvements (refactoring skill + refactor-scan)
 COMMIT       →  Wait for approval, then commit
 ```
 
-**Why this order:** Mutation testing comes *before* refactoring so you restructure code with verified test strength, not assumed test strength. The cycle is enforced by agents, not willpower. `tdd-guardian` catches tests written after code, `ts-enforcer` catches type safety violations, mutation testing verifies tests catch real bugs, and `refactor-scan` only runs after MUTATE — you refactor with confidence that your tests are strong. Each cycle produces one small, reviewable commit.
+**Why this order:** The implementation skills are loaded first so the agent has the full workflow, test-writing patterns, mutation rules, and refactoring rubric in context before touching code. Mutation testing comes *before* refactoring so you restructure code with verified test strength, not assumed test strength. The cycle is enforced by skills and agents, not willpower. `tdd-guardian` catches tests written after code, `ts-enforcer` catches type safety violations, mutation testing verifies tests catch real bugs, and `refactor-scan` only runs after MUTATE — you refactor with confidence that your tests are strong. Each cycle produces one small, reviewable commit.
 
 #### Phase 4: Pre-PR Quality Gate
 
 Before creating any PR, run these checks in order:
 
 ```
-1. mutation-testing  →  Verify tests actually detect changes (kill surviving mutants)
-2. refactor-scan     →  Assess refactoring opportunities (only if adds value)
-3. /pr               →  Runs typecheck + lint + test + build, then creates PR
+1. skill routing     →  Verify tdd + testing + mutation-testing + refactoring were loaded
+2. mutation-testing  →  Verify tests actually detect changes (kill surviving mutants)
+3. refactoring       →  Assess refactoring opportunities (only if adds value)
+4. /pr               →  Runs typecheck + lint + test + build, then creates PR
 ```
 
 **Why mutation testing before the PR:** 100% code coverage doesn't mean your tests are good — it just means the code ran. Mutation testing verifies your tests would actually catch bugs. Running `refactor-scan` after ensures you're not shipping code you already know could be cleaner.

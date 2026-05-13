@@ -67,19 +67,30 @@ User: "Feature is complete"
 ## Slices
 
 Each slice should be the thinnest useful end-to-end behaviour through the real production path.
+Every slice must load `tdd`, `testing`, `mutation-testing`, and `refactoring` before implementation, then follow RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR.
 
 ### Slice 1: [One sentence observable behaviour]
 
 - **Value**: Who gets what value?
 - **Path**: Entry point -> business path -> state/output -> observability
-- **Test**: What failing test will we write?
+- **Required implementation skills**: `tdd`, `testing`, `mutation-testing`, `refactoring`
+- **RED**: What failing behavior test will we write?
+- **GREEN**: What minimum code makes it pass?
+- **MUTATE**: Run `mutation-testing` skill and produce a report
+- **KILL MUTANTS**: Address surviving mutants or justify equivalent mutants
+- **REFACTOR**: Run `refactoring` skill and apply only valuable improvements
 - **Done when**: How do we know it's complete?
 
 ### Slice 2: [One sentence observable behaviour]
 
 - **Value**: Who gets what value?
 - **Path**: Entry point -> business path -> state/output -> observability
-- **Test**: What failing test will we write?
+- **Required implementation skills**: `tdd`, `testing`, `mutation-testing`, `refactoring`
+- **RED**: What failing behavior test will we write?
+- **GREEN**: What minimum code makes it pass?
+- **MUTATE**: Run `mutation-testing` skill and produce a report
+- **KILL MUTANTS**: Address surviving mutants or justify equivalent mutants
+- **REFACTOR**: Run `refactoring` skill and apply only valuable improvements
 - **Done when**: How do we know it's complete?
 
 ## Pre-PR Quality Gate

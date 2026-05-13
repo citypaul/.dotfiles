@@ -92,6 +92,7 @@ For detailed patterns and examples, load the `functional` skill.
 - **Wait for commit approval** before every commit
 - Each increment leaves codebase in working state
 For detailed TDD workflow, load the `tdd` skill.
+For implementation of any planned slice, load `tdd`, `testing`, `mutation-testing`, and `refactoring` before code changes begin.
 For refactoring methodology, load the `refactoring` skill.
 For broad stories, epics, features, or backlog items, load the `story-splitting` skill before planning.
 For significant implementation work, load the `planning` skill to turn selected slices into PR-sized plans in `plans/`.

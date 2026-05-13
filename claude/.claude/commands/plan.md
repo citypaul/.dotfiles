@@ -46,12 +46,13 @@ Tests at every level (unit, browser, integration) should verify behaviour.]
 
 Every slice should be the thinnest useful end-to-end behaviour: actor, trigger, observable outcome, production path, and smallest deployable value.
 Every slice follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. No production code without a failing test.
-Read the project's CLAUDE.md and testing rules before writing slices.
+Every slice must explicitly load `tdd`, `testing`, `mutation-testing`, and `refactoring` before implementation. Read the project's CLAUDE.md and testing rules before writing slices.
 
 ### Slice 1: [One sentence observable behaviour]
 
 **Value**: Who gets what value?
 **Path**: Entry point -> business path -> state/output -> observability. Name any intentionally skipped states.
+**Required implementation skills**: Before code changes, load `tdd`, `testing`, `mutation-testing`, and `refactoring` (plus UI/domain/architecture skills when relevant).
 **Acceptance criteria**: What observable behaviour proves this slice is done? Present to human and get confirmation before writing any code.
 **RED**: What failing test will we write? (Describes expected behaviour, not implementation.)
 **GREEN**: What minimum code makes the test pass?
@@ -82,6 +83,7 @@ Before each PR:
 - **Prefer vertical slices** — break work into the smallest independently mergeable units that deliver observable value through the real production path.
 - **Avoid layer-cake plans** — database-only, API-only, UI-only, and "do all plumbing first" work is allowed only when it names the next vertical slice it unlocks and has independent verification.
 - Each slice in the plan must be small enough for a single PR. A slice may contain multiple TDD commits, but it must be reviewable and mergeable as one coherent unit.
+- **Skill routing is mandatory** — every slice must list `tdd`, `testing`, `mutation-testing`, and `refactoring` as required implementation skills before code changes begin.
 - **TDD is mandatory** — every slice must specify the failing test first (RED), then the minimum implementation (GREEN), then mutation testing to verify test effectiveness, then kill surviving mutants, then refactoring assessment. No exceptions.
 - **Test behaviour, not implementation** — acceptance criteria and test descriptions must describe observable outcomes (what the user sees, what the API returns), never internal details (what function was called, what query was run)
 - **Read project testing rules** — before writing slices, read the project's CLAUDE.md and any testing guidelines to ensure tests follow the project's conventions (factories, MSW vs mocks, real DB vs stubs, etc.)

@@ -37,6 +37,7 @@ TDD is the fundamental practice. Every line of production code must be written i
 
 ### REFACTOR: Assess Improvements
 - Assess AFTER mutation testing confirms test strength
+- Load the `refactoring` skill before deciding what, if anything, to restructure
 - Commit before refactoring
 - All tests must pass after refactoring
 
