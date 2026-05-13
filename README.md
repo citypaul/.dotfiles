@@ -183,6 +183,18 @@ Skills are **auto-discovered** by Claude when relevant:
 - Building a UI? → `impeccable` skill loads design methodology and anti-slop patterns
 - Stress-testing a plan or design? → `grill-me` asks one question at a time and recommends answers
 
+### Scope-to-Implementation Flow
+
+For product work, the skills fit together like this:
+
+1. **`story-splitting`** — turn a broad story, epic, feature, or backlog item into independently valuable child stories.
+2. **`planning`** — turn the selected child story or narrow capability into PR-sized implementation slices in `plans/`.
+3. **`storyboard`** — when UX spans multiple surfaces, create the visual review artifact that reveals missing mocks and flow gaps.
+4. **`find-gaps`** — tighten plans, acceptance criteria, and mocks; if it finds horizontal/component slices, go back to `story-splitting`.
+5. **`tdd` + `testing` + `mutation-testing` + `refactoring`** — execute each approved slice in a known-good state.
+
+Use `grill-me` at any point when the decision tree itself needs pressure-testing before the artifact is ready to split, plan, or implement.
+
 **No manual invocation needed** - Claude detects when skills apply. Impeccable steering commands (`/shape`, `/critique`, `/polish`, etc.) can also be invoked directly, and you can explicitly ask to be "grilled" on a plan when you want a deeper interview.
 
 ---

@@ -20,6 +20,18 @@ This skill is based on Tim Ottinger's [Splitting Stories - A Resource Listicle](
 | `pattern-catalog.md` | You need more splitting prompts, SPIDR/Hamburger/Humanizing Work/Bill Wake pattern details, or examples for a stubborn story |
 | `source-notes.md` | You need source provenance, want to teach the concepts, or need to explain how the article/resource-list ideas shaped the skill |
 
+## How This Fits With Other Skills
+
+Use `story-splitting` **before** `planning` when the input is a large story, epic, feature idea, roadmap item, or backlog item. This skill discovers small valuable child stories. The `planning` skill then sequences selected child stories into PR-sized slices with TDD execution details.
+
+Use `find-gaps` **after** a split or plan exists when you need to tighten missing states, acceptance criteria, edge cases, or unverifiable language. If `find-gaps` discovers that the plan is still horizontal or too large, return here and split again.
+
+Use `grill-me` when the issue is unresolved product or design decision-making rather than splitting mechanics; its one-question-at-a-time interview can clarify the decision tree before or after this skill proposes slices.
+
+Use `storyboard` when the work spans multiple UX surfaces or mock states; the storyboard can reveal missing screens and flow gaps that become child stories. Use design skills such as `shape`, `critique`, and `polish` to improve the mocks themselves, not to replace product slicing.
+
+During implementation, use `tdd`, `testing`, `mutation-testing`, and `refactoring` per slice. Use `finding-seams` and `characterisation-tests` when a slice touches legacy code that cannot yet be tested safely. Use domain and architecture skills (`domain-driven-design`, `hexagonal-architecture`, `api-design`, `cli-design`, `twelve-factor`, `production-parity-skill-builder`) to keep each slice coherent; do not split stories by those technical layers.
+
 ## Core Principles
 
 ### Stories Are Conversations, Not Requirements
@@ -194,7 +206,7 @@ Red flags:
 
 ## Output Format
 
-When asked to split a story, return a compact artifact:
+When asked to split a story, return a compact artifact that can feed directly into `planning`:
 
 ```markdown
 ## Parent
@@ -215,6 +227,9 @@ Why this first: [value, risk, learning, or bargain]
 
 ## Warnings
 [Component splits, unsafe deferrals, unclear ownership, or missing examples]
+
+## Next Step
+[Usually: load `planning` for the selected first slice, run `find-gaps` on the split, or ask one decision question]
 ```
 
 If the user wants an interactive refinement session, ask one high-value question at a time rather than dumping a questionnaire. Start with the question that most changes the split: usually actor, outcome, release constraint, highest-value customer segment, or biggest risk.

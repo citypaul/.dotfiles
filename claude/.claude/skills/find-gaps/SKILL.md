@@ -1,6 +1,6 @@
 ---
 name: find-gaps
-description: Adversarially review plans, acceptance criteria, and design mocks to surface missing states, unhandled edge cases, unstated assumptions, and unverifiable criteria — then work interactively with the user, one question at a time, to turn each gap into a new acceptance criterion, plan update, or mock-state spec. Use when reviewing a spec/plan/mocks before coding, when the user says "what's missing?" / "find gaps" / "poke holes" / "help me tighten this", or when a hand-off artifact needs to reach a testable state.
+description: Adversarially review plans, acceptance criteria, and design mocks to surface missing states, unhandled edge cases, unstated assumptions, unverifiable criteria, and plan slices that are still too broad or horizontal — then work interactively with the user, one question at a time, to turn each gap into a new acceptance criterion, plan update, mock-state spec, or recommendation to use story-splitting. Use when reviewing a spec/plan/mocks before coding, when the user says "what's missing?" / "find gaps" / "poke holes" / "help me tighten this", or when a hand-off artifact needs to reach a testable state.
 ---
 
 # Find Gaps
@@ -20,6 +20,7 @@ Use this skill when the user:
 - Is doing a pre-mortem
 
 Pair with `storyboard` when reviewing multiple mocks together — storyboard gives the single-page view, this skill finds what's *missing* across them.
+Pair with `story-splitting` when a plan, spec, or backlog item is too large, horizontal, component-split, or not yet expressed as independently valuable child stories.
 Pair with `characterisation-tests` when the "gap" is behavior of existing code that nobody wrote down.
 
 ## Core Principles
@@ -109,7 +110,7 @@ Walk these end-to-end per artifact. Don't skip categories because "that probably
 
 - **Scope & intent:** out-of-scope stated? one-sentence problem statement? success metric + baseline? cost of doing nothing?
 - **Prerequisites & dependencies:** what must already exist/be true? which other teams must ship first? cross-cutting migrations?
-- **Sequencing & incremental value:** can this ship in slices? smallest valuable first slice? rollback path per slice? dark-launch / feature flag / canary?
+- **Sequencing & incremental value:** can this ship in slices? smallest valuable first slice? rollback path per slice? dark-launch / feature flag / canary? any database-only/API-only/UI-only component slices that should go back through `story-splitting`?
 - **Failure & recovery:** top 3 prod failure modes? detection (named dashboards/alerts) per mode? recovery (runbook, auto-retry, rollback)? data-loss blast radius?
 - **State & data:** finite state model per entity? concurrent-modification handling? idempotency? backfill/migration plan? retention / deletion / GDPR?
 - **Observability & ops:** what do we log/emit to know this works in prod? on-call owner? runbook link? SLOs / error budgets?

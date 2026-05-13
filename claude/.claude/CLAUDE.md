@@ -93,8 +93,8 @@ For detailed patterns and examples, load the `functional` skill.
 - Each increment leaves codebase in working state
 For detailed TDD workflow, load the `tdd` skill.
 For refactoring methodology, load the `refactoring` skill.
-For significant work, load the `planning` skill. Plans live in `plans/` directory.
-For splitting large stories, epics, features, or backlog items into vertical user-value slices, load the `story-splitting` skill.
+For broad stories, epics, features, or backlog items, load the `story-splitting` skill before planning.
+For significant implementation work, load the `planning` skill to turn selected slices into PR-sized plans in `plans/`.
 For CI failure diagnosis, load the `ci-debugging` skill.
 For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.

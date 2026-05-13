@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Planning work as vertical slices in small, known-good increments. Use when starting significant work, slicing features, planning PRs, or breaking down complex tasks.
+description: Planning work as vertical slices in small, known-good increments. Use when starting significant work, turning already-split stories into PR-sized implementation plans, planning PRs, or sequencing complex tasks. If the input is a broad story, epic, feature idea, or backlog item that still needs product slicing, use story-splitting first.
 ---
 
 # Planning in Vertical Slices
@@ -10,6 +10,14 @@ description: Planning work as vertical slices in small, known-good increments. U
 Horizontal work is allowed only when it explicitly unblocks the next vertical slice and is independently verifiable.
 
 Use the `/plan` command to create plans. Use the `/continue` command to resume work after a merged PR.
+
+## Relationship To Story Splitting
+
+`story-splitting` decides **what small user-value stories exist**. `planning` decides **how to implement selected stories safely**.
+
+Use `story-splitting` before this skill when the request is still an epic, large story, feature idea, roadmap item, or backlog item with multiple possible customer outcomes. Once a child story or narrow capability has been selected, use this skill to turn it into a `plans/<feature>.md` file with PR-sized slices, acceptance criteria, and TDD execution steps.
+
+If a plan starts producing database-only, API-only, UI-only, or "do all plumbing first" slices, pause and return to `story-splitting` unless the horizontal work explicitly unlocks the next vertical slice and has independent verification.
 
 ## Plans Directory
 
@@ -59,6 +67,7 @@ Before writing plan slices:
 5. **Check reversibility** — each slice should be easy to revert or disable without undoing unrelated work.
 
 Ask "what is the smallest real behavior we can ship?" before asking "what files need to change?"
+If the answer still contains multiple customer outcomes, roles, workflow branches, or quality levels, load `story-splitting` and split the parent before writing the plan.
 
 ## Horizontal Work Exceptions
 
