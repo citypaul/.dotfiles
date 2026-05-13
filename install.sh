@@ -25,5 +25,6 @@ git gtr completion zsh >~/.zsh_autocomplete/_git-gtr
 move_with_backup ~/.zshrc
 
 move_with_backup "$HOME/Library/Application Support/com.mitchellh.ghostty/config"
+move_with_backup "$HOME/.config/opencode/opencode.json"
 
-stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner ghostty claude
+stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner ghostty claude opencode
