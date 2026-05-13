@@ -1,6 +1,6 @@
 ---
 name: find-gaps
-description: Adversarially review plans, acceptance criteria, and design mocks to surface missing states, unhandled edge cases, unstated assumptions, unverifiable criteria, and plan slices that are still too broad or horizontal — then work interactively with the user, one question at a time, to turn each gap into a new acceptance criterion, plan update, mock-state spec, or recommendation to use story-splitting. Use when reviewing a spec/plan/mocks before coding, when the user says "what's missing?" / "find gaps" / "poke holes" / "help me tighten this", or when a hand-off artifact needs to reach a testable state.
+description: Adversarially review written stories, plans, acceptance criteria, specs, and design mocks to surface missing states, unhandled edge cases, unstated assumptions, unverifiable criteria, and slices that are still too broad or horizontal — then work interactively with the user, one question at a time, to turn each gap into a new acceptance criterion, plan update, mock-state spec, or recommendation to use story-splitting. Use when an existing artifact needs tightening before planning or coding.
 ---
 
 # Find Gaps
@@ -20,8 +20,21 @@ Use this skill when the user:
 - Is doing a pre-mortem
 
 Pair with `storyboard` when reviewing multiple mocks together — storyboard gives the single-page view, this skill finds what's *missing* across them.
-Pair with `story-splitting` when a plan, spec, or backlog item is too large, horizontal, component-split, or not yet expressed as independently valuable child stories.
+Pair with `story-splitting` when a story, plan, spec, or backlog item is too large, horizontal, component-split, or not yet expressed as independently valuable child stories.
 Pair with `characterisation-tests` when the "gap" is behavior of existing code that nobody wrote down.
+
+## Boundary With Nearby Skills
+
+`find-gaps` needs an artifact to inspect. It does not discover the whole decision tree from scratch and it does not split broad work into child stories.
+
+| Need | Use | Why |
+|------|-----|-----|
+| Pressure-test unresolved product or design decisions | `grill-me` | It interviews the decision tree and recommends answers |
+| Break broad work into independently valuable child stories | `story-splitting` | It creates product/backlog stories, not implementation tasks |
+| Tighten a written story, plan, AC set, or mock spec | `find-gaps` | It finds missing states, edge cases, roles, constraints, and unverifiable wording, then writes confirmed decisions back |
+| Sequence a selected child story into PR-sized work | `planning` | It owns implementation slices and the TDD execution plan |
+
+If the artifact is not yet written down, first use `grill-me` or `story-splitting`. If this review discovers the artifact is actually multiple stories tangled together, stop and route back to `story-splitting`. If the artifact is clear enough to implement, route forward to `planning`.
 
 ## Core Principles
 

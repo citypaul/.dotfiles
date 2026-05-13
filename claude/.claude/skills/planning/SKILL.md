@@ -19,6 +19,15 @@ Use `story-splitting` before this skill when the request is still an epic, large
 
 If a plan starts producing database-only, API-only, UI-only, or "do all plumbing first" slices, pause and return to `story-splitting` unless the horizontal work explicitly unlocks the next vertical slice and has independent verification.
 
+Use `grill-me` before planning when the selected story still contains unresolved product or design decisions. Use `find-gaps` before or after drafting the plan when acceptance criteria, failure modes, roles, states, or release constraints are missing or unverifiable.
+
+| Input state | Use | Output |
+|-------------|-----|--------|
+| Fuzzy decision tree | `grill-me` | Resolved decisions or named open questions |
+| Broad requirement with multiple outcomes | `story-splitting` | Child stories |
+| Existing story/plan/AC/mocks with holes | `find-gaps` | Confirmed artifact updates |
+| Selected child story ready for delivery sequencing | `planning` | PR-sized implementation slices |
+
 ## Plans Directory
 
 Plans live in `plans/` at the project root. Each plan is a self-contained file named descriptively (e.g., `plans/gift-tracking.md`, `plans/email-validation.md`).
@@ -114,10 +123,16 @@ A slice is the unit of planning and review — one PR. Within a slice, TDD incre
 
 ## TDD Integration
 
-**Every slice follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR.** See `tdd` skill for the workflow, `testing` skill for factory patterns.
+**Every slice follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR.** Before any implementation work for a slice, load `tdd`, `testing`, `mutation-testing`, and `refactoring`. This section is a routing contract, not a replacement for those skills.
 
 ```
 FOR EACH SLICE:
+    │
+    ├─► LOAD: Required implementation skills
+    │   - `tdd` for RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR workflow
+    │   - `testing` for behavior-driven tests and factories
+    │   - `mutation-testing` for mutator-aware planning and verification
+    │   - `refactoring` for the final refactor assessment
     │
     ├─► CONFIRM: Present acceptance criteria for this slice
     │   - Human must approve criteria before any code is written
@@ -207,6 +222,7 @@ Read the project's CLAUDE.md and testing rules before writing slices.
 
 **Value**: [Who gets what value?]
 **Path**: [Entry point -> business path -> state/output -> observability. Name any intentionally skipped states.]
+**Required implementation skills**: Before code changes, load `tdd`, `testing`, `mutation-testing`, and `refactoring` (plus UI/domain/architecture skills when relevant).
 **Acceptance criteria**: [What observable behaviour proves this slice is done? Be specific — "user sees X", "API returns Y", "test covers Z". Vague criteria like "it works" are not acceptable. **Present to human and get confirmation before writing any code.**]
 **RED**: What failing test will we write? (Describes expected behaviour, not implementation. Include likely mutator gaps from the `mutation-testing` skill's `resources/mutator-rules.md` resource.)
 **GREEN**: What minimum code makes the test pass?
@@ -219,6 +235,7 @@ Read the project's CLAUDE.md and testing rules before writing slices.
 
 **Value**: ...
 **Path**: ...
+**Required implementation skills**: ...
 **Acceptance criteria**: ...
 **RED**: ...
 **GREEN**: ...
@@ -295,6 +312,7 @@ START FEATURE
 │
 │   FOR EACH SLICE:
 │   │
+│   ├─► LOAD: `tdd` + `testing` + `mutation-testing` + `refactoring`
 │   ├─► CONFIRM: Present acceptance criteria, **wait for human approval**
 │   ├─► RED: Failing test
 │   ├─► GREEN: Make it pass

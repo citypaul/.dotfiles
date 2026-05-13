@@ -59,7 +59,7 @@ PRE-PR QUALITY GATE:
     └─► Re-run mutation testing for the branch/repo scope
 ```
 
-Mutation testing is not a replacement for RED-GREEN-REFACTOR. It verifies the tests created during those increments are strong enough to catch real behavioral regressions before refactoring and before PR.
+Mutation testing is not a replacement for RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. It verifies the tests created during those increments are strong enough to catch real behavioral regressions before refactoring and before PR.
 
 ---
 

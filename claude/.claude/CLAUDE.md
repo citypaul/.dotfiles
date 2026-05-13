@@ -92,9 +92,12 @@ For detailed patterns and examples, load the `functional` skill.
 - **Wait for commit approval** before every commit
 - Each increment leaves codebase in working state
 For detailed TDD workflow, load the `tdd` skill.
+For implementation of any planned slice, load `tdd`, `testing`, `mutation-testing`, and `refactoring` before code changes begin.
 For refactoring methodology, load the `refactoring` skill.
-For broad stories, epics, features, or backlog items, load the `story-splitting` skill before planning.
-For significant implementation work, load the `planning` skill to turn selected slices into PR-sized plans in `plans/`.
+For fuzzy product/design decisions, load `grill-me` to pressure-test the decision tree before writing stories or plans.
+For broad stories, epics, features, or backlog items, load `story-splitting` to create child stories before planning.
+For tightening an existing story, plan, acceptance criteria set, or mock spec, load `find-gaps` to write confirmed answers back into the artifact.
+For significant implementation work, load `planning` to turn one selected child story or narrow capability into PR-sized plans in `plans/`.
 For CI failure diagnosis, load the `ci-debugging` skill.
 For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.
@@ -105,8 +108,8 @@ For documenting existing behavior before changes, load the `characterisation-tes
 For multi-surface design audits before code (embed every mock in a scope on one reviewable page with flow diagram + gap cards + per-mock audit checklists), load the `storyboard` skill.
 For structured learning of any topic (interactive tutoring, courses, quizzes), use `/teach-me [topic]`.
 For discovering and installing agent skills from the open ecosystem (`npx skills`), load the `find-skills` skill.
-For adversarial review of plans, acceptance criteria, or design mocks — one question at a time, turning each answer into a new AC / plan paragraph / mock-state spec written back to the source of truth — load the `find-gaps` skill.
-For relentless plan or design interrogation before implementation — one question at a time, with recommended answers and codebase exploration where useful — load the `grill-me` skill.
+For adversarial review of plans, acceptance criteria, stories, or design mocks — one question at a time, turning each answer into a new AC / plan paragraph / mock-state spec written back to the source of truth — load the `find-gaps` skill.
+For relentless decision-tree interrogation before story splitting, planning, or implementation — one question at a time, with recommended answers and codebase exploration where useful — load the `grill-me` skill.
 
 **Project onboarding:** Run `/setup` in any new project to detect its tech stack and generate project-level CLAUDE.md, hooks, commands, and PR review agent in one shot. This replaces the need for `/init`.
 

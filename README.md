@@ -83,8 +83,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
-| **Planning** | Vertical slices, known-good increments, commit approval, prefer small PRs | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
-| **Story Splitting** | Split large stories, epics, features, and backlog items into small end-to-end user-value slices; based on Tim Ottinger's story-splitting resource list and linked articles | [→ skills/story-splitting](claude/.claude/skills/story-splitting/SKILL.md) |
+| **Planning** | Turn a selected child story or narrow capability into PR-sized implementation slices with acceptance criteria and the required TDD skill cycle | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
+| **Story Splitting** | Turn broad stories, epics, features, and backlog items into independently valuable child stories; based on Tim Ottinger's story-splitting resource list and linked articles | [→ skills/story-splitting](claude/.claude/skills/story-splitting/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Production Parity Skill Builder** | Creates app-specific skills that inspect docs, code, tests, CI, deployment, infrastructure, config, auth, and environment setup to catch drift between production and non-production environments | [→ skills/production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) |
 | **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 5 deep-dive resources | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
@@ -99,8 +99,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Teach Me** | Evidence-based private tutor for any topic. Discovery interview, structured learning plans, Socratic questioning, Bloom's Taxonomy progression, spaced repetition, confidence calibration, course generation. 4 deep-dive resources. Invoked via `/teach-me [topic]` | [→ skills/teach-me](claude/.claude/skills/teach-me/SKILL.md) |
 | **Diagrams** | Create diagrams in Markdown using Mermaid, Graphviz, Vega-Lite, PlantUML, JSON Canvas, infographics, info cards, architecture diagrams. Decision guide picks the right tool; 8 per-tool references. Vendored from [markdown-viewer/skills](https://github.com/markdown-viewer/skills) under MIT | [→ skills/diagrams](claude/.claude/skills/diagrams/SKILL.md) |
 | **Find Skills** | Discovers and installs skills from the open agent skills ecosystem (`npx skills`, [skills.sh](https://skills.sh/)). Activates on "how do I do X" / "find a skill for X". Verifies install count, source reputation, and GitHub stars before recommending. Vendored from [vercel-labs/skills](https://github.com/vercel-labs/skills) under MIT | [→ skills/find-skills](claude/.claude/skills/find-skills/SKILL.md) |
-| **Find Gaps** | Conversational pre-implementation review for plans, acceptance criteria, and design mocks. Surveys the artifact with a per-type checklist, then walks you through gaps **one question at a time**, turning each answer into a new AC (Given/When/Then), plan paragraph, or mock-state spec written back to the source of truth. Output is the tightened artifact, not a gap report. Pairs with `storyboard` for multi-mock audits | [→ skills/find-gaps](claude/.claude/skills/find-gaps/SKILL.md) |
-| **Grill Me** | Relentless one-question-at-a-time plan and design interviews. Stress-tests decisions branch-by-branch, explores the codebase when it can answer questions directly, and recommends an answer for each unresolved question | [→ skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) |
+| **Find Gaps** | Conversational pre-implementation review for written stories, plans, acceptance criteria, specs, and design mocks. Surveys the artifact with a per-type checklist, then walks you through gaps **one question at a time**, turning each answer into a new AC (Given/When/Then), plan paragraph, or mock-state spec written back to the source of truth. Output is the tightened artifact, not a gap report. Pairs with `storyboard` for multi-mock audits | [→ skills/find-gaps](claude/.claude/skills/find-gaps/SKILL.md) |
+| **Grill Me** | Relentless one-question-at-a-time decision-tree interviews before story splitting, planning, or implementation. Stress-tests decisions branch-by-branch, explores the codebase when it can answer questions directly, and recommends an answer for each unresolved question | [→ skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -132,8 +132,10 @@ Unlike typical style guides, CLAUDE.md provides:
 | Accidental mutations breaking things | [functional](claude/.claude/skills/functional/SKILL.md) | Complete immutability violations catalog |
 | Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
 | Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
-| Planning significant work | [planning](claude/.claude/skills/planning/SKILL.md) | Vertical slices through the real production path, commit approval |
-| Splitting a big story or epic | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Preserve end-to-end customer value while shrinking variation, risk, and scope |
+| Requirement is still fuzzy or decision-heavy | [grill-me](https://skills.sh/mattpocock/skills/grill-me) | Pressure-test the decision tree one question at a time before writing stories or plans |
+| Turning a broad requirement into stories | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Produce independently valuable child stories with scope, deferrals, and acceptance examples |
+| Planning significant implementation work | [planning](claude/.claude/skills/planning/SKILL.md) | Turn one selected child story into PR-sized implementation slices with commit approval |
+| Tightening a story, plan, AC set, or mock | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Find missing decisions and write confirmed answers back into the artifact |
 | Backlog items keep turning into frontend/backend tickets | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Reject component stories; split by capability, path, interface, data, rules, quality, or learning |
 | CI pipeline keeps failing | [ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) | Every failure is real until proven otherwise, hypothesis-first diagnosis |
 | Local, CI, PR, or staging differs from production | [production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) | Generate an app-specific parity skill that inspects source, infra, config, and auth before asking targeted questions |
@@ -185,15 +187,19 @@ Skills are **auto-discovered** by Claude when relevant:
 
 ### Scope-to-Implementation Flow
 
-For product work, the skills fit together like this:
+For product work, the skills form a requirements-to-code pipeline. Each skill owns a different question and produces a different artifact:
 
-1. **`story-splitting`** — turn a broad story, epic, feature, or backlog item into independently valuable child stories.
-2. **`planning`** — turn the selected child story or narrow capability into PR-sized implementation slices in `plans/`.
-3. **`storyboard`** — when UX spans multiple surfaces, create the visual review artifact that reveals missing mocks and flow gaps.
-4. **`find-gaps`** — tighten plans, acceptance criteria, and mocks; if it finds horizontal/component slices, go back to `story-splitting`.
-5. **`tdd` + `testing` + `mutation-testing` + `refactoring`** — execute each approved slice in a known-good state.
+| Stage | Question | Skill | Output |
+|-------|----------|-------|--------|
+| 1. Decide | Do we understand the product/design decision tree? | `grill-me` | Resolved decisions, recommended answers, and remaining open questions |
+| 2. Split | What independently valuable child stories exist? | `story-splitting` | Child stories with value, scope, deferrals, acceptance examples, and release constraints |
+| 3. Tighten | What is missing, ambiguous, unverifiable, or unsafe? | `find-gaps` | Confirmed artifact updates: AC, plan paragraphs, mock-state specs, or a return to `story-splitting` |
+| 4. Plan | How do we implement the selected child story safely? | `planning` | PR-sized implementation slices in `plans/` |
+| 5. Build | How do we change code without outrunning tests? | `tdd` + `testing` + `mutation-testing` + `refactoring` | RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR in a known-good state |
 
-Use `grill-me` at any point when the decision tree itself needs pressure-testing before the artifact is ready to split, plan, or implement.
+Use the earliest stage that matches the uncertainty. Skip `grill-me` when the decision is already clear. Skip `story-splitting` for tiny or already-narrow work. Use `find-gaps` only once there is an artifact to inspect. Use `planning` only after one child story or narrow capability has been selected for implementation.
+
+`storyboard` fits between Split and Tighten when UX spans multiple surfaces: it creates the visual artifact; `find-gaps` then reviews missing states and flow gaps.
 
 **No manual invocation needed** - Claude detects when skills apply. Impeccable steering commands (`/shape`, `/critique`, `/polish`, etc.) can also be invoked directly, and you can explicitly ask to be "grilled" on a plan when you want a deeper interview.
 
@@ -1251,24 +1257,26 @@ This is the full lifecycle for working on a feature, from project setup through 
 #### Phase 3: Implement (repeat for each slice in the plan)
 
 ```
+LOAD         →  Load tdd + testing + mutation-testing + refactoring before code changes
 RED          →  Write a failing test (tdd-guardian verifies test-first)
 GREEN        →  Write minimum code to pass (ts-enforcer checks type safety)
 MUTATE       →  Run mutation testing, produce report (mutation-testing skill)
 KILL MUTANTS →  Address surviving mutants (ask human when ambiguous)
-REFACTOR     →  Assess improvements (refactor-scan identifies opportunities)
+REFACTOR     →  Assess improvements (refactoring skill + refactor-scan)
 COMMIT       →  Wait for approval, then commit
 ```
 
-**Why this order:** Mutation testing comes *before* refactoring so you restructure code with verified test strength, not assumed test strength. The cycle is enforced by agents, not willpower. `tdd-guardian` catches tests written after code, `ts-enforcer` catches type safety violations, mutation testing verifies tests catch real bugs, and `refactor-scan` only runs after MUTATE — you refactor with confidence that your tests are strong. Each cycle produces one small, reviewable commit.
+**Why this order:** The implementation skills are loaded first so the agent has the full workflow, test-writing patterns, mutation rules, and refactoring rubric in context before touching code. Mutation testing comes *before* refactoring so you restructure code with verified test strength, not assumed test strength. The cycle is enforced by skills and agents, not willpower. `tdd-guardian` catches tests written after code, `ts-enforcer` catches type safety violations, mutation testing verifies tests catch real bugs, and `refactor-scan` only runs after MUTATE — you refactor with confidence that your tests are strong. Each cycle produces one small, reviewable commit.
 
 #### Phase 4: Pre-PR Quality Gate
 
 Before creating any PR, run these checks in order:
 
 ```
-1. mutation-testing  →  Verify tests actually detect changes (kill surviving mutants)
-2. refactor-scan     →  Assess refactoring opportunities (only if adds value)
-3. /pr               →  Runs typecheck + lint + test + build, then creates PR
+1. skill routing     →  Verify tdd + testing + mutation-testing + refactoring were loaded
+2. mutation-testing  →  Verify tests actually detect changes (kill surviving mutants)
+3. refactoring       →  Assess refactoring opportunities (only if adds value)
+4. /pr               →  Runs typecheck + lint + test + build, then creates PR
 ```
 
 **Why mutation testing before the PR:** 100% code coverage doesn't mean your tests are good — it just means the code ran. Mutation testing verifies your tests would actually catch bugs. Running `refactor-scan` after ensures you're not shipping code you already know could be cleaner.

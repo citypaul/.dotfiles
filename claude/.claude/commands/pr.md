@@ -13,10 +13,12 @@ Changes summary:
 
 Before creating the PR, verify each of these has been completed:
 
-1. **Mutation testing** — The `mutation-testing` skill has been run. All surviving mutants are killed or justified as equivalent mutants.
-2. **Refactoring assessment** — The `refactoring` skill has been run. Any valuable refactoring has been committed separately.
-3. **Typecheck and lint pass** — The project's typecheck and lint commands pass with zero errors.
-4. **DDD glossary check** (if project uses DDD) — All new/changed types, functions, and test names conform to the project's DDD glossary.
+1. **Implementation skill routing** — For each implemented slice, `tdd`, `testing`, `mutation-testing`, and `refactoring` were loaded before code changes began.
+2. **TDD evidence** — RED happened before GREEN; every production change was demanded by a failing behavior test.
+3. **Mutation testing** — The `mutation-testing` skill has been run. All surviving mutants are killed or justified as equivalent mutants.
+4. **Refactoring assessment** — The `refactoring` skill has been run. Any valuable refactoring has been committed separately.
+5. **Typecheck and lint pass** — The project's typecheck and lint commands pass with zero errors.
+6. **DDD glossary check** (if project uses DDD) — All new/changed types, functions, and test names conform to the project's DDD glossary.
 
 If any step has not been completed, run it now before creating the PR.
 
