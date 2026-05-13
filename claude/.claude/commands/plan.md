@@ -16,9 +16,11 @@ Create a vertical-slice plan for the requested work:
 
 1. If on main, create a new feature branch first
 2. Explore the codebase to understand the relevant areas
-3. If the request is still a large story, epic, broad feature idea, or backlog item, use the `story-splitting` skill first to identify independently valuable child stories
-4. Write the plan to `plans/<feature-name>.md` (create the directory if needed)
-5. Create a PR with the plan for review
+3. If the request has unresolved product or design decisions, use `grill-me` before writing stories or plans
+4. If the request is still a large story, epic, broad feature idea, or backlog item, use the `story-splitting` skill first to identify independently valuable child stories
+5. If the selected story, acceptance criteria, or mocks are ambiguous, use `find-gaps` to tighten the artifact before finalizing the plan
+6. Write the plan to `plans/<feature-name>.md` (create the directory if needed)
+7. Create a PR with the plan for review
 
 ## Plan File Structure
 

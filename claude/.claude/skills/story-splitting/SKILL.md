@@ -1,6 +1,6 @@
 ---
 name: story-splitting
-description: Split large stories, epics, features, initiatives, or backlog items into small end-to-end user-value slices without turning them into technical component tasks. Use when refining a backlog, slicing stories, decomposing epics, planning an MVP or walking skeleton, looking for vertical slices, reducing story size, applying SPIDR/Hamburger/capability slicing, avoiding scatter-gather/component stories, or deciding the first valuable slice of product work.
+description: Turn broad requirements, large stories, epics, features, initiatives, or backlog items into small end-to-end child stories without turning them into technical component tasks. Use when refining a backlog, decomposing epics, planning an MVP or walking skeleton, looking for vertical slices, reducing story size, applying SPIDR/Hamburger/capability slicing, avoiding scatter-gather/component stories, or deciding the first valuable story before implementation planning.
 ---
 
 # Story Splitting
@@ -22,7 +22,7 @@ This skill is based on Tim Ottinger's [Splitting Stories - A Resource Listicle](
 
 ## How This Fits With Other Skills
 
-Use `story-splitting` **before** `planning` when the input is a large story, epic, feature idea, roadmap item, or backlog item. This skill discovers small valuable child stories. The `planning` skill then sequences selected child stories into PR-sized slices with TDD execution details.
+Use `story-splitting` **before** `planning` when the input is a large story, epic, feature idea, roadmap item, or backlog item. This skill discovers small valuable child stories. The `planning` skill then sequences one selected child story into PR-sized implementation slices with TDD execution details.
 
 Use `find-gaps` **after** a split or plan exists when you need to tighten missing states, acceptance criteria, edge cases, or unverifiable language. If `find-gaps` discovers that the plan is still horizontal or too large, return here and split again.
 
@@ -31,6 +31,19 @@ Use `grill-me` when the issue is unresolved product or design decision-making ra
 Use `storyboard` when the work spans multiple UX surfaces or mock states; the storyboard can reveal missing screens and flow gaps that become child stories. Use design skills such as `shape`, `critique`, and `polish` to improve the mocks themselves, not to replace product slicing.
 
 This skill must not drive implementation directly. When a selected child story is ready to implement, load `planning` first. Before any code changes for a planned slice, load the full implementation cycle: `tdd`, `testing`, `mutation-testing`, and `refactoring`. Treat this as a mandatory handoff, not a reminder. Use `finding-seams` and `characterisation-tests` when a slice touches legacy code that cannot yet be tested safely. Use domain and architecture skills (`domain-driven-design`, `hexagonal-architecture`, `api-design`, `cli-design`, `twelve-factor`, `production-parity-skill-builder`) to keep each slice coherent; do not split stories by those technical layers.
+
+## Requirement Refinement Pipeline
+
+Use the earliest skill that matches the uncertainty:
+
+| If the problem is... | Use... | Stop when you have... |
+|----------------------|--------|------------------------|
+| "We don't know which decision branch is right." | `grill-me` | A resolved decision tree or a named open decision |
+| "This requirement is too broad or solution-shaped." | `story-splitting` | Independently valuable child stories |
+| "This story/spec/plan/mock has holes." | `find-gaps` | Confirmed artifact updates with testable wording |
+| "We selected a child story and need to build it." | `planning` | PR-sized implementation slices |
+
+Do not use `story-splitting` to interrogate every product decision from scratch; use `grill-me` when the decision tree is the real work. Do not use `story-splitting` to produce implementation tasks; use `planning` after a child story is selected. Do not use `find-gaps` before there is an artifact to inspect; use it to harden a split, plan, AC set, or mock spec.
 
 ## Core Principles
 

@@ -19,6 +19,15 @@ Use `story-splitting` before this skill when the request is still an epic, large
 
 If a plan starts producing database-only, API-only, UI-only, or "do all plumbing first" slices, pause and return to `story-splitting` unless the horizontal work explicitly unlocks the next vertical slice and has independent verification.
 
+Use `grill-me` before planning when the selected story still contains unresolved product or design decisions. Use `find-gaps` before or after drafting the plan when acceptance criteria, failure modes, roles, states, or release constraints are missing or unverifiable.
+
+| Input state | Use | Output |
+|-------------|-----|--------|
+| Fuzzy decision tree | `grill-me` | Resolved decisions or named open questions |
+| Broad requirement with multiple outcomes | `story-splitting` | Child stories |
+| Existing story/plan/AC/mocks with holes | `find-gaps` | Confirmed artifact updates |
+| Selected child story ready for delivery sequencing | `planning` | PR-sized implementation slices |
+
 ## Plans Directory
 
 Plans live in `plans/` at the project root. Each plan is a self-contained file named descriptively (e.g., `plans/gift-tracking.md`, `plans/email-validation.md`).
