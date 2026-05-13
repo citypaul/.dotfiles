@@ -1,12 +1,5 @@
 # Changelog
 
-## Unreleased
-
-### Patch Changes
-
-- Clarify the requirements-to-code skill pipeline so consumers can choose between `grill-me`, `story-splitting`, `find-gaps`, `planning`, and the TDD execution skills.
-- Enforce loading `tdd`, `testing`, `mutation-testing`, and `refactoring` before implementing planned slices.
-
 ## 3.30.0
 
 ### Minor Changes
