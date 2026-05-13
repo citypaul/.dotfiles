@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.30.0
+
+### Minor Changes
+
+- 33cc791: Add a `story-splitting` skill for breaking large stories, epics, features, and backlog items into small end-to-end user-value slices.
+
+  The skill synthesizes Tim Ottinger's story-splitting resource list and linked articles, with on-demand resources for the detailed pattern catalog and source notes.
+
 ## 3.29.1
 
 ### Patch Changes
