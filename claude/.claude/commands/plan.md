@@ -16,8 +16,9 @@ Create a vertical-slice plan for the requested work:
 
 1. If on main, create a new feature branch first
 2. Explore the codebase to understand the relevant areas
-3. Write the plan to `plans/<feature-name>.md` (create the directory if needed)
-4. Create a PR with the plan for review
+3. If the request is still a large story, epic, broad feature idea, or backlog item, use the `story-splitting` skill first to identify independently valuable child stories
+4. Write the plan to `plans/<feature-name>.md` (create the directory if needed)
+5. Create a PR with the plan for review
 
 ## Plan File Structure
 
@@ -80,7 +81,7 @@ Before each PR:
 - Write the plan to a file, never present it inline in chat
 - **Prefer vertical slices** — break work into the smallest independently mergeable units that deliver observable value through the real production path.
 - **Avoid layer-cake plans** — database-only, API-only, UI-only, and "do all plumbing first" work is allowed only when it names the next vertical slice it unlocks and has independent verification.
-- Each slice in the plan must be small enough for a single commit
+- Each slice in the plan must be small enough for a single PR. A slice may contain multiple TDD commits, but it must be reviewable and mergeable as one coherent unit.
 - **TDD is mandatory** — every slice must specify the failing test first (RED), then the minimum implementation (GREEN), then mutation testing to verify test effectiveness, then kill surviving mutants, then refactoring assessment. No exceptions.
 - **Test behaviour, not implementation** — acceptance criteria and test descriptions must describe observable outcomes (what the user sees, what the API returns), never internal details (what function was called, what query was run)
 - **Read project testing rules** — before writing slices, read the project's CLAUDE.md and any testing guidelines to ensure tests follow the project's conventions (factories, MSW vs mocks, real DB vs stubs, etc.)

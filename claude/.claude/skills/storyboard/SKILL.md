@@ -185,7 +185,9 @@ User says `/storyboard <scope>` or asks one of the trigger phrases (see frontmat
 ## Related skills
 
 - **`impeccable`** family (`/shape`, `/critique`, `/layout`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/harden`, `/distill`) — the skill's audit checklists reference these; the gap-mock production step runs them.
-- **`planning`** — plans live at project root; the storyboard artifact supplements the plan's decision record.
+- **`story-splitting`** — use when the storyboard reveals the feature is too broad or needs to be split by flow, role, state, interface, data, rule, or quality level before implementation.
+- **`planning`** — plans live at project root; the storyboard artifact supplements the plan's decision record after the scope has been split into implementable slices.
+- **`find-gaps`** — use after the storyboard exists to turn missing states, unanswered brainstorm questions, and unclear transitions into concrete acceptance criteria or mock-state specs.
 - **`expectations`** — after the storyboard audit surfaces learnings worth preserving, capture them into CLAUDE.md / ADRs.
 
 ## Quick Reference
