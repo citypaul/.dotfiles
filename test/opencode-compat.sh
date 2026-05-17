@@ -15,6 +15,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 AGENTS_DIR="$REPO_ROOT/claude/.claude/agents"
 COMMANDS_DIR="$REPO_ROOT/claude/.claude/commands"
+OPENCODE_CONFIG="$REPO_ROOT/opencode/.config/opencode/opencode.json"
+INSTALL_SCRIPT="$REPO_ROOT/install.sh"
 TMPDIR=$(mktemp -d)
 FAILURES=0
 
@@ -90,6 +92,29 @@ for cmd in "$COMMANDS_DIR"/*.md; do
     fail "$name: frontmatter structure broken after transform"
   fi
 done
+
+echo ""
+
+echo "Testing OpenCode dotfile configuration..."
+echo ""
+
+if [ -f "$OPENCODE_CONFIG" ]; then
+  pass "opencode.json: config file exists"
+else
+  fail "opencode.json: config file missing"
+fi
+
+if grep -qE '"lsp"[[:space:]]*:[[:space:]]*true' "$OPENCODE_CONFIG"; then
+  pass "opencode.json: enables built-in LSP servers (including TypeScript)"
+else
+  fail "opencode.json: missing '\"lsp\": true' to enable TypeScript LSP"
+fi
+
+if grep -qE '^stow .* opencode( |$)' "$INSTALL_SCRIPT"; then
+  pass "install.sh: stows opencode dotfiles"
+else
+  fail "install.sh: missing opencode from stow package list"
+fi
 
 echo ""
 

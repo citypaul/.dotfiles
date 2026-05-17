@@ -1515,7 +1515,7 @@ curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-cla
 ```
 
 **What gets installed:**
-- `~/.config/opencode/opencode.json` - Configuration that loads:
+- `~/.config/opencode/opencode.json` - Configuration that enables built-in LSP servers, including TypeScript for projects with a TypeScript dependency, and loads:
   - `~/.claude/CLAUDE.md` (core principles)
   - `~/.claude/skills/*/SKILL.md` (all skill patterns)
   - `~/.claude/agents/*.md` (agent instructions)
@@ -1533,6 +1533,7 @@ mkdir -p ~/.config/opencode/command ~/.config/opencode/agent
 cat > ~/.config/opencode/opencode.json << 'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
+  "lsp": true,
   "instructions": [
     "~/.claude/CLAUDE.md",
     "~/.claude/skills/*/SKILL.md",
@@ -1855,6 +1856,7 @@ This will install:
 - ✅ CLAUDE.md + skills (26 from this repo plus external skill bundles) + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
+- ✅ OpenCode configuration (guidelines plus built-in LSP servers, including TypeScript)
 - ✅ Git aliases and configuration
 - ✅ Shell configuration (bash/zsh)
 - ✅ Vim, tmux, npm configs
