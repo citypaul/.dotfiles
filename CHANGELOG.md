@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.31.0
+
+### Minor Changes
+
+- c624a29: Enable OpenCode's built-in LSP support, including TypeScript, and include the OpenCode package in the stow installer.
+
 ## 3.30.1
 
 ### Patch Changes
