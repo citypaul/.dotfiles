@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.30.1
+
+### Patch Changes
+
+- fad45fd: Clarify that story-splitting hands implementation to planning, and that every planned implementation slice must load and apply the full `tdd`, `testing`, `mutation-testing`, and `refactoring` cycle before moving to the next slice.
+- 2dcc9f1: Clarify the requirements-to-code skill pipeline so consumers know when to use `grill-me`, `story-splitting`, `find-gaps`, `planning`, and the TDD execution skills. Also enforce loading the full `tdd`, `testing`, `mutation-testing`, and `refactoring` skill cycle before implementing planned slices.
+
 ## 3.30.0
 
 ### Minor Changes
