@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.32.0
+
+### Minor Changes
+
+- aaec53b: Add the Vercel Labs Next.js skills bundle to the default external skills installed via skills.sh.
+
+  The installer now includes `vercel-labs/next-skills`, which currently provides `next-best-practices`, `next-cache-components`, and `next-upgrade`.
+
 ## 3.31.0
 
 ### Minor Changes
