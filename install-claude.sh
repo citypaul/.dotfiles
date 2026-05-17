@@ -42,6 +42,7 @@ BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 # Skill sources on skills.sh (https://skills.sh)
 OWN_SKILLS_REPO="citypaul/.dotfiles"
 WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills"
+NEXT_SKILLS_REPO="vercel-labs/next-skills"
 IMPECCABLE_SKILLS_REPO="pbakaus/impeccable"
 MATTPOCOCK_SKILLS_REPO="https://github.com/mattpocock/skills"
 MARKETING_SKILLS_REPO="coreyhaines31/marketingskills"
@@ -140,13 +141,14 @@ Options:
                        (use with --agent to target other agents only)
   --with-opencode      Shorthand for --agent opencode + install OpenCode config
   --opencode-only      Install only OpenCode configuration (no skills/agents/commands)
-  --no-external        Skip all external community skills (web-quality-skills + impeccable + grill-me + seo-audit)
+  --no-external        Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit)
   --no-impeccable      Skip impeccable design skills only
   --version VERSION    Version for CLAUDE.md/commands/agents (default: main). Skills always latest.
   --help, -h           Show this help message
 
 Default external skill sources:
   addyosmani/web-quality-skills
+  vercel-labs/next-skills
   pbakaus/impeccable
   mattpocock/skills --skill grill-me
   coreyhaines31/marketingskills --skill seo-audit
@@ -374,6 +376,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
 
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     install_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)"
+    install_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel-labs/next-skills)"
     install_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "$GRILL_ME_SKILL"
     install_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "$SEO_AUDIT_SKILL"
   fi
@@ -498,6 +501,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "     • citypaul/.dotfiles — auto-discovered patterns (tdd, testing, typescript-strict, ...)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "     • addyosmani/web-quality-skills — accessibility, performance, SEO, ..."
+    echo -e "     • vercel-labs/next-skills — Next.js best practices, Cache Components, upgrades"
     echo -e "     • mattpocock/skills/grill-me — relentless plan and design interviewing"
     echo -e "     • coreyhaines31/marketingskills/seo-audit — SEO audit workflow"
   fi
@@ -596,6 +600,9 @@ echo -e "  Skills ecosystem: ${YELLOW}skills.sh${NC} (${BLUE}https://skills.sh${
 echo ""
 echo -e "  • ${YELLOW}Addy Osmani${NC} — web quality skills"
 echo -e "    ${BLUE}https://github.com/addyosmani/web-quality-skills${NC} (MIT)"
+echo ""
+echo -e "  • ${YELLOW}Vercel Labs${NC} — Next.js skills"
+echo -e "    ${BLUE}https://skills.sh/vercel-labs/next-skills${NC}"
 echo ""
 echo -e "  • ${YELLOW}Paul Bakaus${NC} — impeccable frontend design skills"
 echo -e "    ${BLUE}https://impeccable.style/skills/${NC} (Apache 2.0)"
