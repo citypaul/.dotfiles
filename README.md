@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 26 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 26 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -101,6 +101,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Find Skills** | Discovers and installs skills from the open agent skills ecosystem (`npx skills`, [skills.sh](https://skills.sh/)). Activates on "how do I do X" / "find a skill for X". Verifies install count, source reputation, and GitHub stars before recommending. Vendored from [vercel-labs/skills](https://github.com/vercel-labs/skills) under MIT | [→ skills/find-skills](claude/.claude/skills/find-skills/SKILL.md) |
 | **Find Gaps** | Conversational pre-implementation review for written stories, plans, acceptance criteria, specs, and design mocks. Surveys the artifact with a per-type checklist, then walks you through gaps **one question at a time**, turning each answer into a new AC (Given/When/Then), plan paragraph, or mock-state spec written back to the source of truth. Output is the tightened artifact, not a gap report. Pairs with `storyboard` for multi-mock audits | [→ skills/find-gaps](claude/.claude/skills/find-gaps/SKILL.md) |
 | **Grill Me** | Relentless one-question-at-a-time decision-tree interviews before story splitting, planning, or implementation. Stress-tests decisions branch-by-branch, explores the codebase when it can answer questions directly, and recommends an answer for each unresolved question | [→ skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) |
+| **Next.js Skills** | Best practices for App Router, RSC boundaries, async APIs, metadata, Cache Components, and Next.js upgrades | [→ next-skills](https://skills.sh/vercel-labs/next-skills) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Core Web Vitals** | LCP, INP, CLS specific optimizations | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -160,6 +161,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Want to learn a topic properly, not just read about it | [teach-me](claude/.claude/skills/teach-me/SKILL.md) | Socratic tutor, Bloom's progression, spaced repetition — invoked via `/teach-me [topic]` |
 | Need a diagram, chart, or visualization in Markdown | [diagrams](claude/.claude/skills/diagrams/SKILL.md) | Decision guide picks Mermaid / Graphviz / Vega-Lite / PlantUML / Canvas / infographic for the job |
 | Wishing an agent skill existed for this task | [find-skills](claude/.claude/skills/find-skills/SKILL.md) | Search the open skills ecosystem via `npx skills find`; verify installs and source before recommending |
+| Working on a Next.js App Router app | [next-skills](https://skills.sh/vercel-labs/next-skills) | Next.js best practices, Cache Components guidance, and official-upgrade workflow |
 | Reviewing a plan, spec, or mocks before coding starts | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Conversational loop: asks one question at a time and writes each answer back as a new AC / plan paragraph / mock-state spec |
 | "What could go wrong?" / "What's missing?" on a design | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Forces every gap category end-to-end; each confirmed answer updates the artifact, not a todo list |
 | Want a plan interrogated before implementation | [grill-me](https://skills.sh/mattpocock/skills/grill-me) | Relentless one-question-at-a-time review that explores the codebase when possible and recommends an answer for each decision |
@@ -1376,7 +1378,7 @@ chmod +x install-claude.sh
 ./install-claude.sh --claude-only                        # Install only CLAUDE.md
 ./install-claude.sh --skills-only                        # Install only skills (via skills.sh)
 ./install-claude.sh --no-agents                          # Install without agents
-./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + impeccable + grill-me + seo-audit)
+./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit)
 ./install-claude.sh --no-impeccable                      # Skip impeccable design skills only
 ./install-claude.sh --with-opencode                      # Also target OpenCode for skills + install OpenCode config
 ./install-claude.sh --agent codex --agent cursor         # Also install skills for Codex and Cursor (repeatable)
@@ -1404,6 +1406,7 @@ Both patterns resolve to the same content on disk, so the first `--agent codex` 
   - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 26 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, and more)
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
+  - [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) — Next.js best practices, Cache Components, and upgrade workflow
   - [mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) — one-question-at-a-time plan and design interrogation
   - [coreyhaines31/marketingskills/seo-audit](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — technical, on-page, content, and authority SEO audit workflow
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
@@ -1676,7 +1679,7 @@ The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 26 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 26 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1937,6 +1940,8 @@ Special thanks to contributors who have shared their work:
 - **[Addy Osmani](https://github.com/addyosmani)** - The web quality skills (accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit) are sourced from [Addy's web-quality-skills repository](https://github.com/addyosmani/web-quality-skills). These skills are fetched directly from the upstream repository at install time so you always get the latest version. Licensed under the [MIT License](https://github.com/addyosmani/web-quality-skills/blob/main/LICENSE). The `api-design` skill is adapted from [Addy's agent-skills repository](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), modified to align with existing skill conventions.
 
 - **[Corey Haines](https://github.com/coreyhaines31)** - The `seo-audit` skill is sourced from [Corey's marketingskills repository](https://github.com/coreyhaines31/marketingskills/tree/main/skills/seo-audit). It is fetched directly from upstream at install time via skills.sh, including its references, so users get the latest version. Licensed under the [MIT License](https://github.com/coreyhaines31/marketingskills/blob/main/LICENSE).
+
+- **[Vercel Labs](https://github.com/vercel-labs)** - The Next.js skills (`next-best-practices`, `next-cache-components`, and `next-upgrade`) are sourced from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills). They are fetched directly from upstream at install time via skills.sh so users get the latest Next.js guidance.
 
 - **[Kieran O'Hara](https://github.com/kieran-ohara)** - The `use-case-data-patterns` agent is adapted from [Kieran's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you for creating and sharing this excellent agent specification.
 
