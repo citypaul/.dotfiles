@@ -173,6 +173,12 @@ Errors should be **actionable**: the consumer should know what went wrong, why, 
 | 429 | Too Many Requests | Rate limit exceeded (include `Retry-After` header) |
 | 500 | Internal Server Error | Server error (never expose internal details) |
 
+**422 vs 409 — pick the one that matches the failure:**
+- **422** when the input itself is semantically invalid (missing required field, value out of allowed range, wrong format the schema didn't catch).
+- **409** when the input is well-formed but conflicts with current state (duplicate resource, optimistic-locking version mismatch, wrong lifecycle stage like "already cancelled").
+
+The distinction is whether the client could fix the request without first fixing the world. 422 → fix the request. 409 → resolve the conflict, then retry.
+
 ### Validation at API Boundaries
 
 Validate where external input enters your system. Trust internal code after validation. See the `typescript-strict` skill for schema-first patterns.
@@ -342,6 +348,41 @@ POST   /api/tasks/:id/comments → Add a comment to a task
 ```
 
 Use PATCH for partial updates (only provided fields change). Use PUT only when the client sends the complete object.
+
+### Actions That Don't Map to CRUD
+
+Operations like "cancel an order", "submit a draft", "approve a request", or "capture a payment" aren't reads or writes of a single field — they're domain actions. Don't try to squeeze them into PATCH. There is **no single industry consensus** on how to model them; three patterns are all in active use by major APIs, and the best choice depends on the action.
+
+| Pattern | Example | Used by |
+|---------|---------|---------|
+| **Noun sub-resource** (action as record) | `POST /orders/42/cancellation` | Zalando guidelines; Stripe refunds (`POST /v1/refunds`) |
+| **Verb sub-resource** | `POST /orders/42/cancel` | Stripe (`/payment_intents/{id}/cancel`, `/capture`, `/expire`), GitHub (`/issues/{n}/lock`), most public APIs |
+| **Colon custom verb** | `POST /orders/42:cancel` | Google AIP-136; Microsoft Azure REST guidelines |
+
+**Choosing between them:**
+
+- **Use the noun sub-resource when the action produces an entity worth auditing.** A cancellation has a timestamp, a reason, an actor — modelling it as a resource lets clients `GET /orders/42/cancellation` later to inspect it. Same for refunds, approvals, submissions.
+- **Use the verb sub-resource when the action is a transition with no interesting record of its own.** "Capture a payment", "lock an issue", "expire a session" don't leave behind a meaningful `Capture` entity — forcing one is awkward. This is by far the most common pattern in real-world public APIs.
+- **Use the colon custom verb if you've adopted Google AIP or Microsoft Azure conventions** and want a clean syntactic separation between sub-resources and action verbs. Outside those ecosystems it's rare and some HTTP tooling mishandles `:` in paths.
+
+**Don't mix patterns within one API** — pick one and apply it consistently. Stripe is internally inconsistent (refunds-as-noun alongside cancel-as-verb) and consumers report it as a recurring source of confusion. Consistency beats theoretical purity.
+
+Whichever pattern you choose: **POST** is the right method (the action has side effects and is not idempotent without explicit help), and idempotency keys still apply for any action that creates state or moves money.
+
+### Bulk Operations
+
+When a client needs to act on many resources at once, don't abuse the single-resource endpoint with loops or arrays of IDs in query params. Use a dedicated batch endpoint:
+
+```
+POST   /api/orders/batch                 → Create many orders
+POST   /api/orders/batch-cancel          → Cancel many orders
+```
+
+Design considerations:
+- Define partial-success semantics explicitly: does one failure roll back the batch, or does the response report per-item status?
+- Return a body shaped like `{ results: [{ id, status, error? }, ...] }` so the client can recover per-item.
+- Cap the batch size and document the limit; reject oversized batches with 413 or 422.
+- Apply idempotency keys at the batch level, not per item, so retries don't partially re-apply.
 
 ### Pagination
 
