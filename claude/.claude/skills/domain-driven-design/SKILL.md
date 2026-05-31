@@ -9,6 +9,8 @@ This skill applies only to projects that have opted in to DDD. Do not apply thes
 
 For hexagonal architecture (ports and adapters), load the `hexagonal-architecture` skill. DDD and hexagonal architecture are complementary but independent — a project may use one without the other.
 
+If the `folder-structure` skill has been explicitly applied to this project, follow its protected-domain-core layout and lint/import-boundary rules for DDD/hex contexts. Do not introduce those physical folder or lint rules into projects that have not applied `folder-structure`; in that case, preserve the repo's existing structure while keeping domain logic isolated.
+
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
 | Resource | Load when... |
@@ -55,6 +57,8 @@ DDD adds value for **complex domains** with rich business rules. Not every proje
 
 This is the most common decision in DDD. When unsure, use this framework:
 
+The `domain/` locations below are logical placement guidance. If `folder-structure` has been applied, prefer its context-first protected core shape, such as `src/<bounded-context>/domain/` plus its lint boundary rules. If it has not been applied, adapt to the existing repo structure instead of reorganizing purely to match that layout.
+
 | Question | If yes → | If no ↓ |
 |----------|----------|---------|
 | Does it enforce a business rule or compute a business value? | `domain/` (entity function, value object, or domain service) | ↓ |
@@ -83,6 +87,8 @@ export const calculateCommittedTotal = (items: readonly GiftItem[]) =>
 ```
 
 **Why placement matters:** `domain/` files typically have strict coverage requirements and zero infrastructure imports. Putting code in the wrong layer creates unnecessary testing obligations and architectural violations.
+
+When `folder-structure` has been applied, domain isolation should also be enforced mechanically with its import-boundary lint rules.
 
 ---
 
@@ -485,6 +491,7 @@ Treating the initial model as sacred — refusing to rename types, split aggrega
 - [ ] Discriminated unions have exhaustive switch handling
 - [ ] Expected business outcomes use result types, not exceptions
 - [ ] Domain logic has zero infrastructure dependencies
+- [ ] If `folder-structure` has been applied, protected-domain-core lint/import rules are present and passing
 - [ ] Presentation logic is NOT in domain/ (even if pure)
 - [ ] Tests organized by domain concept, not implementation file
 - [ ] Each layer has behavioral tests at the appropriate level

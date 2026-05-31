@@ -9,6 +9,8 @@ This skill applies only to projects that have opted in to hexagonal architecture
 
 For domain modeling (entities, value objects, aggregates, ubiquitous language), load the `domain-driven-design` skill. Hex arch and DDD are complementary but independent — hex arch provides structural isolation (how the outside connects), DDD provides the domain model (what lives in the center). A project may use one without the other.
 
+If the `folder-structure` skill has been explicitly applied to this project, follow its protected-domain-core layout and lint/import-boundary rules for DDD/hex contexts. Do not introduce those physical folder or lint rules into projects that have not applied `folder-structure`; in that case, preserve the repo's existing structure while enforcing the dependency direction described here.
+
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
 | Resource | Load when... |
@@ -231,6 +233,8 @@ The use case doesn't know or care whether it was triggered by an HTTP request, a
 
 ## File Organization
 
+The locations below describe the logical layers. If `folder-structure` has been applied, prefer its context-first protected core shape, such as `src/<bounded-context>/domain/`, `src/<bounded-context>/use-cases/`, `src/<bounded-context>/adapters/`, and its lint boundary rules. If it has not been applied, use these locations as examples and adapt to the existing codebase without reorganizing solely for this skill.
+
 | Layer | Location | Contains | Tests |
 |-------|----------|----------|-------|
 | Domain | `src/domain/` | Business logic (pure functions), types, port interfaces, use cases (orchestration) | Unit + use case tests (fakes) |
@@ -244,6 +248,7 @@ The use case doesn't know or care whether it was triggered by an HTTP request, a
 - Schemas co-locate with their entity in domain
 - Adapters import from domain, never the reverse
 - Route handlers are thin — parse, wire, delegate, respond
+- When `folder-structure` has been applied, enforce these rules with its recommended import-boundary lint configuration.
 
 ---
 
@@ -356,6 +361,7 @@ interface UserRepository {
 ## Checklist
 
 - [ ] Domain logic has zero framework/infrastructure dependencies
+- [ ] If `folder-structure` has been applied, protected-domain-core lint/import rules are present and passing
 - [ ] All external boundaries use ports (interfaces)
 - [ ] Driving adapters (routes) are thin — parse, wire, delegate, respond
 - [ ] Driven adapters (repos) implement ports, contain no business logic

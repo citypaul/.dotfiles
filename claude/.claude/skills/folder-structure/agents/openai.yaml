@@ -1,0 +1,4 @@
+interface:
+  display_name: "Folder Structure"
+  short_description: "Design screaming feature-based folders"
+  default_prompt: "Use $folder-structure to propose a screaming, feature-based project structure for this codebase."
