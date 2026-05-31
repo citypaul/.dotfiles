@@ -1,18 +1,19 @@
 # Testing Strategy for Hexagonal Architecture
 
-Hex arch's primary value is testability. The architecture creates natural test boundaries — but the primary boundary is the **use case**, not each layer in isolation. This approach follows Valentina Jemuović's Use Case Driven Design (UCDD) — see `../../REFERENCES.md` for sources.
+Hex arch's primary value is testability. The architecture creates natural test boundaries — but the primary boundary is the **use case**, not each layer in isolation. This approach follows Use Case Driven Development (UCDD) — see `references.md` for sources.
 
 ## Primary Boundary: The Use Case
 
-Test by calling the use case (driving port) with driven ports replaced by in-memory fakes. This exercises the full business logic path without touching infrastructure.
+Test by calling the driving port implementation with driven ports replaced by in-memory fakes. This exercises the full business logic path without touching infrastructure.
 
 ```typescript
 describe('place order', () => {
   it('saves order and charges payment on success', async () => {
     const orderRepo = createFakeOrderRepo();
     const paymentGateway = createFakePaymentGateway({ alwaysSucceeds: true });
+    const orderPlacement = createOrderPlacement(orderRepo, paymentGateway);
 
-    const result = await placeOrder(orderRepo, paymentGateway, testOrder);
+    const result = await orderPlacement.placeOrder(testOrder);
 
     expect(result.success).toBe(true);
     expect(orderRepo.savedEntities).toHaveLength(1);
@@ -21,8 +22,9 @@ describe('place order', () => {
   it('does not save order when payment fails', async () => {
     const orderRepo = createFakeOrderRepo();
     const paymentGateway = createFakePaymentGateway({ alwaysFails: true });
+    const orderPlacement = createOrderPlacement(orderRepo, paymentGateway);
 
-    const result = await placeOrder(orderRepo, paymentGateway, testOrder);
+    const result = await orderPlacement.placeOrder(testOrder);
 
     expect(result.success).toBe(false);
     expect(orderRepo.savedEntities).toHaveLength(0);

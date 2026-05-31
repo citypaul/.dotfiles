@@ -225,7 +225,7 @@ When the topic matches an existing Claude Code skill:
 4. **Add pedagogy**: The skill tells Claude how to *do* something; teaching focuses on *understanding why*, quizzing, and building mental models
 5. **Reference resources**: Point learners to specific skill resources for deep-dives after they've built foundational understanding
 
-Example: `/teach-me hexagonal-architecture` should discover and use the `hexagonal-architecture` skill + its 5 resources as curriculum backbone, while adding discovery interview, Socratic questioning, exercises, Feynman checks, and progress tracking.
+Example: `/teach-me hexagonal-architecture` should discover and use the `hexagonal-architecture` skill + its 6 resources as curriculum backbone, while adding discovery interview, Socratic questioning, exercises, Feynman checks, and progress tracking.
 
 ---
 

@@ -88,6 +88,15 @@ No ports, no infrastructure, no async. Just domain types in and domain types out
 ## 4. Port Interfaces (Domain Layer)
 
 ```typescript
+// domain/occasion/pledging.ts — driving port
+interface ForPledgingToOccasions {
+  readonly pledgeToOccasion: (dto: {
+    readonly occasionId: OccasionId;
+    readonly contributorId: ContributorId;
+    readonly amount: Money;
+  }) => Promise<PledgeResult>;
+}
+
 // domain/occasion/repository.ts
 interface OccasionRepository {
   readonly findById: (id: OccasionId) => Promise<Occasion | undefined>;
@@ -104,26 +113,27 @@ interface ContributorRepository {
 ## 5. Use Case (Orchestration)
 
 ```typescript
-// domain/occasion/handle-pledge.ts — use case function
-const handlePledge = async (
+// domain/occasion/pledge-to-occasion.ts — use case implementation
+const createPledgingToOccasions = (
   occasionRepo: OccasionRepository,
   contributorRepo: ContributorRepository,
-  dto: { readonly occasionId: OccasionId; readonly contributorId: ContributorId; readonly amount: Money },
-): Promise<PledgeResult> => {
-  const occasion = await occasionRepo.findById(dto.occasionId);
-  const contributor = await contributorRepo.findById(dto.contributorId);
-  if (!occasion || !contributor) return { success: false, reason: 'not-found' };
+): ForPledgingToOccasions => ({
+  pledgeToOccasion: async (dto) => {
+    const occasion = await occasionRepo.findById(dto.occasionId);
+    const contributor = await contributorRepo.findById(dto.contributorId);
+    if (!occasion || !contributor) return { success: false, reason: 'not-found' };
 
-  const result = pledgeContribution(occasion, contributor, dto.amount);
-  if (result.success) {
-    await occasionRepo.save(result.occasion);
-    await contributorRepo.save(result.contributor);
-  }
-  return result;
-};
+    const result = pledgeContribution(occasion, contributor, dto.amount);
+    if (result.success) {
+      await occasionRepo.save(result.occasion);
+      await contributorRepo.save(result.contributor);
+    }
+    return result;
+  },
+});
 ```
 
-The use case is identifiable by its signature — it takes ports as parameters. It contains zero business logic. It loads, delegates to the domain service, and saves.
+The use case implementation is identifiable by its dependencies — it takes driven ports as parameters and returns the driving port interface. It contains zero business logic. It loads, delegates to the domain service, and saves.
 
 **Note:** This use case saves two aggregates. For atomicity, the driving adapter should wrap it in a transaction — see `resources/cross-cutting-concerns.md` for the transaction pattern. The use case itself is unaware of transactions.
 
@@ -167,12 +177,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
   // Wire adapters (composition root)
   const occasionRepo = createDrizzleOccasionRepository(db);
   const contributorRepo = createDrizzleContributorRepository(db);
+  const pledging: ForPledgingToOccasions = createPledgingToOccasions(occasionRepo, contributorRepo);
 
   // Parse input at the boundary
   const body = PledgeSchema.parse(await request.json());
 
   // Call use case
-  const result = await handlePledge(occasionRepo, contributorRepo, {
+  const result = await pledging.pledgeToOccasion({
     occasionId: createOccasionId(params.id),
     contributorId: body.contributorId,
     amount: body.amount,
@@ -221,8 +232,9 @@ describe('pledge contribution', () => {
   it('deducts from contributor and adds to occasion', async () => {
     const occasionRepo = createFakeOccasionRepository([testOccasion]);
     const contributorRepo = createFakeContributorRepository([testContributor]);
+    const pledging = createPledgingToOccasions(occasionRepo, contributorRepo);
 
-    const result = await handlePledge(occasionRepo, contributorRepo, {
+    const result = await pledging.pledgeToOccasion({
       occasionId: testOccasion.id,
       contributorId: testContributor.id,
       amount: createMoney(25, 'GBP'),
@@ -241,8 +253,9 @@ describe('pledge contribution', () => {
     const poorContributor = getTestContributor({ walletBalance: createMoney(10, 'GBP') });
     const occasionRepo = createFakeOccasionRepository([testOccasion]);
     const contributorRepo = createFakeContributorRepository([poorContributor]);
+    const pledging = createPledgingToOccasions(occasionRepo, contributorRepo);
 
-    const result = await handlePledge(occasionRepo, contributorRepo, {
+    const result = await pledging.pledgeToOccasion({
       occasionId: testOccasion.id,
       contributorId: poorContributor.id,
       amount: createMoney(50, 'GBP'),
@@ -256,8 +269,9 @@ describe('pledge contribution', () => {
     const closedOccasion = getTestOccasion({ isFundingClosed: true });
     const occasionRepo = createFakeOccasionRepository([closedOccasion]);
     const contributorRepo = createFakeContributorRepository([testContributor]);
+    const pledging = createPledgingToOccasions(occasionRepo, contributorRepo);
 
-    const result = await handlePledge(occasionRepo, contributorRepo, {
+    const result = await pledging.pledgeToOccasion({
       occasionId: closedOccasion.id,
       contributorId: testContributor.id,
       amount: createMoney(25, 'GBP'),

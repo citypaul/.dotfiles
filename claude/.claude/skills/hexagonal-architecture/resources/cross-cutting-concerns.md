@@ -15,9 +15,10 @@ Cross-cutting concerns live in adapters, never in domain. The domain is pure bus
 export async function POST(request: Request) {
   const userId = await authenticateRequest(request);  // middleware / adapter concern
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const pledging: ForPledgingToOccasions = createPledgingToOccasions(occasionRepo, contributorRepo);
 
   // Pass validated identity to use case as a domain type
-  const result = await handlePledge(occasionRepo, contributorRepo, {
+  const result = await pledging.pledgeToOccasion({
     ...body,
     contributorId: userId,  // already a branded ContributorId
   });
@@ -27,14 +28,15 @@ export async function POST(request: Request) {
 
 ```typescript
 // Domain: receives identity, applies business rules
-const handlePledge = async (
+const createPledgingToOccasions = (
   occasionRepo: OccasionRepository,
   contributorRepo: ContributorRepository,
-  dto: { readonly contributorId: ContributorId; ... },
-): Promise<PledgeResult> => {
-  // The domain doesn't check JWT tokens or session cookies.
-  // It receives a ContributorId and applies business rules.
-};
+): ForPledgingToOccasions => ({
+  pledgeToOccasion: async (dto: { readonly contributorId: ContributorId; ... }) => {
+    // The domain doesn't check JWT tokens or session cookies.
+    // It receives a ContributorId and applies business rules.
+  },
+});
 ```
 
 **Authorization (business rules about who can do what)** is domain logic:
@@ -59,7 +61,8 @@ const closeFunding = (occasion: Occasion, requesterId: ContributorId): CloseResu
 // Driving adapter: log the request/response cycle
 export async function POST(request: Request) {
   const body = PledgeSchema.parse(await request.json());
-  const result = await handlePledge(occasionRepo, contributorRepo, body);
+  const pledging: ForPledgingToOccasions = createPledgingToOccasions(occasionRepo, contributorRepo);
+  const result = await pledging.pledgeToOccasion(body);
 
   if (!result.success) {
     logger.warn('Pledge rejected', { reason: result.reason, occasionId: body.occasionId });
@@ -84,16 +87,18 @@ const createDrizzleOccasionRepository = (db: Database, logger: Logger): Occasion
 
 ```typescript
 // Driving adapter wraps the use case in a transaction
-const createTransactionalPledgeHandler = (db: Database) =>
-  async (dto: PledgeDto): Promise<PledgeResult> =>
+const createTransactionalPledgingToOccasions = (db: Database): ForPledgingToOccasions => ({
+  pledgeToOccasion: async (dto) =>
     db.transaction(async (tx) => {
       const occasionRepo = createDrizzleOccasionRepository(tx);
       const contributorRepo = createDrizzleContributorRepository(tx);
-      return handlePledge(occasionRepo, contributorRepo, dto);
-    });
+      const pledging = createPledgingToOccasions(occasionRepo, contributorRepo);
+      return pledging.pledgeToOccasion(dto);
+    }),
+});
 ```
 
-The use case function (`handlePledge`) is unchanged — it still takes repositories as parameters. The driving adapter passes transactional repositories. The domain doesn't know or care.
+The driving port (`ForPledgingToOccasions`) is unchanged — the transactional implementation still satisfies the same interface. The domain doesn't know or care.
 
 **When transactions aren't needed:** For single-aggregate saves, no transaction wrapper is necessary. Only add transactions when multiple aggregates must be saved atomically. See `aggregate-design.md` for guidance on one-aggregate-per-transaction.
 
