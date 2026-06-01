@@ -20,8 +20,9 @@ If the `folder-structure` skill has been explicitly applied to this project, fol
 | `cqrs-lite.md` | Reads need to JOIN across aggregates, separating read/write paths |
 | `cross-cutting-concerns.md` | Placing auth, logging, transactions, or error formatting |
 | `incremental-adoption.md` | Introducing hex arch into an existing codebase |
+| `references.md` | Checking source rationale, especially port/public interface naming |
 
-For authoritative sources, see `../REFERENCES.md`.
+For authoritative sources and naming rationale, see `resources/references.md`.
 
 ---
 
@@ -52,15 +53,41 @@ Business logic lives in the center. External systems connect through ports (inte
 **Driving adapters** (left): initiate actions on the application. They *call* use cases.
 **Driven adapters** (right): the application reaches out to them. They *implement* port interfaces.
 
-This asymmetry is fundamental. Driving adapters depend on use case interfaces. Driven adapters implement repository/gateway interfaces defined by the domain.
+This asymmetry is fundamental. Driving adapters depend on driving port interfaces exposed by the application. Driven adapters implement repository/gateway interfaces defined by the domain.
 
 ---
 
-## Ports = Interfaces
+## Ports = Public Contracts
 
-Ports define contracts between layers. They are always `interface` types (behavior contracts, not data shapes).
+A port is a named, purposeful conversation at the application boundary. In TypeScript, represent ports as explicit `interface` types when the boundary is public or architectural: driving adapters call driving port interfaces, and driven adapters/fakes implement driven port interfaces.
+
+Use case implementations satisfy the driving port. The driving adapter should depend on the port's role-shaped interface, not a framework-specific controller, handler class, or concrete adapter.
+
+### Naming Ports and Public Interfaces
+
+Name every port from the application's point of view, using the domain language of the conversation:
+
+| Boundary | Good names | Avoid | Why |
+|----------|------------|-------|-----|
+| Driving/public API | `ForPlacingOrders`, `ForPledgingToOccasions` | `PlaceOrderUseCase`, `PlaceOrderHandler`, `OrderInputPort` | Names the actor capability, not the pattern |
+| Aggregate persistence | `OrderRepository`, `ContributorRepository` | `OrderDatabase`, `OrderDao`, `SqlOrderPort` | Repository is a domain collection abstraction |
+| External service | `PaymentGateway`, `ExchangeRateProvider` | `StripeClient`, `HttpPaymentPort` | Names the capability the app needs, not the vendor/protocol |
+| Notifications/events | `OrderEventPublisher`, `ReceiptSender` | `SnsAdapter`, `MessageBusPort` | Names the business-side interaction |
+
+**Public interface naming rules:**
+- Use `interface` for behavior contracts, not data shapes that are better modeled as `type`/schemas.
+- Do not prefix interfaces with `I` or suffix them with `Interface`; name the role (`PaymentGateway`, not `IPaymentGateway` or `PaymentGatewayInterface`).
+- Avoid `Port` in type names. A name like `PaymentPort` says "architecture" instead of "conversation."
+- Avoid `Impl` in implementation names. Name the concrete technology or strategy: `createStripePaymentGateway`, `createFakePaymentGateway`, `createDrizzleOrderRepository`.
+- Prefer role interfaces over header interfaces: include only the methods the use case needs, not every method an adapter happens to expose.
+- Make names stable under adapter swaps. If moving from Stripe to PayPal, SQL to DynamoDB, or HTTP to a queue forces a port rename, the port name leaked infrastructure.
 
 ```typescript
+// Driving port — exposed by the application, called by driving adapters
+interface ForPlacingOrders {
+  readonly placeOrder: (command: PlaceOrderCommand) => Promise<PlaceOrderResult>;
+}
+
 // Driven port — defined in domain, implemented by adapters
 interface UserRepository {
   readonly findById: (id: UserId) => Promise<User | undefined>;
@@ -177,17 +204,22 @@ const createOrder = async (order: NewOrder) => {
   // ...
 };
 
-// RIGHT — dependencies as parameters (testable, swappable)
-const createOrder = async (
+// RIGHT — dependencies injected into a use case implementation
+interface ForPlacingOrders {
+  readonly placeOrder: (order: NewOrder) => Promise<OrderResult>;
+}
+
+const createOrderPlacement = (
   repo: OrderRepository,
   gateway: PaymentGateway,
-  order: NewOrder,
-): Promise<OrderResult> => {
-  const charge = await gateway.charge(order.total, order.payment);
-  if (!charge.success) return { success: false, reason: charge.error };
-  const saved = await repo.save({ ...order, chargeId: charge.id });
-  return { success: true, order: saved };
-};
+): ForPlacingOrders => ({
+  placeOrder: async (order) => {
+    const charge = await gateway.charge(order.total, order.payment);
+    if (!charge.success) return { success: false, reason: charge.error };
+    const saved = await repo.save({ ...order, chargeId: charge.id });
+    return { success: true, order: saved };
+  },
+});
 ```
 
 **Composition root:** Wiring happens at the application entry point — where adapters are created from environment/config and injected into use cases. This is the only place that knows about concrete implementations.
@@ -201,10 +233,11 @@ export async function POST(request: Request) {
   // Wire adapters
   const repo = createDrizzleOrderRepository(db);
   const gateway = createStripeGateway(env.STRIPE_KEY);
+  const orderPlacement: ForPlacingOrders = createOrderPlacement(repo, gateway);
 
   // Call use case
   const body = CreateOrderSchema.parse(await request.json());
-  const result = await createOrder(repo, gateway, body);
+  const result = await orderPlacement.placeOrder(body);
   return NextResponse.json(result);
 }
 ```
@@ -219,15 +252,16 @@ const handlePledgeMessage = async (message: SQSMessage, env: Env) => {
   const db = createDb(env.DB);
   const occasionRepo = createDrizzleOccasionRepository(db);
   const contributorRepo = createDrizzleContributorRepository(db);
+  const pledging: ForPledgingToOccasions = createPledgingToOccasions(occasionRepo, contributorRepo);
 
   const dto = PledgeSchema.parse(JSON.parse(message.body));
-  await handlePledge(occasionRepo, contributorRepo, dto);
+  await pledging.pledgeToOccasion(dto);
 };
 ```
 
 The use case doesn't know or care whether it was triggered by an HTTP request, a queue message, a cron job, or a CLI command. Every driving adapter is thin glue.
 
-**Naming:** Use cases are named after the business operation — `createOrder`, `placeOrder`, `handlePledge`. Never `createOrderUseCase` or `PlaceOrderHandler`. Pattern suffixes are technical jargon, not domain language. You can tell a use case from a domain function by its signature — use cases take ports (repositories, gateways) as parameters; domain functions take only domain types.
+**Naming:** Use case interfaces and implementations are named after the business capability — `ForPlacingOrders`, `createOrderPlacement`, `pledgeToOccasion`. Never `CreateOrderUseCase` or `PlaceOrderHandler`. Pattern suffixes are technical jargon, not domain language. You can tell a use case implementation from a domain function by its dependencies — use case implementations take driven ports (repositories, gateways) as parameters; domain functions take only domain types.
 
 ---
 
@@ -244,7 +278,7 @@ The locations below describe the logical layers. If `folder-structure` has been 
 
 **Key rules:**
 - Domain has zero external dependencies (no framework, database, or HTTP imports)
-- Port interfaces live in domain alongside the entity they serve
+- Driven port interfaces live in domain alongside the entity or capability they serve
 - Schemas co-locate with their entity in domain
 - Adapters import from domain, never the reverse
 - Route handlers are thin — parse, wire, delegate, respond
@@ -356,17 +390,39 @@ interface UserRepository {
 }
 ```
 
+### Pattern-Shaped Public Names
+
+Names that advertise the architecture pattern instead of the business role make code harder to read and easier to cargo-cult.
+
+```typescript
+// ❌ Names the pattern or type mechanism
+interface IPaymentPort {
+  readonly charge: (amount: Money, paymentInfo: PaymentInfo) => Promise<ChargeResult>;
+}
+const createPaymentGatewayImpl = (): IPaymentPort => ...
+const placeOrderUseCase = async (...) => ...
+
+// ✅ Names the role and the concrete adapter
+interface PaymentGateway {
+  readonly charge: (amount: Money, paymentInfo: PaymentInfo) => Promise<ChargeResult>;
+}
+const createStripePaymentGateway = (): PaymentGateway => ...
+const placeOrder = async (...) => ...
+```
+
 ---
 
 ## Checklist
 
 - [ ] Domain logic has zero framework/infrastructure dependencies
 - [ ] If `folder-structure` has been applied, protected-domain-core lint/import rules are present and passing
-- [ ] All external boundaries use ports (interfaces)
+- [ ] All external boundaries use ports/public contracts
 - [ ] Driving adapters (routes) are thin — parse, wire, delegate, respond
 - [ ] Driven adapters (repos) implement ports, contain no business logic
 - [ ] Dependencies injected via parameters, never created internally
-- [ ] Port interfaces live in domain, named by business purpose
+- [ ] Driven port interfaces live in domain, named by business purpose
+- [ ] Public interfaces avoid `I` prefixes, `Interface` suffixes, `Port` suffixes, and `Impl` implementations
+- [ ] Driving port and use case names use business capability language, not `UseCase`/`Handler` pattern names
 - [ ] Schemas defined in domain, not duplicated in adapters
 - [ ] Reads that JOIN across aggregates use query functions (CQRS-lite)
 - [ ] Each layer has behavioral tests at the appropriate level

@@ -77,17 +77,22 @@ const createDrizzleUserRepository = (db: Database): UserRepository => ({
 Wire the domain function to the port.
 
 ```typescript
-// domain/billing/handle-deduction.ts — use case
-const handleDeduction = async (
+// domain/billing/deduct-user-balance.ts — driving port + implementation
+interface ForDeductingUserBalances {
+  readonly deductUserBalance: (dto: { readonly userId: UserId; readonly amount: Money }) => Promise<DeductResult>;
+}
+
+const createUserBalanceDeduction = (
   userRepo: UserRepository,
-  dto: { readonly userId: UserId; readonly amount: Money },
-): Promise<DeductResult> => {
-  const user = await userRepo.findById(dto.userId);
-  if (!user) return { success: false, reason: 'not-found' };
-  const result = deductBalance(user, dto.amount);
-  if (result.success) await userRepo.save(result.user);
-  return result;
-};
+): ForDeductingUserBalances => ({
+  deductUserBalance: async (dto) => {
+    const user = await userRepo.findById(dto.userId);
+    if (!user) return { success: false, reason: 'not-found' };
+    const result = deductBalance(user, dto.amount);
+    if (result.success) await userRepo.save(result.user);
+    return result;
+  },
+});
 ```
 
 ### Step 6: Thin Out the Route Handler
@@ -97,8 +102,9 @@ const handleDeduction = async (
 export async function POST(request: Request) {
   const db = createDb(env.DB);
   const userRepo = createDrizzleUserRepository(db);
+  const balanceDeduction: ForDeductingUserBalances = createUserBalanceDeduction(userRepo);
   const body = DeductSchema.parse(await request.json());
-  const result = await handleDeduction(userRepo, body);
+  const result = await balanceDeduction.deductUserBalance(body);
   if (!result.success) {
     return NextResponse.json({ error: result.reason }, { status: result.reason === 'not-found' ? 404 : 422 });
   }
