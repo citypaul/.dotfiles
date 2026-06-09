@@ -22,7 +22,7 @@ If the `folder-structure` skill has been explicitly applied to this project, fol
 | `error-modeling.md` | Deciding between result types and exceptions, error propagation |
 | `testing-by-layer.md` | Writing tests for DDD code, property-based testing for invariants |
 
-For authoritative sources, see `../REFERENCES.md`.
+For authoritative sources, see `claude/.claude/skills/REFERENCES.md` in the source repo (https://github.com/citypaul/.dotfiles) — that file is not bundled when this skill is installed standalone.
 
 ---
 
@@ -57,7 +57,7 @@ DDD adds value for **complex domains** with rich business rules. Not every proje
 
 This is the most common decision in DDD. When unsure, use this framework:
 
-The `domain/` locations below are logical placement guidance. If `folder-structure` has been applied, prefer its context-first protected core shape, such as `src/<bounded-context>/domain/` plus its lint boundary rules. If it has not been applied, adapt to the existing repo structure instead of reorganizing purely to match that layout.
+The `domain/` locations below are logical placement guidance — see the `folder-structure` note at the top of this skill for how physical layout is decided.
 
 | Question | If yes → | If no ↓ |
 |----------|----------|---------|
@@ -185,26 +185,21 @@ Reconstitution (rebuilding domain objects from DB rows) uses the same factory fu
 
 ### Branded Types
 
-Prevent accidental swapping of primitives at compile time. Use for entity IDs and single-value value objects. Always provide a factory function — raw strings become branded types only through validation:
+The branded type pattern itself is covered by the `typescript-strict` skill — load it for the general rules. The DDD-specific application:
+
+- **Give every entity its own branded ID** (`OccasionId`, `GiftIdeaId`) so the compiler rejects cross-entity ID mixups — passing a `GiftIdeaId` where an `OccasionId` is expected is a compile error, not a runtime bug.
+- **Brand only through validating factory functions** — raw strings become branded values only after validation. The `as` assertion inside such a factory is the one justified exception: validate first, then brand.
+- Use branded types for entity IDs and single-value value objects (`EmailAddress`).
 
 ```typescript
 type OccasionId = string & { readonly __brand: 'OccasionId' };
 type GiftIdeaId = string & { readonly __brand: 'GiftIdeaId' };
-type EmailAddress = string & { readonly __brand: 'EmailAddress' };
 
-// Factory functions — the only way to create branded values
 const createOccasionId = (raw: string): OccasionId => {
   if (!raw.trim()) throw new Error('OccasionId cannot be empty');
   return raw as OccasionId; // justified: factory validates, then brands
 };
-
-const createEmailAddress = (raw: string): EmailAddress => {
-  if (!raw.includes('@')) throw new Error('Invalid email');
-  return raw as EmailAddress; // justified: factory validates, then brands
-};
 ```
-
-The `as` assertion is the one justified exception in branded type factories — the factory validates first, then brands. This is the standard TypeScript pattern for nominal typing. Everywhere else, the compiler prevents mixing up `OccasionId` and `GiftIdeaId`.
 
 ### Entities
 
@@ -230,19 +225,7 @@ const renameOccasion = (occasion: Occasion, newName: string): Occasion => ({
 
 ### Make Illegal States Unrepresentable
 
-Use the type system to make invalid states impossible. Replace boolean flags and optional fields with discriminated unions where each variant carries only the data valid for that state:
-
-```typescript
-// WRONG — boolean + optional allows { isVerified: true, verifiedAt: undefined }
-type User = { readonly isVerified: boolean; readonly verifiedAt?: Date };
-
-// RIGHT — impossible to be verified without a date
-type User =
-  | { readonly status: 'unverified' }
-  | { readonly status: 'verified'; readonly verifiedAt: Date };
-```
-
-Apply the same principle to entity lifecycles:
+General type-safety patterns (no `any`, discriminated unions, schema-first) live in the `typescript-strict` skill. The DDD-specific application: model entity **lifecycles** as discriminated unions where each variant carries only the data valid for that state — never boolean flags plus optional fields, which allow contradictory combinations like `{ isVerified: true, verifiedAt: undefined }`:
 
 ```typescript
 type Order =
@@ -251,7 +234,7 @@ type Order =
   | { readonly status: 'shipped'; readonly items: ReadonlyArray<OrderItem>; readonly placedAt: Date; readonly shippedAt: Date; readonly trackingNumber: string };
 ```
 
-**Always handle all variants exhaustively.** The `never` type ensures the compiler catches unhandled states when you add a new variant:
+**Always handle all lifecycle variants exhaustively.** The `never` type ensures the compiler catches unhandled states when you add a new variant:
 
 ```typescript
 const describeOrder = (order: Order): string => {
@@ -348,6 +331,8 @@ const pledgeContribution = (
 | Depends on | Domain types only | Repositories, ports, domain services |
 | Example | `pledgeContribution(occasion, contributor, amount)` | `handlePledge(repo, dto)` — loads, calls domain service, saves |
 
+Use cases live in `domain/` by default; when the `folder-structure` skill's layout is applied, they live in a sibling `use-cases/` folder instead — required there, because its lint rules forbid `domain/` from importing `use-cases/`.
+
 For detailed guidance, see `resources/domain-services.md`.
 
 ---
@@ -382,7 +367,7 @@ interface OccasionRepository {
 // Adapter (infrastructure layer) — see hexagonal-architecture skill
 ```
 
-**Repositories handle writes and single-aggregate reads.** For reads that need to JOIN across aggregates (dashboard views, detail pages combining data from multiple entities), repositories are the wrong tool — they enforce aggregate boundaries that reads need to cross. Use query functions that JOIN freely instead. This is the CQRS-lite pattern: writes go through repositories (consistency), reads go through query functions (flexibility). See the `hexagonal-architecture` skill's CQRS-lite section and `resources/cqrs-lite.md` for details.
+**Repositories handle writes and single-aggregate reads.** For reads that need to JOIN across aggregates (dashboard views, detail pages combining data from multiple entities), repositories are the wrong tool — they enforce aggregate boundaries that reads need to cross. Use query functions that JOIN freely instead. This is the CQRS-lite pattern: writes go through repositories (consistency), reads go through query functions (flexibility). See the `hexagonal-architecture` skill's CQRS-lite section and its `resources/cqrs-lite.md` for details.
 
 For simple domains where reads map cleanly to a single aggregate, repository reads are fine. Don't separate prematurely.
 
@@ -406,14 +391,9 @@ Test by calling use cases with driven ports replaced by in-memory **fakes** (not
 
 Domain unit tests **complement** use case tests for complex pure business rules. They don't replace them.
 
-| Priority | Boundary | What it proves |
-|----------|----------|----------------|
-| **Primary** | Use case (faked driven ports) | Feature works end-to-end within the hexagon |
-| **Complement** | Domain pure functions directly | Complex business rules in isolation |
-| **Secondary** | Driven adapters (real DB/MSW) | Adapter translates correctly |
-| **Verification** | E2E (full stack) | User experience works |
+The full testing-priority table (use case with fakes → domain pure functions → driven adapters → E2E) lives in the `hexagonal-architecture` skill's Testing Strategy section; for DDD layer-by-layer testing detail, see `resources/testing-by-layer.md`.
 
-For detailed testing guidance, see `resources/testing-by-layer.md`. For a complete worked example showing one feature through every layer with tests, see the hexagonal-architecture skill's `resources/worked-example.md`.
+For a complete worked example showing one feature through every layer with tests, see the hexagonal-architecture skill's `resources/worked-example.md`.
 
 ### Test Factories Use Domain Language
 

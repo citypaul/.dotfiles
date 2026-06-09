@@ -327,10 +327,10 @@ allowed-tools: Bash(git:*), Bash(gh:*), Bash([PACKAGE_MANAGER]:*)
 ---
 
 Current branch state:
-!` + "`" + `git log main..HEAD --oneline` + "`" + `
+!`git log main..HEAD --oneline`
 
 Changes summary:
-!` + "`" + `git diff main...HEAD --stat` + "`" + `
+!`git diff main...HEAD --stat`
 
 Before creating the PR, run these checks in order:
 
@@ -348,7 +348,7 @@ Create a PR with:
 
 Note: No test plan section needed - TDD means tests are already written and passing.
 
-Use ` + "`" + `gh pr create` + "`" + ` (or project-specific CLI) with appropriate title and body.
+Use `gh pr create` (or project-specific CLI) with appropriate title and body.
 ```
 
 Replace all `[DETECTED_*]` placeholders with actual commands from `package.json` scripts.

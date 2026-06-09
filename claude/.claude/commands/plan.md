@@ -1,5 +1,6 @@
 ---
 description: Create a plan document on a branch with a PR - no code changes
+argument-hint: [feature or work to plan]
 allowed-tools: Read, Glob, Grep, Write, Bash(git:*), Bash(gh:*)
 ---
 
@@ -12,7 +13,7 @@ Current branch:
 Active plans:
 !`ls plans/ 2>/dev/null || echo "No plans/ directory found"`
 
-Create a vertical-slice plan for the requested work:
+Create a vertical-slice plan for the requested work: $ARGUMENTS
 
 1. If on main, create a new feature branch first
 2. Explore the codebase to understand the relevant areas

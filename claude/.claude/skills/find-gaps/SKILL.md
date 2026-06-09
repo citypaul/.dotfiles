@@ -1,6 +1,6 @@
 ---
 name: find-gaps
-description: Adversarially review written stories, plans, acceptance criteria, specs, and design mocks to surface missing states, unhandled edge cases, unstated assumptions, unverifiable criteria, and slices that are still too broad or horizontal — then work interactively with the user, one question at a time, to turn each gap into a new acceptance criterion, plan update, mock-state spec, or recommendation to use story-splitting. Use when an existing artifact needs tightening before planning or coding.
+description: Adversarially review an existing written artifact — stories, plans, acceptance criteria, specs, or design mocks — to surface missing states, unhandled edge cases, unstated assumptions, unverifiable criteria, and slices still too broad or horizontal. Works interactively, one question at a time, writing each answer back into the artifact as a new acceptance criterion, plan update, or mock-state spec. Use when an artifact needs tightening before planning or coding ("what's missing?", "poke holes in this", "tighten this up"). Requires an artifact to inspect — for resolving a fuzzy decision tree with no artifact yet, see grill-me; for splitting oversized work, see story-splitting.
 ---
 
 # Find Gaps

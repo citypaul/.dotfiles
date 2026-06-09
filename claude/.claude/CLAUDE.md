@@ -3,9 +3,9 @@
 > **About this file (v3.0.0):** Lean version optimized for context efficiency. Core principles here; detailed patterns loaded on-demand via skills.
 >
 > **Architecture:**
-> - **CLAUDE.md** (this file): Core philosophy + quick reference (~100 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, story-splitting, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, finding-seams, characterisation-tests, storyboard, teach-me, diagrams, find-skills, find-gaps)
-> - **External skills**: Loaded on-demand from community repos (impeccable + 17 steering commands from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), grill-me from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me))
+> - **CLAUDE.md** (this file): Core philosophy + quick reference (~160 lines, always loaded)
+> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, story-splitting, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, folder-structure, finding-seams, characterisation-tests, production-parity-skill-builder, storyboard, teach-me, diagrams, find-skills, find-gaps)
+> - **External skills**: Loaded on-demand from community repos (impeccable + 17 steering commands from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), grill-me from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), seo-audit from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit))
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
 > **Previous versions:**
@@ -103,6 +103,8 @@ For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.
 For 12-factor service projects, load the `twelve-factor` skill.
 For CLI tool design (stream separation, format flags, exit codes, composability), load the `cli-design` skill.
+For designing or auditing source trees (where files belong, feature folders, import boundaries), load the `folder-structure` skill.
+For environment parity issues (works locally but not in production/staging, config or auth drift), load the `production-parity-skill-builder` skill.
 For making untestable code testable, load the `finding-seams` skill.
 For documenting existing behavior before changes, load the `characterisation-tests` skill.
 For multi-surface design audits before code (embed every mock in a scope on one reviewable page with flow diagram + gap cards + per-mock audit checklists), load the `storyboard` skill.
@@ -113,7 +115,7 @@ For relentless decision-tree interrogation before story splitting, planning, or 
 
 **Project onboarding:** Run `/setup` in any new project to detect its tech stack and generate project-level CLAUDE.md, hooks, commands, and PR review agent in one shot. This replaces the need for `/init`.
 
-**Project-level hooks:** Projects should add a PostToolUse hook in `.claude/settings.json` to run typecheck after Write/Edit on .ts/.tsx files. Use `/setup` to generate this automatically, or see the global `settings.json` prettier/eslint hook as a template.
+**Project-level hooks:** Projects should add a PostToolUse hook in `.claude/settings.json` to run typecheck after Write/Edit on .ts/.tsx files. Use `/setup` to generate this automatically, or use the prettier/eslint hook in this repo's `claude/.claude/settings.json` as a template (note: the curl installer does not install settings.json — only the stow-based install does).
 
 ## Output Guardrails
 

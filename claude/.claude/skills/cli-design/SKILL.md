@@ -16,6 +16,7 @@ For API contract stability and Hyrum's Law, see the `api-design` skill. For conf
 | `output-architecture.md` | Implementing Result types, entry point wiring, formatters, logger, JSON envelope schemas |
 | `testing-cli.md` | Writing Vitest tests for CLI behavior (streams, exit codes, pipes, contract tests) |
 | `stream-contracts.md` | Understanding Node.js buffering, NDJSON, signal handling, crash-only design |
+| `composability.md` | Designing or testing pipe behavior — worked shell examples (jq filtering, NDJSON streaming, stdin, chaining, `--fields`, parallel `xargs`) |
 
 ---
 
@@ -217,6 +218,7 @@ Always provide long forms. Short flags only for the most common operations.
 | `--no-color` | Disable color output |
 | `--no-input` | Disable all prompts/interactivity |
 | `-o`, `--output` | Output file |
+| `--fields` | Select output columns |
 
 ### Prompts and Interactivity
 
@@ -304,33 +306,9 @@ The `transient` boolean tells retry logic whether the failure may be temporary.
 
 ## Composability Patterns
 
-Design for real-world pipes:
+Design for real-world pipes: filtering with `jq`, streaming NDJSON line-by-line, feeding stdin, chaining commands through emitted identifiers, selecting columns with `--fields`, and fanning out with `xargs -P`.
 
-```bash
-# Filter structured output
-mycli list --json | jq '.data[] | select(.status == "failed")'
-
-# Stream results for large datasets
-mycli run --format ndjson | while read -r line; do echo "$line" | jq '.file'; done
-
-# Feed stdin
-cat previous-results.json | mycli report --format markdown
-
-# Combine with other tools
-mycli run --json | mycli diff --baseline previous.json
-
-# Silent mode for CI — only exit code matters
-mycli check --quiet || echo "Check failed!"
-
-# Chain: create outputs an identifier, next command uses it
-mycli create --json | jq -r '.data.id' | xargs mycli deploy --id
-
-# Column selection for efficiency
-mycli list --json --fields name,status,id | jq '.data[]'
-
-# Parallel processing
-mycli list --json --fields id | jq -r '.data[].id' | xargs -P4 mycli process --id
-```
+See `resources/composability.md` for the worked shell examples covering each of these patterns.
 
 **Key patterns:**
 
@@ -426,12 +404,7 @@ After designing or reviewing a CLI:
 
 ## Quick Reference
 
-### Stream Routing
-
-```
-stdout ← data, results, JSON, NDJSON
-stderr ← progress, spinners, warnings, errors, debug, prompts
-```
+Stream routing, exit codes, and standard flags are tabled in the body — see "The Unix Stream Contract", "Exit Codes", and "Standard Flags" above.
 
 ### Format Hierarchy
 
@@ -442,38 +415,8 @@ Default (TTY)     → colors, tables, formatted text
 --format ndjson   → streaming, one JSON object per line
 ```
 
-### Exit Codes
-
-```
-0   success
-1   domain failure
-2   invalid usage
-75  temporary failure (retry)
-78  config error
-130 SIGINT (Ctrl-C)
-143 SIGTERM
-```
-
 ### Config Precedence
 
 ```
 flags > env vars > project config > user config > defaults
-```
-
-### Flags Cheat Sheet
-
-```
--h  --help        Show help
-    --version     Print version
--q  --quiet       Less output
--v  --verbose     More output
--d  --debug       Diagnostic output
--f  --force       Skip prompts
--n  --dry-run     Preview changes
-    --json        Structured JSON
-    --plain       Grep-friendly text
-    --no-color    Disable color
-    --no-input    No prompts
--o  --output      Output file
-    --fields      Select columns
 ```

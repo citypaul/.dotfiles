@@ -7,6 +7,49 @@ description: Behavior-driven UI testing patterns. Covers Vitest Browser Mode (pr
 
 For React-specific patterns (components, hooks, context), load the `react-testing` skill. For TDD workflow, load the `tdd` skill. For general testing patterns (factories, public API testing), load the `testing` skill.
 
+**Deep-dive resources** are in the `resources/` directory. Load them on demand:
+
+| Resource | Load when... |
+|----------|-------------|
+| `resources/async-patterns.md` | Using `findBy`/`waitFor`/`waitForElementToBeRemoved`, testing loading states, debounce, or reviewing waitFor usage |
+| `resources/msw.md` | Mocking APIs — full setupWorker (Browser Mode) and setupServer (Node/jsdom) setup, per-test overrides |
+| `resources/dom-testing-library-legacy.md` | Working in a jsdom/`@testing-library/dom` codebase — screen object, fireEvent vs userEvent, jest-dom matchers, ESLint plugins |
+
+---
+
+## Core Philosophy
+
+**Test behavior users see, not implementation details.** This applies in every environment — Browser Mode, jsdom, anything.
+
+Your UI has two users:
+1. **End-users**: Interact through the DOM (clicks, typing, reading text)
+2. **Developers**: You, refactoring implementation
+
+**Kent C. Dodds principle**: "The more your tests resemble the way your software is used, the more confidence they can give you."
+
+**False negatives** (tests break on refactor):
+```typescript
+// ❌ WRONG - Coupled to state implementation; breaks when state → signals → stores
+it('should update internal state', () => {
+  const component = new CounterComponent();
+  component.setState({ count: 5 });
+  expect(component.state.count).toBe(5);
+});
+```
+
+**False positives** (bugs pass tests):
+```typescript
+// ❌ WRONG - Button exists but onClick is broken; test still passes
+it('should render button', () => {
+  render('<button data-testid="submit-btn">Submit</button>');
+  expect(screen.getByTestId('submit-btn')).toBeInTheDocument();
+});
+```
+
+✅ **CORRECT - Drive the UI the way a user would, assert what the user sees**: type into labelled fields, click the submit button, assert the submit handler received the form data. This survives refactors, tests the contract, and catches real bugs (broken onClick, validation errors).
+
+---
+
 ## Vitest Browser Mode (Preferred)
 
 **Always prefer Vitest Browser Mode over jsdom/happy-dom.** Tests run in a real browser (via Playwright), giving production-accurate behavior for CSS, events, focus management, and accessibility.
@@ -26,6 +69,7 @@ For React-specific patterns (components, hooks, context), load the `react-testin
 
 ```bash
 npm install -D vitest @vitest/browser-playwright
+npx playwright install chromium  # Playwright provider needs browser binaries
 ```
 
 ```typescript
@@ -100,6 +144,8 @@ await page.getByRole('button', { name: /submit/i }).click()
 await page.getByLabelText(/email/i).fill('test@example.com')
 ```
 
+In jsdom codebases, use `@testing-library/user-event` instead — always prefer it over `fireEvent` (see `resources/dom-testing-library-legacy.md`). Create a fresh `userEvent.setup()` per test, never in `beforeEach`.
+
 ### Multi-Project Setup (Node + Browser)
 
 When you need both unit tests (Node) and UI tests (browser):
@@ -133,9 +179,9 @@ export default defineConfig({
 
 ### Browser Mode Gotchas
 
-- **`vi.spyOn` on imports**: ES module namespaces are sealed in real browsers. Use `vi.mock('./module', { spy: true })` instead.
+- **`vi.spyOn` on imports**: ES module namespaces are sealed in real browsers. `vi.mock('./module', { spy: true })` works, but treat module mocking as temporary scaffolding — prefer parameter injection so the dependency is an explicit seam (load the `finding-seams` skill).
 - **`alert()`/`confirm()`**: Thread-blocking dialogs halt browser execution. Mock them with `vi.spyOn(window, 'alert').mockImplementation(() => {})`.
-- **`act()` not needed**: CDP events + `expect.element()` retry handle timing automatically.
+- **`act()`**: Not needed for component interactions via locators — CDP events + `expect.element()` retry handle timing. `renderHook` state updates still need `act` (see `react-testing`).
 
 ### Playwright / Browser Mode Test Idempotency
 
@@ -173,873 +219,126 @@ it('creates and displays a user', async () => {
 
 ---
 
-## Legacy: DOM Testing Library Patterns
-
-The patterns below apply when using `@testing-library/dom` directly (e.g., with jsdom). **Prefer Vitest Browser Mode** for new projects — the query patterns are identical but built-in.
-
----
-
-## Core Philosophy
-
-**Test behavior users see, not implementation details.**
-
-Testing Library exists to solve a fundamental problem: tests that break when you refactor (false negatives) and tests that pass when bugs exist (false positives).
-
-### Two Types of Users
-
-Your UI components have two users:
-1. **End-users**: Interact through the DOM (clicks, typing, reading text)
-2. **Developers**: You, refactoring implementation
-
-**Kent C. Dodds principle**: "The more your tests resemble the way your software is used, the more confidence they can give you."
-
-### Why This Matters
-
-**False negatives** (tests break on refactor):
-```typescript
-// ❌ WRONG - Testing implementation (will break on refactor)
-it('should update internal state', () => {
-  const component = new CounterComponent();
-  component.setState({ count: 5 }); // Coupled to state implementation
-  expect(component.state.count).toBe(5);
-});
-```
-
-**False positives** (bugs pass tests):
-```typescript
-// ❌ WRONG - Testing wrong thing
-it('should render button', () => {
-  render('<button data-testid="submit-btn">Submit</button>');
-  expect(screen.getByTestId('submit-btn')).toBeInTheDocument();
-  // Button exists but onClick is broken - test passes!
-});
-```
-
-**Correct approach** (behavior-driven):
-```typescript
-// ✅ CORRECT - Testing user-visible behavior
-it('should submit form when user clicks submit', async () => {
-  const handleSubmit = vi.fn();
-  const user = userEvent.setup();
-
-  render(`
-    <form id="login-form">
-      <label>Email: <input name="email" /></label>
-      <label>Password: <input name="password" type="password" /></label>
-      <button type="submit">Submit</button>
-    </form>
-  `);
-
-  document.getElementById('login-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    handleSubmit(new FormData(e.target));
-  });
-
-  await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-  await user.type(screen.getByLabelText(/password/i), 'password123');
-  await user.click(screen.getByRole('button', { name: /submit/i }));
-
-  expect(handleSubmit).toHaveBeenCalled();
-});
-```
-
-This test:
-- Survives refactoring (state → signals → stores)
-- Tests the contract (what users see)
-- Catches real bugs (broken onClick, validation errors)
-
----
-
 ## Query Selection Priority
 
-**Most critical Testing Library skill: choosing the right query.**
-
-### Priority Order
+**Most critical skill: choosing the right query.** Identical for Browser Mode locators and Testing Library queries.
 
 Use queries in this order (accessibility-first):
 
-1. **`getByRole`** - Highest priority
-   - Queries by ARIA role + accessible name
-   - Mirrors screen reader experience
-   - Forces semantic HTML
-
-2. **`getByLabelText`** - Form fields
-   - Finds inputs by associated `<label>`
-   - Ensures accessible forms
-
-3. **`getByPlaceholderText`** - Fallback for inputs
-   - Only when label not present
-   - Placeholder shouldn't replace label
-
-4. **`getByText`** - Non-interactive content
-   - Headings, paragraphs, list items
-   - Content users read
-
-5. **`getByDisplayValue`** - Current form values
-   - Inputs with pre-filled values
-
+1. **`getByRole`** - Highest priority. Queries by ARIA role + accessible name; mirrors screen reader experience; forces semantic HTML
+2. **`getByLabelText`** - Form fields, via associated `<label>`
+3. **`getByPlaceholder`** - Fallback for inputs when no label (placeholder shouldn't replace a label)
+4. **`getByText`** - Non-interactive content users read
+5. **`getByDisplayValue`** - Inputs with pre-filled values
 6. **`getByAltText`** - Images
-   - Ensures accessible images
+7. **`getByTitle`** - Rare, when other queries unavailable
+8. **`getByTestId`** - Last resort only; not user-facing
 
-7. **`getByTitle`** - SVG titles, title attributes
-   - Rare, when other queries unavailable
+### Query Variants (Testing Library)
 
-8. **`getByTestId`** - Last resort only
-   - When no other query works
-   - Not user-facing
+- **`getBy*`** - Element must exist (throws if not found). Use when asserting existence.
+- **`queryBy*`** - Returns null if not found. Use when asserting **non-existence**.
+- **`findBy*`** - Async, waits for element to appear. See `resources/async-patterns.md`.
 
-### Query Variants
-
-Three variants for every query:
-
-**`getBy*`** - Element must exist (throws if not found)
-```typescript
-// ✅ Use when asserting element EXISTS
-const button = screen.getByRole('button', { name: /submit/i });
-expect(button).toBeDisabled();
-```
-
-**`queryBy*`** - Returns null if not found
-```typescript
-// ✅ Use when asserting element DOESN'T exist
-expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
-// ❌ WRONG - getBy throws, can't assert non-existence
-expect(() => screen.getByRole('dialog')).toThrow(); // Ugly!
-```
-
-**`findBy*`** - Async, waits for element to appear
-```typescript
-// ✅ Use when element appears after async operation
-const message = await screen.findByText(/success/i);
-```
+(Browser Mode locators are lazy and retried by `expect.element()`, so the get/query/find split mostly disappears — use `.not.toBeInTheDocument()` via `expect.element` for absence.)
 
 ### Common Mistakes
 
-❌ **Using `container.querySelector`**
 ```typescript
-const button = container.querySelector('.submit-button'); // DOM implementation detail
-```
+// ❌ WRONG - querySelector (DOM implementation detail)
+const button = container.querySelector('.submit-button');
+// ❌ WRONG - testId when a role is available (not how users find the button)
+screen.getByTestId('submit-button');
+// ❌ WRONG - role without accessible name (which button? pages have many)
+screen.getByRole('button');
+// ✅ CORRECT - role + accessible name (how screen readers find it)
+screen.getByRole('button', { name: /submit/i });
 
-✅ **CORRECT - Query by accessible role**
-```typescript
-const button = screen.getByRole('button', { name: /submit/i }); // User-facing
-```
-
----
-
-❌ **Using `getByTestId` when role available**
-```typescript
-screen.getByTestId('submit-button'); // Not how users find button
-```
-
-✅ **CORRECT - Query by role**
-```typescript
-screen.getByRole('button', { name: /submit/i }); // How screen readers find it
-```
-
----
-
-❌ **Not using accessible names**
-```typescript
-screen.getByRole('button'); // Which button? Multiple on page!
-```
-
-✅ **CORRECT - Specify accessible name**
-```typescript
-screen.getByRole('button', { name: /submit/i }); // Specific button
-```
-
----
-
-❌ **Using getBy to assert non-existence**
-```typescript
-expect(() => screen.getByText(/error/i)).toThrow(); // Awkward
-```
-
-✅ **CORRECT - Use queryBy**
-```typescript
+// ❌ WRONG - getBy to assert non-existence (awkward throw-based check)
+expect(() => screen.getByText(/error/i)).toThrow();
+// ✅ CORRECT - queryBy returns null
 expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
-```
 
----
-
-## User Event Simulation
-
-**Always use `userEvent` over `fireEvent`** for realistic interactions.
-
-### userEvent vs fireEvent
-
-**Why userEvent is superior:**
-- Simulates complete interaction sequence (hover → focus → click → blur)
-- Triggers all associated events
-- Respects browser timing and order
-- Catches more bugs
-
-```typescript
-// ❌ WRONG - fireEvent (incomplete simulation)
-fireEvent.change(input, { target: { value: 'test' } });
-fireEvent.click(button);
-```
-
-```typescript
-// ✅ CORRECT - userEvent (realistic simulation)
-const user = userEvent.setup();
-await user.type(input, 'test');
-await user.click(button);
-```
-
-**Only use `fireEvent` when:**
-- `userEvent` doesn't support the event (rare)
-- Testing non-standard browser behavior
-
-### userEvent.setup() Pattern
-
-**Modern best practice (2025):**
-
-```typescript
-// ✅ CORRECT - Setup per test
-it('should handle user input', async () => {
-  const user = userEvent.setup(); // Fresh instance per test
-  render('<input aria-label="Email" />');
-
-  await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-});
-```
-
-```typescript
-// ❌ WRONG - Setup in beforeEach
-let user;
-beforeEach(() => {
-  user = userEvent.setup(); // Shared state across tests
-});
-
-it('test 1', async () => {
-  await user.click(...); // Might affect test 2
-});
-```
-
-**Why:** Each test gets clean state, prevents test interdependence.
-
-### Common Interactions
-
-**Clicking:**
-```typescript
-const user = userEvent.setup();
-await user.click(screen.getByRole('button', { name: /submit/i }));
-```
-
-**Typing:**
-```typescript
-await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-```
-
-**Keyboard:**
-```typescript
-await user.keyboard('{Enter}'); // Press Enter
-await user.keyboard('{Shift>}A{/Shift}'); // Shift+A
-```
-
-**Selecting options:**
-```typescript
-await user.selectOptions(
-  screen.getByLabelText(/country/i),
-  'USA'
-);
-```
-
-**Clearing input:**
-```typescript
-await user.clear(screen.getByLabelText(/search/i));
-```
-
----
-
-## Async Testing Patterns
-
-UI frameworks are async by nature (state updates, API calls, suspense). Testing Library provides utilities for async scenarios.
-
-### findBy Queries
-
-**Built-in async queries** (combines `getBy` + `waitFor`):
-
-```typescript
-// ✅ CORRECT - Wait for element to appear
-const message = await screen.findByText(/success/i);
-
-// Under the hood: retries getByText until it succeeds or timeout
-```
-
-**When to use:**
-- Element appears after async operation
-- Loading states disappear
-- API responses render content
-
-**Configuration:**
-```typescript
-// Default: 1000ms timeout
-const message = await screen.findByText(/success/i);
-
-// Custom timeout
-const message = await screen.findByText(/success/i, {}, { timeout: 3000 });
-```
-
-### waitFor Utility
-
-**For complex conditions** that `findBy` can't handle:
-
-```typescript
-// ✅ CORRECT - Complex assertion
-await waitFor(() => {
-  expect(screen.getByText(/loaded/i)).toBeInTheDocument();
-});
-
-// ✅ CORRECT - Multiple elements
-await waitFor(() => {
-  expect(screen.getAllByRole('listitem')).toHaveLength(10);
-});
-```
-
-**waitFor retries until:**
-- Assertion passes (doesn't throw)
-- Timeout reached (default 1000ms)
-
-**Common mistakes:**
-
-❌ **Side effects in waitFor**
-```typescript
-await waitFor(() => {
-  fireEvent.click(button); // Side effect! Will click multiple times
-  expect(result).toBe(true);
-});
-```
-
-✅ **CORRECT - Only assertions**
-```typescript
-fireEvent.click(button); // Outside waitFor
-await waitFor(() => {
-  expect(result).toBe(true); // Only assertion
-});
-```
-
----
-
-❌ **Multiple assertions**
-```typescript
-await waitFor(() => {
-  expect(screen.getByText(/name/i)).toBeInTheDocument();
-  expect(screen.getByText(/email/i)).toBeInTheDocument(); // Might not retry both
-});
-```
-
-✅ **CORRECT - Single assertion per waitFor**
-```typescript
-await waitFor(() => {
-  expect(screen.getByText(/name/i)).toBeInTheDocument();
-});
-expect(screen.getByText(/email/i)).toBeInTheDocument();
-```
-
----
-
-❌ **Wrapping findBy in waitFor**
-```typescript
-await waitFor(() => screen.findByText(/success/i)); // Redundant!
-```
-
-✅ **CORRECT - findBy already waits**
-```typescript
-await screen.findByText(/success/i);
-```
-
-### waitForElementToBeRemoved
-
-**For disappearance scenarios:**
-
-```typescript
-// ✅ CORRECT - Wait for loading spinner to disappear
-await waitForElementToBeRemoved(() => screen.queryByText(/loading/i));
-
-// ✅ CORRECT - Wait for modal to close
-await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
-```
-
-**Note:** Must use `queryBy*` (returns null) not `getBy*` (throws).
-
-### Common Patterns
-
-**Loading states:**
-```typescript
-render('<div id="container"></div>');
-
-// Simulate async data loading
-const container = document.getElementById('container');
-container.innerHTML = '<p>Loading...</p>';
-
-// Initially loading
-expect(screen.getByText(/loading/i)).toBeInTheDocument();
-
-// Simulate data load
-setTimeout(() => {
-  container.innerHTML = '<p>John Doe</p>';
-}, 100);
-
-// Wait for data
-await screen.findByText(/john doe/i);
-
-// Loading gone
-expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
-```
-
-**API responses:**
-```typescript
-const user = userEvent.setup();
-render(`
-  <form>
-    <label>Search: <input name="search" /></label>
-    <button type="submit">Search</button>
-    <ul id="results"></ul>
-  </form>
-`);
-
-await user.type(screen.getByLabelText(/search/i), 'react');
-await user.click(screen.getByRole('button', { name: /search/i }));
-
-// Wait for results (after API response)
-await waitFor(() => {
-  expect(screen.getAllByRole('listitem')).toHaveLength(10);
-});
-```
-
-**Debounced inputs:**
-```typescript
-const user = userEvent.setup();
-render(`
-  <label>Search: <input id="search" /></label>
-  <ul id="suggestions"></ul>
-`);
-
-await user.type(screen.getByLabelText(/search/i), 'react');
-
-// Wait for debounced suggestions
-await screen.findByText(/react testing library/i);
-```
-
----
-
-## MSW Integration
-
-**Mock Service Worker** for API-level mocking.
-
-### Why MSW
-
-**Network-level interception:**
-- Intercepts requests at network layer (not fetch/axios mocks)
-- Same mocks work in tests, Storybook, development
-- No client-specific mocking logic
-- Tests real request logic
-
-```typescript
-// ❌ WRONG - Mocking fetch implementation
-vi.spyOn(global, 'fetch').mockResolvedValue({
-  json: async () => ({ users: [...] }),
-}); // Tight coupling, won't work in Storybook
-```
-
-```typescript
-// ✅ CORRECT - MSW intercepts at network level
-// Works in tests, Storybook, dev server
-http.get('/api/users', () => {
-  return HttpResponse.json({ users: [...] });
-});
-```
-
-### setupServer Pattern
-
-**In test setup file:**
-
-```typescript
-// test-setup.ts
-import { setupServer } from 'msw/node';
-import { handlers } from './mocks/handlers';
-
-export const server = setupServer(...handlers);
-
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-```
-
-**In handlers file:**
-
-```typescript
-// mocks/handlers.ts
-import { http, HttpResponse } from 'msw';
-
-export const handlers = [
-  http.get('/api/users', () => {
-    return HttpResponse.json({
-      users: [
-        { id: 1, name: 'Alice' },
-        { id: 2, name: 'Bob' },
-      ],
-    });
-  }),
-];
-```
-
-### Per-Test Overrides
-
-**Override handlers for specific tests:**
-
-```typescript
-it('should handle API error', async () => {
-  // Override for this test only
-  server.use(
-    http.get('/api/users', () => {
-      return HttpResponse.json(
-        { error: 'Server error' },
-        { status: 500 }
-      );
-    })
-  );
-
-  render('<div id="user-list"></div>');
-
-  // Simulate component fetching users
-  fetch('/api/users').then(() => {
-    document.getElementById('user-list').innerHTML =
-      '<p>Failed to load users</p>';
-  });
-
-  await screen.findByText(/failed to load users/i);
-});
-```
-
-**After test, `afterEach` resets to default handlers.**
-
----
-
-## Accessibility-First Testing
-
-### Why Accessible Queries
-
-**Three benefits:**
-
-1. **Tests mirror real usage** - Query like screen readers do
-2. **Improves app accessibility** - Tests force accessible markup
-3. **Refactor-friendly** - Coupled to user experience, not implementation
-
-```typescript
-// ❌ WRONG - Implementation detail
-screen.getByTestId('user-menu');
-
-// ✅ CORRECT - Accessibility query
-screen.getByRole('button', { name: /user menu/i });
-```
-
-If accessible query fails, **your app has an accessibility issue.**
-
-### ARIA Attributes
-
-**When to add ARIA:**
-
-✅ **Custom components** (where semantic HTML unavailable):
-```html
-<div role="dialog" aria-label="Confirmation Dialog">
-  <h2>Are you sure?</h2>
-  ...
-</div>
-```
-
-Query:
-```typescript
-screen.getByRole('dialog', { name: /confirmation/i });
-```
-
-❌ **DON'T add to semantic HTML** (redundant):
-```html
-<!-- ❌ WRONG - Semantic HTML already has role -->
-<button role="button">Submit</button>
-
-<!-- ✅ CORRECT - Semantic HTML is enough -->
-<button>Submit</button>
-```
-
-### Semantic HTML Priority
-
-**Always prefer semantic HTML over ARIA:**
-
-```html
-<!-- ❌ WRONG - Custom element + ARIA -->
-<div role="button" onclick="handleClick()" tabindex="0">
-  Submit
-</div>
-
-<!-- ✅ CORRECT - Semantic HTML -->
-<button onclick="handleClick()">
-  Submit
-</button>
-```
-
-**Semantic HTML provides:**
-- Built-in keyboard navigation
-- Built-in focus management
-- Built-in screen reader support
-- Less code, more accessibility
-
----
-
-## Testing Library Anti-Patterns
-
-### 1. Not using `screen` object
-
-❌ **WRONG - Query from render result**
-```typescript
-const { getByRole } = render('<button>Submit</button>');
-const button = getByRole('button');
-```
-
-✅ **CORRECT - Use screen**
-```typescript
-render('<button>Submit</button>');
-const button = screen.getByRole('button');
-```
-
-**Why:** `screen` is consistent, no destructuring, better error messages.
-
----
-
-### 2. Using querySelector
-
-❌ **WRONG - DOM implementation**
-```typescript
-const { container } = render('<button class="submit-btn">Submit</button>');
-const button = container.querySelector('.submit-btn');
-```
-
-✅ **CORRECT - Accessible query**
-```typescript
-render('<button>Submit</button>');
-const button = screen.getByRole('button', { name: /submit/i });
-```
-
----
-
-### 3. Testing implementation details
-
-❌ **WRONG - Internal state**
-```typescript
-const component = new Component();
-expect(component._internalState).toBe('value'); // Private implementation
-```
-
-✅ **CORRECT - User-visible behavior**
-```typescript
-render('<div id="output"></div>');
-expect(screen.getByText(/value/i)).toBeInTheDocument();
-```
-
----
-
-### 4. Not using jest-dom matchers
-
-❌ **WRONG - Manual assertions**
-```typescript
-expect(button.disabled).toBe(true);
-expect(element.classList.contains('active')).toBe(true);
-```
-
-✅ **CORRECT - jest-dom matchers**
-```typescript
-expect(button).toBeDisabled();
-expect(element).toHaveClass('active');
-```
-
-**Install:** `npm install -D @testing-library/jest-dom`
-
----
-
-### 5. Manual cleanup() calls
-
-❌ **WRONG - Manual cleanup**
-```typescript
-afterEach(() => {
-  cleanup(); // Automatic in modern Testing Library!
-});
-```
-
-✅ **CORRECT - No cleanup needed**
-```typescript
-// Cleanup happens automatically
-```
-
----
-
-### 6. Wrong assertion methods
-
-❌ **WRONG - Property access**
-```typescript
-expect(input.value).toBe('test');
-expect(checkbox.checked).toBe(true);
-```
-
-✅ **CORRECT - jest-dom matchers**
-```typescript
-expect(input).toHaveValue('test');
-expect(checkbox).toBeChecked();
-```
-
----
-
-### 7. beforeEach render pattern
-
-❌ **WRONG - Shared render in beforeEach**
-```typescript
-let button;
-beforeEach(() => {
-  render('<button>Submit</button>');
-  button = screen.getByRole('button'); // Shared state
-});
-
-it('test 1', () => {
-  // Uses shared button from beforeEach
-});
-```
-
-✅ **CORRECT - Factory function per test**
-```typescript
-const renderButton = () => {
-  render('<button>Submit</button>');
-  return {
-    button: screen.getByRole('button'),
-  };
-};
-
-it('test 1', () => {
-  const { button } = renderButton(); // Fresh state
-});
-```
-
-For factory patterns, see `testing` skill.
-
----
-
-### 8. Multiple assertions in waitFor
-
-❌ **WRONG - Multiple assertions**
-```typescript
-await waitFor(() => {
-  expect(screen.getByText(/name/i)).toBeInTheDocument();
-  expect(screen.getByText(/email/i)).toBeInTheDocument();
-});
-```
-
-✅ **CORRECT - Single assertion per waitFor**
-```typescript
-await waitFor(() => {
-  expect(screen.getByText(/name/i)).toBeInTheDocument();
-});
-expect(screen.getByText(/email/i)).toBeInTheDocument();
-```
-
----
-
-### 9. Side effects in waitFor
-
-❌ **WRONG - Mutation in callback**
-```typescript
-await waitFor(() => {
-  fireEvent.click(button); // Clicks multiple times!
-  expect(result).toBe(true);
-});
-```
-
-✅ **CORRECT - Side effects outside**
-```typescript
-fireEvent.click(button);
-await waitFor(() => {
-  expect(result).toBe(true);
-});
-```
-
----
-
-### 10. Exact string matching
-
-❌ **WRONG - Fragile exact match**
-```typescript
-screen.getByText('Welcome, John Doe'); // Breaks on whitespace change
-```
-
-✅ **CORRECT - Regex for flexibility**
-```typescript
+// ❌ WRONG - exact string match (breaks on whitespace change)
+screen.getByText('Welcome, John Doe');
+// ✅ CORRECT - regex for flexibility
 screen.getByText(/welcome.*john doe/i);
 ```
 
 ---
 
-### 11. Wrong query variant for assertion
+## Accessibility-First Testing
 
-❌ **WRONG - getBy for non-existence**
-```typescript
-expect(() => screen.getByText(/error/i)).toThrow();
+**Three benefits of accessible queries:**
+
+1. **Tests mirror real usage** - Query like screen readers do
+2. **Improves app accessibility** - Tests force accessible markup
+3. **Refactor-friendly** - Coupled to user experience, not implementation
+
+If an accessible query fails, **your app has an accessibility issue.**
+
+**Always prefer semantic HTML over ARIA:**
+
+```html
+<!-- ❌ WRONG - Custom element + ARIA -->
+<div role="button" onclick="handleClick()" tabindex="0">Submit</div>
+
+<!-- ✅ CORRECT - Semantic HTML: built-in keyboard nav, focus, screen reader support -->
+<button onclick="handleClick()">Submit</button>
 ```
 
-✅ **CORRECT - queryBy**
-```typescript
-expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
-```
+Add ARIA only where semantic HTML is unavailable (e.g., `role="dialog"` on a custom modal), never redundantly on semantic elements.
 
 ---
 
-### 12. Wrapping findBy in waitFor
+## Async Testing
 
-❌ **WRONG - Redundant**
-```typescript
-await waitFor(() => screen.findByText(/success/i));
-```
+In Browser Mode, `await expect.element(...)` handles most waiting automatically. In jsdom codebases, use `findBy*` for appearance, `waitFor` for complex conditions, and `waitForElementToBeRemoved` for disappearance.
 
-✅ **CORRECT - findBy already waits**
-```typescript
-await screen.findByText(/success/i);
-```
+**Key rules:** no side effects inside `waitFor`, one assertion per `waitFor`, never wrap `findBy` in `waitFor`.
+
+For full patterns and anti-patterns, see `resources/async-patterns.md`.
 
 ---
 
-### 13. Using testId when role available
+## API Mocking with MSW
 
-❌ **WRONG - testId**
-```typescript
-screen.getByTestId('submit-button');
-```
+**Use MSW, not fetch/axios mocks** — it intercepts at the network level, so the same handlers work in tests, Storybook, and dev.
 
-✅ **CORRECT - Role**
-```typescript
-screen.getByRole('button', { name: /submit/i });
-```
+**Environment determines the API:**
+- **Browser Mode**: `setupWorker` from `msw/browser` (start the worker in a setup file; per-test overrides via `worker.use()`)
+- **Node/jsdom**: `setupServer` from `msw/node` (per-test overrides via `server.use()`)
+
+Using `setupServer` in Browser Mode silently does nothing — tests run in a real browser. See `resources/msw.md` for full setup of both.
 
 ---
 
-### 14. Not installing ESLint plugins
+## Core Anti-Patterns
 
-**Install these plugins:**
-```bash
-npm install -D eslint-plugin-testing-library eslint-plugin-jest-dom
+1. **Testing implementation details** — internal state, private methods, CSS classes as hooks. Test user-visible behavior.
+2. **`querySelector`/testId when an accessible query exists** — see Query Selection Priority above.
+3. **beforeEach render with shared variables** — use a factory function per test instead:
+
+```typescript
+// ❌ WRONG - Shared state across tests
+let button;
+beforeEach(() => {
+  render('<button>Submit</button>');
+  button = screen.getByRole('button');
+});
+
+// ✅ CORRECT - Factory function per test
+const renderButton = () => {
+  render('<button>Submit</button>');
+  return { button: screen.getByRole('button') };
+};
 ```
 
-**.eslintrc.js:**
-```javascript
-{
-  extends: [
-    'plugin:testing-library/dom', // For framework-agnostic
-    // OR 'plugin:testing-library/react' for React
-    'plugin:jest-dom/recommended',
-  ],
-}
-```
+For factory patterns, see the `testing` skill.
 
-**Catches anti-patterns automatically.**
+4. **Fetch/axios mocking instead of MSW** — see `resources/msw.md`.
+5. **waitFor misuse** — see `resources/async-patterns.md`.
+6. **jsdom-specific anti-patterns** (skipping `screen`, `fireEvent`, manual `cleanup()`, property assertions instead of jest-dom matchers, missing ESLint plugins) — see `resources/dom-testing-library-legacy.md`.
 
 ---
 
@@ -1054,8 +353,8 @@ Before merging UI tests, verify:
 - [ ] Using `userEvent` for interactions (CDP-based in Browser Mode, or `@testing-library/user-event`)
 - [ ] Testing behavior users see, not implementation details
 - [ ] No manual `cleanup()` calls (automatic)
-- [ ] No manual `act()` calls (Browser Mode handles timing)
-- [ ] MSW for API mocking (not fetch/axios mocks)
+- [ ] No manual `act()` calls for component interactions (Browser Mode handles timing)
+- [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom
 - [ ] Following TDD workflow (see `tdd` skill)
 - [ ] Using test factories for data (see `testing` skill)
 - [ ] For React-specific patterns (hooks, context, components), see `react-testing` skill

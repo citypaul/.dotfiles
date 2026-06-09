@@ -108,10 +108,14 @@ it('characterises timestamp formatting', () => {
 ### Random Values / UUIDs
 
 ```typescript
-// Option 1: mock the source
+// Option 1: introduce a parameter seam (preferred — see finding-seams)
+const createOrder = (data: OrderData, generateId: () => string = () => crypto.randomUUID()) => ...
+// test: createOrder(data, () => 'test-uuid-001')
+
+// Option 2: mock the source (temporary scaffolding only — implementation-coupled)
 vi.spyOn(crypto, 'randomUUID').mockReturnValue('test-uuid-001');
 
-// Option 2: use property matchers with snapshots
+// Option 3: use property matchers with snapshots
 expect(result).toMatchSnapshot({
   id: expect.any(String),
   createdAt: expect.any(Date),

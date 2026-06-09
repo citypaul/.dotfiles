@@ -1,7 +1,7 @@
 ---
 name: pr-reviewer
 description: >
-  Use this agent proactively to guide pull request reviews or reactively to analyze an existing PR and post feedback directly to GitHub. Invoke when reviewing PRs for TDD compliance, TypeScript strictness, testing patterns, and code quality.
+  Use this agent to review a complete pull request and optionally post feedback directly to GitHub. Invoke at PR review time for a holistic pass across TDD evidence, TypeScript strictness, testing patterns, and code quality. Scope: whole-PR review at the end — during development, use tdd-guardian (process), ts-enforcer (types), or refactor-scan (structure) for focused checks instead.
 tools: Read, Grep, Glob, Bash, mcp__github__add_issue_comment, mcp__github__pull_request_review_write, mcp__github__add_comment_to_pending_review, mcp__github__pull_request_read
 model: sonnet
 color: cyan
@@ -163,7 +163,7 @@ gh pr diff <number> | grep -E "^\+\+\+ b/.*\.(ts|tsx)" | grep -v test
 **Detection patterns:**
 ```bash
 # Look for spy/mock on internal methods
-gh pr diff <number> | grep -E "jest\.spyOn|\.mock\("
+gh pr diff <number> | grep -E "vi\.spyOn|jest\.spyOn|vi\.mock\(|\.mock\("
 
 # Look for let/beforeEach anti-patterns
 gh pr diff <number> | grep -E "^\+\s*(let|beforeEach)"
@@ -181,7 +181,7 @@ gh pr diff <number> | grep -E "should call|should invoke|should trigger"
 - Using factory functions: `getMockPayment({ amount: -100 })`
 
 ❌ **Implementation-focused tests:**
-- Line 45: `jest.spyOn(validator, 'validate')` - Tests internal call, not behavior
+- Line 45: `vi.spyOn(validator, 'validate')` - Tests internal call, not behavior
 - Line 67: `expect(spy).toHaveBeenCalled()` - Meaningless assertion
 
 ❌ **Anti-patterns:**

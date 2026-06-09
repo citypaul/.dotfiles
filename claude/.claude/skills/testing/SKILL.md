@@ -52,7 +52,7 @@ Never test implementation details. Test behavior through public APIs.
 ```typescript
 // ❌ Testing HOW (implementation detail)
 it('should call validateAmount', () => {
-  const spy = jest.spyOn(validator, 'validateAmount');
+  const spy = vi.spyOn(validator, 'validateAmount');
   processPayment(payment);
   expect(spy).toHaveBeenCalled(); // Tests HOW, not WHAT
 });
@@ -353,7 +353,7 @@ Watch for these patterns that give fake 100% coverage:
 ❌ **WRONG** - Gives 100% coverage but tests nothing:
 ```typescript
 it('calls validator', () => {
-  const spy = jest.spyOn(validator, 'validate');
+  const spy = vi.spyOn(validator, 'validate');
   validate(payment);
   expect(spy).toHaveBeenCalled(); // Meaningless assertion
 });
@@ -374,7 +374,7 @@ it('should reject invalid payment', () => {
 ❌ **WRONG** - No behavior validation:
 ```typescript
 it('processes payment', () => {
-  const spy = jest.spyOn(processor, 'process');
+  const spy = vi.spyOn(processor, 'process');
   handlePayment(payment);
   expect(spy).toHaveBeenCalledWith(payment); // So what?
 });
@@ -389,6 +389,8 @@ it('should process payment and return transaction ID', () => {
   expect(result.transactionId).toBeDefined();
 });
 ```
+
+**Exception**: asserting on a callback passed in through the public API is behavior testing, not coverage theater. When a component or function accepts a callback (e.g. an `onSubmit` prop), that callback contract IS the output — `expect(handleSubmit).toHaveBeenCalledWith(...)` verifies observable behavior. What this pattern forbids is spying on internal collaborators the caller never provided.
 
 ### Pattern 3: Test trivial getters/setters
 

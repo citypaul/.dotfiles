@@ -1,6 +1,6 @@
 ---
 name: refactoring
-description: Refactoring assessment and patterns. Use after mutation testing validates test strength (MUTATE phase) to assess improvement opportunities.
+description: Refactoring assessment and patterns for already-tested code. Use when the user asks to refactor, clean up, simplify, or restructure existing code, and automatically after mutation testing validates test strength (the REFACTOR step of the TDD cycle). Covers commit-before-refactoring discipline, when refactoring adds value vs when to skip it, and the priority classification of improvement opportunities. Do NOT use for untested code (see characterisation-tests and finding-seams first) or for adding behavior (see tdd).
 ---
 
 # Refactoring

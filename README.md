@@ -92,8 +92,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Impeccable Design** | Comprehensive frontend design vocabulary: distinctive interfaces, systematic typography, OKLCH color, anti-AI-slop methodology + 17 steering commands | [→ impeccable](https://impeccable.style/skills/) |
-| **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 2 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
-| **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 3 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
+| **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 5 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
+| **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 4 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
 | **Finding Seams** | Identifying substitution points in untestable code -- function parameter, configuration, module, and object seams for TypeScript/JS. FP-first with OOP patterns in a separate resource for legacy class-based code. Based on Michael Feathers' *Working Effectively with Legacy Code*. 3 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
 | **Characterisation Tests** | Documenting actual behavior of existing code before making changes. The 5-step algorithm, heuristics, modern tooling (Vitest snapshots, combination testing, approval testing). Based on Michael Feathers' *Working Effectively with Legacy Code*. 2 deep-dive resources | [→ skills/characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) |
 | **Storyboard** | Multi-surface design audit on a single HTML page. Live iframes of every mock side-by-side, ASCII flow diagram with colour-coded gaps, per-mock `/critique`+`/clarify`+`/audit`+`/polish` checklist, brainstorm-question cards for missing mocks. Use before any multi-surface feature lands code. Pairs with impeccable design skills | [→ skills/storyboard](claude/.claude/skills/storyboard/SKILL.md) |
@@ -115,7 +115,7 @@ Unlike typical style guides, CLAUDE.md provides:
 
 ## 📖 Skills Guide
 
-**v3.0 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3,000+ lines to ~100 lines.
+**v3.0 Architecture:** Skills are auto-discovered patterns loaded on-demand when relevant. This reduces always-loaded context from ~3,000+ lines to ~160 lines.
 
 ### Quick Navigation by Problem
 
@@ -543,12 +543,12 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 
 **Problem it solves:** Inconsistent API contracts, breaking changes that surprise consumers, endpoints returning different shapes, no pagination on list endpoints, duplicate operations from retried requests
 
-**What's inside (main skill + 2 deep-dive resources):**
+**What's inside (main skill + 5 deep-dive resources):**
 - **Hyrum's Law** — every observable behavior becomes a de facto contract; design implications for what you expose
 - **Contract-first development** — define the interface before implementing (aligns with TDD: define what you want → test → implement)
 - **RFC 9457 error semantics** — standard `application/problem+json` format with security considerations, extension members, validation error patterns
 - **Idempotency** — HTTP method safety table, idempotency keys for POST (Stripe's pattern), making DELETE idempotent
-- **Rate limiting** — standard headers (`RateLimit-Limit/Remaining/Reset`), `Retry-After`, 429 responses
+- **Rate limiting** — IETF draft structured fields (`RateLimit` / `RateLimit-Policy`), legacy header triplets, `Retry-After`, 429 responses
 - **REST conventions** — resource naming, PATCH vs PUT, pagination, filtering, sub-resources
 - **Backward compatibility** — additive-only changes, what breaks vs preserves contracts
 - **Input/output separation** — distinguish caller-provided data from server-generated fields
@@ -556,6 +556,9 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 - **Red flags and verification checklist**
 - [`resources/api-evolution.md`](claude/.claude/skills/api-design/resources/api-evolution.md) — Versioning strategies (Stripe's date-pinning, URL, header), Postel's Law, Sunset/Deprecation headers, enum evolution, consumer-driven contract testing (Pact)
 - [`resources/api-security.md`](claude/.claude/skills/api-design/resources/api-security.md) — OWASP API Security Top 10 with TypeScript code examples, authentication patterns (API keys, OAuth2+PKCE, JWT tradeoffs), security checklist
+- [`resources/auth-security.md`](claude/.claude/skills/api-design/resources/auth-security.md) — JWT best practices (RFC 8725) and OAuth 2.0 security (RFC 9700): algorithm allowlisting, claim validation, PKCE, redirect URI validation, token handling
+- [`resources/http-fundamentals.md`](claude/.claude/skills/api-design/resources/http-fundamentals.md) — Building on HTTP semantics (RFC 9205): status code discipline, caching, URI schemes, browser security headers
+- [`resources/problem-details.md`](claude/.claude/skills/api-design/resources/problem-details.md) — RFC 9457 deep detail: ProblemDetail type, type-URI semantics, extension members, security considerations
 
 **Adapted from** [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), significantly expanded with RFC 9457, idempotency, rate limiting, OWASP API Security Top 10, versioning strategies, and deprecation patterns. Modified to align with existing skills: TypeScript patterns deferred to `typescript-strict`, data structures use `type` with `readonly` per `functional` skill conventions.
 
@@ -1403,9 +1406,9 @@ Both patterns resolve to the same content on disk, so the first `--agent codex` 
 **Migration from the old curl-based installer is automatic.** If `~/.claude/skills/` contains regular directories left behind by a previous install, the installer moves them to `~/.claude/skills.pre-skills-sh.<timestamp>/` before running `npx skills add`, so the CLI can route each source through the universal cache and every targeted agent (Claude Code *and* Codex, etc.) picks them up. The move is non-destructive — the timestamped backup stays on disk until you remove it.
 
 **What gets installed:**
-- ✅ `~/.claude/CLAUDE.md` (~100 lines - lean core principles)
+- ✅ `~/.claude/CLAUDE.md` (~160 lines - lean core principles)
 - ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) (`npx skills add`):
-  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 26 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, and more)
+  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 27 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, and more)
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
   - [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) — Next.js best practices, Cache Components, and upgrade workflow
@@ -1658,7 +1661,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~100 lines) + 27 auto-discovered skills + 5 slash commands + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + 27 auto-discovered skills + 5 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1666,7 +1669,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 | Version | Architecture | Context Size | Best For |
 |---------|--------------|--------------|----------|
-| **v3.0.0** | Skills (on-demand) | ~100 lines always | Context-efficient, truly lean |
+| **v3.0.0** | Skills (on-demand) | ~160 lines always | Context-efficient, truly lean |
 | **v2.0.0** | @docs/ imports | ~3000 lines always | Full docs always loaded |
 | **v1.0.0** | Single file | ~1800 lines always | Standalone, no dependencies |
 
@@ -1680,8 +1683,8 @@ The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~100 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 26 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
+- **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~160 lines)
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 27 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1858,7 +1861,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + skills (26 from this repo plus external skill bundles) + 10 agents (development guidelines)
+- ✅ CLAUDE.md + skills (27 from this repo plus external skill bundles) + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ OpenCode configuration (guidelines plus built-in LSP servers, including TypeScript)
