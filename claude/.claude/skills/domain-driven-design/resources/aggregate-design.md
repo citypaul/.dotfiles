@@ -2,6 +2,58 @@
 
 Aggregates are the hardest part of DDD to get right. Start small and tighten boundaries when you hit consistency issues.
 
+## Design From Invariants, Not Relationships
+
+The most common aggregate design mistake is starting from entity relationships. Developers see "Route has many Locations, Location has one VendingMachine" and build a hierarchy that mirrors this structure. The result looks domain-rich — organized entities, nested value objects, accessor methods — but conceals the absence of genuine business behavior.
+
+**Aggregates are consistency boundaries, not containment hierarchies.** An aggregate exists to enforce invariants during state changes. If you can't name the invariant, you probably don't need the aggregate.
+
+**The litmus test for aggregate membership:**
+
+1. What commands change state in this area of the domain?
+2. What must remain true immediately after each state change? (These are your invariants.)
+3. What data is required to enforce those invariants? (Only this belongs in the aggregate.)
+
+If the answer to #2 is only structural rules (one-to-many, one-to-one), database constraints enforce these more simply than aggregate code. Reserve aggregates for behavioral invariants — rules about what's allowed, limits, conditions, and business decisions.
+
+```typescript
+// ❌ RELATIONSHIP-DRIVEN — aggregate mirrors entity hierarchy
+//    No invariants enforced; methods just manage associations
+type Route = {
+  readonly id: RouteId;
+  readonly locations: ReadonlyArray<Location>;  // Why is this here?
+  readonly addLocation: ...;                     // Just manages a collection
+  readonly attachVendingMachine: ...;            // Just manages a relationship
+  readonly getAlarmCount: ...;                   // Read concern leaking in
+};
+
+// ✅ INVARIANT-DRIVEN — VendingMachine is its own aggregate
+//    because alarms are the behavioral responsibility
+type VendingMachine = {
+  readonly id: VendingMachineId;
+  readonly locationId: LocationId;              // Reference by ID
+  readonly alarms: ReadonlyArray<Alarm>;
+  readonly maxConcurrentAlarms: number;         // Invariant: can't exceed this
+};
+
+// The invariant that justifies this aggregate:
+const triggerAlarm = (machine: VendingMachine, alarm: NewAlarm): TriggerAlarmResult => {
+  const activeAlarms = machine.alarms.filter(a => a.status === 'active');
+  if (activeAlarms.length >= machine.maxConcurrentAlarms) {
+    return { success: false, reason: 'max-alarms-reached' };
+  }
+  return { success: true, machine: { ...machine, alarms: [...machine.alarms, alarm] } };
+};
+```
+
+**Signs you have a relationship-driven aggregate:**
+- Methods only add, remove, or attach children (no business rules enforced)
+- No method ever returns a failure result — everything always succeeds
+- The aggregate's value is "organizing" data rather than protecting correctness
+- Removing the aggregate and using direct repository access would change nothing about system correctness
+
+**Complementary heuristic — lifecycle identity:** Aggregates have lifecycles. They are "born" through domain events (a customer registers, a contract is signed, an order is placed) and eventually "die" (expiration, cancellation, liquidation). If you can identify what creates and destroys a thing, you've likely found an aggregate boundary. The birth event often reveals the root entity; the data needed for invariants between birth and death reveals what belongs inside.
+
 ## The Always-Valid Principle
 
 An entity must satisfy its invariants at all times — after construction, after every state transition, and when retrieved from persistence.
@@ -79,12 +131,75 @@ const handlePledge = async (repos, dto) => {
 };
 ```
 
+**Data locality:** The flip side of "one aggregate per transaction" is that all of an aggregate's internals must be co-located in the same data store. Splitting an aggregate's child entities across separate databases or services forces distributed transactions to maintain consistency — defeating the purpose of the boundary. Store an aggregate's data together so it can be read, changed, and persisted atomically.
+
+**Cross-aggregate rules are eventually consistent by default.** Any business rule that spans aggregates should not be expected to be immediately up-to-date at all times (Evans). Immediate consistency is a scarce resource — spend it only within aggregates where invariants truly demand it. Between aggregates, use domain events, batch processing, or reconciliation jobs to converge within acceptable business timeframes.
+
 ## Aggregate Root Rules
 
 1. **External access only through the root** — never reach into child entities directly
 2. **The root enforces all invariants** — children don't validate themselves in isolation
 3. **Delete cascades from the root** — deleting an aggregate deletes all its children
 4. **IDs are globally unique for roots** — child entity IDs only need to be unique within the aggregate
+
+## Enforcing Boundaries in TypeScript
+
+The rules above are meaningless without code-level enforcement. Three patterns prevent callers from bypassing the aggregate root:
+
+### 1. Accept child IDs, not child objects
+
+When an aggregate method operates on a child entity, accept the child's **ID** — not the entity itself. The root looks up the child internally and validates ownership. Passing a child entity object from outside leaks aggregate internals into the caller.
+
+```typescript
+// ❌ Leaks internals — caller must obtain the Exercise object somehow
+const removeExercise = (workout: Workout, exercise: Exercise): Workout => ...;
+
+// ✅ Boundary preserved — caller only knows the ID
+const removeExercise = (workout: Workout, exerciseId: ExerciseId): RemoveExerciseResult => {
+  const exercise = workout.exercises.find(e => e.id === exerciseId);
+  if (!exercise) return { success: false, reason: 'exercise-not-found' };
+  return {
+    success: true,
+    workout: { ...workout, exercises: workout.exercises.filter(e => e.id !== exerciseId) },
+  };
+};
+```
+
+### 2. Create child entities through the root
+
+Child entities should be created by aggregate root operations, not constructed externally and passed in. This ensures the root can enforce creation invariants (e.g., max items, uniqueness, ordering).
+
+```typescript
+// ❌ Externally constructed child — root can't enforce creation rules
+const addExercise = (workout: Workout, exercise: Exercise): Workout => ...;
+
+// ✅ Root creates the child — enforces max-exercises invariant
+const addExercise = (workout: Workout, params: NewExerciseParams): AddExerciseResult => {
+  if (workout.exercises.length >= workout.maxExercises) {
+    return { success: false, reason: 'max-exercises-reached' };
+  }
+  const exercise: Exercise = {
+    id: createExerciseId(),
+    workoutId: workout.id,
+    ...params,
+  };
+  return { success: true, workout: { ...workout, exercises: [...workout.exercises, exercise] } };
+};
+```
+
+### 3. Expose ReadonlyArray for child collections
+
+TypeScript's `ReadonlyArray<T>` (or `readonly T[]`) prevents callers from mutating the collection. This is the minimum boundary enforcement — callers can inspect children but cannot add, remove, or reorder them without going through root methods.
+
+```typescript
+type Workout = {
+  readonly id: WorkoutId;
+  readonly exercises: ReadonlyArray<Exercise>;  // Inspect OK, mutate impossible
+  readonly maxExercises: number;
+};
+```
+
+**Together, these three patterns mean:** callers can see child entities (via `ReadonlyArray`), identify them (via IDs), and request operations on them (via root methods) — but can never construct, mutate, or remove them directly.
 
 ## When to Split vs Combine
 
@@ -99,6 +214,45 @@ const handlePledge = async (repos, dto) => {
 - Splitting would require a complex coordination mechanism
 
 **Start combined, split when you feel the pain.** Premature splitting creates coordination complexity worse than the performance problem it prevents. Aggregate boundaries are expected to evolve as domain understanding deepens — splitting or merging aggregates is a normal part of DDD, not a sign of failure.
+
+## Aggregates Serve Commands, Not Queries
+
+Aggregates exist to protect correctness during state changes. They do not exist to answer read-side questions efficiently. Separating these concerns (CQRS thinking) has a direct impact on aggregate design:
+
+- **Commands** load the aggregate, enforce invariants, persist changes
+- **Queries** read data directly — optimized views, joins, projections — without loading aggregates
+
+**Don't let query needs inflate aggregate boundaries.** If a client needs alarm counts, last-alarm dates, or summary statistics, that's a read-model concern. Adding these as properties on the write-side aggregate conflates two responsibilities.
+
+```typescript
+// ❌ Query concerns leaking into the aggregate
+type Route = {
+  readonly id: RouteId;
+  readonly locations: ReadonlyArray<Location>;
+  readonly alarmCount: number;        // Read concern — doesn't support any invariant
+  readonly lastAlarmDate: Date | null; // Read concern — no command needs this
+};
+
+// ✅ Aggregate only has what commands need for invariant enforcement
+type VendingMachine = {
+  readonly id: VendingMachineId;
+  readonly locationId: LocationId;
+  readonly alarms: ReadonlyArray<Alarm>;      // Needed for max-alarms invariant
+  readonly maxConcurrentAlarms: number;        // The invariant itself
+};
+
+// ✅ Read model answers query-side questions independently
+type AlarmSummaryView = {
+  readonly routeId: RouteId;
+  readonly totalAlarms: number;
+  readonly lastAlarmAt: Date | null;
+  readonly activeAlarmCount: number;
+};
+```
+
+**The test:** For every piece of data in an aggregate, ask "Does any command need this to enforce an invariant?" If the answer is no — if it only exists to satisfy a read — it belongs in a read model, not the aggregate.
+
+Domain events bridge the two sides: the aggregate publishes `AlarmTriggered` after a command succeeds, and a projection updates the read model. This keeps the aggregate small and focused on correctness.
 
 ## Concurrency: Optimistic Locking
 
