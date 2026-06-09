@@ -52,6 +52,8 @@ const triggerAlarm = (machine: VendingMachine, alarm: NewAlarm): TriggerAlarmRes
 - The aggregate's value is "organizing" data rather than protecting correctness
 - Removing the aggregate and using direct repository access would change nothing about system correctness
 
+**Complementary heuristic — lifecycle identity:** Aggregates have lifecycles. They are "born" through domain events (a customer registers, a contract is signed, an order is placed) and eventually "die" (expiration, cancellation, liquidation). If you can identify what creates and destroys a thing, you've likely found an aggregate boundary. The birth event often reveals the root entity; the data needed for invariants between birth and death reveals what belongs inside.
+
 ## The Always-Valid Principle
 
 An entity must satisfy its invariants at all times — after construction, after every state transition, and when retrieved from persistence.
@@ -128,6 +130,10 @@ const handlePledge = async (repos, dto) => {
   }
 };
 ```
+
+**Data locality:** The flip side of "one aggregate per transaction" is that all of an aggregate's internals must be co-located in the same data store. Splitting an aggregate's child entities across separate databases or services forces distributed transactions to maintain consistency — defeating the purpose of the boundary. Store an aggregate's data together so it can be read, changed, and persisted atomically.
+
+**Cross-aggregate rules are eventually consistent by default.** Any business rule that spans aggregates should not be expected to be immediately up-to-date at all times (Evans). Immediate consistency is a scarce resource — spend it only within aggregates where invariants truly demand it. Between aggregates, use domain events, batch processing, or reconciliation jobs to converge within acceptable business timeframes.
 
 ## Aggregate Root Rules
 
