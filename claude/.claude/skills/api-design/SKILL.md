@@ -5,7 +5,17 @@ description: Stable API and interface design patterns. Use when designing REST e
 
 # API and Interface Design
 
-For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill. For versioning strategies and deprecation patterns, see `resources/api-evolution.md`. For security at the API boundary, see `resources/api-security.md`. For HTTP protocol fundamentals (caching, browser security, status codes, headers), see `resources/http-fundamentals.md`. For JWT and OAuth 2.0 security deep-dive, see `resources/auth-security.md`.
+For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill.
+
+**Deep-dive resources** are in the `resources/` directory. Load them on demand:
+
+| Resource | Load when... |
+|----------|-------------|
+| `problem-details.md` | Implementing RFC 9457 error responses — member semantics, single-error and validation-error JSON examples, extension members, §5 security guidance |
+| `api-evolution.md` | Versioning strategies and deprecation patterns |
+| `api-security.md` | Securing the API boundary |
+| `auth-security.md` | JWT and OAuth 2.0 security deep-dive |
+| `http-fundamentals.md` | HTTP protocol fundamentals — caching directives, content negotiation, browser security, status codes, header design |
 
 ## When to Use
 
@@ -97,68 +107,11 @@ If you start with a simpler format, design it so it can evolve toward RFC 9457 l
 
 ### RFC 9457 (Problem Details for HTTP APIs)
 
-The standard format for machine-readable API errors for public APIs. Use `application/problem+json` as the Content-Type.
+The standard format for machine-readable API errors for public APIs. Use `application/problem+json` as the Content-Type. Standard members: `type` (URI identifying the error type), `title` (stable, human-readable summary), `status` (must match the actual HTTP status), `detail` (occurrence-specific explanation), `instance` (optional occurrence URI). Extension members are allowed — clients must ignore extensions they don't recognize.
 
-**Standard members:**
+Errors should be **actionable**: the consumer should know what went wrong, why, and what to do about it. Error responses are not a debugging tool — never expose stack traces, internal paths, or implementation details.
 
-```typescript
-type ProblemDetail = {
-  readonly type: string;       // URI identifying the error type (defaults to "about:blank")
-  readonly title: string;      // Human-readable summary — MUST NOT change between occurrences
-  readonly status: number;     // HTTP status code — MUST match the actual HTTP response status
-  readonly detail: string;     // Explanation specific to this occurrence — help the client fix it
-  readonly instance?: string;  // URI identifying this specific occurrence
-};
-```
-
-When `type` is absent or `"about:blank"`, the problem has no additional semantics beyond the HTTP status code. Use `title` matching the standard HTTP phrase (e.g., "Not Found" for 404).
-
-When `type` is a resolvable URI (http/https), it SHOULD point to human-readable documentation explaining how to resolve the problem.
-
-**Example — single error:**
-
-```json
-{
-  "type": "https://api.example.com/problems/insufficient-funds",
-  "title": "Insufficient Funds",
-  "status": 422,
-  "detail": "Your account balance of $5.00 is insufficient for a $10.00 transfer.",
-  "instance": "/transfers/abc123",
-  "balance": 30
-}
-```
-
-**Extension members** (like `balance` above) are allowed — clients MUST ignore extensions they don't recognize, which enables forward-compatible evolution of error responses.
-
-**Example — validation errors** (multiple problems of the same type use an extension array with JSON Pointer):
-
-```json
-{
-  "type": "https://api.example.com/problems/validation-error",
-  "title": "Your request is not valid.",
-  "status": 422,
-  "detail": "2 validation errors",
-  "errors": [
-    { "detail": "must be a positive integer", "pointer": "#/age" },
-    { "detail": "must be 'green', 'red' or 'blue'", "pointer": "#/profile/color" }
-  ]
-}
-```
-
-For multiple problems of **different types**, return the most relevant or urgent one — don't create batch problem types (they don't map well into HTTP semantics).
-
-**When NOT to use Problem Details:**
-- Generic problems expressed well by plain status codes (e.g., a simple 404 doesn't always need a body)
-- When your application already defines a more appropriate error format
-- As a debugging tool for internal implementation
-
-Errors should be **actionable**: the consumer should know what went wrong, why, and what to do about it.
-
-**Security (RFC 9457 §5):** Error responses must help clients correct issues, not serve as debugging tools. Every field in a problem detail is a potential information leak:
-- **Never expose stack traces, internal paths, or server implementation details** — these are attack vectors
-- **Vet new problem types** for information that could compromise the system or user privacy
-- **Avoid linking to internal occurrence data** through the HTTP interface (e.g., don't link to internal log entries)
-- **The `status` field duplicates the HTTP status code** — if they disagree, clients may behave unpredictably; keep them in sync
+See `resources/problem-details.md` for full member semantics, single-error and validation-error JSON examples, extension member rules, when NOT to use Problem Details, and RFC 9457 §5 security guidance.
 
 ### HTTP Status Code Mapping
 
@@ -264,22 +217,24 @@ app.delete('/api/tasks/:id', async (req, res) => {
 
 Communicate limits clearly via headers on **every** response — not just 429s.
 
-### Standard Headers
+### Standard Headers (IETF draft — not yet an RFC)
+
+The IETF standardization effort is `draft-ietf-httpapi-ratelimit-headers` (version 11, May 2026 — still an active working group draft). Current drafts define two structured fields:
 
 ```
-RateLimit-Limit: 1000          # Max requests per window
-RateLimit-Remaining: 742       # Requests left in current window
-RateLimit-Reset: 60            # Seconds until window resets
+RateLimit-Policy: "hour";q=1000;w=3600   # Policy: quota of 1000 per 3600s window
+RateLimit: "hour";r=742;t=60             # Current state: 742 remaining, resets in 60s
 ```
 
-On 429 responses, always include `Retry-After`:
+Earlier drafts used a triplet — `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` — and many shipped APIs still use that triplet or the unstandardized `X-RateLimit-*` family. Expect any of these when consuming APIs. For new APIs, prefer the current draft fields; whichever names you choose, document them — header names are part of your contract, and the draft may still change before becoming an RFC.
+
+On 429 responses, always include `Retry-After` (a stable, standard HTTP header):
 
 ```
 HTTP/1.1 429 Too Many Requests
 Retry-After: 30
-RateLimit-Limit: 1000
-RateLimit-Remaining: 0
-RateLimit-Reset: 30
+RateLimit-Policy: "hour";q=1000;w=3600
+RateLimit: "hour";r=0;t=30
 Content-Type: application/problem+json
 
 {
@@ -300,20 +255,13 @@ Content-Type: application/problem+json
 
 Assign explicit freshness lifetimes on responses. Don't rely on heuristic freshness.
 
-| Directive | Meaning | Common misconception |
-|-----------|---------|----------------------|
-| `Cache-Control: max-age=N` | Fresh for N seconds. Preferred over `Expires`. | -- |
-| `Cache-Control: no-cache` | May be stored, but must revalidate before every use. | Often confused with "don't cache" |
-| `Cache-Control: no-store` | Must NOT be stored at all. Use this to prevent caching. | -- |
-| `Cache-Control: must-revalidate` | Once stale, must revalidate. Cannot serve stale when disconnected. | -- |
-
 Practical rules:
-- Even short freshness (e.g., `max-age=5`) enables reuse across multiple clients
+- Prefer `Cache-Control: max-age=N` over `Expires` — even short freshness (e.g., `max-age=5`) enables reuse across multiple clients
 - Assign ETags for efficient revalidation without re-transferring the body
 - If a request header changes the response, use `Vary` on ALL responses from that resource (including the default)
-- Use `no-store` for responses containing sensitive data (not `no-cache`)
+- Use `no-store` for responses containing sensitive data — `no-cache` does NOT mean "don't cache" (it means "stored but revalidate before use")
 
-See `resources/http-fundamentals.md` for full caching guidance including content negotiation, header design, and protocol version independence.
+See `resources/http-fundamentals.md` for the full `Cache-Control` directive table plus content negotiation, header design, and protocol version independence.
 
 ## REST Conventions
 

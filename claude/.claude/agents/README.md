@@ -275,7 +275,7 @@ progress-guardian (orchestrates)
    - Run `refactoring` skill and invoke `refactor-scan`: Assess improvements (only if adds value)
    - Invoke `pr-reviewer`: Self-review changes
    - Fix any issues found
-   - Run `/pr` to create PR with quality gates (typecheck + lint + test + build)
+   - Run `/pr` to create PR with quality gates (TDD evidence + mutation testing + refactoring assessment + typecheck + lint; project-generated `/pr` commands also run tests and build)
 
 8. **Continue to next step**
    - After PR is merged, run `/continue` to pull main, create new branch, update plan

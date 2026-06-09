@@ -2,7 +2,7 @@
 name: twelve-factor-audit
 description: >
   Use this agent to audit an existing Node.js/TypeScript service codebase for 12-Factor App compliance. Invoke when onboarding to a service project, assessing deployment readiness, or reviewing infrastructure patterns. Produces a compliance report with gaps and actionable suggestions.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: sonnet
 color: cyan
 ---

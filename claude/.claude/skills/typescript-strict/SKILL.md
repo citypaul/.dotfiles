@@ -55,6 +55,8 @@ export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
 // Import and use wherever needed
 ```
 
+**Where schemas belong**: validate at trust boundaries (HTTP handlers, queue consumers, file/env parsing, third-party API responses), then pass plain derived types through internal logic — internal functions trust their inputs. Prefer schema libraries implementing [Standard Schema](https://standardschema.dev) (Zod 4+, Valibot, ArkType) so validation tooling stays interchangeable.
+
 ---
 
 ## Strict Mode Configuration
@@ -181,11 +183,20 @@ const processPayment = (userId: UserId, amount: PaymentAmount) => {
 // ❌ Can't pass raw string/number
 processPayment('user-123', 100); // Error
 
-// ✅ Must use branded type
-const userId = 'user-123' as UserId;
-const amount = 100 as PaymentAmount;
-processPayment(userId, amount); // OK
+// ✅ Brand via a validating constructor — the ONE place an assertion is justified
+const toUserId = (raw: string): UserId => {
+  if (raw.length === 0) throw new Error('UserId cannot be empty');
+  return raw as UserId;
+};
+const toPaymentAmount = (raw: number): PaymentAmount => {
+  if (raw <= 0) throw new Error('PaymentAmount must be positive');
+  return raw as PaymentAmount;
+};
+
+processPayment(toUserId('user-123'), toPaymentAmount(100)); // OK
 ```
+
+Never scatter `as UserId` through application code — the assertion lives only inside the constructor (or a schema's `transform`), so every branded value has passed validation.
 
 ---
 

@@ -22,7 +22,7 @@ A **storyboard** is a single reviewable HTML page that stitches every UX surface
 - Single-mock work (a one-off copy fix on a settings page). Open the mock, run the impeccable pipeline, done.
 - Purely API / data-migration / ops items with no UX surface. No mocks = nothing to storyboard.
 - Exploratory / throwaway work before scope is settled. Storyboard is a reviewing artifact; you need something worth reviewing first.
-- Features already fully built. The storyboard is pre-implementation. Post-hoc, if you need a visual review, run the `critique` skill on the live surfaces instead.
+- Features already fully built. The storyboard is pre-implementation. Post-hoc, if you need a visual review, run the `critique` skill (external, from the impeccable family; skip if not installed) on the live surfaces instead.
 
 ## Inputs the skill gathers
 
@@ -41,7 +41,8 @@ Place the storyboard HTML in the project's existing mocks or launch-planning fol
 
 - `apps/<app>/design-mocks/<scope>-audit.html`
 - `design-mocks/<scope>-storyboard.html`
-- `plans/<feature>/storyboard.html`
+
+Never place storyboards inside `plans/` — plan files are deleted when their work completes (see the `planning` skill), and the storyboard should outlive the plan.
 
 Match the naming convention of other artifacts in the repo. If there's a mock manifest or index page, add a featured link to the storyboard so it's discoverable.
 
@@ -184,7 +185,7 @@ User says `/storyboard <scope>` or asks one of the trigger phrases (see frontmat
 
 ## Related skills
 
-- **`impeccable`** family (`/shape`, `/critique`, `/layout`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/harden`, `/distill`) — the skill's audit checklists reference these; the gap-mock production step runs them.
+- **`impeccable`** family (`/shape`, `/critique`, `/layout`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/harden`, `/distill`) — external skills from pbakaus/impeccable; the audit checklists reference these and the gap-mock production step runs them. If they aren't installed, list only the disciplines that will actually run (see Non-negotiables: the checklist is genuine, not decorative).
 - **`story-splitting`** — use when the storyboard reveals the feature is too broad or needs to be split by flow, role, state, interface, data, rule, or quality level before implementation.
 - **`planning`** — plans live at project root; the storyboard artifact supplements the plan's decision record after the scope has been split into implementable slices.
 - **`find-gaps`** — use after the storyboard exists to turn missing states, unanswered brainstorm questions, and unclear transitions into concrete acceptance criteria or mock-state specs.

@@ -1,11 +1,25 @@
 ---
 name: ci-debugging
-description: Systematic CI/CD failure diagnosis. Load when debugging CI failures, build issues, or test pipeline problems.
+description: Systematic CI/CD failure diagnosis using hypothesis-first investigation, local reproduction, and environment delta analysis. Use when a CI pipeline, GitHub Actions workflow, or build job fails; when tests pass locally but fail in CI; when diagnosing flaky tests, timeouts, or red pipelines; or when the user says "CI is failing", "the build is broken", or "works on my machine".
 ---
 
 # CI Debugging
 
 Every CI failure is real until proven otherwise. Never assume flakiness.
+
+## Getting the Data
+
+Pull the actual failure output before forming hypotheses:
+
+```bash
+gh run list --branch <branch> --limit 5        # find the failing run
+gh run view <run-id> --log-failed              # only the failed steps' logs
+gh run view <run-id> --job <job-id> --log      # one job's full log
+gh run download <run-id>                       # artifacts (coverage, reports, screenshots)
+gh run rerun <run-id> --failed                 # re-run only failed jobs (for evidence, not hope)
+```
+
+For step-level detail, re-run with debug logging: set the `ACTIONS_STEP_DEBUG=true` secret/variable, or `gh run rerun <run-id> --debug`. Compare the failing run against the last green run on the same branch (`gh run list`) — the diff in commits, dependency lockfiles, and workflow files between those two runs is the primary suspect list.
 
 ## Hypothesis-First Diagnosis
 
@@ -71,3 +85,7 @@ A failure is only flaky if you have evidence:
 - AND you can identify the non-deterministic source (race condition, time-dependent test, external service)
 
 Without this evidence, treat every failure as a real bug.
+
+## Handoff
+
+Once the root cause is identified, write a failing test that reproduces it **before** fixing — load the `tdd` skill (or `characterisation-tests` if the broken code has no tests). A CI fix without a pinning test is a recurrence waiting to happen.

@@ -1,7 +1,7 @@
 ---
 name: tdd-guardian
 description: >
-  Use this agent proactively to guide Test-Driven Development throughout the coding process and reactively to verify TDD compliance. Invoke when users plan to write code, have written code, tests are green, mutation testing is due, or refactoring assessment is due.
+  Use this agent to verify TDD process compliance during the RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR cycle. Invoke when users plan to write code, when checking that tests preceded implementation, or when verifying the cycle was followed before commit. Scope: process compliance only — for type-safety scanning use ts-enforcer, for refactoring assessment use refactor-scan, for whole-PR review use pr-reviewer.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 color: red

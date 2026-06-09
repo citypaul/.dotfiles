@@ -47,7 +47,7 @@ When reviewing tests, you will score each test file or test suite against these 
 - **1-3**: Many tests add little value; significant redundancy
 
 ### 6. Granular (G)
-- **10**: Each test asserts one thing; failures pinpoint exact issues
+- **10**: Each test asserts one behavior (multiple assertions on the same outcome are fine); failures pinpoint exact issues
 - **7-9**: Tests are focused; occasional multiple assertions with clear purpose
 - **4-6**: Tests cover multiple behaviors; failure diagnosis takes effort
 - **1-3**: Tests are sprawling; failures require significant investigation

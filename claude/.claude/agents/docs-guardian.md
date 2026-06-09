@@ -2,7 +2,7 @@
 name: docs-guardian
 description: >
   Use this agent proactively when creating documentation or reactively to review and improve existing docs. Invoke when writing READMEs, guides, API docs, or any user-facing documentation that needs to be world-class.
-tools: Read, Edit, Grep, Glob, Bash
+tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 color: purple
 ---

@@ -1,7 +1,7 @@
 ---
 name: refactor-scan
 description: >
-  Use this agent proactively to guide refactoring decisions during code improvement and reactively to assess refactoring opportunities after mutation testing validates test strength (TDD's final step). Invoke when mutation testing is complete, when considering abstractions, or when reviewing code quality.
+  Use this agent to assess refactoring opportunities after mutation testing validates test strength (TDD's final step). Invoke when mutation testing is complete or when weighing whether an abstraction adds value. Scope: refactoring assessment only — for TDD process checks use tdd-guardian, for type safety use ts-enforcer, for whole-PR review use pr-reviewer.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 color: yellow

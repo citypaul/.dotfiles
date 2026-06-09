@@ -2,7 +2,7 @@
 name: progress-guardian
 description: >
   Tracks progress through significant work using vertical-slice plan files in plans/ directory. Use at start of features, to update progress, and at end to merge learnings.
-tools: Read, Edit, Grep, Glob, Bash
+tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 color: green
 ---

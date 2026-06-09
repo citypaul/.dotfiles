@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: Test-Driven Development workflow. Use for ALL code changes - features, bug fixes, refactoring. TDD is non-negotiable.
+description: RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR workflow for writing production code. Use before ANY production code change - new features, bug fixes, or behavior changes. Triggers on starting implementation work of any kind. Covers the cycle itself - failing test first, minimum code to pass, mutation verification, refactor assessment. For how to write good tests, see testing. For the refactoring step in detail, see refactoring. TDD is non-negotiable.
 ---
 
 # Test-Driven Development
@@ -23,6 +23,7 @@ TDD is the fundamental practice. Every line of production code must be written i
 ### GREEN: Minimum Code to Pass
 - Write ONLY enough code to make the test pass
 - Resist adding functionality not demanded by a test
+- Faking it is legitimate: hardcode the return value if that passes, then triangulate — add a second test case that forces the real implementation. Generalize only when a test demands it
 
 ### MUTATE: Verify Test Effectiveness
 - Run `mutation-testing` skill against the changed code
@@ -114,9 +115,8 @@ Test Evidence:
    git checkout feature-branch
    ```
 
-2. Run coverage verification:
+2. Run coverage verification (adapt to the project's package manager and layout):
    ```bash
-   cd packages/core
    pnpm test:coverage
    # OR
    pnpm exec vitest run --coverage
@@ -185,6 +185,8 @@ Add tests for behavior, and coverage follows naturally.
 
 No exceptions without explicit approval and documentation.
 
+This applies to code developed with TDD. When working in legacy code, the scope is the change area, not the whole codebase — see the `characterisation-tests` skill for that workflow.
+
 ### Requesting an Exception
 
 If 100% coverage cannot be achieved:
@@ -232,7 +234,8 @@ The burden of proof is on the requester. 100% is the default expectation.
 5. **Run mutation testing** - verify tests catch real bugs
 6. **Kill surviving mutants** - strengthen tests (ask human when ambiguous)
 7. **Refactor if valuable** - improve code structure
-8. **Commit** - with conventional commit message
+8. **STOP and wait for commit approval** - present the work and mutation report; never commit without explicit user approval
+9. **Commit** - with conventional commit message, once approved
 
 ### Workflow Example
 
@@ -254,7 +257,9 @@ if (user.name === '') {
 
 # 5. Refactor if needed (extract validation, improve naming)
 
-# 6. Commit
+# 6. STOP — present work + mutation report, wait for commit approval
+
+# 7. Commit (after approval)
 git add .
 git commit -m "feat: reject empty user names"
 ```
@@ -321,16 +326,7 @@ REFACTOR: commit 6e5f4a3 (extract permission resolution logic)
 
 ## Refactoring Priority
 
-After mutation testing confirms test strength, classify any issues:
-
-| Priority | Action | Examples |
-|----------|--------|----------|
-| Critical | Fix now | Mutations, knowledge duplication, >3 levels nesting |
-| High | This session | Magic numbers, unclear names, >30 line functions |
-| Nice | Later | Minor naming, single-use helpers |
-| Skip | Don't change | Already clean code |
-
-For detailed refactoring methodology, load the `refactoring` skill.
+After mutation testing confirms test strength, assess and classify improvement opportunities. For the priority classification table and detailed refactoring methodology, load the `refactoring` skill — it owns that guidance.
 
 ---
 

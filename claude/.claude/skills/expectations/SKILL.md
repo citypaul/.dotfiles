@@ -1,19 +1,13 @@
 ---
 name: expectations
-description: Working expectations and documentation practices. Use when capturing learnings, documenting gotchas, recording architectural decisions, or understanding how to work with a codebase. Triggers on "document this", "remember this pattern", "what should I know about", or after completing significant features.
+description: Capture learnings, gotchas, and architectural decisions into the right project documentation while context is fresh. Use when capturing learnings, documenting gotchas, recording architectural decisions, or deciding where a piece of knowledge should live. Triggers on "document this", "remember this pattern", "what should I know about", or after completing significant features.
 ---
 
-# Expectations
+# Expectations: Capturing Learnings
 
-## When Working with Code
+Core philosophy (TDD, refactoring discipline, commit approval) lives in CLAUDE.md and is always loaded — this skill covers what CLAUDE.md does not: deciding **what** to document, **where** it goes, and **in what format**.
 
-1. **ALWAYS FOLLOW TDD** - No production code without a failing test. Non-negotiable.
-2. **Think deeply** before making any edits
-3. **Understand the full context** of the code and requirements
-4. **Ask clarifying questions** when requirements are ambiguous
-5. **Think from first principles** - don't make assumptions
-6. **Assess refactoring after mutation testing confirms test strength** - but only refactor if it adds value
-7. **Keep project docs current** - Update CLAUDE.md when introducing meaningful changes
+One workflow rule bears repeating because it gates documentation work too: **never commit without explicit user approval.** After refactoring, verify all tests and static analysis pass, then STOP and wait for commit approval.
 
 ## Documentation Framework
 
@@ -28,6 +22,8 @@ Document if ANY of these are true:
 - Identifies effective patterns or anti-patterns
 - Clarifies tool setup or configuration gotchas
 
+Do NOT document what the repo already records: code structure, git history, anything derivable by reading the code.
+
 ## Types of Learnings to Capture
 
 - **Gotchas**: Unexpected behavior discovered (e.g., "API returns null instead of empty array")
@@ -36,6 +32,18 @@ Document if ANY of these are true:
 - **Decisions**: Architectural choices with rationale and trade-offs
 - **Edge cases**: Non-obvious scenarios that required special handling
 - **Tool knowledge**: Setup, configuration, or usage insights
+
+## Where Each Learning Goes
+
+| Learning | Destination | Why |
+|----------|-------------|-----|
+| Gotcha, pattern, anti-pattern, tool knowledge that affects how Claude works in this repo | Project `CLAUDE.md` | Loaded every session for this project |
+| Architectural decision with rationale and rejected alternatives | ADR (`docs/adr/` or project convention) — use the `adr` agent | Decisions need permanence and context beyond a config file |
+| In-flight discoveries during planned work (blockers, scope changes) | The active plan file in `plans/` | Travels with the work; merged or discarded when the plan completes |
+| Cross-project user preferences and corrections | Auto-memory (`MEMORY.md`) | Persists across projects and sessions |
+| User-facing behavior, setup steps, API usage | README / docs — use the `docs-guardian` agent | Humans read these, not CLAUDE.md |
+
+When several learnings accumulate at the end of a feature, launch the `learn` agent to sweep the session for documentation-worthy insights rather than relying on recall.
 
 ## Documentation Format
 
@@ -53,18 +61,7 @@ const example = "correct approach";
 const wrong = "incorrect approach";
 ```
 
-## Code Change Principles
-
-- **Start with a failing test** - always. No exceptions.
-- After making tests pass, always assess refactoring opportunities
-- After refactoring, verify all tests and static analysis pass, then commit
-- Respect the existing patterns and conventions
-- Maintain test coverage for all behavior changes
-- Keep changes small and incremental
-- Ensure all TypeScript strict mode requirements are met
-- Provide rationale for significant design decisions
-
-**If you find yourself writing production code without a failing test, STOP immediately and write the test first.**
+Keep entries scannable: a future reader should grasp context, issue, and solution in under ten seconds.
 
 ## Communication
 

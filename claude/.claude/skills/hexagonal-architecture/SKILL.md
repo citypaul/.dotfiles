@@ -267,7 +267,7 @@ The use case doesn't know or care whether it was triggered by an HTTP request, a
 
 ## File Organization
 
-The locations below describe the logical layers. If `folder-structure` has been applied, prefer its context-first protected core shape, such as `src/<bounded-context>/domain/`, `src/<bounded-context>/use-cases/`, `src/<bounded-context>/adapters/`, and its lint boundary rules. If it has not been applied, use these locations as examples and adapt to the existing codebase without reorganizing solely for this skill.
+The locations below describe the logical layers — physical layout is governed by the `folder-structure` note at the top of this skill. Use cases live in `domain/` by default; when the `folder-structure` skill's layout is applied, they live in a sibling `use-cases/` folder instead — required there, because its lint rules forbid `domain/` from importing `use-cases/`.
 
 | Layer | Location | Contains | Tests |
 |-------|----------|----------|-------|
