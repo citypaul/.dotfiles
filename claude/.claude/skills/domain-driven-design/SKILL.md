@@ -462,6 +462,12 @@ Display formatting does not belong in `domain/`. The test: "make this look right
 
 Business logic in route handlers, database queries, or adapters. Keep it in `domain/`.
 
+### Relationship-Driven Aggregates
+
+Designing aggregates by mapping entity hierarchies ("Order contains OrderLines, OrderLine contains Product") instead of discovering invariants. The tell: aggregate methods only add, remove, or attach children — no business rules are enforced. If an aggregate's only job is managing parent-child associations, those relationships likely belong as database constraints or simple data models, not an aggregate hierarchy.
+
+**The fix:** Ask "What must remain true when state changes?" If the answer is only structural (one-to-many, one-to-one), you don't need an aggregate — you need a foreign key. Aggregates earn their complexity when they enforce behavioral invariants during commands.
+
 ### Over-Engineering
 
 Not every project needs aggregates, domain events, or bounded contexts. Start with:
@@ -485,6 +491,8 @@ Treating the initial model as sacred — refusing to rename types, split aggrega
 - [ ] Entities are always valid (invariants enforced on construction and transitions)
 - [ ] Entities have branded IDs; primitive value objects use branded types
 - [ ] Aggregate roots enforce all invariants
+- [ ] Aggregate boundaries justified by invariants, not entity relationships
+- [ ] Aggregates contain no read-only properties that exist solely for query convenience
 - [ ] Other aggregates referenced by ID, not embedded
 - [ ] Cross-aggregate logic in domain services, not crammed into one entity
 - [ ] Repository interfaces defined in domain layer
