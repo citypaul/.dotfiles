@@ -136,6 +136,65 @@ const handlePledge = async (repos, dto) => {
 3. **Delete cascades from the root** — deleting an aggregate deletes all its children
 4. **IDs are globally unique for roots** — child entity IDs only need to be unique within the aggregate
 
+## Enforcing Boundaries in TypeScript
+
+The rules above are meaningless without code-level enforcement. Three patterns prevent callers from bypassing the aggregate root:
+
+### 1. Accept child IDs, not child objects
+
+When an aggregate method operates on a child entity, accept the child's **ID** — not the entity itself. The root looks up the child internally and validates ownership. Passing a child entity object from outside leaks aggregate internals into the caller.
+
+```typescript
+// ❌ Leaks internals — caller must obtain the Exercise object somehow
+const removeExercise = (workout: Workout, exercise: Exercise): Workout => ...;
+
+// ✅ Boundary preserved — caller only knows the ID
+const removeExercise = (workout: Workout, exerciseId: ExerciseId): RemoveExerciseResult => {
+  const exercise = workout.exercises.find(e => e.id === exerciseId);
+  if (!exercise) return { success: false, reason: 'exercise-not-found' };
+  return {
+    success: true,
+    workout: { ...workout, exercises: workout.exercises.filter(e => e.id !== exerciseId) },
+  };
+};
+```
+
+### 2. Create child entities through the root
+
+Child entities should be created by aggregate root operations, not constructed externally and passed in. This ensures the root can enforce creation invariants (e.g., max items, uniqueness, ordering).
+
+```typescript
+// ❌ Externally constructed child — root can't enforce creation rules
+const addExercise = (workout: Workout, exercise: Exercise): Workout => ...;
+
+// ✅ Root creates the child — enforces max-exercises invariant
+const addExercise = (workout: Workout, params: NewExerciseParams): AddExerciseResult => {
+  if (workout.exercises.length >= workout.maxExercises) {
+    return { success: false, reason: 'max-exercises-reached' };
+  }
+  const exercise: Exercise = {
+    id: createExerciseId(),
+    workoutId: workout.id,
+    ...params,
+  };
+  return { success: true, workout: { ...workout, exercises: [...workout.exercises, exercise] } };
+};
+```
+
+### 3. Expose ReadonlyArray for child collections
+
+TypeScript's `ReadonlyArray<T>` (or `readonly T[]`) prevents callers from mutating the collection. This is the minimum boundary enforcement — callers can inspect children but cannot add, remove, or reorder them without going through root methods.
+
+```typescript
+type Workout = {
+  readonly id: WorkoutId;
+  readonly exercises: ReadonlyArray<Exercise>;  // Inspect OK, mutate impossible
+  readonly maxExercises: number;
+};
+```
+
+**Together, these three patterns mean:** callers can see child entities (via `ReadonlyArray`), identify them (via IDs), and request operations on them (via root methods) — but can never construct, mutate, or remove them directly.
+
 ## When to Split vs Combine
 
 **Split when:**
