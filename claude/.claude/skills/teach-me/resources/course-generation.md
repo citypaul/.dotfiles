@@ -298,7 +298,7 @@ By the end of this course you will be able to:
 - [Concept from session 1]: Due session 2
 - [Concept from session 1]: Due session 4
 
-**Lesson:** [lessons/0001-slug.html, if generated]
+**Lesson:** [lessons/0001-slug.html, if generated — note "captured, not taught" if generated up front in capture mode]
 
 ---
 

@@ -121,6 +121,8 @@ SESSION FLOW
 │   Generate a self-contained HTML lesson capturing the session:
 │   lessons/NNNN-[slug].html. Beautiful, printable, cross-linked, cited.
 │   Open it for the learner. See resources/html-lessons.md.
+│   Learner short on time? Capture mode: generate the lesson up front
+│   and defer the interaction to the next session's REVIEW.
 │
 └─► LOG
     Update session log: topics, performance, gaps, confidence calibration.
@@ -304,6 +306,8 @@ A lesson should be:
 
 After writing the file, open it for the learner (`open` on macOS, `xdg-open` on Linux). See `resources/html-lessons.md` for the full format, design principles, and template.
 
+**Capture mode:** when the learner is short on time — or asks for the material "to read later" — generate the lesson *up front*, at the point where teaching would normally happen, and skip or defer the interactive CHECK/PRACTICE steps. The lesson's recap quiz becomes their asynchronous practice, and the next session's REVIEW covers the captured material as spaced retrieval. Log the lesson as **captured, not taught**: a captured lesson is exposure, not evidence, so nothing from it qualifies for a learning record or counts toward mastery until the learner demonstrates it in a later session.
+
 ## Wisdom: Beyond the Tutor
 
 Knowledge comes from trusted sources and skills from practice — but wisdom comes from testing skills in the real world, with other practitioners. When the learner asks a question that needs real-world judgment (which tool the industry actually uses, what's normal in practice, how experienced people handle ambiguity), attempt an answer — but delegate to a **community**: a high-reputation forum, subreddit, meetup, or local group where the learner can interact with practitioners.
@@ -388,6 +392,7 @@ Save to `learning/[topic]/cheat-sheet.md`.
 │   ├─► PRACTICE: Progressive difficulty, interleaved (high desirable difficulty)
 │   ├─► REFLECT: Feynman technique + metacognition
 │   ├─► LESSON: Offer self-contained HTML lesson → lessons/NNNN-[slug].html
+│   │           (capture mode: generate up front when time is short)
 │   └─► LOG: Progress, gaps, confidence, learning records, glossary,
 │            spaced review schedule, one source recommendation
 │

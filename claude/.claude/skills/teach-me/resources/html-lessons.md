@@ -11,7 +11,14 @@ The interactive session is the teaching; the lesson is the record. Each lesson c
 **When to generate:**
 - At the end of each session — offer, don't impose
 - On request, for any topic already covered
-- Never as a substitute for interactive teaching — a lesson the learner reads passively is exactly the information-dumping anti-pattern. The lesson exists because the learner already did the thinking in the session.
+- **Up front, in capture mode** — when the learner is short on time or asks to record the material for later reading, generate the lesson at the point where teaching would normally happen instead of running the full interactive flow
+- Not as a silent substitute for interactive teaching — a lesson the learner reads passively is the information-dumping anti-pattern. End-of-session lessons capture thinking the learner already did; capture-mode lessons are an explicit deferral, with the thinking owed at the next session.
+
+**Capture mode rules:**
+- Generating up front spoils retrieval: the lesson contains the answers the session would have made the learner work for. Say so when offering it.
+- The lesson's recap quiz is the learner's asynchronous practice — point them at it.
+- Log the lesson as **captured, not taught** in the session log. Coverage is not learning: nothing from a captured lesson earns a learning record, a glossary entry, or graduation from review until the learner demonstrates it live.
+- Start the next session's REVIEW from the captured lesson's quiz topics — that retrieval is where the deferred learning actually happens.
 
 **File naming:** `learning/[topic-slug]/lessons/NNNN-[dash-case-slug].html`, where `NNNN` starts at `0001` and increments. Scan the directory for the highest existing number. Create the `lessons/` directory lazily.
 
