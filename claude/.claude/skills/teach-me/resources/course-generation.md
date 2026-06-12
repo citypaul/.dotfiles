@@ -24,11 +24,22 @@ The learning plan is the first file created. It drives everything else.
 # Learning Plan: [Topic]
 
 **Learner level:** [From discovery interview]
-**Goal:** [Specific, observable outcome — what the learner will be able to DO]
 **Time budget:** [Total hours committed]
 **Location:** [project-local / general]
 **Created:** [date]
 **Last session:** [date]
+
+## Mission
+
+[1-3 sentences. The concrete real-world outcome the learner is chasing — what changes
+in their life or work when they have this skill. "Ship a Rust CLI to my team" beats
+"learn Rust". Every session objective below must trace back to this.]
+
+**Success looks like:**
+- [A specific, observable thing the learner will be able to do]
+- [Another specific thing]
+
+**Out of scope:** [Adjacent topics the learner explicitly isn't chasing right now]
 
 ## The Critical 20%
 
@@ -64,10 +75,7 @@ Everything else is optional depth.]
 
 ## Resources
 
-[Books, articles, videos, existing skills the learner can reference]
-
-- [Resource 1] — why it's worth their time
-- [Resource 2] — why it's worth their time
+See [resources.md](./resources.md) for the curated source list.
 ```
 
 ---
@@ -76,9 +84,14 @@ Everything else is optional depth.]
 
 ```
 learning/[topic-slug]/
-├── plan.md                    # Learning plan (always created)
+├── plan.md                    # Mission + learning plan (always created)
+├── resources.md               # Curated sources and communities (created before first session)
+├── glossary.md                # Canonical terminology (created lazily, on first mastered term)
 ├── cheat-sheet.md             # Reference card (created after first session)
-├── session-log.md             # Progress tracking (created after first session)
+├── session-log.md             # Progress tracking + learning records (created after first session)
+├── lessons/                   # Self-contained HTML lessons (offered after each session)
+│   ├── 0001-[slug].html       # See resources/html-lessons.md for format
+│   └── 0002-[slug].html
 └── course/                    # Course materials (created on request)
     ├── 00-overview.md         # Course map, prerequisites, how to use
     ├── 01-[topic].md          # Session 1 material
@@ -89,6 +102,38 @@ learning/[topic-slug]/
         ├── 02-exercises.md    # Exercises for session 2
         └── ...
 ```
+
+---
+
+## Resources File Template (resources.md)
+
+The curated set of trusted sources for the topic. Teaching should be grounded in these, not in parametric guesses — especially for fast-moving or factual topics.
+
+```markdown
+# [Topic] Resources
+
+## Knowledge
+
+- [Book: _Title_ — Author](url)
+  [One line: what it covers. Use for: when to reach for it.]
+- [Article: "Title" — Author (Site)](url)
+  [One line annotation.]
+
+## Wisdom (Communities)
+
+- [Community name](url)
+  [Why it's high-signal. Use for: what kind of questions to take there.]
+
+## Gaps
+
+- [Area the mission needs that has no good source yet — drives future search]
+```
+
+**Rules:**
+- High-trust only: primary sources, recognised experts, peer-reviewed work, well-moderated communities. Marketing dressed as education stays out.
+- Annotate every entry — a bare link is useless in three months.
+- Prune ruthlessly: a source that turned out shallow or off-mission is removed, not buried.
+- If the learner has opted out of joining communities, note it here so future sessions stop proposing them.
 
 ---
 
@@ -253,9 +298,23 @@ By the end of this course you will be able to:
 - [Concept from session 1]: Due session 2
 - [Concept from session 1]: Due session 4
 
+**Lesson:** [lessons/0001-slug.html, if generated]
+
 ---
 
 ## Session 2 — [Date]
+...
+
+---
+
+## Learning Records
+
+### LR-0001: [Short title]
+
+[1-3 sentences: what was learned or established, and why it changes what to
+teach next. See session-management.md for when a record qualifies.]
+
+### LR-0002: [Short title]
 ...
 ```
 

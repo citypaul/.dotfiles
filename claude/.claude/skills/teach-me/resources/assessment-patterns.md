@@ -115,6 +115,18 @@ Design questions that specifically test common misconceptions about the topic. T
 2. For each, design a question where the misconception leads to one answer and correct understanding leads to another
 3. Use the wrong answers diagnostically — they reveal *which* misconception the learner holds
 
+### Answer-Option Hygiene (Multiple Choice)
+
+A multiple-choice question only tests understanding if the options give nothing away. Badly-formed options let learners answer through test-taking skill instead of knowledge — which corrupts every downstream signal (pacing, calibration, spaced-review scheduling).
+
+- **Equal length and format.** All options should be roughly the same number of words (and characters, if possible). The longest, most-qualified option is famously the correct one — never let formatting leak the answer.
+- **Parallel grammar.** Every option must complete the question stem grammatically. A single option that fits the stem better is a giveaway.
+- **Plausible distractors from real misconceptions.** Each wrong option should correspond to a specific, common misconception — then the *choice* of wrong answer is diagnostic (see Misconception-Targeted Quiz above).
+- **No throwaway options.** "None of the above" and joke options reduce a 4-option question to a 3-option question.
+- **Vary the correct position.** Don't settle into a pattern.
+
+Prefer open questions when feasible — free retrieval beats recognition for building retention. Use multiple choice when speed matters (quick reviews, HTML lesson quizzes) or when distractors are diagnostically valuable.
+
 ### Interleaved Review Quiz
 
 Mix questions from the current topic with questions from previous topics. Do not label which is which.
