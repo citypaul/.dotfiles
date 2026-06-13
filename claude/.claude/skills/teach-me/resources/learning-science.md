@@ -164,12 +164,35 @@ Adjust intervals based on performance. Struggled → shorten. Easy → lengthen.
 
 ---
 
+## 9. Fluency vs Storage Strength
+
+**What:** Bjork's New Theory of Disuse distinguishes **retrieval strength** (how accessible a memory is right now — fluency) from **storage strength** (how durably it is encoded). Performance during and immediately after practice reflects retrieval strength; learning is the change in storage strength — and the two are dissociated (Soderstrom & Bjork, 2015).
+
+**Why it matters:** High fluency right after teaching creates an illusion of mastery in both learner and tutor. Conditions that maximize immediate performance (massed practice, blocked topics, re-explaining) often *minimize* long-term retention, and vice versa. Storage strength is the goal; fluency is a misleading proxy.
+
+**The asymmetric difficulty rule:**
+
+| Phase | Difficulty is... | Therefore |
+|-------|-----------------|-----------|
+| Knowledge acquisition (TEACH) | The enemy — it consumes working memory needed for understanding | Simple language, concrete examples, low cognitive load |
+| Skill practice (PRACTICE/REVIEW) | The tool — effortful retrieval builds storage strength | Retrieval practice, spacing, interleaving, variation |
+
+**How to apply:**
+- Never assess mastery from same-session performance — only spaced performance counts
+- Do not graduate a concept from review because the learner was fluent at the end of the session it was taught
+- When a learner says "I've got this" right after learning, treat it as a fluency signal, not evidence — schedule the spaced check anyway
+- Conversely, effortful struggle during spaced retrieval is a *good* sign, not a regression
+
+---
+
 ## Key Sources
 
 - Dunlosky, J. et al. (2013). "Improving Students' Learning With Effective Learning Techniques." *Psychological Science in the Public Interest*, 14(1), 4-58.
 - Roediger, H. L. & Butler, A. C. (2011). "The critical role of retrieval practice in long-term retention." *Trends in Cognitive Sciences*, 15(1), 20-27.
 - Roediger, H. L. & Karpicke, J. D. (2006). "Test-enhanced learning." *Psychological Science*, 17(3), 249-255.
 - Bjork, R. A. & Bjork, E. L. (2011). "Making things hard on yourself, but in a good way." In *Psychology and the Real World*, 56-64.
+- Bjork, R. A. & Bjork, E. L. (1992). "A new theory of disuse and an old theory of stimulus fluctuation." In *From Learning Processes to Cognitive Processes*, 35-67.
+- Soderstrom, N. C. & Bjork, R. A. (2015). "Learning versus performance: An integrative review." *Perspectives on Psychological Science*, 10(2), 176-199.
 - Brown, P. C., Roediger, H. L. & McDaniel, M. A. (2014). *Make It Stick: The Science of Successful Learning.* Harvard University Press.
 - Paivio, A. (1986). *Mental Representations: A Dual Coding Approach.* Oxford University Press.
 - Mayer, R. E. (2009). *Multimedia Learning.* 2nd ed. Cambridge University Press.

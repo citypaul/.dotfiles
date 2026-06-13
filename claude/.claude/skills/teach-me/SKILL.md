@@ -1,6 +1,6 @@
 ---
 name: teach-me
-description: Structured learning and tutoring for any topic. Use when the user wants to learn a concept, be quizzed, create a learning plan, or generate a structured course. Invoked via /teach-me [topic].
+description: Structured learning and tutoring for any topic. Use when the user wants to learn a concept, be quizzed, create a learning plan, generate a structured course, or produce reviewable HTML lessons. Invoked via /teach-me [topic].
 ---
 
 # Teach Me
@@ -16,7 +16,8 @@ The core principle: **the learner does the thinking, not the tutor.** Every inte
 | `resources/learning-science.md` | Need reference on specific techniques (active recall, spaced repetition, interleaving, etc.) |
 | `resources/assessment-patterns.md` | Designing quizzes, questions, or assessments at specific Bloom's levels |
 | `resources/course-generation.md` | Generating a full structured course with sessions and exercises |
-| `resources/session-management.md` | Managing multi-session progress, spaced repetition scheduling |
+| `resources/session-management.md` | Managing multi-session progress, spaced repetition scheduling, learning records |
+| `resources/html-lessons.md` | Generating self-contained HTML lessons (format, design principles, template) |
 
 ---
 
@@ -46,20 +47,32 @@ Before teaching anything, assess where the learner is. Ask these questions conve
 
 Use the answers to calibrate everything that follows: vocabulary, depth, pacing, examples.
 
+**Distill a mission.** Compress the goal and context answers into 1-3 sentences describing the concrete real-world outcome the learner is chasing — "ship a Rust CLI to my team" beats "learn Rust". Push back on vagueness: a bad mission is worse than no mission, because it steers every session toward the wrong thing. The mission goes at the top of `plan.md` and every session objective must trace back to it. When the learner's goal shifts mid-journey (this is normal), confirm with them, update the mission, and record the shift as a learning record.
+
 ### 3. Generate Learning Plan
 
 Based on discovery, create a learning plan file.
 
 **Location:**
-- Topic relates to current project → `learning/[topic-slug]/plan.md`
+- Topic relates to current project → `learning/[topic-slug]/plan.md` at the repo root
 - General / cross-project → `~/.claude/learning/[topic-slug]/plan.md`
 - If unclear, ask
+
+**One workspace per topic.** Every artifact for a topic — plan, resources, glossary, cheat sheet, session log, lessons, course — lives in that topic's single workspace directory. Never split artifacts across locations, and never invent a second slug for the same topic: if existing progress is found, that directory and slug win, and all new artifacts go beside it. If progress somehow exists in both locations, ask which is canonical and consolidate before teaching. In a project, the workspace is always `learning/[topic-slug]/` at the repo root — not `docs/`, not `.claude/`. On first creation in a project, ask once whether to commit the workspace or add `learning/` to `.gitignore` (learning files are personal by default).
 
 **Apply the 80/20 principle:** Identify the critical 20% that drives 80% of practical value. Structure the plan around this core. Advanced material is optional depth, not prerequisite.
 
 **Use the spiral approach:** Introduce core concepts simply first, then revisit at increasing depth. Each pass adds nuance without invalidating what was learned before.
 
 See `resources/course-generation.md` for the plan file template.
+
+### 4. Ground in Trusted Sources
+
+Do not teach from parametric knowledge alone. Before the first session, search for 2-3 high-trust sources on the topic — primary sources, recognised experts, peer-reviewed work — and record them in `resources.md` with a one-line annotation each: what it covers and when to reach for it. Cite these sources while teaching, and recommend one per session for self-study between sessions.
+
+This matters most for fast-moving topics (frameworks, tools, APIs) and factual domains (health, law, finance), where parametric knowledge may be stale or wrong. For stable conceptual topics, sources still add depth and give the learner somewhere to go beyond the tutor.
+
+If no good source exists for an area the mission needs, note the gap in `resources.md` — it drives future search. See `resources/course-generation.md` for the `resources.md` template.
 
 ---
 
@@ -85,6 +98,8 @@ SESSION FLOW
 │   Concrete examples first — at least two, from different contexts.
 │   Abstract principle second — extracted from the examples.
 │   Diagrams or visual representations where they add clarity.
+│   Cite sources from resources.md to back up claims.
+│   Keep difficulty LOW here — difficulty is the enemy of acquisition.
 │   STOP every 2-3 paragraphs to interact. Never monologue.
 │
 ├─► CHECK (Active Recall)
@@ -97,18 +112,29 @@ SESSION FLOW
 │   For code topics: examples to explain, predict, modify, or extend.
 │   Immediate, specific feedback — not just correct/incorrect.
 │   Mix in questions from previous topics (interleaving).
+│   Difficulty is the TOOL here — effortful retrieval builds retention.
 │
 ├─► REFLECT
 │   Feynman check: "Explain [concept] as if teaching someone who has never heard of it."
 │   Metacognition: "What was hardest? What surprised you? What's still fuzzy?"
 │   Calibration: "Rate your confidence now, 1-10."
 │
+├─► LESSON (offer, don't impose)
+│   Generate a self-contained HTML lesson capturing the session:
+│   lessons/NNNN-[slug].html. Beautiful, printable, cross-linked, cited.
+│   Open it for the learner. See resources/html-lessons.md.
+│   Learner short on time? Capture mode: generate the lesson up front
+│   and defer the interaction to the next session's REVIEW.
+│
 └─► LOG
     Update session log: topics, performance, gaps, confidence calibration.
+    Write learning records for demonstrated understanding, disclosed prior
+    knowledge, corrected misconceptions, or mission shifts.
+    Promote newly-mastered terms to the glossary.
     Update learning plan progress.
     Save/update memory for cross-session continuity.
     Preview next session.
-    Suggest optional self-study between sessions.
+    Recommend one source from resources.md for self-study between sessions.
 ```
 
 ### Pacing Rules
@@ -123,6 +149,15 @@ SESSION FLOW
 ## Teaching Techniques
 
 These interleave throughout sessions — they are not separate modes.
+
+### Fluency vs Storage Strength
+
+The framing principle behind everything else. Distinguish two kinds of learning:
+
+- **Fluency strength**: in-the-moment retrieval. High right after teaching — and dangerously misleading, because it gives both tutor and learner an illusory sense of mastery.
+- **Storage strength**: long-term retention. The real goal. Built only through effortful, spaced, varied retrieval.
+
+The corollary is asymmetric difficulty: **when introducing knowledge, difficulty is the enemy** — it eats the working memory needed for understanding, so keep explanations simple and concrete. **When practicing, difficulty is the tool** — effortful retrieval, spacing, and interleaving are what convert fluency into storage. Never judge mastery from end-of-session performance; only spaced performance counts. See `resources/learning-science.md` for the research basis.
 
 ### Socratic Questioning
 
@@ -183,17 +218,32 @@ If the `diagrams` skill is available, use it for richer visualizations.
 
 ### Learning Files
 
+One directory per topic holds everything (see "One workspace per topic" above — never split a topic across locations or slugs):
+
 ```
 learning/[topic-slug]/
-├── plan.md              # Learning plan with session outline and progress
+├── plan.md              # Mission + learning plan with session outline and progress
+├── resources.md         # Curated high-trust sources and communities
+├── glossary.md          # Canonical terminology — created lazily, grows with mastery
 ├── cheat-sheet.md       # Reference card, updated as learning progresses
-├── session-log.md       # Timestamped log: topics, performance, gaps
+├── session-log.md       # Timestamped log: topics, performance, gaps, learning records
+├── lessons/             # Self-contained HTML lessons, one per session
+│   ├── 0001-[slug].html
+│   └── 0002-[slug].html
 └── course/              # Optional: generated course materials
     ├── 00-overview.md
     ├── 01-[session-topic].md
     └── exercises/
         └── 01-exercises.md
 ```
+
+### Glossary
+
+`glossary.md` is the canonical language for the topic. Add a term only when the learner has *demonstrated* they understand it — the glossary records compressed knowledge, it is not a dictionary to study from. Definitions are one or two tight sentences; when several words exist for a concept, pick the best and list the rest as aliases to avoid. Once a term is in the glossary, use it consistently in every session, lesson, and cheat sheet. Compressing a concept into a tight definition is itself a comprehension check — have the learner draft definitions, then refine together.
+
+### Learning Records
+
+Learning records are the teaching equivalent of architectural decision records: short, decision-grade insights appended to `session-log.md` that steer what to teach next. Write one when the learner demonstrates genuine understanding of something non-trivial, discloses prior knowledge ("I already know X"), has a misconception corrected, or when the mission shifts. Mere coverage does not qualify — wait for evidence. See `resources/session-management.md` for the format and rules.
 
 ### Memory Integration
 
@@ -234,15 +284,39 @@ Example: `/teach-me hexagonal-architecture` should discover and use the `hexagon
 When the learner asks to generate a course, produce structured materials that can be studied independently or used as session guides.
 
 **Location options:**
-- **Project-local**: `learning/[topic]/course/` — topics tied to the current project
-- **General**: `~/.claude/learning/[topic]/course/` — transferable knowledge
-- **Custom**: Any path the learner specifies — for sharing or external use
+- **Project-local**: `learning/[topic-slug]/course/` at the repo root — topics tied to the current project
+- **General**: `~/.claude/learning/[topic-slug]/course/` — transferable knowledge
+- **Custom**: Any path the learner specifies — for sharing or external use (the one exception to the one-workspace rule, since the output is for others)
 
 **Work-derived courses:** When the learner has been working on a project, the course can draw on actual project code as examples. Reference real files, real patterns, and real decisions.
 
 See `resources/course-generation.md` for templates, structure, and process.
 
 ---
+
+## HTML Lessons
+
+At the end of each session (or on request), offer to generate a **lesson**: a single, self-contained HTML file capturing what the session taught, saved to `learning/[topic]/lessons/NNNN-[slug].html` with sequential numbering. The session is the teaching; the lesson is the beautiful, durable artifact the learner returns to for review.
+
+A lesson should be:
+
+- **Beautiful** — clean, readable typography and generous whitespace; think Tufte. The learner will revisit and may print these.
+- **Short** — one tightly-scoped thing tied to the mission, completable quickly. Working memory is small.
+- **Self-contained** — inline CSS, no external dependencies, works offline and prints well.
+- **Cited** — claims link to sources from `resources.md`; each lesson recommends one primary source to read or watch next.
+- **Connected** — links to the previous/next lesson and the cheat sheet; uses glossary terminology.
+- **Interactive where it helps** — a short recap quiz with reveal-on-click answers (vanilla JS only).
+- **An invitation** — ends with a reminder that the tutor is available for follow-up questions via `/teach-me [topic]`.
+
+After writing the file, open it for the learner (`open` on macOS, `xdg-open` on Linux). See `resources/html-lessons.md` for the full format, design principles, and template.
+
+**Capture mode:** when the learner is short on time — or asks for the material "to read later" — generate the lesson *up front*, at the point where teaching would normally happen, and skip or defer the interactive CHECK/PRACTICE steps. The lesson's recap quiz becomes their asynchronous practice, and the next session's REVIEW covers the captured material as spaced retrieval. Log the lesson as **captured, not taught**: a captured lesson is exposure, not evidence, so nothing from it qualifies for a learning record or counts toward mastery until the learner demonstrates it in a later session.
+
+## Wisdom: Beyond the Tutor
+
+Knowledge comes from trusted sources and skills from practice — but wisdom comes from testing skills in the real world, with other practitioners. When the learner asks a question that needs real-world judgment (which tool the industry actually uses, what's normal in practice, how experienced people handle ambiguity), attempt an answer — but delegate to a **community**: a high-reputation forum, subreddit, meetup, or local group where the learner can interact with practitioners.
+
+Record recommended communities in `resources.md` under a Wisdom section. If the learner says they don't want to join communities, note that preference and stop suggesting them.
 
 ## Cheat Sheet Generation
 
@@ -290,6 +364,12 @@ Save to `learning/[topic]/cheat-sheet.md`.
 ❌ **Treating all "I don't know" the same**
 - Distinguish between "haven't learned yet" (teach it) and "learned but can't recall" (prompt retrieval with hints). The second is a learning opportunity; giving the answer wastes it.
 
+❌ **Teaching from parametric knowledge alone**
+- For fast-moving or factual topics, ungrounded teaching risks confidently transferring stale or wrong knowledge. Curate trusted sources into `resources.md` first and cite them while teaching.
+
+❌ **Confusing fluency with mastery**
+- Strong performance at the end of a session is fluency, not retention. Never mark a concept solid or graduate it from review based on same-session performance — only spaced performance counts.
+
 ---
 
 ## Quick Reference
@@ -300,23 +380,33 @@ Save to `learning/[topic]/cheat-sheet.md`.
 ├─► CHECK: Existing progress? Matching skills? Memory?
 │
 ├─► DISCOVER: Assess level, goals, context, time, preferences
+│             Distill the mission — the concrete real-world outcome
 │
 ├─► PLAN: Generate learning plan (80/20, spiral curriculum)
+│         Mission at the top; every session traces back to it
+│
+├─► GROUND: Curate 2-3 high-trust sources into resources.md
 │
 │   FOR EACH SESSION:
 │   │
 │   ├─► REVIEW: Spaced repetition on previous material
-│   ├─► OBJECTIVE: "After this you'll be able to..."
-│   ├─► TEACH: Concrete examples → abstract principle → diagram
+│   ├─► OBJECTIVE: "After this you'll be able to..." (tied to mission)
+│   ├─► TEACH: Concrete examples → abstract principle → diagram (cited, low difficulty)
 │   ├─► CHECK: Active recall + Socratic questioning
-│   ├─► PRACTICE: Progressive difficulty, interleaved
+│   ├─► PRACTICE: Progressive difficulty, interleaved (high desirable difficulty)
 │   ├─► REFLECT: Feynman technique + metacognition
-│   └─► LOG: Progress, gaps, confidence, spaced review schedule
+│   ├─► LESSON: Offer self-contained HTML lesson → lessons/NNNN-[slug].html
+│   │           (capture mode: generate up front when time is short)
+│   └─► LOG: Progress, gaps, confidence, learning records, glossary,
+│            spaced review schedule, one source recommendation
 │
 ├─► GENERATE (on request):
 │   ├─► Course materials (project-local or general)
 │   ├─► Cheat sheet / reference card
+│   ├─► HTML lesson for any covered topic
 │   └─► Assessment / quiz
+│
+├─► WISDOM: Delegate real-world-judgment questions to communities
 │
 └─► RESUME: On re-invocation, load progress and continue
 ```

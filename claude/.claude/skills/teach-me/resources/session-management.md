@@ -12,11 +12,13 @@ When `/teach-me [topic]` is invoked and existing progress exists:
 
 ```
 CHECK (in order):
-├─► learning/[topic-slug]/session-log.md     (project-local)
+├─► learning/[topic-slug]/session-log.md     (project-local, repo root)
 ├─► ~/.claude/learning/[topic-slug]/session-log.md  (general)
 ├─► Memory system — search for learning memories about [topic]
 └─► Any of the above may be the source of truth; prefer the most recent
 ```
+
+When checking, search for the topic loosely (a topic may have been slugged differently — `terraform` vs `terraform-dreamcatcher`). If artifacts for one topic turn up in more than one location or under more than one slug, ask the learner which is canonical, consolidate everything there, and continue with that single workspace. All new artifacts always go beside the existing plan — never start a parallel workspace.
 
 ### 2. Summarize Where We Left Off
 
@@ -25,6 +27,8 @@ Tell the learner:
 - Current position in the learning plan
 - Any gaps flagged for review
 - Items due for spaced repetition
+
+Also re-read the mission in `plan.md` and the learning records in `session-log.md` — they determine what the next session should target, not just where the plan's checkboxes sit.
 
 ### 3. Run Spaced Review
 
@@ -72,6 +76,40 @@ Proceed with the next unfinished session in the learning plan.
 - Review history: [correct/incorrect per review]
 - Notes: [specific aspects that caused difficulty]
 ```
+
+---
+
+## Learning Records
+
+Learning records are the teaching equivalent of architectural decision records: short, decision-grade insights that steer future sessions. They live in `session-log.md` under a `## Learning Records` section, numbered sequentially (`LR-0001`, `LR-0002`, …). Together with the performance data, they are how the next session's level is calculated — teach the most relevant thing that sits just above what the records show the learner can already do (the zone of proximal development).
+
+### Format
+
+```markdown
+### LR-0003: [Short title of what was learned or established]
+
+[1-3 sentences: what was learned (or what prior knowledge was established),
+and why it changes what to teach next.]
+```
+
+That is the whole format. Optionally add **Evidence** (how the learner demonstrated it — a question answered, an exercise completed, prior experience cited) when the claim might be revisited, or **Implications** (what this unlocks or rules out) when non-obvious.
+
+### When to Write One
+
+1. **Demonstrated understanding of something non-trivial** — evidence the learner can *use* the concept, not just that it was covered. This sets a new floor for what to teach next.
+2. **Disclosed prior knowledge** — "I already know X." Record it, including the depth claimed, so future sessions don't re-teach it.
+3. **A misconception was corrected** — high value: corrected misconceptions predict stumbling blocks in related topics.
+4. **The mission shifted** — the learner discovered they care about something different. Update the mission in `plan.md` (with their confirmation) and record the shift.
+
+### What Does Not Qualify
+
+- Material that was merely covered. Coverage is not learning — wait for evidence.
+- Term definitions already captured in `glossary.md`. Don't duplicate.
+- Session-by-session activity logs — that's what the per-session entries are for. Records are insights, not a journal.
+
+### Supersession
+
+When a later record contradicts an earlier one (understanding deepened or was corrected), mark the old record `Superseded by LR-NNNN` rather than deleting it. How understanding evolved is itself useful signal.
 
 ---
 
