@@ -54,9 +54,11 @@ Use the answers to calibrate everything that follows: vocabulary, depth, pacing,
 Based on discovery, create a learning plan file.
 
 **Location:**
-- Topic relates to current project → `learning/[topic-slug]/plan.md`
+- Topic relates to current project → `learning/[topic-slug]/plan.md` at the repo root
 - General / cross-project → `~/.claude/learning/[topic-slug]/plan.md`
 - If unclear, ask
+
+**One workspace per topic.** Every artifact for a topic — plan, resources, glossary, cheat sheet, session log, lessons, course — lives in that topic's single workspace directory. Never split artifacts across locations, and never invent a second slug for the same topic: if existing progress is found, that directory and slug win, and all new artifacts go beside it. If progress somehow exists in both locations, ask which is canonical and consolidate before teaching. In a project, the workspace is always `learning/[topic-slug]/` at the repo root — not `docs/`, not `.claude/`. On first creation in a project, ask once whether to commit the workspace or add `learning/` to `.gitignore` (learning files are personal by default).
 
 **Apply the 80/20 principle:** Identify the critical 20% that drives 80% of practical value. Structure the plan around this core. Advanced material is optional depth, not prerequisite.
 
@@ -216,6 +218,8 @@ If the `diagrams` skill is available, use it for richer visualizations.
 
 ### Learning Files
 
+One directory per topic holds everything (see "One workspace per topic" above — never split a topic across locations or slugs):
+
 ```
 learning/[topic-slug]/
 ├── plan.md              # Mission + learning plan with session outline and progress
@@ -280,9 +284,9 @@ Example: `/teach-me hexagonal-architecture` should discover and use the `hexagon
 When the learner asks to generate a course, produce structured materials that can be studied independently or used as session guides.
 
 **Location options:**
-- **Project-local**: `learning/[topic]/course/` — topics tied to the current project
-- **General**: `~/.claude/learning/[topic]/course/` — transferable knowledge
-- **Custom**: Any path the learner specifies — for sharing or external use
+- **Project-local**: `learning/[topic-slug]/course/` at the repo root — topics tied to the current project
+- **General**: `~/.claude/learning/[topic-slug]/course/` — transferable knowledge
+- **Custom**: Any path the learner specifies — for sharing or external use (the one exception to the one-workspace rule, since the output is for others)
 
 **Work-derived courses:** When the learner has been working on a project, the course can draw on actual project code as examples. Reference real files, real patterns, and real decisions.
 

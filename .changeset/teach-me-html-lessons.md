@@ -14,3 +14,4 @@ Integrates the best ideas from mattpocock/skills' `teach` skill into the existin
 - **Fluency vs storage strength** — new learning-science section (Bjork) with the asymmetric difficulty rule: difficulty is the enemy during TEACH, the tool during PRACTICE; mastery judged only on spaced performance.
 - **Wisdom delegation** — real-world-judgment questions route to high-reputation communities recorded in `resources.md`.
 - **Answer-option hygiene** — multiple-choice rules (equal-length options, parallel grammar, misconception-based distractors) in assessment patterns.
+- **One workspace per topic** — canonical locations (`learning/[topic-slug]/` at the repo root for project topics, `~/.claude/learning/[topic-slug]/` for general ones); artifacts are never split across locations or duplicate slugs, resume consolidates strays, and first project use asks whether to commit or gitignore the workspace.

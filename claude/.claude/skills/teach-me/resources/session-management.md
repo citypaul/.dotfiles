@@ -12,11 +12,13 @@ When `/teach-me [topic]` is invoked and existing progress exists:
 
 ```
 CHECK (in order):
-├─► learning/[topic-slug]/session-log.md     (project-local)
+├─► learning/[topic-slug]/session-log.md     (project-local, repo root)
 ├─► ~/.claude/learning/[topic-slug]/session-log.md  (general)
 ├─► Memory system — search for learning memories about [topic]
 └─► Any of the above may be the source of truth; prefer the most recent
 ```
+
+When checking, search for the topic loosely (a topic may have been slugged differently — `terraform` vs `terraform-dreamcatcher`). If artifacts for one topic turn up in more than one location or under more than one slug, ask the learner which is canonical, consolidate everything there, and continue with that single workspace. All new artifacts always go beside the existing plan — never start a parallel workspace.
 
 ### 2. Summarize Where We Left Off
 
