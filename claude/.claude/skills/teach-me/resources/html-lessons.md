@@ -51,7 +51,7 @@ Every lesson contains, in order:
 3. **Body** — the session's teaching, mirrored: concrete examples first (at least two), abstract principle extracted second, diagram where it adds clarity. Use glossary terminology exactly.
 4. **Citations** — claims backed by links to sources from `resources.md`, inline where the claim is made.
 5. **Recap quiz** — 3-5 questions spanning Bloom's levels, answers hidden behind reveal controls. Follow the answer-option hygiene rules in `assessment-patterns.md` (equal-length options, no formatting clues).
-6. **Primary source** — one recommended high-trust resource to read or watch next, with a sentence on why.
+6. **Reading list attempt** — try to add a compact list of world-class resources for the lesson: articles, blog posts, videos/talks, papers, or books. Include only excellent, directly relevant resources; if none meet the bar, omit the section.
 7. **Connections** — links to the previous and next lesson (relative paths), and to `../cheat-sheet.md` and `../glossary.md`.
 8. **Footer reminder** — the tutor is available: *"Questions? Run `/teach-me [topic]` — your tutor remembers where you left off."*
 
@@ -109,10 +109,22 @@ Use this skeleton as the starting point; adapt the content structure to the mate
   figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; }
   .quiz li { margin-bottom: 1.25rem; }
   details summary { cursor: pointer; color: var(--accent); }
-  .source {
+  .reading-list {
     background: #f4f4ec;
     padding: 1rem 1.25rem;
     margin: 2rem 0;
+  }
+  .reading-list h2 {
+    margin-top: 0;
+  }
+  .reading-list li {
+    margin-bottom: 0.75rem;
+  }
+  .resource-kind {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
   footer {
     margin-top: 3.5rem;
@@ -173,10 +185,19 @@ Use this skeleton as the starting point; adapt the content structure to the mate
   </li>
 </ol>
 
-<div class="source">
-  <strong>Go deeper:</strong> <a href="[url]">[Primary source title]</a> —
-  [one sentence on why this is the best next thing to read or watch].
-</div>
+<section class="reading-list" aria-labelledby="reading-list">
+  <h2 id="reading-list">Reading list</h2>
+  <ul>
+    <li>
+      <span class="resource-kind">[Article / Blog post / Video / Book / Paper]</span><br>
+      <a href="[url]">[Resource title]</a> — [one sentence on why this is excellent and when to use it].
+    </li>
+    <li>
+      <span class="resource-kind">[Article / Blog post / Video / Book / Paper]</span><br>
+      <a href="[url]">[Resource title]</a> — [one sentence on why this is excellent and when to use it].
+    </li>
+  </ul>
+</section>
 
 <nav class="lessons">
   <a href="./NNNN-previous-slug.html">← Previous lesson</a>
@@ -194,6 +215,21 @@ Use this skeleton as the starting point; adapt the content structure to the mate
 
 Omit the previous-lesson link in lesson `0001`; omit the next-lesson link until the next lesson exists (add it when generating the following lesson).
 
+Omit the whole reading-list section when no excellent, directly relevant resources can be found.
+
+---
+
+## HTML Indexes
+
+If you create an HTML index for a topic, lesson set, or course, treat it as a durable learning artifact rather than a directory listing. Include the lesson map, mission, current progress, and a topic-level reading list when excellent resources exist.
+
+**Index reading-list rules:**
+- Use the same quality bar as lessons: canonical, recognised expert, peer-reviewed, widely cited, or exceptionally clear and practical.
+- Prefer breadth across media when it helps: one article or blog post, one video or talk, and one book or paper is better than three similar links.
+- Draw from `resources.md` first; if the index reveals a gap, search for a better source and add it to `resources.md` before linking it.
+- Keep the list short: 3-7 resources for a full topic index, fewer for a narrow lesson index.
+- If the topic lacks excellent resources, omit the reading list; do not add a placeholder or apology inside the HTML.
+
 ---
 
 ## Content Rules
@@ -202,5 +238,6 @@ Omit the previous-lesson link in lesson `0001`; omit the next-lesson link until 
 - **Mirror the session, don't transcribe it.** Use the same examples the learner worked through — familiarity aids review — but compress the dialogue into clean exposition.
 - **Keep difficulty out of the prose.** The body is for knowledge re-acquisition, so it should be the clearest possible telling. The quiz is where desirable difficulty lives.
 - **Cite or cut.** A factual claim with no source from `resources.md` either gets a source found and added, or gets reframed as reasoning the learner can verify themselves.
+- **Quality-gate reading lists.** A lesson or index reading list is not "more links"; it is a curated path to the best material. Include only resources you would confidently assign to a serious learner: primary documentation, seminal papers/books, recognised expert articles, exceptional blog posts, or high-signal talks/videos. Prefer sources that are current for fast-moving topics. Search when `resources.md` is thin, update `resources.md` with any selected resource, and omit the section entirely when the search does not turn up excellent material.
 - **Glossary discipline.** Use glossary terms exactly as defined. If the lesson needs a term the glossary lacks and the learner has demonstrated understanding of it, add it to the glossary in the same step.
 - **Quiz answers are part of spaced repetition.** Pull at least one quiz question from a *previous* lesson's material (interleaving), and feed quiz topics into the session log's spaced-review schedule.

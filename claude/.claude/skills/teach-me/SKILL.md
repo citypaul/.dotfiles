@@ -303,12 +303,14 @@ A lesson should be:
 - **Beautiful** — clean, readable typography and generous whitespace; think Tufte. The learner will revisit and may print these.
 - **Short** — one tightly-scoped thing tied to the mission, completable quickly. Working memory is small.
 - **Self-contained** — inline CSS, no external dependencies, works offline and prints well.
-- **Cited** — claims link to sources from `resources.md`; each lesson recommends one primary source to read or watch next.
+- **Cited** — claims link to sources from `resources.md`; each lesson attempts to include a quality-gated reading list of excellent articles, blog posts, videos, papers, or books.
 - **Connected** — links to the previous/next lesson and the cheat sheet; uses glossary terminology.
 - **Interactive where it helps** — a short recap quiz with reveal-on-click answers (vanilla JS only).
 - **An invitation** — ends with a reminder that the tutor is available for follow-up questions via `/teach-me [topic]`.
 
 After writing the file, open it for the learner (`open` on macOS, `xdg-open` on Linux). See `resources/html-lessons.md` for the full format, design principles, and template.
+
+**Reading lists:** HTML lessons and any HTML indexes created for a topic should try to include a compact reading list drawn from world-class resources: canonical docs/specs, seminal books or papers, recognised expert writing, excellent blog posts, or high-signal talks/videos. Use the topic `resources.md` first, search for better sources when needed, and add only resources that are genuinely excellent and relevant to the lesson or index. If no excellent resources can be found, omit the reading list entirely rather than padding with mediocre links.
 
 **Capture mode:** when the learner is short on time — or asks for the material "to read later" — generate the lesson *up front*, at the point where teaching would normally happen, and skip or defer the interactive CHECK/PRACTICE steps. The lesson's recap quiz becomes their asynchronous practice, and the next session's REVIEW covers the captured material as spaced retrieval. Log the lesson as **captured, not taught**: a captured lesson is exposure, not evidence, so nothing from it qualifies for a learning record or counts toward mastery until the learner demonstrates it in a later session.
 

@@ -118,6 +118,8 @@ The curated set of trusted sources for the topic. Teaching should be grounded in
   [One line: what it covers. Use for: when to reach for it.]
 - [Article: "Title" — Author (Site)](url)
   [One line annotation.]
+- [Video: "Title" — Speaker/Channel](url)
+  [One line annotation.]
 
 ## Wisdom (Communities)
 
@@ -131,6 +133,7 @@ The curated set of trusted sources for the topic. Teaching should be grounded in
 
 **Rules:**
 - High-trust only: primary sources, recognised experts, peer-reviewed work, well-moderated communities. Marketing dressed as education stays out.
+- For HTML lessons and indexes, resources may include articles, blog posts, videos/talks, papers, and books, but only when they are excellent and directly relevant. Do not add a source merely to fill a media type.
 - Annotate every entry — a bare link is useless in three months.
 - Prune ruthlessly: a source that turned out shallow or off-mission is removed, not buried.
 - If the learner has opted out of joining communities, note it here so future sessions stop proposing them.
