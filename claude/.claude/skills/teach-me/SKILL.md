@@ -68,7 +68,7 @@ See `resources/course-generation.md` for the plan file template.
 
 ### 4. Ground in Trusted Sources
 
-Do not teach from parametric knowledge alone. Before the first session, search for 2-3 high-trust sources on the topic — primary sources, recognised experts, peer-reviewed work — and record them in `resources.md` with a one-line annotation each: what it covers and when to reach for it. Cite these sources while teaching, and recommend one per session for self-study between sessions.
+Do not teach from parametric knowledge alone. Before the first session, do online research to find 2-3 high-trust sources on the topic — primary sources, recognised experts, peer-reviewed work — and record them in `resources.md` with a one-line annotation each: what it covers and when to reach for it. Cite these sources while teaching, and recommend one per session for self-study between sessions.
 
 This matters most for fast-moving topics (frameworks, tools, APIs) and factual domains (health, law, finance), where parametric knowledge may be stale or wrong. For stable conceptual topics, sources still add depth and give the learner somewhere to go beyond the tutor.
 
@@ -310,7 +310,7 @@ A lesson should be:
 
 After writing the file, open it for the learner (`open` on macOS, `xdg-open` on Linux). See `resources/html-lessons.md` for the full format, design principles, and template.
 
-**Reading lists:** HTML lessons and any HTML indexes created for a topic should try to include a compact reading list drawn from world-class resources: canonical docs/specs, seminal books or papers, recognised expert writing, excellent blog posts, or high-signal talks/videos. Use the topic `resources.md` first, search for better sources when needed, and add only resources that are genuinely excellent and relevant to the lesson or index. If no excellent resources can be found, omit the reading list entirely rather than padding with mediocre links.
+**Reading lists:** HTML lessons and any HTML indexes created for a topic should try to include a compact reading list drawn from world-class resources: canonical docs/specs, seminal books or papers, recognised expert writing, excellent blog posts, or high-signal talks/videos. Use the topic `resources.md` first, perform fresh online research when needed, and add only resources that are genuinely excellent and relevant to the lesson or index. If no excellent resources can be found, omit the reading list entirely rather than padding with mediocre links.
 
 **Capture mode:** when the learner is short on time — or asks for the material "to read later" — generate the lesson *up front*, at the point where teaching would normally happen, and skip or defer the interactive CHECK/PRACTICE steps. The lesson's recap quiz becomes their asynchronous practice, and the next session's REVIEW covers the captured material as spaced retrieval. Log the lesson as **captured, not taught**: a captured lesson is exposure, not evidence, so nothing from it qualifies for a learning record or counts toward mastery until the learner demonstrates it in a later session.
 

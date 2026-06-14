@@ -226,7 +226,7 @@ If you create an HTML index for a topic, lesson set, or course, treat it as a du
 **Index reading-list rules:**
 - Use the same quality bar as lessons: canonical, recognised expert, peer-reviewed, widely cited, or exceptionally clear and practical.
 - Prefer breadth across media when it helps: one article or blog post, one video or talk, and one book or paper is better than three similar links.
-- Draw from `resources.md` first; if the index reveals a gap, search for a better source and add it to `resources.md` before linking it.
+- Draw from `resources.md` first; if the index reveals a gap, do online research for a better source and add it to `resources.md` before linking it.
 - Keep the list short: 3-7 resources for a full topic index, fewer for a narrow lesson index.
 - If the topic lacks excellent resources, omit the reading list; do not add a placeholder or apology inside the HTML.
 
@@ -238,6 +238,6 @@ If you create an HTML index for a topic, lesson set, or course, treat it as a du
 - **Mirror the session, don't transcribe it.** Use the same examples the learner worked through — familiarity aids review — but compress the dialogue into clean exposition.
 - **Keep difficulty out of the prose.** The body is for knowledge re-acquisition, so it should be the clearest possible telling. The quiz is where desirable difficulty lives.
 - **Cite or cut.** A factual claim with no source from `resources.md` either gets a source found and added, or gets reframed as reasoning the learner can verify themselves.
-- **Quality-gate reading lists.** A lesson or index reading list is not "more links"; it is a curated path to the best material. Include only resources you would confidently assign to a serious learner: primary documentation, seminal papers/books, recognised expert articles, exceptional blog posts, or high-signal talks/videos. Prefer sources that are current for fast-moving topics. Search when `resources.md` is thin, update `resources.md` with any selected resource, and omit the section entirely when the search does not turn up excellent material.
+- **Quality-gate reading lists.** A lesson or index reading list is not "more links"; it is a curated path to the best material. Include only resources you would confidently assign to a serious learner: primary documentation, seminal papers/books, recognised expert articles, exceptional blog posts, or high-signal talks/videos. Prefer sources that are current for fast-moving topics. Do online research when `resources.md` is thin, update `resources.md` with any selected resource, and omit the section entirely when the research does not turn up excellent material.
 - **Glossary discipline.** Use glossary terms exactly as defined. If the lesson needs a term the glossary lacks and the learner has demonstrated understanding of it, add it to the glossary in the same step.
 - **Quiz answers are part of spaced repetition.** Pull at least one quiz question from a *previous* lesson's material (interleaving), and feed quiz topics into the session log's spaced-review schedule.
