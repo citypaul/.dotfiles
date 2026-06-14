@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.36.1
+
+### Patch Changes
+
+- 3852666: teach-me: add quality-gated reading lists to HTML lessons and indexes
+
 ## 3.36.0
 
 ### Minor Changes
