@@ -295,6 +295,10 @@ migrate_legacy_skill_dirs() {
   echo ""
 }
 
+# Optional (community) skill sources that failed to install. Collected so a
+# single bad upstream source warns at the end instead of aborting setup.
+FAILED_SKILL_SOURCES=()
+
 # Install skills from a skills.sh source for the selected agents
 install_skills_from() {
   local source="$1"
@@ -317,6 +321,17 @@ install_skills_from() {
   else
     echo -e "${RED}✗${NC} Failed to install $label from $source"
     return 1
+  fi
+}
+
+# Install an optional community skill source. Unlike the user's own skills,
+# these come from third-party repos that can break independently (e.g. a repo
+# restructured without a SKILL.md). A failure here records the source and
+# continues so the remaining sources and the rest of setup still run. The
+# `if !` guard also suppresses `set -e` for the call.
+install_optional_skills_from() {
+  if ! install_skills_from "$@"; then
+    FAILED_SKILL_SOURCES+=("$1")
   fi
 }
 
@@ -375,18 +390,27 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)"
 
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
-    install_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)"
-    install_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel-labs/next-skills)"
-    install_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "$GRILL_ME_SKILL"
-    install_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "$SEO_AUDIT_SKILL"
+    install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)"
+    install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel-labs/next-skills)"
+    install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "$GRILL_ME_SKILL"
+    install_optional_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "$SEO_AUDIT_SKILL"
   fi
 
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
-    install_skills_from "$IMPECCABLE_SKILLS_REPO" "impeccable design skills (pbakaus/impeccable)"
+    install_optional_skills_from "$IMPECCABLE_SKILLS_REPO" "impeccable design skills (pbakaus/impeccable)"
   fi
 
   echo ""
   verify_skills_installed
+
+  if [[ ${#FAILED_SKILL_SOURCES[@]} -gt 0 ]]; then
+    echo -e "${YELLOW}⚠${NC}  ${#FAILED_SKILL_SOURCES[@]} optional skill source(s) were skipped after failing to install:"
+    for src in "${FAILED_SKILL_SOURCES[@]}"; do
+      echo -e "      • $src"
+    done
+    echo -e "    These are third-party community sources; setup continued without them."
+    echo -e "    Re-run ${YELLOW}$0 --skills-only${NC} later, or check the source on skills.sh."
+  fi
   echo ""
 fi
 
