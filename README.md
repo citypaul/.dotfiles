@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 27 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 28 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -188,6 +188,7 @@ Skills are **auto-discovered** by Claude when relevant:
 - Changing code with no tests? → `characterisation-tests` skill documents existing behavior
 - Building a UI? → `impeccable` skill loads design methodology and anti-slop patterns
 - Stress-testing a plan or design? → `grill-me` asks one question at a time and recommends answers
+- Need a second opinion on finished work? → `double-check` spins up a *different* AI provider's CLI agent (codex/claude/gemini/cursor-agent) and argues it out until both agents agree
 
 ### Scope-to-Implementation Flow
 
@@ -1408,7 +1409,7 @@ Both patterns resolve to the same content on disk, so the first `--agent codex` 
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~160 lines - lean core principles)
 - ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) (`npx skills add`):
-  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 27 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, and more)
+  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 28 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, and more)
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
   - [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) — Next.js best practices, Cache Components, and upgrade workflow
@@ -1661,7 +1662,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + 27 auto-discovered skills + 5 slash commands + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + 28 auto-discovered skills + 5 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1684,7 +1685,7 @@ The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~160 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 27 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 28 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1861,7 +1862,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + skills (27 from this repo plus external skill bundles) + 10 agents (development guidelines)
+- ✅ CLAUDE.md + skills (28 from this repo plus external skill bundles) + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ OpenCode configuration (guidelines plus built-in LSP servers, including TypeScript)
