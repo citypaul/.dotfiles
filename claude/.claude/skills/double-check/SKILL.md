@@ -1,6 +1,6 @@
 ---
 name: double-check
-description: Get an independent second opinion on finished work from a *different* AI provider's CLI agent — codex, claude, gemini, or cursor-agent — then run a constructive back-and-forth between the two agents until both genuinely agree. A model is biased toward its own reasoning, so self-review misses what cross-provider review catches. Use when the user says "double check this", "verify my work", "get a second opinion", "have another model check", "cross-check with codex/gemini", "is this actually right?", or before merging or shipping high-stakes, complex, or security-sensitive work. Provider-agnostic: it always picks a verifier *different* from whichever agent is hosting the session.
+description: Get an independent second opinion on finished work from a *different* AI provider's CLI agent — codex, claude, gemini, or cursor-agent — then run a constructive back-and-forth between the two agents until both genuinely agree. A model is biased toward its own reasoning, so self-review misses what cross-provider review catches. Use when the user says "double check this", "verify my work", "get a second opinion", "have another model check", "cross-check with codex/gemini", "is this actually right?", or before merging or shipping high-stakes, complex, or security-sensitive work. Provider-agnostic — it always picks a verifier *different* from whichever agent is hosting the session.
 ---
 
 # Double Check
