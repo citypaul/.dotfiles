@@ -255,14 +255,42 @@ backup_file() {
   fi
 }
 
+# The skills CLI records everything it manages in ~/.agents/.skill-lock.json.
+# Older CLI versions installed skills as symlinks into the universal
+# ~/.agents/skills/ cache; since skills CLI ~1.5 each skill is COPIED into the
+# agent directory (e.g. ~/.claude/skills/<name>) as a regular directory. So a
+# regular directory no longer implies a pre-skills.sh leftover — the lock file
+# is the source of truth for what the CLI owns.
+SKILL_LOCK_FILE=~/.agents/.skill-lock.json
+
+skill_is_lock_managed() {
+  local name="$1"
+  [[ -f "$SKILL_LOCK_FILE" ]] || return 1
+  if command -v node >/dev/null 2>&1; then
+    node -e '
+      const fs = require("fs");
+      try {
+        const lock = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+        const skills = lock.skills ?? {};
+        process.exit(Object.prototype.hasOwnProperty.call(skills, process.argv[2]) ? 0 : 1);
+      } catch {
+        process.exit(1);
+      }
+    ' "$SKILL_LOCK_FILE" "$name"
+  else
+    grep -q "\"$name\":" "$SKILL_LOCK_FILE"
+  fi
+}
+
 # Migrate skill directories left behind by the pre-skills.sh curl-based
-# installer. Those were written as regular directories at ~/.claude/skills/<name>;
-# the skills CLI will then manage them in-place as Claude-Code-specific installs
-# instead of routing them through the universal ~/.agents/skills/ cache, which
-# is where Codex (and other "universal" agents) read from. Moving them aside
-# lets the CLI install each source into the universal path on this run, so the
-# Claude-side entries become symlinks and the same skills become visible to
-# Codex/OpenCode/etc.
+# installer. Those were written as regular directories at ~/.claude/skills/<name>
+# and are NOT tracked in the skills CLI lock file, so the CLI would manage them
+# in-place instead of installing them properly. Moving them aside lets the CLI
+# install each source cleanly on this run.
+#
+# Symlinked entries (old-CLI universal-cache layout) and regular directories
+# tracked in ~/.agents/.skill-lock.json (new-CLI copy layout) are both
+# CLI-managed and must be left alone.
 #
 # The files are moved, not deleted — everything ends up under
 # ~/.claude/skills.pre-skills-sh.<timestamp>/ and can be restored manually.
@@ -276,6 +304,7 @@ migrate_legacy_skill_dirs() {
     [[ -d "$entry" ]] || continue
     name="$(basename "$entry")"
     [[ -L "$skills_dir/$name" ]] && continue
+    skill_is_lock_managed "$name" && continue
     stale+=("$name")
   done
 
@@ -335,10 +364,10 @@ install_optional_skills_from() {
   fi
 }
 
-# Verify skills landed in the universal cache — the path Codex and other
-# "universal agents" read from. Regular (non-symlink) directories under
-# ~/.claude/skills/ after install mean something routed through the
-# Claude-Code-specific path and won't be visible to non-Claude agents.
+# Verify everything under ~/.claude/skills/ is managed by the skills CLI —
+# either a symlink (old-CLI universal-cache layout) or a regular directory
+# tracked in ~/.agents/.skill-lock.json (new-CLI copy layout). Anything else
+# is an unmanaged stray the CLI will not update and other agents cannot see.
 verify_skills_installed() {
   local skills_dir=~/.claude/skills
   [[ -d "$skills_dir" ]] || return 0
@@ -348,12 +377,13 @@ verify_skills_installed() {
     [[ -d "$entry" ]] || continue
     name="$(basename "$entry")"
     [[ -L "$skills_dir/$name" ]] && continue
+    skill_is_lock_managed "$name" && continue
     stale+=("$name")
   done
 
   if [[ ${#stale[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}⚠${NC}  ${#stale[@]} skill(s) ended up as regular directories under ~/.claude/skills/"
-    echo -e "    These won't be visible to non-Claude agents (Codex, etc.):"
+    echo -e "${YELLOW}⚠${NC}  ${#stale[@]} skill(s) under ~/.claude/skills/ are not managed by the skills CLI"
+    echo -e "    (not symlinked and not tracked in ~/.agents/.skill-lock.json — the CLI won't update them):"
     for name in "${stale[@]}"; do
       echo -e "      • $name"
     done
