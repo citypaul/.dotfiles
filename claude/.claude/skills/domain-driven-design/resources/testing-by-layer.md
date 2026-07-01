@@ -22,8 +22,7 @@ describe('pledge contribution', () => {
       amount: createMoney(50, 'GBP'),
     });
 
-    expect(result.success).toBe(false);
-    expect(result.reason).toBe('insufficient-balance');
+    expect(result).toEqual({ success: false, reason: 'insufficient-balance' });
     expect(occasionRepo.savedEntities).toHaveLength(0);
   });
 });

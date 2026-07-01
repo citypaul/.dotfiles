@@ -183,7 +183,7 @@ For each child story, capture:
 - **Value:** who benefits and how
 - **Scope:** what is included
 - **Intentional deferrals:** what is not included yet and why
-- **Acceptance examples:** concrete Given/When/Then or equivalent testable examples
+- **Acceptance examples:** concrete precondition → trigger → observable-outcome examples (or equivalent testable examples)
 - **Release constraint:** shippable, hidden behind flag, internal-only, demo-only, or not releasable and why
 - **Follow-ups:** stories that add paths, interfaces, data, rules, or quality
 

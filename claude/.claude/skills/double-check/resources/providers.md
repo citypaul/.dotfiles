@@ -69,10 +69,10 @@ claude -p --model opus --effort max --permission-mode plan < brief.md
 Headless mode: `gemini -p`, brief on stdin (stdin is appended to the prompt).
 
 ```bash
-gemini -m gemini-2.5-pro --approval-mode plan -p "Review per the brief on stdin." < brief.md
+gemini -m gemini-3-pro --approval-mode plan -p "Review per the brief on stdin." < brief.md
 ```
 
-- **Best model:** the `-pro` tier (e.g. `gemini-2.5-pro`). Confirm via `gemini --help`.
+- **Best model:** the `-pro` tier (e.g. `gemini-3-pro`). Confirm via `gemini --help`.
 - **Read-only:** `--approval-mode plan` (read-only); never `--yolo`, which auto-approves everything.
 
 ## cursor-agent — Cursor CLI

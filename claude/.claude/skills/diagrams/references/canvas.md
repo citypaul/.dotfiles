@@ -9,8 +9,7 @@ Create spatial, node-based diagrams using JSON Canvas format. Best for mind maps
 1. Valid JSON with proper quotes, commas, brackets
 2. Every node needs: `id`, `type`, `x`, `y`, `width`, `height`
 3. Node IDs: alphanumeric, hyphens, underscores only (no spaces or special chars)
-4. Coordinate origin is top-left; X increases right, Y increases down
-5. No negative coordinates
+4. Coordinate origin is top-left; X increases right, Y increases down (negative coordinates are valid per the spec, though some renderers handle them poorly — prefer non-negative)
 
 ## Common Pitfalls
 

@@ -75,24 +75,23 @@ it('should set isValidated flag', () => {
 it('should reject negative amounts', () => {
   const payment = getMockPayment({ amount: -100 });
   const result = processPayment(payment);
-  expect(result.success).toBe(false);
-  expect(result.error).toContain('Amount must be positive');
+  expect(result).toEqual({ success: false, error: expect.stringContaining('Amount must be positive') });
 });
 
 it('should reject invalid CVV', () => {
   const payment = getMockPayment({ cvv: '12' }); // Only 2 digits
   const result = processPayment(payment);
-  expect(result.success).toBe(false);
-  expect(result.error).toContain('Invalid CVV');
+  expect(result).toEqual({ success: false, error: expect.stringContaining('Invalid CVV') });
 });
 
 it('should process valid payments', () => {
   const payment = getMockPayment({ amount: 100, cvv: '123' });
   const result = processPayment(payment);
-  expect(result.success).toBe(true);
-  expect(result.data.transactionId).toBeDefined();
+  expect(result).toEqual({ success: true, data: { transactionId: expect.any(String) } });
 });
 ```
+
+Assert on the whole `Result` value rather than reaching for `result.error`/`result.data` after a separate `expect(result.success)` — `expect(...).toBe(false)` does not narrow a discriminated union, so member access on the un-narrowed `Result` fails under strict TypeScript, and the whole-value assertion is stronger against mutants anyway.
 
 ---
 
@@ -158,15 +157,15 @@ it('filters claims', () => { ... });
 ✅ **CORRECT — Inline in the consuming function, tested through its behavior:**
 ```typescript
 // load-participant-view.ts
-export const loadParticipantView = async (db, eventId, userId) => {
-  const items = await getItems(db, eventId);
+export const loadParticipantView = async (db: Db, eventId: EventId, userId: UserId) => {
+  const items = await getItems(db, eventId, userId);
   const yourClaims = items.filter(i => i.isClaimed && i.isClaimedByCurrentUser);
   const available = items.filter(i => !i.isClaimedByCurrentUser);
   return { yourClaims, available };
 };
 
 // The behavioral test for loadParticipantView covers the filtering:
-it('returns claimed gifts in yourClaims and unclaimed in available', () => {
+it('returns claimed gifts in yourClaims and unclaimed in available', async () => {
   const result = await loadParticipantView(db, eventId, userId);
   expect(result.yourClaims).toHaveLength(1);
   expect(result.available).toHaveLength(2);
@@ -232,7 +231,7 @@ const getMockUser = (overrides?: Partial<User>): User => {
 - Catches breaking changes early (schema changes fail tests)
 - Single source of truth (no schema redefinition)
 
-**Tip:** For factories where only a subset of fields are relevant, use `Pick<T, 'field1' | 'field2'>` for the overrides parameter to constrain what callers can customize.
+**Tip:** For factories where only a subset of fields are relevant, use `Partial<Pick<T, 'field1' | 'field2'>>` for the overrides parameter to constrain what callers can customize (a bare `Pick` keeps every picked field required, so overriding just one field would not compile).
 
 ### Factory Composition
 
@@ -354,7 +353,7 @@ Watch for these patterns that give fake 100% coverage:
 ```typescript
 it('calls validator', () => {
   const spy = vi.spyOn(validator, 'validate');
-  validate(payment);
+  validator.validate(payment);
   expect(spy).toHaveBeenCalled(); // Meaningless assertion
 });
 ```
@@ -364,8 +363,7 @@ it('calls validator', () => {
 it('should reject invalid payment', () => {
   const payment = getMockPayment({ amount: -100 });
   const result = validate(payment);
-  expect(result.success).toBe(false);
-  expect(result.error).toContain('Amount must be positive');
+  expect(result).toEqual({ success: false, error: expect.stringContaining('Amount must be positive') });
 });
 ```
 
@@ -385,8 +383,7 @@ it('processes payment', () => {
 it('should process payment and return transaction ID', () => {
   const payment = getMockPayment();
   const result = handlePayment(payment);
-  expect(result.success).toBe(true);
-  expect(result.transactionId).toBeDefined();
+  expect(result).toEqual({ success: true, data: { transactionId: expect.any(String) } });
 });
 ```
 

@@ -50,7 +50,7 @@ it('characterises full report output', () => {
 
 ## Combination Testing
 
-Test many input combinations at once to rapidly characterise a function's behavior. Use `it.each` with a generated matrix, or the `jest-extended-snapshot` library (compatible with Vitest via `vitest-compatible-jest-extended-snapshot` or by configuring Vitest's Jest compatibility mode):
+Test many input combinations at once to rapidly characterise a function's behavior. Use `it.each` with a generated matrix (the `jest-extended-snapshot` library is prior art for this idea, but it is Jest-only — in Vitest, build the matrix yourself as below):
 
 ```typescript
 // Option 1: it.each with inline snapshot (pure Vitest, no extra dependency)
@@ -113,7 +113,9 @@ const createOrder = (data: OrderData, generateId: () => string = () => crypto.ra
 // test: createOrder(data, () => 'test-uuid-001')
 
 // Option 2: mock the source (temporary scaffolding only — implementation-coupled)
-vi.spyOn(crypto, 'randomUUID').mockReturnValue('test-uuid-001');
+// (the mock value must be UUID-shaped — randomUUID's return type is a
+// `${string}-${string}-${string}-${string}-${string}` template literal)
+vi.spyOn(crypto, 'randomUUID').mockReturnValue('00000000-0000-4000-8000-000000000001');
 
 // Option 3: use property matchers with snapshots
 expect(result).toMatchSnapshot({
@@ -135,7 +137,7 @@ For complex outputs where automated comparison isn't enough, use an explicit app
 3. If no approved file exists, the test fails -- a human must review and approve
 4. If files differ, the test fails -- a human reviews the change
 
-The `approvals` npm package (`npm install approvals`) provides this workflow with Vitest/Jest integration and diff tool support.
+The `approvals` npm package (`npm install approvals`) provides this workflow with diff tool support (documented Jest/Mocha integration; usable from Vitest via its plain `approvals.verify` API).
 
 **When to prefer approval tests:** When the output is complex enough that a human should review it before accepting as baseline (e.g., HTML rendering, PDF generation, complex business reports).
 

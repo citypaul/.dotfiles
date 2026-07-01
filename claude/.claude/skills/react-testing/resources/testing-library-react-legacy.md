@@ -128,7 +128,7 @@ expect(result.current.user).toEqual({ email: 'test@example.com' });
 ### Multiple Providers
 
 ```tsx
-const AllProviders = ({ children }) => (
+const AllProviders = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>
     <ThemeProvider>
       <RouterProvider>
@@ -147,7 +147,10 @@ const { result } = renderHook(() => useMyHook(), {
 
 ```tsx
 // ✅ CORRECT - Wrap component in provider via a render helper
-const renderWithAuth = (ui, { user = null, ...options } = {}) => {
+const renderWithAuth = (
+  ui: React.ReactElement,
+  { user = null, ...options }: { user?: User | null } & RenderOptions = {},
+) => {
   return render(
     <AuthProvider initialUser={user}>
       {ui}

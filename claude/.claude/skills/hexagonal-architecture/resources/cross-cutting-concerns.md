@@ -100,7 +100,7 @@ const createTransactionalPledgingToOccasions = (db: Database): ForPledgingToOcca
 
 The driving port (`ForPledgingToOccasions`) is unchanged — the transactional implementation still satisfies the same interface. The domain doesn't know or care.
 
-**When transactions aren't needed:** For single-aggregate saves, no transaction wrapper is necessary. Only add transactions when multiple aggregates must be saved atomically. See `aggregate-design.md` for guidance on one-aggregate-per-transaction.
+**When transactions aren't needed:** For single-aggregate saves, no transaction wrapper is necessary. Only add transactions when multiple aggregates must be saved atomically. See the `domain-driven-design` skill's `resources/aggregate-design.md` for guidance on one-aggregate-per-transaction.
 
 ## Error Formatting
 
@@ -113,12 +113,12 @@ const toHttpResponse = (result: PledgeResult): NextResponse => {
   if (result.success) {
     return NextResponse.json({ pledged: result.occasion.totalPledged }, { status: 200 });
   }
-  const statusMap: Record<PledgeResult['reason'], number> = {
+  const statusMap: Record<Extract<PledgeResult, { success: false }>['reason'], number> = {
     'not-found': 404,
     'insufficient-balance': 422,
     'funding-closed': 422,
   };
-  return NextResponse.json({ error: result.reason }, { status: statusMap[result.reason] ?? 500 });
+  return NextResponse.json({ error: result.reason }, { status: statusMap[result.reason] });
 };
 ```
 

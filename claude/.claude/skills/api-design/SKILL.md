@@ -122,7 +122,7 @@ See `resources/problem-details.md` for full member semantics, single-error and v
 | 403 | Forbidden | Authenticated but not authorized |
 | 404 | Not Found | Resource doesn't exist |
 | 409 | Conflict | Duplicate, version mismatch |
-| 422 | Unprocessable Entity | Validation failed (semantically invalid) |
+| 422 | Unprocessable Content | Validation failed (semantically invalid) |
 | 429 | Too Many Requests | Rate limit exceeded (include `Retry-After` header) |
 | 500 | Internal Server Error | Server error (never expose internal details) |
 
@@ -183,6 +183,11 @@ app.post('/api/payments', async (req, res) => {
   const cached = await idempotencyStore.get(idempotencyKey);
   if (cached) {
     return res.status(cached.status).json(cached.body);
+  }
+
+  const result = CreatePaymentSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json(toValidationProblem(result.error));
   }
 
   const payment = await paymentService.create(result.data);

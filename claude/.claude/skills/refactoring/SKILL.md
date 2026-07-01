@@ -33,7 +33,7 @@ Having a working baseline before refactoring:
 
 | Priority | Action | Examples |
 |----------|--------|----------|
-| Critical | Fix now | Mutations, knowledge duplication, >3 levels nesting |
+| Critical | Fix now | Data mutation (see the `functional` skill), knowledge duplication, >3 levels nesting |
 | High | This session | Magic numbers, unclear names, >30 line functions |
 | Nice | Later | Minor naming, single-use helpers |
 | Skip | Don't change | Already clean code |
@@ -97,8 +97,8 @@ if (items.length === 0) {
 
 Don't refactor when:
 
-- ❌ Code works correctly (no bug to fix)
-- ❌ No test demands the change (speculative refactoring)
+- ❌ The current structure isn't impeding the work at hand (clean-enough working code needs no restructuring)
+- ❌ Speculative generality — restructuring for requirements that don't exist yet
 - ❌ Would change behavior (that's a feature, not refactoring)
 - ❌ Premature optimization
 - ❌ Code is "good enough" for current phase

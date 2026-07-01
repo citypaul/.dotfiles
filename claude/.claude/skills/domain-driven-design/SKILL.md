@@ -131,6 +131,7 @@ type GiftIdea = {
   readonly description: string;
   readonly occasion: OccasionId;
   readonly estimatedCost: Money;
+  readonly status: 'proposed' | 'selected' | 'purchased';
 };
 
 // ❌ Technical jargon
@@ -172,9 +173,11 @@ const PledgeInputSchema = z.object({
 });
 
 // Reconstitution from persistence — same pattern, used in driven adapters
-const toOccasion = (row: OccasionRow): Occasion => ({
+// (the adapter loads the aggregate's gift ideas alongside the row)
+const toOccasion = (row: OccasionRow, giftIdeas: ReadonlyArray<GiftIdea>): Occasion => ({
   id: createOccasionId(row.id),
   name: row.name,
+  giftIdeas,
   budget: createMoney(row.budgetAmount, parseCurrency(row.budgetCurrency)),
   totalPledged: createMoney(row.pledgedAmount, parseCurrency(row.budgetCurrency)),
   isFundingClosed: row.isFundingClosed,
@@ -209,9 +212,10 @@ Have identity and a lifecycle. Always valid after construction or state transiti
 type Occasion = {
   readonly id: OccasionId;
   readonly name: string;
-  readonly date: Date;
   readonly giftIdeas: ReadonlyArray<GiftIdea>;
   readonly budget: Money;
+  readonly totalPledged: Money;
+  readonly isFundingClosed: boolean;
 };
 
 // Immutable update — returns new valid state
@@ -404,6 +408,8 @@ const getTestOccasion = (overrides?: Partial<Occasion>): Occasion =>
     name: "Mum's Birthday",
     giftIdeas: [],
     budget: createMoney(100, 'GBP'),
+    totalPledged: createMoney(0, 'GBP'),
+    isFundingClosed: false,
     ...overrides,
   });
 ```

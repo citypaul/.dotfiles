@@ -122,7 +122,7 @@ Checklist:
 - Disable stack traces in production error responses
 - Remove `X-Powered-By` and other server identification headers
 - Configure CORS restrictively — don't use `Access-Control-Allow-Origin: *` for authenticated APIs
-- Disable HTTP methods you don't use (OPTIONS, TRACE)
+- Disable HTTP methods you don't use (e.g. TRACE — but keep OPTIONS if you serve cross-origin browser clients; CORS preflight requires it)
 
 ### 9. Improper Inventory Management
 
@@ -130,7 +130,7 @@ Forgotten old API versions still running, undocumented endpoints, debug endpoint
 
 Mitigations:
 - Maintain an API inventory (OpenAPI spec as source of truth)
-- Decommission old versions on schedule (see `resources/api-evolution.md`)
+- Decommission old versions on schedule (see `api-evolution.md`)
 - Review deployed endpoints regularly — remove anything not in the spec
 - Never deploy debug/test endpoints to production
 

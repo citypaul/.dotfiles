@@ -64,11 +64,10 @@ const createOccasion = (params: CreateOccasionParams): Occasion => {
   if (!params.name.trim()) throw new Error('Occasion name is required');
   if (params.budget.amount < 0) throw new Error('Budget cannot be negative');
   return OccasionSchema.parse({
-    id: createOccasionId(),
-    name: params.name.trim(),
-    budget: params.budget,
-    giftIdeas: [],
     ...params,
+    id: createOccasionId(crypto.randomUUID()),
+    name: params.name.trim(),
+    giftIdeas: [],
   });
 };
 
@@ -275,11 +274,11 @@ save: async (occasion) => {
   const updated = await db.update(occasions)
     .set({ ...toRow(occasion), version: occasion.version + 1 })
     .where(and(eq(occasions.id, occasion.id), eq(occasions.version, occasion.version)));
-  if (updated.rowsAffected === 0) throw new Error('Concurrent modification detected');
+  if (updated.rowsAffected === 0) throw new ConcurrentModificationError(occasion.id);
 },
 ```
 
-If two users load version 3 and both try to save, the first succeeds (version becomes 4) and the second fails (version 3 no longer matches). The use case catches this and asks the user to retry.
+If two users load version 3 and both try to save, the first succeeds (version becomes 4) and the second fails (version 3 no longer matches). Per `error-modeling.md`, the use case does not catch this — it propagates like any infrastructure exception, and the driving adapter translates it (e.g. HTTP 409 with a "please retry" message). If retrying on conflict is itself a domain flow, model it explicitly in the use case (reload, re-run the domain logic, retry the save a bounded number of times) rather than catching-and-hoping — the event-sourcing skill's command handler shows this shape.
 
 **When to add optimistic locking:**
 - Multiple users can edit the same aggregate

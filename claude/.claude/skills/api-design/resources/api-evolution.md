@@ -24,7 +24,7 @@ The best versioning strategy is to avoid versioning entirely by designing for ev
 - New enum values don't break consumers (consumers handle unknown values)
 - Use feature flags to enable new behavior per-client
 
-**Who does this:** Stripe (despite `/v1/` in the URL, they have never made a v2 — they evolve additively).
+**Who does this:** Stripe — they evolved `/v1` additively for ~13 years before introducing a `/v2` namespace in 2024 for new paradigms (events, event destinations), and even then `/v1` continues to evolve additively alongside it.
 
 ### Option 2: Date-Based Version Pinning (Stripe's Model)
 
@@ -87,15 +87,15 @@ Link: <https://api.example.com/docs/migration>; rel="sunset"
 
 The `Link` header with `rel="sunset"` points to migration documentation. This lets clients programmatically detect upcoming deprecations.
 
-### The Deprecation Header (IETF Draft)
+### The Deprecation Header (RFC 9745)
 
-Signals that an endpoint is deprecated (still functional, but scheduled for removal):
+Signals that an endpoint is deprecated (still functional, but scheduled for removal). RFC 9745 defines it as a Structured Field Date — an `@`-prefixed Unix timestamp, not an HTTP-date:
 
 ```
-Deprecation: Sat, 01 Jun 2028 00:00:00 GMT
+Deprecation: @1811808000
 ```
 
-Use both together: `Deprecation` signals "this is deprecated", `Sunset` signals "this will stop working on this date".
+Use both together: `Deprecation` signals "this is deprecated", `Sunset` signals "this will stop working on this date". Note the two headers use different date syntaxes — `Sunset` (RFC 8594) keeps the HTTP-date format shown above.
 
 ### Deprecation Checklist
 

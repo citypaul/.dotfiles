@@ -28,6 +28,7 @@ Create professional diagrams and visualizations in Markdown documents. Choose th
 
 ## Quick Selection Rules
 
+0. **Where will this be viewed?** GitHub (READMEs, PRs, issues), most IDEs, and most markdown renderers only render ` ```mermaid ` fences — the other fences (` ```dot `, ` ```vega-lite `, ` ```infographic `, ` ```canvas `), the mxgraph stencil syntax, and the raw-HTML patterns require a compatible viewer (e.g. the docu.md Markdown Viewer extension) and appear as raw code blocks everywhere else. For GitHub/PR/IDE destinations, prefer Mermaid.
 1. **Simple process flow?** Use Mermaid
 2. **Data with numbers?** Use Vega-Lite (charts) or Infographic (visual templates)
 3. **Software modeling with icons?** Use PlantUML

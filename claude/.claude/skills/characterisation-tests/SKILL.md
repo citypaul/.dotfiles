@@ -64,8 +64,10 @@ Use a distinct file suffix so characterisation tests are visually separable in t
 
 ```
 pricing.characterisation.test.ts    ← characterisation tests (temporary)
-pricing.test.ts                     ← behavior-driven tests (permanent)
+discount-calculation.test.ts        ← behavior-driven tests (permanent)
 ```
+
+The temporary characterisation file may mirror the implementation file 1:1 — it is pinning that file's current behaviour and will be deleted. The permanent tests follow behaviour, not file boundaries (the `testing` skill's "no 1:1 mapping" rule).
 
 ### Documentation Within Tests
 

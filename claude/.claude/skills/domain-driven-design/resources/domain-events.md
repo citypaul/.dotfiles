@@ -39,11 +39,18 @@ const decide = (command: OrderCommand, state: OrderState, now: Date): readonly O
   }
 };
 
-// 2. Evolve: state + event → new state (pure state transformation)
+// 2. Evolve: state + event → new state (pure state transformation).
+// OrderState is a discriminated union of lifecycle phases (see "Make Illegal
+// States Unrepresentable"), so each case builds the full target variant —
+// spreading a draft state into a shipped shape would not type-check.
 const evolve = (state: OrderState, event: OrderEvent): OrderState => {
   switch (event.type) {
-    case 'OrderPlaced': return { ...state, status: 'placed', placedAt: event.placedAt };
-    case 'OrderShipped': return { ...state, status: 'shipped', trackingNumber: event.trackingNumber };
+    case 'OrderPlaced':
+      return { status: 'placed', items: event.items, placedAt: event.placedAt };
+    case 'OrderShipped':
+      return state.status === 'placed'
+        ? { ...state, status: 'shipped', trackingNumber: event.trackingNumber }
+        : state;
     default: { const _: never = event; return _; }
   }
 };

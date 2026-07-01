@@ -143,4 +143,4 @@ https://www.linkedin.com/pulse/tdd-properties-good-tests-dave-farley-iexge/
 
 ## Attribution
 
-This agent specification is adapted from [Andrea Laforgia's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md). Thank you to Andrea for creating and sharing this excellent test design review framework.
+This agent specification is adapted from [Andrea Laforgia's claude-code-agents repository](https://github.com/andrealaforgia/claude-code-agents/blob/main/alf-test-design-reviewer/alf-test-design-reviewer.md). Thank you to Andrea for creating and sharing this excellent test design review framework.
