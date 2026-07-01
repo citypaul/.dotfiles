@@ -172,7 +172,7 @@ Use when: events must not be lost, cross-service communication, audit requiremen
 | Outbox pattern | At-least-once | Medium | Cross-service, must not lose events |
 | Full event sourcing | Complete history | High | Audit trail, temporal queries, replay |
 
-Start with explicit returns. Move to in-process dispatch when you need cross-aggregate coordination. Move to outbox when you need reliability. Move to event sourcing only when you need the event history itself.
+Start with explicit returns. Move to in-process dispatch when you need cross-aggregate coordination. Move to outbox when you need reliability. Move to event sourcing only when you need the event history itself — for that final rung (the Decider as a persisted write model, event stores, projections, and event versioning) load the `event-sourcing` skill.
 
 ## Process Managers (Long-Running Workflows)
 
