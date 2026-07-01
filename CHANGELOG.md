@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.38.0
+
+### Minor Changes
+
+- f68299e: Add the `event-sourcing` skill: a functional-TypeScript guide to persisting state as an append-only log of events and rebuilding it by folding them (the Decider), positioned as the top rung of the complexity ladder rather than a default.
+
+  Builds on the existing `domain-driven-design` (Decider), `hexagonal-architecture` (event store as a driven port, CQRS-lite), `typescript-strict`, and `testing` skills. The main SKILL.md covers when to use it (and when not), the Decider write model, the command-handler loop, the event store port, events-as-data, projections, and behaviour-driven testing. Eight deep-dive resources plus source notes cover the decision framework, event modelling (EventStorming), rehydration and decider composition, the event store and Postgres storage, projections and read models, event versioning (tolerant reader/upcasting), testing event-sourced systems, and production concerns (snapshots, sagas, delivery guarantees, GDPR crypto-shredding). Grounded in primary sources — Young, Fowler, Chassaing, Wlaschin, Brandolini, Verraes, Dudycz — recorded in `skills/REFERENCES.md`. The `domain-driven-design` and `hexagonal-architecture` skills now cross-link into it at their event-sourcing decision points (the domain-events complexity ladder and the CQRS-lite upgrade path).
+
+### Patch Changes
+
+- 331a637: Fix `install-claude.sh` mishandling skills installed by skills CLI ≥ 1.5, which copies each skill into `~/.claude/skills/<name>` as a regular directory (tracked in `~/.agents/.skill-lock.json`) instead of symlinking through the universal `~/.agents/skills/` cache. The installer treated every regular directory as a pre-skills.sh leftover, so on each run it moved all CLI-managed skills aside as "legacy" and then warned that the freshly reinstalled copies "won't be visible to non-Claude agents" — an endless move-and-reinstall cycle that could leave skills missing if an install step failed after the move (and made a newly merged skill look like it never installed).
+
+  The installer now consults the skills CLI lock file: symlinked entries and lock-tracked directories are both recognised as CLI-managed and left alone; only genuinely unmanaged directories are migrated aside or warned about. Adds `test/install-claude-skill-layout.sh` covering all three layouts.
+
+- 331a637: Quality sweep across 20 existing skills, driven by a four-agent adversarial review (every finding independently verified — compile claims against `tsc 5.7.2 --strict`, factual claims against primary sources or live registries/CLIs):
+
+  - **Non-compiling snippets fixed (9):** union member access without narrowing in `testing` and DDD's `testing-by-layer` (replaced with whole-value `toEqual` assertions); implicit-`any` parameters and `await` in a non-async callback in `testing`'s extraction example; implicit-`any` in `react-testing`'s legacy resource; a `Record` indexed on a union member missing the key in hexagonal's cross-cutting concerns (now `Extract<...>`); a spread that silently overwrote its own sanitised fields plus a zero-arg call to a one-arg factory in DDD's aggregate design; an `evolve` that could not typecheck against the discriminated-union state DDD itself mandates; a dangling `result` variable in `api-design`'s idempotency example; a non-UUID literal passed to `crypto.randomUUID` mocking in `characterisation-tests`; and the incoherent over-engineered `compose` example in `functional`.
+  - **Stale/wrong facts corrected:** Stryker's `trim()` mutation (removed, not `trimStart()`); deprecated Zod idioms (`z.string().email()` → `z.email()`); a fabricated npm package and nonexistent "Vitest Jest-compatibility mode" in `characterisation-tests`; `getByDisplayValue` wrongly listed as a Vitest Browser Mode locator; RFC 9745's Deprecation header (published, `@`-timestamp syntax — no longer a draft with HTTP-date); "Stripe never made a v2" (they did, 2024); 422's renamed reason phrase; a dead attribution link in `test-design-reviewer`; `npx skills check` documented as read-only when it applies updates; PlantUML `mxgraph` stencils flagged as a docu.md-viewer extension that standard renderers reject, with a new "where will this be viewed?" rule in `diagrams`; stale Gemini model example in `double-check`.
+  - **Contradictions reconciled:** DDD's `Occasion` entity now matches every snippet that uses it; `cli-design`'s FakeLogger now implements the real `Logger` port and two falsely-justified type assertions are gone; optimistic-locking guidance now follows the skills' own error-modeling rule; CORS vs "disable OPTIONS" conflict resolved; Given/When/Then framing in `find-gaps`/`story-splitting` reworded to precondition → trigger → observable outcome (this repo's BDD is not Gherkin); `refactoring`'s priority table and "when not to refactor" bullets no longer forbid all refactoring; `storyboard`'s `/harden` references corrected to `/impeccable harden` and its commit steps now respect the commit-approval gate; three wrong relative resource paths fixed.
+
 ## 3.37.1
 
 ### Patch Changes
