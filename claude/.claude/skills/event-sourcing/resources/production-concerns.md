@@ -4,7 +4,7 @@ Event sourcing's hardest lessons are operational. This resource covers snapshots
 
 ## Snapshots
 
-A snapshot is a stored fold result — `{ version: 240, state: {…} }` — so you can rehydrate from the snapshot plus the events *after* it instead of from event zero. It is a memoization of the fold; Greg Young: *"A snapshot is a memoization of your left fold."*
+A snapshot is a stored fold result — `{ version: 240, state: {…} }` — so you can rehydrate from the snapshot plus the events *after* it instead of from event zero. It is a memoization of the fold; Greg Young: *"a snapshot is just a memoization of the foldLeft operation at a given point."*
 
 - **Snapshot every N events**, not every write. To load, read the snapshot then the (at most N) events after it, and fold those forward.
 - **A snapshot is a cache, never the source of truth.** You must be able to delete every snapshot and rebuild identically from events. Test the system both with and without snapshots.
@@ -18,7 +18,7 @@ Long streams hurt on four axes: replay performance, versioning burden (an old ev
 
 ## Cross-Aggregate Consistency: Sagas and Process Managers
 
-The stream/aggregate is the consistency boundary, and there are **no cross-stream transactions.** When one command must affect several aggregates, use eventual consistency across the boundary (Vaughn Vernon: *"If executing a command on one Aggregate instance requires that additional business rules execute on one or more other Aggregates, use eventual consistency"*).
+The stream/aggregate is the consistency boundary: **you never rely on a cross-stream transaction to keep an aggregate's invariants true** (some stores *can* append to several streams atomically, but a well-modelled aggregate never needs it). When one command must affect several aggregates, use eventual consistency across the boundary (Vaughn Vernon: *"If executing a command on one Aggregate instance requires that additional business rules execute on one or more other Aggregates, use eventual consistency"*).
 
 Coordinate multi-aggregate, possibly long-running work with a **process manager / saga** — a stateful reactor that consumes events and issues commands, decomposing the work into locally-atomic steps with **compensating actions** for rollback. Keep it as a pure function of `(state, event) → [newState, commands]`, exactly the shape the DDD skill's `domain-events.md` describes. Never reach for a distributed transaction across aggregates.
 
@@ -30,7 +30,7 @@ There are three delivery semantics, and only two are achievable:
 - **At-least-once** — the message always arrives, but possibly more than once. **This is what you build on.**
 - **Exactly-once delivery is a myth** (Two Generals / FLP). Tyler Treat: *"Within the context of a distributed system, you cannot have exactly-once message delivery … The way we achieve exactly-once delivery in practice is by faking it."*
 
-You "fake" exactly-once with **idempotent processing plus deduplication**: give every event a unique id, and make consumers no-op on an id (or stream version) they have already processed — a unique constraint on processed ids, or the checkpoint-in-the-same-transaction trick from `projections-and-read-models.md`. Effective exactly-once *processing* on top of at-least-once *delivery* is achievable; exactly-once delivery is not.
+You "fake" exactly-once with **idempotent processing plus deduplication**: give every event a store-wide-unique id (or use its global position), and make consumers no-op on one they have already processed — a unique constraint on processed event ids, or the checkpoint-in-the-same-transaction trick from `projections-and-read-models.md`. (A bare stream `version` is not a safe dedupe key across streams — it repeats — so use it only paired with the stream id, or when the consumer's state is scoped to one stream.) Effective exactly-once *processing* on top of at-least-once *delivery* is achievable; exactly-once delivery is not.
 
 **The outbox pattern** solves the dual-write problem when publishing events to other services: save the events to an outbox table **in the same transaction** as the state change, and a background process publishes them afterwards, so a crash between "save state" and "publish" cannot lose them. (Covered in the DDD skill's `domain-events.md`; it applies unchanged here.)
 

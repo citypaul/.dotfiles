@@ -53,7 +53,7 @@ Use **catch-up** (ordered, position-tracked) subscriptions whenever processing o
 
 Because delivery is at-least-once, a projection **will** occasionally see the same event twice (a redelivery after a crash, a replay overlap). Applying it twice must not double-count. Make projections idempotent by either:
 
-- keying the write on event id / stream version so a repeat is a no-op (e.g. `INSERT … ON CONFLICT DO NOTHING`, or an `UPDATE` guarded by `WHERE last_version < :version`), or
+- keying the write on the **event id** or **global position** — values unique across the whole store — so a repeat is a no-op (e.g. `INSERT … ON CONFLICT (event_id) DO NOTHING`). A bare per-stream `version` guard (`WHERE last_version < :version`) only works when the read-model row is scoped to a single stream, because stream versions repeat across streams; or
 - using the checkpoint so already-processed positions are skipped.
 
 A projection that adds to a running total without guarding against redelivery is a latent data-corruption bug.

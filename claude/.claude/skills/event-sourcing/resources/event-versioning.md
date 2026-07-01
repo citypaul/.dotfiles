@@ -14,7 +14,7 @@ Young's defining test: *"A new version of an event must be convertible from the 
 
 Two hard corollaries:
 - **Semantic meaning must never change between versions.** *"There is no good way for a downstream consumer to understand a semantic meaning change."* If the *meaning* of a field changes, it is a new event, not a new version.
-- **Never rename a field.** A rename is a break, not an evolution — the reader can no longer map it. Add a new field and default the old one instead.
+- **Never rename a field silently.** Under weak-schema mapping (Strategy A below), fields map by name, so an in-place rename breaks the mapping and old data no longer loads. Either keep the persisted name stable, or treat the rename as a **new version** and map old-name → new-name in an explicit upcaster (the new shape is derivable from the old, so it is a legitimate version, not a new event). What you must never do is rename in place and expect events already on disk to still map.
 
 ## Strategy A: Weak Schema + Tolerant Reader (the default)
 
@@ -26,7 +26,7 @@ Serialize events as JSON and **map** them into the current type rather than hard
 | In the JSON but **not** in the type | ignore it |
 | In the type but **not** in the JSON | use a default value |
 
-This makes **additive, backward/forward-compatible change free**: adding an optional field, or a new consumer ignoring a field it does not know, both "just work". What it does *not* permit is renames or semantic changes (Rule 1). A tolerant reader is the baseline every event-sourced system should adopt from day one — it is what the schema-parse-on-read in `event-store.md` implements.
+This makes **additive, backward/forward-compatible change free**: adding an optional field, or a new consumer ignoring a field it does not know, both "just work". What weak schema *alone* cannot do is **rename** a field (it maps by name, so the old value is silently dropped and the new one defaulted) or change a field's **meaning** — a rename needs an explicit upcaster (Strategy B), and a semantic change needs a whole new event (Rule 1). A tolerant reader is the baseline every event-sourced system should adopt from day one — it is what the schema-parse-on-read in `event-store.md` implements.
 
 ## Strategy B: Upcasting
 
@@ -59,7 +59,7 @@ const upcastOrderPlaced = (raw: OrderPlacedV1 | OrderPlacedV2): OrderPlaced => {
 };
 ```
 
-This encodes the whole discipline: never mutate stored events; upcast on read; default added fields; upcasters are pure and chainable; a *rename* could not be expressed here without becoming a new event type — which is the point. For many event types, keep a **registry keyed by `type` + version** and apply upcasters until you reach the current shape, validating each raw record against a per-version schema at the boundary (`safeParse`) so the dispatch stays type-safe instead of casting untyped JSON.
+This encodes the whole discipline: never mutate stored events; upcast on read; default added fields; upcasters are pure and chainable; and a rename or restructure is handled by the upcaster itself (here `total` becomes `totalAmount`) precisely because the new shape is derivable from the old — that is what makes it a *version* rather than a new event. (Weak schema alone, Strategy A, can't do that — it maps by name; an upcaster can.) For many event types, keep a **registry keyed by `type` + version** and apply upcasters until you reach the current shape, validating each raw record against a per-version schema at the boundary (`safeParse`) so the dispatch stays type-safe instead of casting untyped JSON.
 
 ## Strategy C: Copy-Transform (the nuclear option)
 
@@ -74,7 +74,7 @@ When you genuinely cannot map forward — the stream boundaries were wrong, or a
 
 Dudycz: *"The best option for versioning the event schema is to prevent conditions in which versioning is needed."* Two practices do most of the work:
 
-- **Keep streams short** (`production-concerns.md`). If a stream's natural lifetime is a day or a shift, its events live for days, not years — so an old schema only needs supporting for a short transition window, and a two-phase deploy (ship code that reads both shapes → later remove the old support once no live streams use it) retires it cleanly.
+- **Keep streams short** (`production-concerns.md`). If a stream's natural lifetime is a day or a shift, the old event *shape* stops being written quickly, so a two-phase deploy (ship code that reads both shapes → later stop writing the old shape) shrinks the active-versioning window. Note this retires old **writers**, not old **readers**: as long as old events remain in the replayable set, code that rebuilds a projection from event zero must still read them. You only drop the old readers/upcasters once those events have left the replayable set — archived out, copy-transformed, or summarised away by closing the books.
 - **Split internal from external events** (`modelling-events.md`). Internal events stay free to change behind a coarse, deliberately-versioned external contract, so most churn never reaches another context.
 
 ## Related: Snapshots and Process Managers
@@ -86,7 +86,7 @@ Dudycz: *"The best option for versioning the event schema is to prevent conditio
 
 - [ ] A versioning strategy (at minimum a tolerant reader) exists before the first event ships
 - [ ] Stored events are never updated or deleted; all evolution happens on read
-- [ ] No field is ever renamed and no field's meaning is ever changed within a version
+- [ ] No field is renamed *silently* — a rename is handled by an explicit versioned upcaster, never by editing stored data — and no field's meaning is ever changed within a version
 - [ ] Non-derivable changes are introduced as new event types, not new versions
 - [ ] Upcasters are pure, do no I/O, and are covered by tests (`testing-event-sourced-systems.md`)
 - [ ] Short streams and internal/external splitting are used to minimise the versioning surface

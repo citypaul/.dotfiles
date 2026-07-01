@@ -31,25 +31,34 @@ The elements Chassaing enumerates are Command, Event, State, `initialState`, `de
 The classic decider signature is `decide: (command, state) => Event[]`, where an empty array means "nothing to do". That works, but it cannot say *why* a command was refused. This repo models expected business outcomes as **result types**, not exceptions or silent empties (see the DDD skill's error-modelling section and Scott Wlaschin's `Command → Result<Event list, Error>`). So `decide` returns a `Decision`:
 
 ```typescript
-type Decision<E> =
+type Decision<E, R extends string = string> =
   | { readonly accepted: true; readonly events: readonly E[] }
-  | { readonly accepted: false; readonly reason: string };
+  | { readonly accepted: false; readonly reason: R };
 
-const accept = <E>(events: readonly E[]): Decision<E> => ({ accepted: true, events });
-const reject = <E>(reason: string): Decision<E> => ({ accepted: false, reason });
+const accept = <E>(events: readonly E[]): Decision<E, never> => ({ accepted: true, events });
+const reject = <R extends string>(reason: R): Decision<never, R> => ({ accepted: false, reason });
 ```
 
-Prefer a **union of literal reasons** over a bare `string` so callers can handle each case exhaustively:
+The `R` type parameter carries the rejection reasons. `accept`/`reject` widen from `never`, so a `decide` annotated with a **union of literal reasons** keeps them for exhaustive handling — `reject('not-open')` is well-typed only if `'not-open'` is in `R`:
 
 ```typescript
 type WithdrawRejection = 'not-open' | 'insufficient-funds' | 'non-positive-amount';
+
+const decideWithdraw = (command: Withdraw, state: AccountState): Decision<AccountEvent, WithdrawRejection> => {
+  if (state.status !== 'open') return reject('not-open');
+  if (command.amount <= 0) return reject('non-positive-amount');
+  if (command.amount > state.balance) return reject('insufficient-funds');
+  return accept([{ type: 'MoneyWithdrawn', amount: command.amount }]);
+};
 ```
+
+(The `SKILL.md` example uses the `R = string` default to stay terse; annotate the reason union like this when you want the compiler to enforce that callers handle every rejection.)
 
 **When a rejection is itself a domain fact, model it as an event instead.** "A withdrawal was declined for insufficient funds" may be something the business wants to keep, analyse for fraud, or notify on. In that case `decide` *accepts* and emits a `WithdrawalDeclined` event rather than returning a rejection. The rule: if downstream needs a durable record of the refusal, it is an event; if the refusal is just this caller's problem right now, it is a `Decision` rejection.
 
 ## Rehydration Is a Left Fold
 
-Because `evolve` has the exact shape of a reducer, rebuilding current state ("rehydration" / "replay") is a single fold. This is the identity that makes the whole pattern click — Greg Young's *"current state is a left fold of previous events"*:
+Because `evolve` has the exact shape of a reducer, rebuilding current state ("rehydration" / "replay") is a single fold. This is the identity that makes the whole pattern click — Greg Young's *"Current State is a Left Fold of previous behaviours"*:
 
 ```typescript
 const rehydrate = <State, C extends { type: string }, E extends { type: string }>(
@@ -68,26 +77,26 @@ The command handler is the one impure seam that connects the decider to the even
 const makeCommandHandler =
   <State, C extends { type: string }, E extends { type: string }>(
     decider: Decider<State, C, E>,
-    store: EventStore,
+    store: EventStore<E>,
+    maxAttempts = 3,
   ) =>
   async (streamId: StreamId, command: C): Promise<CommandResult> => {
-    const { events, version } = await store.readStream<E>(streamId);      // load
-    const state = events.reduce(decider.evolve, decider.initialState);    // rehydrate (pure)
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const { events, version } = await store.readStream(streamId);       // load
+      const state = events.reduce(decider.evolve, decider.initialState);  // rehydrate (pure)
 
-    const decision = decider.decide(command, state);                      // decide (pure)
-    if (!decision.accepted) return { success: false, reason: decision.reason };
+      const decision = decider.decide(command, state);                    // decide (pure)
+      if (!decision.accepted) return { success: false, reason: decision.reason };
 
-    const outcome = await store.appendToStream(streamId, decision.events, // append
-      { expectedVersion: version });
-    if (outcome === 'version-conflict') return { success: false, reason: 'concurrent-modification' };
-
-    return { success: true, events: decision.events };
+      const outcome = await store.appendToStream(streamId, decision.events, { expectedVersion: version });
+      if (outcome === 'ok') return { success: true, events: decision.events };
+      // version-conflict: the stream moved under us — loop to reload and re-decide against fresh state
+    }
+    return { success: false, reason: 'concurrent-modification' };
   };
 ```
 
-**On a version conflict, reload and re-decide.** A conflict means another writer appended between your read and your append, so the state you decided against is stale. Retrying the *command* (not the events) re-runs `decide` against fresh state — which may now legitimately reject (e.g. the funds are gone). Never retry by blindly re-appending the events you already computed.
-
-Wrap the retry in a bounded loop (say, 3 attempts) so a hot stream cannot spin forever.
+**Why the loop re-decides rather than re-appending.** A conflict means another writer appended between your read and your append, so the state you decided against is stale. The loop reloads and re-runs `decide` against fresh state — which may now legitimately reject (e.g. the funds are gone). Never retry by blindly re-appending the events you already computed. The loop is bounded (3 attempts) so a hot stream cannot spin forever; after that it surfaces `concurrent-modification` to the caller. (The `SKILL.md` version omits the loop to show the bare load→decide→append shape; this is the production form.)
 
 ## Keep `decide` Deterministic
 

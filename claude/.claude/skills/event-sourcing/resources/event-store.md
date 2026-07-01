@@ -18,13 +18,16 @@ Production stores add **global ordering** (a store-wide monotonic position for p
 Define the port in the domain in application language. Keep it small; this repo models the concurrency failure as a **returned value**, not a thrown exception (per the error-modelling rule):
 
 ```typescript
-// port (domain layer) — interface because it is a behaviour contract
-interface EventStore {
-  readonly readStream: <E>(
+// port (domain layer) — interface because it is a behaviour contract.
+// Typed to one aggregate's event family E (like a repository). One physical
+// store holds many stream types; the adapter parses stored JSON into E on read,
+// so each typed EventStore<E> is a view over the streams of that family.
+interface EventStore<E> {
+  readonly readStream: (
     streamId: StreamId,
   ) => Promise<{ readonly events: readonly E[]; readonly version: number }>;
 
-  readonly appendToStream: <E>(
+  readonly appendToStream: (
     streamId: StreamId,
     events: readonly E[],
     options: { readonly expectedVersion: number },
@@ -32,17 +35,18 @@ interface EventStore {
 }
 ```
 
-`version` is the stream's current version — the number of events it holds. A brand-new stream is version `0`; append with `expectedVersion: 0` to require it not yet exist. Some libraries (Emmett, KurrentDB) **throw** a `ConcurrencyError`/`WrongExpectedVersionException` instead of returning a status; if you adopt one of those, translate the throw into a result at the adapter boundary so the domain stays exception-free for expected outcomes.
+Typing the port to `E` (rather than a per-call `readStream<E>`) keeps call sites cast-free and matches the repo's typed-repository convention. `version` is the stream's current version — the number of events it holds. A brand-new stream is version `0`; append with `expectedVersion: 0` to require it not yet exist. Some libraries (Emmett, KurrentDB) **throw** a `ConcurrencyError`/`WrongExpectedVersionException` instead of returning a status; if you adopt one of those, translate the throw into a result at the adapter boundary so the domain stays exception-free for expected outcomes.
 
 A fuller port adds `subscribe`/`readAll` for async projections — keep those on a separate port so a use case that only writes does not depend on subscription machinery.
 
 ## A Postgres Event Store
 
-Postgres is the pragmatic default: one table, one unique constraint, transactional appends. The canonical single-table schema (after Kasey Speakman):
+Postgres is the pragmatic default: one table, a concurrency constraint, transactional appends. The canonical single-table schema (after Kasey Speakman, with a first-class event `id`):
 
 ```sql
 CREATE TABLE event (
     global_position  bigserial   NOT NULL,          -- store-wide order (projections)
+    id               uuid        NOT NULL,           -- unique event id (idempotency + causation target)
     stream_id        uuid        NOT NULL,           -- the aggregate instance
     version          int         NOT NULL,           -- per-stream position (1, 2, 3, …)
     type             text        NOT NULL,           -- event type name, e.g. 'MoneyDeposited'
@@ -50,7 +54,8 @@ CREATE TABLE event (
     metadata         jsonb       NOT NULL,           -- envelope: correlation/causation/etc.
     logged_at        timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (global_position),
-    UNIQUE (stream_id, version)                       -- ← this IS optimistic concurrency
+    UNIQUE (stream_id, version),                      -- ← this IS optimistic concurrency
+    UNIQUE (id)                                       -- event id unique store-wide (dedupe + causation)
 );
 ```
 
@@ -59,8 +64,8 @@ CREATE TABLE event (
 ```sql
 BEGIN;
 -- expectedVersion = N; insert the new events at N+1, N+2, …
-INSERT INTO event (stream_id, version, type, data, metadata)
-VALUES ($1, $2, $3, $4, $5);      -- a unique-violation here means version-conflict → rollback
+INSERT INTO event (id, stream_id, version, type, data, metadata)
+VALUES ($1, $2, $3, $4, $5, $6);  -- a (stream_id, version) violation here means version-conflict → rollback
 COMMIT;
 ```
 
@@ -95,15 +100,19 @@ So when a handler emits new events in response to an incoming message: `correlat
 
 ## Serialization and Validation on Read
 
-Events are stored as JSON (`jsonb` in Postgres) with the **type name travelling as a string**, not a language type — that string is what lets you deserialize tolerantly and evolve versions. On the way in, stored events are untrusted data crossing a trust boundary, so **validate them on read** before `evolve` ever sees them. This is a **tolerant reader**: dispatch on `type`, run any upcasters (`event-versioning.md`), then parse into the current branded domain event with a schema (Zod-style) — exactly the `typescript-strict` rule of schema-first at boundaries, plain types inside.
+Events are stored as JSON (`jsonb` in Postgres) with the **type name travelling as a string**, not a language type — that string is what lets you deserialize tolerantly and evolve versions. On the way in, stored events are untrusted data crossing a trust boundary, so **validate them on read** before `evolve` ever sees them. The order matters: **validate first, then upcast.** Parse the raw record against a *tolerant* schema for the shape that was actually persisted (possibly an old version), then run upcasters on that validated value to reach the current shape — so the upcaster never receives unchecked JSON. This is the **tolerant reader**, and it is exactly the `typescript-strict` rule of schema-first at boundaries, plain types inside.
 
 ```typescript
-// on read: raw jsonb → upcast → schema-parse → branded domain event
-const toDomainEvent = (raw: StoredEvent): AccountEvent =>
-  AccountEventSchema.parse(upcast(raw));   // parse throws on genuinely corrupt data (a bug, not a business case)
+// on read: raw jsonb → validate the stored (possibly old) shape → upcast to current
+const toDomainEvent = (raw: unknown): AccountEvent =>
+  upcastAccountEvent(StoredAccountEventSchema.parse(raw));
+// StoredAccountEventSchema is a tolerant union of every persisted version (unknown
+// fields ignored, missing ones defaulted); parse validates what is on disk, then the
+// upcaster maps it to the current shape. parse throws only on genuinely corrupt data
+// (a bug, not a business case). See event-versioning.md for the upcaster.
 ```
 
-Never let unvalidated stored JSON flow into `evolve`; a single malformed row would otherwise corrupt every rehydration of that stream.
+Never let unvalidated stored JSON flow into an upcaster or into `evolve`; a single malformed row would otherwise corrupt every rehydration of that stream.
 
 ## The TS/Node Tooling Landscape
 

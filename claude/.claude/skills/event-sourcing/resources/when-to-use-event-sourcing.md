@@ -14,7 +14,7 @@ Greg Young: *"The largest failure I see from people using event sourcing is that
 
 | Question | If yes → |
 |----------|----------|
-| Is a complete, tamper-evident audit trail a hard requirement (finance, health, compliance)? | Event sourcing is a strong fit |
+| Is a complete, immutable audit trail / full domain history a hard requirement (finance, health, compliance)? | Event sourcing is a strong fit |
 | Do you need to reconstruct past state, replay to reproduce bugs, or answer questions not anticipated when the data was written? | Event sourcing is a strong fit |
 | Does the domain have rich behaviour and lifecycle (not just fields being edited)? | Event sourcing is a candidate |
 | Do you need multiple read models over the same facts, added retroactively? | Event sourcing is a candidate |
@@ -23,6 +23,8 @@ Greg Young: *"The largest failure I see from people using event sourcing is that
 | Do you only need to notify other services of changes? | **No.** Domain events + outbox (event-*driven*, not event-*sourced*) |
 
 Two "strong fit" answers, or a genuinely event-shaped domain, justify the cost. Otherwise climb a cheaper rung.
+
+**A note on "tamper-evident."** Event sourcing gives you a *complete* domain history by construction, but append-only application logic is not by itself tamper-*evidence*: a DBA, a schema migration, or a compromised credential can still alter rows. If you need provable integrity, add controls on top — hash-chaining the events, WORM/immutable storage, restricted write permissions, or external audit logging. Event sourcing makes those easier; it does not supply them for free.
 
 ## The Complexity Ladder
 

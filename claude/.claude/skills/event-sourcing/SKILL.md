@@ -67,7 +67,7 @@ Four ideas carry the whole pattern.
      events.reduce(evolve, initialState);
    ```
 
-3. **The stream is the consistency boundary.** One aggregate instance maps to exactly one stream (e.g. `account-4f3c…`). All invariants for that aggregate are enforced within its stream, and appends use **optimistic concurrency** on the stream's version. There are no cross-stream transactions — cross-aggregate work is a process manager / saga.
+3. **The stream is the consistency boundary.** One aggregate instance maps to exactly one stream (e.g. `account-4f3c…`). All invariants for that aggregate are enforced within its stream, and appends use **optimistic concurrency** on the stream's version. You never rely on a cross-stream transaction to keep an aggregate's invariants true — the stream is the consistency boundary, and cross-aggregate work is a process manager / saga (some stores *can* append to several streams atomically, but a well-modelled aggregate never needs it).
 
 4. **Read models are disposable derivations.** Because state is `fold(events)`, any read-optimised view is just a different fold. You can delete a projection and rebuild it from event zero. This is what makes "add a new report retroactively" trivial.
 
@@ -122,6 +122,7 @@ const decide = (command: AccountCommand, state: AccountState): Decision<AccountE
       return accept([{ type: 'MoneyDeposited', amount: command.amount }]);
     case 'Withdraw':
       if (state.status !== 'open') return reject('not-open');
+      if (command.amount <= 0) return reject('non-positive-amount');
       if (command.amount > state.balance) return reject('insufficient-funds');
       return accept([{ type: 'MoneyWithdrawn', amount: command.amount }]);
     default: { const _: never = command; return _; }
@@ -157,12 +158,12 @@ The application service ties the pure decider to the impure event store. This lo
 ```typescript
 // use-case: load → decide → append (with optimistic concurrency)
 const handleCommand = async (
-  store: EventStore,
+  store: EventStore<AccountEvent>,
   streamId: StreamId,
   command: AccountCommand,
 ): Promise<CommandResult> => {
   // 1. LOAD the stream's events (and the version we read at)
-  const { events, version } = await store.readStream<AccountEvent>(streamId);
+  const { events, version } = await store.readStream(streamId);
 
   // 2. REHYDRATE current state by folding — pure
   const state = events.reduce(evolve, initialState);
@@ -179,7 +180,7 @@ const handleCommand = async (
 };
 ```
 
-Everything pure (`evolve`, `decide`) is trivially testable with no mocks. Everything impure is behind the `EventStore` port. The **expected version** on append is what makes concurrent writes safe: if another writer appended to the stream between step 1 and step 4, the append fails and the caller retries from step 1 (load fresh state, re-decide). Never skip it — without it, two concurrent withdrawals can both pass the balance check and overdraw the account.
+Everything pure (`evolve`, `decide`) is trivially testable with no mocks. Everything impure is behind the `EventStore` port. The **expected version** on append is what makes concurrent writes safe: if another writer appended to the stream between step 1 and step 4, the append fails and the caller retries from step 1 (load fresh state, re-decide). This snippet shows the **bare shape**; the production form wraps steps 1–4 in a bounded reload/re-decide retry loop (see `decider-and-rehydration.md`). Never skip the expected version — without it, two concurrent withdrawals can both pass the balance check and overdraw the account.
 
 ---
 
@@ -188,10 +189,12 @@ Everything pure (`evolve`, `decide`) is trivially testable with no mocks. Everyt
 The event store is a **driven port** (hexagonal skill). Define the interface in the domain in application language; implement it in an adapter. The minimal contract is small:
 
 ```typescript
-// port (domain layer) — interface because it is a behaviour contract
-interface EventStore {
-  readonly readStream: <E>(streamId: StreamId) => Promise<{ readonly events: readonly E[]; readonly version: number }>;
-  readonly appendToStream: <E>(
+// port (domain layer) — interface because it is a behaviour contract.
+// Typed to one aggregate's event family, like a repository (the underlying
+// adapter can hold many streams; it parses stored JSON into E on read).
+interface EventStore<E> {
+  readonly readStream: (streamId: StreamId) => Promise<{ readonly events: readonly E[]; readonly version: number }>;
+  readonly appendToStream: (
     streamId: StreamId,
     events: readonly E[],
     options: { readonly expectedVersion: number },
@@ -236,7 +239,7 @@ const applyToBalanceView = (view: BalanceView, event: AccountEvent): BalanceView
 - **Inline (synchronous) projections** update in the same transaction as the append — no lag, but they couple write throughput to projection work. **Async projections** subscribe to the event stream and update separately — they scale and isolate failures, at the cost of **eventual consistency** (a read model may lag the write by milliseconds).
 - **Eventual consistency is the headline trade-off.** A user who just issued a command may not immediately see it reflected in an async read model. Design the UI for it (return the just-written state from the command, show optimistic UI) rather than pretending the lag does not exist.
 - **Projections are disposable.** Track a **checkpoint** (the last event position processed); to rebuild, reset the read model and the checkpoint to zero and replay. This is how you add a brand-new read model over years of existing history, and how you fix a buggy projection.
-- **Projections must be idempotent.** Delivery is at-least-once, so applying the same event twice must not double-count. Key on event id or the stream version.
+- **Projections must be idempotent.** Delivery is at-least-once, so applying the same event twice must not double-count. Key on the **event id** or **global position** (unique store-wide); a bare stream `version` only suffices when the read-model row is scoped to a single stream, because versions repeat across streams.
 
 This is the write/read split from the hexagonal skill's CQRS-lite, taken to its full form: writes go through the decider + event store; reads go through projected read models. See `projections-and-read-models.md`.
 

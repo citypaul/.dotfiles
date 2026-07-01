@@ -73,24 +73,26 @@ it('should reflect deposits and withdrawals in the balance available to withdraw
 The command handler is impure (it touches the store), so test it against an **in-memory `EventStore` fake** — a real implementation of the port backed by a `Map`, not a mock (the DDD/hex skills' "fakes, not mocks" rule). This proves load → rehydrate → decide → append works end to end, including optimistic concurrency.
 
 ```typescript
-const makeInMemoryStore = (): EventStore => {
-  const streams = new Map<string, unknown[]>();
+// A real implementation of the port backed by a Map — not a mock. Because the
+// port is typed EventStore<E>, the fake needs no casts anywhere.
+const makeInMemoryStore = <E>(): EventStore<E> => {
+  const streams = new Map<string, E[]>();
   return {
-    readStream: async <E>(id: StreamId) => {
-      const events = (streams.get(id) ?? []) as E[];
+    readStream: async (id) => {
+      const events = streams.get(id) ?? [];
       return { events, version: events.length };
     },
-    appendToStream: async <E>(id: StreamId, events: readonly E[], { expectedVersion }) => {
+    appendToStream: async (id, events, { expectedVersion }) => {
       const current = streams.get(id) ?? [];
-      if (current.length !== expectedVersion) return 'version-conflict' as const;
+      if (current.length !== expectedVersion) return 'version-conflict';
       streams.set(id, [...current, ...events]);
-      return 'ok' as const;
+      return 'ok';
     },
   };
 };
 
 it('should persist a deposit so a later withdrawal sees the funds', async () => {
-  const handle = makeCommandHandler(accountDecider, makeInMemoryStore());
+  const handle = makeCommandHandler(accountDecider, makeInMemoryStore<AccountEvent>());
   await handle(streamId, { type: 'Open', currency: 'GBP' });
   await handle(streamId, { type: 'Deposit', amount: 100 });
 
@@ -100,7 +102,7 @@ it('should persist a deposit so a later withdrawal sees the funds', async () => 
 });
 
 it('should reject a concurrent append made against a stale version', async () => {
-  const store = makeInMemoryStore();
+  const store = makeInMemoryStore<AccountEvent>();
   await store.appendToStream(streamId, [opened()], { expectedVersion: 0 });
 
   const outcome = await store.appendToStream(streamId, [deposited(10)], { expectedVersion: 0 }); // stale
@@ -111,7 +113,7 @@ it('should reject a concurrent append made against a stale version', async () =>
 
 ## Testing Projections
 
-A projection is a fold, so test it as behaviour: feed a sequence of events, assert the resulting read model. Include a **redelivery** to prove idempotency, because at-least-once delivery guarantees it will happen in production:
+A projection is a fold, so test it as behaviour: feed a sequence of events, assert the resulting read model.
 
 ```typescript
 it('should reflect net balance from a sequence of account events', () => {
@@ -122,7 +124,26 @@ it('should reflect net balance from a sequence of account events', () => {
 });
 ```
 
-For an idempotent persisted projection, apply the same event twice through the real (in-memory) read store and assert the total did not double.
+**Then prove idempotency with a redelivery**, because at-least-once delivery guarantees it will happen in production. An idempotent projector no-ops on an event it has already applied — assert the balance does not double-count. This projector row is **scoped to one account (one stream)**, so the stream `version` is a valid dedupe key; a projection that folds across many streams would instead key on the **event id** or **global position**, because versions repeat across streams:
+
+```typescript
+// per-account (single-stream) read-model row — version is unique within it
+type BalanceRow = { readonly balance: number; readonly appliedThrough: number };
+
+// idempotent apply: ignore any event at or below the version already applied
+const project = (row: BalanceRow, event: { readonly amount: number }, version: number): BalanceRow =>
+  version <= row.appliedThrough
+    ? row
+    : { balance: row.balance + event.amount, appliedThrough: version };
+
+it('should not double-count a redelivered event', () => {
+  const once = project({ balance: 0, appliedThrough: 0 }, deposited(100), 1);
+  const twice = project(once, deposited(100), 1); // same version, redelivered
+
+  expect(once.balance).toBe(100);
+  expect(twice.balance).toBe(100); // not 200
+});
+```
 
 ## Testing Upcasters
 
