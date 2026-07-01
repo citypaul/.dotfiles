@@ -106,7 +106,7 @@ const makeCommandHandler =
 type DepositMoney = { readonly type: 'Deposit'; readonly amount: number; readonly at: Date };
 ```
 
-The application layer stamps `at`/ids when it builds the command; the domain stays pure. This is the same discipline the `functional` skill applies everywhere.
+The application layer stamps `at`/ids when it builds the command; the domain stays pure. This is the same discipline the `functional` skill applies everywhere. (The DDD skill's `domain-events.md` threads `now` in as an explicit `decide` parameter instead — both keep the decider deterministic. Prefer the command-carried form in an event-sourced handler: the retry loop re-runs `decide` on a version conflict, and a timestamp carried by the command is structurally the same on every attempt.)
 
 ## Composition (Advanced)
 

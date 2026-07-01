@@ -28,6 +28,7 @@ No DSL, no bus, no mocks. Just the `testing` skill applied to a decider.
 // Event factories — complete, valid data with overrides (testing skill's factory pattern)
 const opened = (currency: Currency = 'GBP'): AccountEvent => ({ type: 'AccountOpened', currency });
 const deposited = (amount: number): AccountEvent => ({ type: 'MoneyDeposited', amount });
+const withdrawn = (amount: number): AccountEvent => ({ type: 'MoneyWithdrawn', amount });
 
 it('should record a deposit as MoneyDeposited on an open account', () => {
   const state = [opened()].reduce(evolve, initialState);
@@ -52,7 +53,7 @@ it('should reject any operation on an account that was never opened', () => {
 });
 ```
 
-The starting state is a fold of factory events, the action is a direct call, and the assertion is on the returned data. Test names describe business behaviour, not the mechanics. Cover the branches that matter (the `mutation-testing` skill's mutator awareness applies — avoid identity values like a withdrawal of exactly the balance unless the boundary *is* the behaviour under test).
+The starting state is a fold of factory events, the action is a direct call, and the assertion is on the returned data. Test names describe business behaviour, not the mechanics. Use a factory for *every* event in the fold — an inline event literal in the array widens its `type` discriminant to `string`, so the array stops being `AccountEvent[]` and `reduce(evolve, …)` no longer type-checks. Cover the branches that matter (the `mutation-testing` skill's mutator awareness applies — avoid identity values like a withdrawal of exactly the balance unless the boundary *is* the behaviour under test).
 
 ## Testing `evolve` Through Behaviour, Not Directly
 
@@ -60,7 +61,7 @@ Do not write a 1:1 `evolve.test.ts` asserting each transition in isolation — t
 
 ```typescript
 it('should reflect deposits and withdrawals in the balance available to withdraw', () => {
-  const state = [opened(), deposited(100), { type: 'MoneyWithdrawn', amount: 30 }].reduce(evolve, initialState);
+  const state = [opened(), deposited(100), withdrawn(30)].reduce(evolve, initialState);
 
   // behaviour: 70 is available, 71 is not
   expect(decide({ type: 'Withdraw', amount: 70 }, state).accepted).toBe(true);
@@ -117,7 +118,7 @@ A projection is a fold, so test it as behaviour: feed a sequence of events, asse
 
 ```typescript
 it('should reflect net balance from a sequence of account events', () => {
-  const view = [opened(), deposited(100), { type: 'MoneyWithdrawn', amount: 30 }]
+  const view = [opened(), deposited(100), withdrawn(30)]
     .reduce(apply, emptyBalanceView(accountId));
 
   expect(view.balance).toBe(70);
@@ -137,8 +138,10 @@ const project = (row: BalanceRow, event: { readonly amount: number }, version: n
     : { balance: row.balance + event.amount, appliedThrough: version };
 
 it('should not double-count a redelivered event', () => {
-  const once = project({ balance: 0, appliedThrough: 0 }, deposited(100), 1);
-  const twice = project(once, deposited(100), 1); // same version, redelivered
+  const event = { type: 'MoneyDeposited', amount: 100 };
+
+  const once = project({ balance: 0, appliedThrough: 0 }, event, 1);
+  const twice = project(once, event, 1); // the same event, redelivered at the same version
 
   expect(once.balance).toBe(100);
   expect(twice.balance).toBe(100); // not 200

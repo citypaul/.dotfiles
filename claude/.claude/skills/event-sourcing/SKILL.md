@@ -89,7 +89,7 @@ Four ideas carry the whole pattern.
 
 ## The Decider Is the Write Model
 
-You do not write new domain logic for event sourcing — you **persist the Decider you already have** from the DDD skill. The three pure functions are unchanged:
+You do not write new domain logic for event sourcing — you **persist the Decider you already have** from the DDD skill. The functions are the same three, with one refinement for this skill: `decide` returns an explicit `Decision` (accept-with-events or reject-with-reason) rather than the DDD example's bare event array:
 
 ```typescript
 // domain/account/account.ts — pure, no infrastructure imports
@@ -263,9 +263,10 @@ The event-sourcing literature almost universally reaches for a **given-when-then
 
 const openAccount = (currency: Currency = 'GBP'): AccountEvent =>
   ({ type: 'AccountOpened', currency });
+const deposited = (amount: number): AccountEvent => ({ type: 'MoneyDeposited', amount });
 
 it('should reject a withdrawal that exceeds the balance', () => {
-  const state = [openAccount(), { type: 'MoneyDeposited', amount: 50 }].reduce(evolve, initialState);
+  const state = [openAccount(), deposited(50)].reduce(evolve, initialState);
 
   const decision = decide({ type: 'Withdraw', amount: 100 }, state);
 
@@ -281,7 +282,7 @@ it('should record a deposit as a MoneyDeposited event on an open account', () =>
 });
 ```
 
-The starting state comes from folding factory-built events, the "action" is a direct call, and the assertion is on the returned data — behaviour through the public API, per the `testing` skill. No event bus, no mocks, no DSL. Test **projections** and **upcasters** the same way (they are folds and pure functions): feed events, assert on the read model or the upcast event. Full patterns — including testing the command handler against an in-memory `EventStore` fake and property-testing the fold — are in `testing-event-sourced-systems.md`.
+The starting state comes from folding factory-built events, the "action" is a direct call, and the assertion is on the returned data — behaviour through the public API, per the `testing` skill. No event bus, no mocks, no DSL. Use a factory for *every* event in the fold, not inline literals — an inline event literal in the array widens its `type` discriminant to `string`, the array stops being `AccountEvent[]`, and `reduce(evolve, …)` no longer type-checks. Test **projections** and **upcasters** the same way (they are folds and pure functions): feed events, assert on the read model or the upcast event. Full patterns — including testing the command handler against an in-memory `EventStore` fake and property-testing the fold — are in `testing-event-sourced-systems.md`.
 
 ---
 
