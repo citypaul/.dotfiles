@@ -4,7 +4,7 @@
 >
 > **Architecture:**
 > - **CLAUDE.md** (this file): Core philosophy + quick reference (~160 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, story-splitting, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, twelve-factor, api-design, cli-design, folder-structure, finding-seams, characterisation-tests, production-parity-skill-builder, storyboard, teach-me, diagrams, find-skills, find-gaps, double-check)
+> - **Skills**: Detailed patterns loaded on-demand (tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, story-splitting, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, event-sourcing, twelve-factor, api-design, cli-design, folder-structure, finding-seams, characterisation-tests, production-parity-skill-builder, storyboard, teach-me, diagrams, find-skills, find-gaps, double-check)
 > - **External skills**: Loaded on-demand from community repos (impeccable + 17 steering commands from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), grill-me from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), seo-audit from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit))
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
@@ -101,6 +101,7 @@ For significant implementation work, load `planning` to turn one selected child 
 For CI failure diagnosis, load the `ci-debugging` skill.
 For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.
+For event-sourced systems or bounded contexts (events as the source of truth, the Decider write model, event stores, projections and read models, event versioning, snapshots), load the `event-sourcing` skill.
 For 12-factor service projects, load the `twelve-factor` skill.
 For CLI tool design (stream separation, format flags, exit codes, composability), load the `cli-design` skill.
 For designing or auditing source trees (where files belong, feature folders, import boundaries), load the `folder-structure` skill.

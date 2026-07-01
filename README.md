@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 28 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 29 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -90,6 +90,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Folder Structure** | Screaming architecture plus feature-based and vertical-slice organization, protected domain cores, linted import boundaries, and monorepo scope grouping | [→ skills/folder-structure](claude/.claude/skills/folder-structure/SKILL.md) |
 | **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 6 resources including source notes | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
 | **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
+| **Event Sourcing** | Events as the source of truth, current state as a left fold (the Decider); event stores with optimistic concurrency, projections and read models, event versioning (tolerant reader/upcasting), snapshots, sagas, GDPR crypto-shredding, and behaviour-driven testing of deciders. Leads with a when-to-use complexity ladder. 8 deep-dive resources + source notes | [→ skills/event-sourcing](claude/.claude/skills/event-sourcing/SKILL.md) |
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Impeccable Design** | Comprehensive frontend design vocabulary: distinctive interfaces, systematic typography, OKLCH color, anti-AI-slop methodology + 17 steering commands | [→ impeccable](https://impeccable.style/skills/) |
 | **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 5 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
@@ -144,6 +145,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Project folders hide what the product does | [folder-structure](claude/.claude/skills/folder-structure/SKILL.md) | Organize by business capability first; protect DDD/hex domain code with linted boundaries |
 | Separating domain from infrastructure | [hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) | Ports define contracts, adapters implement them, domain stays pure |
 | Complex business rules need modeling | [domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) | Ubiquitous language, glossary enforcement, value objects, aggregates |
+| History and audit are part of the domain | [event-sourcing](claude/.claude/skills/event-sourcing/SKILL.md) | Events are the source of truth; current state is a left fold you can always rebuild |
 | Config scattered in code, not env vars | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Validate config at startup with Zod, inject via options objects |
 | Service won't scale horizontally | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Stateless processes, external backing services, graceful shutdown |
 | UI looks generic or AI-generated | [impeccable](https://impeccable.style/skills/) | `/impeccable teach` to set context, `/impeccable craft` to build with design methodology |
@@ -189,6 +191,7 @@ Skills are **auto-discovered** by Claude when relevant:
 - Building a UI? → `impeccable` skill loads design methodology and anti-slop patterns
 - Stress-testing a plan or design? → `grill-me` asks one question at a time and recommends answers
 - Need a second opinion on finished work? → `double-check` spins up a *different* AI provider's CLI agent (codex/claude/gemini/cursor-agent) and argues it out until both agents agree
+- History and audit are part of the domain? → `event-sourcing` models current state as a left fold of immutable events (and tells you when *not* to)
 
 ### Scope-to-Implementation Flow
 
@@ -537,6 +540,36 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 | Is it framework glue? | Delivery layer (`app/`) |
 
 **Key insight:** Domain models evolve as understanding deepens — this is expected and ideal, not a sign of failure. TDD makes this evolution safe: rename a concept, update the glossary, and the tests guide the migration.
+
+---
+
+### 📜 Event Sourcing → [skills/event-sourcing](claude/.claude/skills/event-sourcing/SKILL.md)
+
+**Problem it solves:** The domain's *history* is a first-class requirement — audit, temporal queries, replay, multiple read models over the same facts — and current-state storage throws that history away
+
+**What's inside (main skill + 8 deep-dive resources + source notes):**
+- **When to use it (and when not)** — the complexity ladder (explicit returns → domain events → outbox → event sourcing); event sourcing vs CQRS vs event-driven vs streaming vs CDC/audit log
+- **The Decider write model** — `decide`/`evolve`/`initialState` reused from the DDD skill; current state as a left fold of events; the load → rehydrate → decide → append command-handler loop
+- **The event store as a driven port** — a minimal interface, a concrete Postgres schema where `UNIQUE (stream_id, version)` *is* optimistic concurrency, the event envelope with correlation/causation ids, and the TS/Node tooling landscape (Emmett, KurrentDB, message-db)
+- **Events as data** — past-tense business naming, EventStorming discovery, granularity (thin/fat/summary), internal vs external events, schema-first tolerant reader on read
+- **Projections & read models** — inline vs async, catch-up subscriptions and checkpoints, idempotency, eventual consistency and read-your-writes, rebuild-from-zero
+- **Event versioning** — the hardest part: immutability, weak schema, upcasting, copy-transform, and preventing the need to version at all
+- **Production concerns** — snapshots as a rebuildable cache, sagas for cross-aggregate work, delivery guarantees, compensating events, and GDPR crypto-shredding
+- **Behaviour-driven testing** — deciders, projections, and upcasters tested through the public API on observable output; the event-sourcing literature's "given-when-then" translated into this repo's testing style, no DSL
+
+**The core insight:**
+
+```typescript
+// State is never stored — it is a left fold of the events:
+const rehydrate = (events: readonly AccountEvent[]): AccountState =>
+  events.reduce(evolve, initialState);
+
+// The write path: load → rehydrate → decide → append (with optimistic concurrency)
+const decision = decide(command, rehydrate(events));
+if (decision.accepted) await store.appendToStream(streamId, decision.events, { expectedVersion });
+```
+
+**Key insight:** Event sourcing *persists the Decider you already have* — `decide` produces events, `evolve` folds them back into state. It is the top rung of the complexity ladder: adopt it for the one or two bounded contexts whose history is part of the domain, never as a default.
 
 ---
 
@@ -1409,7 +1442,7 @@ Both patterns resolve to the same content on disk, so the first `--agent codex` 
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~160 lines - lean core principles)
 - ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) (`npx skills add`):
-  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 28 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, and more)
+  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 29 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, event-sourcing, and more)
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
   - [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) — Next.js best practices, Cache Components, and upgrade workflow
@@ -1662,7 +1695,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + 28 auto-discovered skills + 5 slash commands + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + 29 auto-discovered skills + 5 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1685,7 +1718,7 @@ The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~160 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 28 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 29 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1862,7 +1895,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + skills (28 from this repo plus external skill bundles) + 10 agents (development guidelines)
+- ✅ CLAUDE.md + skills (29 from this repo plus external skill bundles) + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ OpenCode configuration (guidelines plus built-in LSP servers, including TypeScript)

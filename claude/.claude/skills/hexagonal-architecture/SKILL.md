@@ -188,7 +188,7 @@ const getParticipantEventView = async (db: Database, eventId: string) => {
 
 Domain-layer pure functions can transform query results into display types — these encode business rules about what data means (e.g., "is this item claimed by the current user?"). The query fetches; the domain function interprets.
 
-For detailed CQRS-lite guidance, see `resources/cqrs-lite.md`.
+For detailed CQRS-lite guidance, see `resources/cqrs-lite.md`. When the read/write split goes all the way — events as the source of truth, rebuilt into read models by replay — that is event sourcing; load the `event-sourcing` skill.
 
 ---
 

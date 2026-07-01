@@ -60,7 +60,7 @@ const toDashboardCard = (row: DashboardRow, now: Date): DashboardCard => ({
 
 CQRS-lite is sufficient until you need:
 - Separate read/write databases
-- Event sourcing
+- Event sourcing (load the `event-sourcing` skill — it is the event-sourced form of this split: events as the write model, projections as read models)
 - Read models that aggregate across bounded contexts
 - Read-heavy workloads that need independent scaling
 
