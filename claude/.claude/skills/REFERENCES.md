@@ -1,6 +1,6 @@
 # Architectural Skill References
 
-Authoritative sources used to develop the DDD and hexagonal architecture skills. Each entry documents what was taken from the source and where it appears in our skills.
+Authoritative sources used to develop the DDD, hexagonal architecture, and event sourcing skills. Each entry documents what was taken from the source and where it appears in our skills.
 
 ---
 
@@ -109,6 +109,60 @@ Authoritative sources used to develop the DDD and hexagonal architecture skills.
   - ["Hexagonal Architecture: Do NOT Mock Everything"](https://journal.optivem.com/p/hexagonal-architecture-do-not-mock-everything)
   - ["Unit Tests Passed. The Bug Shipped Anyway."](https://journal.optivem.com/p/unit-tests-passed-the-bug-shipped-anyway)
   - ["Clean Code is Useless Without Tests"](https://journal.optivem.com/p/clean-code-is-useless-without-tests)
+
+---
+
+## Event Sourcing
+
+Sources behind the `event-sourcing` skill. Several foundational names (Chassaing's Decider, Greg Young on the left-fold model, Wlaschin, Khorikov) also appear under Domain-Driven Design above — this section records their event-sourcing-specific use plus the sources unique to the skill.
+
+### Martin Fowler — ["Event Sourcing"](https://martinfowler.com/eaaDev/EventSourcing.html) (2005) + ["What do you mean by Event-Driven?"](https://martinfowler.com/articles/201701-event-driven.html) (2017)
+- **Canonical definition** ("capture all changes to application state as a sequence of events") and rebuild-by-replay → ES skill: "Core Mental Model"
+- **Replay vs external systems** hazard, and "don't go down this path unless you really need to" → ES skill: "When to Use" + `resources/production-concerns.md`
+- **The four "event-driven" patterns** (notification, event-carried state transfer, event sourcing, CQRS) → ES skill: "Event Sourcing Is Not…" in `resources/when-to-use-event-sourcing.md`
+
+### Greg Young — [CQRS Documents (2010)](https://cqrs.files.wordpress.com/2010/11/cqrs_documents.pdf), "Functional Domain Models and Event Sourcing" (2012), [*Versioning in an Event Sourced System*](https://leanpub.com/esversioning) (2017)
+- **"Current State is a Left Fold of previous behaviours"** and "a snapshot is a memoization of your left fold" → ES skill: "Core Mental Model", `resources/decider-and-rehydration.md`, `resources/production-concerns.md`
+- **Past-tense event naming, append-only, no-delete/reversal transactions, optimistic concurrency** → ES skill: "Events as Data", `resources/modelling-events.md`, `resources/event-store.md`
+- **Versioning playbook** — immutability, weak schema, upcasting, copy-transform, no renames, no semantic changes → `resources/event-versioning.md`
+- **"The largest failure … is that they try to use it everywhere"** → `resources/when-to-use-event-sourcing.md`
+
+### Jérémie Chassaing — ["Functional Event Sourcing Decider"](https://thinkbeforecoding.com/post/2021/12/17/functional-event-sourcing-decider) (2021) + [DDD Europe 2023 Deciders](https://codeberg.org/thinkbeforecoding/dddeu-2023-deciders)
+- **The Decider** (`decide`/`evolve`/`initialState`/`isTerminal`) and rehydration as `List.fold evolve state events` → ES skill: "The Decider Is the Write Model" + `resources/decider-and-rehydration.md`
+- **Decider composition** (`compose`, `adapt`, `many`) → `resources/decider-and-rehydration.md` (advanced)
+
+### Scott Wlaschin — [*Domain Modeling Made Functional*](https://pragprog.com/titles/swdddf/domain-modeling-made-functional/) (2018)
+- **Workflow = `Command → Result<Event list, Error>`** (errors as values) → ES skill: `Decision` result type in `resources/decider-and-rehydration.md`
+
+### Alberto Brandolini — [EventStorming](https://www.eventstorming.com/) + *Introducing EventStorming* + [DDD Crew glossary cheat sheet](https://github.com/ddd-crew/eventstorming-glossary-cheat-sheet)
+- **The workshop, three levels, colour grammar, the command→aggregate→event→policy loop, pivotal events** → `resources/modelling-events.md`
+
+### Mathias Verraes — [verraes.net](https://verraes.net/) — "Patterns for Decoupling in Distributed Systems" (2019) + "Crypto-Shredding" (2019)
+- **Fat Event, Summary Event, Segregated Event Layers** (internal vs external events) → `resources/modelling-events.md`
+- **Crypto-shredding** ("delete the encryption key instead") and the "encrypted personal data is still personal data" legal caveat → `resources/production-concerns.md` GDPR section
+
+### Oskar Dudycz — [event-driven.io](https://event-driven.io/) + [Emmett](https://event-driven-io.github.io/emmett/)
+- **Emmett** `Decider<State, Command, Event>` (the TS generic order we adopt), `CommandHandler`, projections; pre-1.0 / unresolved-licence caveat → ES skill + `resources/event-store.md`
+- **Anti-patterns** (State Obsession, Clickbait, Passive-Aggressive events); command-vs-event ("commands can be rejected … events can only be ignored") → `resources/modelling-events.md`
+- **Internal vs external events / event-driven API** → `resources/modelling-events.md`
+- **Snapshots** ("the need to use snapshots may hint to the model's design flaw"), **short streams / closing the books**, **optimistic concurrency**, **outbox & delivery guarantees**, **GDPR** → `resources/production-concerns.md`, `resources/projections-and-read-models.md`
+- **Event streaming ≠ event sourcing**, **versioning ("prevent conditions in which versioning is needed")** → `resources/when-to-use-event-sourcing.md`, `resources/event-versioning.md`
+
+### Storage and tooling
+- **Kasey Speakman — ["Event Storage in Postgres"](https://dev.to/kspeakman/event-storage-in-postgres-4dk2) (2018)** — the `event` table with `UNIQUE (stream_id, version)` as the optimistic-concurrency mechanism → `resources/event-store.md`
+- **Eventide — [message-db](https://github.com/message-db/message-db)** — Postgres `messages` schema + `write_message` with `expected_version` → `resources/event-store.md`
+- **Kurrent / EventStoreDB — [kurrent.io](https://www.kurrent.io/)** — event-store capability list; catch-up vs persistent subscriptions; Node client rebrand → `resources/event-store.md`, `resources/projections-and-read-models.md`
+- **Marten — [martendb.io](https://martendb.io/events/)** (.NET, reference design) — projections (inline/live/async), rebuilds, upcaster API → `resources/projections-and-read-models.md`, `resources/event-versioning.md`
+- **Robert Pankowecki (Arkency), quoting Greg Young — ["Correlation id and causation id in evented systems"](https://blog.arkency.com/correlation-id-and-causation-id-in-evented-systems/) (2018)** — the correlation/causation copy rule → `resources/event-store.md`
+
+### Production and operability
+- **Tyler Treat — ["You Cannot Have Exactly-Once Delivery"](https://bravenewgeek.com/you-cannot-have-exactly-once-delivery/) (2015)** — at-least-once + idempotency; exactly-once delivery is a myth → `resources/production-concerns.md`
+- **Ben Smith — ["Dealing with eventual consistency in a CQRS/ES application"](https://10consulting.com/2017/10/06/dealing-with-eventual-consistency/) (2017)** — read-your-writes / POST-redirect-GET-404 and mitigations → `resources/projections-and-read-models.md`
+- **Michiel Rook — ["Forget me please? Event sourcing and the GDPR"](https://www.michielrook.nl/2017/11/forget-me-please-event-sourcing-gdpr/) (2017)** — immutability vs right-to-erasure; key forgetting → `resources/production-concerns.md`
+- **Savvas Kleanthous — ["Event immutability and dealing with change"](https://www.kurrent.io/blog/event-immutability-and-dealing-with-change) (2021)** — compensating/reversal events; don't delete → `resources/production-concerns.md`
+- **Oliver Libutzki — ["Why Event Sourcing is a microservice communication anti-pattern"](https://dev.to/olibutzki/why-event-sourcing-is-a-microservice-anti-pattern-3mcj) (2019)** — don't expose the store as an integration bus ("your persistence becomes your public API") → `resources/modelling-events.md`, `resources/production-concerns.md`
+- **Chris Richardson — [microservices.io Event Sourcing](https://microservices.io/patterns/data/event-sourcing.html)** — minimal store, benefits/drawbacks → `resources/when-to-use-event-sourcing.md`
+- **Ben Stopford / Confluent — ["Event Sourcing vs Event Streaming"](https://developer.confluent.io/courses/event-sourcing/event-sourcing-vs-event-streaming/)** and **Kislay Verma — ["Domain Events versus Change Data Capture"](https://kislayverma.com/software-architecture/domain-events-versus-change-data-capture/)** — ES vs streaming vs CDC distinctions → `resources/when-to-use-event-sourcing.md`
 
 ---
 
