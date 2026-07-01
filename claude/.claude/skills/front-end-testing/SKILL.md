@@ -221,15 +221,15 @@ it('creates and displays a user', async () => {
 
 ## Query Selection Priority
 
-**Most critical skill: choosing the right query.** Identical for Browser Mode locators and Testing Library queries.
+**Most critical skill: choosing the right query.** Near-identical for Browser Mode locators and Testing Library queries — the two naming differences are flagged below.
 
 Use queries in this order (accessibility-first):
 
 1. **`getByRole`** - Highest priority. Queries by ARIA role + accessible name; mirrors screen reader experience; forces semantic HTML
 2. **`getByLabelText`** - Form fields, via associated `<label>`
-3. **`getByPlaceholder`** - Fallback for inputs when no label (placeholder shouldn't replace a label)
+3. **`getByPlaceholder`** - Fallback for inputs when no label (placeholder shouldn't replace a label). Testing Library's name is `getByPlaceholderText`
 4. **`getByText`** - Non-interactive content users read
-5. **`getByDisplayValue`** - Inputs with pre-filled values
+5. **`getByDisplayValue`** - Inputs with pre-filled values. Testing Library only — Browser Mode has no such locator; use `getByRole` + a value assertion instead
 6. **`getByAltText`** - Images
 7. **`getByTitle`** - Rare, when other queries unavailable
 8. **`getByTestId`** - Last resort only; not user-facing

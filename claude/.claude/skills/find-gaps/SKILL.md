@@ -134,7 +134,7 @@ Walk these end-to-end per artifact. Don't skip categories because "that probably
 ### Acceptance Criteria
 
 - **Measurability:** verifiable by a machine or a test? Vague-word hit list: *fast, intuitive, seamless, modern, clean, responsive, works well, just works, robust* — each needs a number or a concrete behaviour.
-- **Given / When / Then discipline:** every criterion has precondition, trigger, and observable outcome. Any missing → it's a wish.
+- **Precondition / trigger / outcome discipline:** every criterion has a precondition, a trigger, and an observable outcome. Any missing → it's a wish.
 - **Negative paths:** for every happy path, the failure path (timeout, validation error, concurrent edit, permission denied, quota exceeded, offline, stale data).
 - **Input edge cases:** empty / null / missing optional; min / max / boundary; very long strings; non-ASCII, emoji, RTL, combining marks; duplicates, case variants, whitespace; numeric zero / negative / very large / currency precision.
 - **Time & locale:** timezones (user vs server vs storage), DST transitions, i18n text expansion, plural forms, date-format ambiguity.
@@ -163,7 +163,7 @@ Every resolved gap ends as text in the artifact. These are the three conversion 
 
 ### Answer → Acceptance Criterion
 
-Write **Given / When / Then** with a single observable outcome. Include actor, state, specific UI/data/event behaviour, and any emitted events.
+Write each criterion as **precondition → trigger → observable outcome**, with a single observable outcome per criterion. Include actor, state, specific UI/data/event behaviour, and any emitted events. (This is a structural discipline for criteria, not an instruction to write Gherkin scenarios or a given/when/then test DSL — tests stay behaviour-driven per the `testing` skill.)
 
 - **Gap:** "No spec for payment decline."
 - **Question:** "What should the user see when the card is declined?"
@@ -172,7 +172,7 @@ Write **Given / When / Then** with a single observable outcome. Include actor, s
 - **Refined answer:** "'Card declined. Try another payment method.' — card field stays filled so they can edit digits, retry button always enabled."
 - **AC to add:**
 
-> **AC-14:** Given an authenticated buyer on the checkout screen, when the card provider returns a decline, then (a) the UI shows the message *"Card declined. Try another payment method."* in the card-field error slot, (b) the card field remains populated with the last-entered digits, (c) the retry button is enabled, and (d) a `payment.declined` event is emitted with the provider's decline reason code.
+> **AC-14:** With an authenticated buyer on the checkout screen, when the card provider returns a decline: (a) the UI shows the message *"Card declined. Try another payment method."* in the card-field error slot, (b) the card field remains populated with the last-entered digits, (c) the retry button is enabled, and (d) a `payment.declined` event is emitted with the provider's decline reason code.
 
 **Test:** a QA engineer should be able to execute this criterion without asking a single follow-up question. If they'd need to ask, the criterion isn't finished — keep refining.
 

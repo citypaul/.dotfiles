@@ -135,7 +135,7 @@ const createPledgingToOccasions = (
 
 The use case implementation is identifiable by its dependencies — it takes driven ports as parameters and returns the driving port interface. It contains zero business logic. It loads, delegates to the domain service, and saves.
 
-**Note:** This use case saves two aggregates. For atomicity, the driving adapter should wrap it in a transaction — see `resources/cross-cutting-concerns.md` for the transaction pattern. The use case itself is unaware of transactions.
+**Note:** This use case saves two aggregates. For atomicity, the driving adapter should wrap it in a transaction — see `cross-cutting-concerns.md` for the transaction pattern. The use case itself is unaware of transactions.
 
 ## 6. Driven Adapter (Repository Implementation)
 

@@ -12,6 +12,8 @@ Create UML diagrams, cloud architecture, network topology, security diagrams, en
 4. Stencil syntax: `mxgraph.<namespace>.<icon> "Label" as <alias>`
 5. Default styling applies automatically -- don't manually specify colors for stencil icons
 
+> **Portability warning:** the `mxgraph.*` stencil syntax (rules 4–5 and the stencil tables/examples below) is a docu.md Markdown-Viewer extension, **not** standard PlantUML — official renderers (the plantuml.com server, GitLab, VS Code plugins, Confluence) reject it as a syntax error. For output that must render on standard PlantUML, use the official stdlib icon sets instead, e.g. `!include <awslib/AWSCommon>` + `!include <awslib/...>` for AWS, `<azure/...>`, `<gcp/...>`, `<k8s/...>`. The ArchiMate section below is standard PlantUML and portable.
+
 ## Connection Types
 
 | Syntax | Meaning |

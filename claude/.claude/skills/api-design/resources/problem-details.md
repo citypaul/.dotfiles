@@ -5,9 +5,11 @@ Detailed member semantics, JSON examples, and security guidance for RFC 9457 (Pr
 ## Standard Members
 
 ```typescript
+// House convention: RFC 9457 makes every member optional; we require the
+// first four so responses are uniformly useful to clients.
 type ProblemDetail = {
   readonly type: string;       // URI identifying the error type (defaults to "about:blank")
-  readonly title: string;      // Human-readable summary — MUST NOT change between occurrences
+  readonly title: string;      // Human-readable summary — SHOULD NOT change between occurrences (except localization)
   readonly status: number;     // HTTP status code — MUST match the actual HTTP response status
   readonly detail: string;     // Explanation specific to this occurrence — help the client fix it
   readonly instance?: string;  // URI identifying this specific occurrence
@@ -27,7 +29,7 @@ When `type` is a resolvable URI (http/https), it SHOULD point to human-readable 
   "status": 422,
   "detail": "Your account balance of $5.00 is insufficient for a $10.00 transfer.",
   "instance": "/transfers/abc123",
-  "balance": 30
+  "balance": 5.00
 }
 ```
 

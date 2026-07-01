@@ -78,7 +78,7 @@ Back-link to the parent index (mocks manifest, planning index, etc.).
   - Short description (1–2 sentences).
   - `<iframe>` at fixed height (780px works well for primary mocks, 640px for adjacent; adjust to project).
   - "Open in new tab ↗" link.
-  - **Audit checklist card** — prompts for each impeccable discipline relevant to the mock: `/critique`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/harden`, `/distill`. Plus any scope-specific questions ("discoverability of edit affordance?", "loading state mocked?").
+  - **Audit checklist card** — prompts for each impeccable discipline relevant to the mock: `/critique`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/impeccable harden`, `/distill`. Plus any scope-specific questions ("discoverability of edit affordance?", "loading state mocked?").
 
 ### 5. Transition / state gaps
 
@@ -108,9 +108,9 @@ Ordered list describing the steps from this storyboard to code-lands:
 
 1. User reviews this page; approves existing mocks or flags concrete fixes.
 2. Answer the brainstorm questions on each gap card.
-3. Produce the gap mocks via `/impeccable craft` + run them through the design pipeline (`/shape` → `/critique` → `/layout` → `/clarify` → `/polish`, plus `/adapt` for responsive + `/harden` for edge states).
+3. Produce the gap mocks via `/impeccable craft` + run them through the design pipeline (`/shape` → `/critique` → `/layout` → `/clarify` → `/polish`, plus `/adapt` for responsive + `/impeccable harden` for edge states).
 4. Apply any fixes to existing mocks the audit flagged.
-5. Commit mocks + audit note. Code starts.
+5. Commit mocks + audit note (with commit approval, per the repo's workflow gate). Code starts.
 
 ### 9. Footer
 
@@ -134,7 +134,7 @@ Three rules learned the hard way:
 
 1. **Always wrap ASCII / multi-line preformatted content in `<pre>`.** Prettier reformats HTML inside `<div class="whitespace-pre">` and destroys the layout. `<pre>` is immune.
 2. **Don't fight markdown table column widths.** Write the table; let prettier realign it; commit the realigned version.
-3. **Run `prettier --write` on the storyboard file before committing.** The pre-commit hook catches this anyway but it's faster to format up-front.
+3. **Run `prettier --write` on the storyboard file before committing.** If the project has a prettier pre-commit hook it catches this anyway, but it's faster to format up-front.
 
 ## Convention integration
 
@@ -185,7 +185,7 @@ User says `/storyboard <scope>` or asks one of the trigger phrases (see frontmat
 
 ## Related skills
 
-- **`impeccable`** family (`/shape`, `/critique`, `/layout`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/harden`, `/distill`) — external skills from pbakaus/impeccable; the audit checklists reference these and the gap-mock production step runs them. If they aren't installed, list only the disciplines that will actually run (see Non-negotiables: the checklist is genuine, not decorative).
+- **`impeccable`** family (`/shape`, `/critique`, `/layout`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/impeccable harden`, `/distill`) — external skills from pbakaus/impeccable; the audit checklists reference these and the gap-mock production step runs them. Note `harden` exists only as an `/impeccable` subcommand, not a standalone skill. If they aren't installed, list only the disciplines that will actually run (see Non-negotiables: the checklist is genuine, not decorative).
 - **`story-splitting`** — use when the storyboard reveals the feature is too broad or needs to be split by flow, role, state, interface, data, rule, or quality level before implementation.
 - **`planning`** — plans live at project root; the storyboard artifact supplements the plan's decision record after the scope has been split into implementable slices.
 - **`find-gaps`** — use after the storyboard exists to turn missing states, unanswered brainstorm questions, and unclear transitions into concrete acceptance criteria or mock-state specs.

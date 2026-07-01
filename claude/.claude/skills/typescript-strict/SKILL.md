@@ -47,7 +47,7 @@ Define schemas once, import everywhere. Never duplicate the same validation logi
 ```typescript
 // ✅ Define once
 export const CreateUserRequestSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   name: z.string().min(1),
 });
 export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
@@ -136,8 +136,8 @@ Key TypeScript-specific notes:
 ```typescript
 // API responses, user input, external data
 const UserSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string().email(),
+  id: z.uuid(),
+  email: z.email(),
 });
 type User = z.infer<typeof UserSchema>;
 

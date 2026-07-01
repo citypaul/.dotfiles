@@ -271,26 +271,24 @@ Handlers are pure functions: `(input, ports) => Result<T, E>`. No I/O, no proces
 ### Fake Ports
 
 ```typescript
+// Implements the real Logger port from output-architecture.md —
+// same (category, message) signature, plus captured entries for assertions.
 type LogEntry = {
-  readonly level: 'info' | 'warn' | 'error' | 'debug';
+  readonly level: 'debug' | 'info' | 'warn';
+  readonly category: string;
   readonly message: string;
 };
 
-type FakeLogger = {
-  readonly info: (msg: string) => void;
-  readonly warn: (msg: string) => void;
-  readonly error: (msg: string) => void;
-  readonly debug: (msg: string) => void;
+type FakeLogger = Logger & {
   readonly entries: readonly LogEntry[];
 };
 
 const createFakeLogger = (): FakeLogger => {
   const entries: LogEntry[] = [];
   return {
-    info: (message) => { entries.push({ level: 'info', message }); },
-    warn: (message) => { entries.push({ level: 'warn', message }); },
-    error: (message) => { entries.push({ level: 'error', message }); },
-    debug: (message) => { entries.push({ level: 'debug', message }); },
+    debug: (category, message) => { entries.push({ level: 'debug', category, message }); },
+    info: (category, message) => { entries.push({ level: 'info', category, message }); },
+    warn: (category, message) => { entries.push({ level: 'warn', category, message }); },
     get entries() { return entries; },
   };
 };

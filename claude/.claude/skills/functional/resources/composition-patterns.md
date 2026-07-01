@@ -45,11 +45,9 @@ const register = (scenario: Scenario) => registry.register(scenario);
 // Compose them
 const registerScenario = (input: unknown) => register(validate(input));
 
-// Even better - use pipe/compose utilities
-const registerScenario = pipe(
-  validate,
-  register,
-);
+// Even better - use a pipe utility (value-first, as below)
+const registerScenario = (input: unknown) =>
+  pipe(input, validate, register);
 ```
 
 ---

@@ -81,8 +81,7 @@ type CliDeps = {
 
 const run = async (deps: CliDeps): Promise<number> => {
   const { values, positionals } = parseArgs({
-    // Node.js types argv as string[] but parseArgs expects mutable array
-    args: deps.argv.slice(2) as string[],
+    args: deps.argv.slice(2),
     options: {
       json: { type: 'boolean', default: false },
       plain: { type: 'boolean', default: false },
@@ -133,8 +132,7 @@ const run = async (deps: CliDeps): Promise<number> => {
 const main = async (): Promise<void> => {
   const exitCode = await run({
     argv: process.argv,
-    // process.env values are string | undefined; Record type aligns with detectOutputConfig
-    env: process.env as Record<string, string | undefined>,
+    env: process.env,
     stdout: process.stdout,
     stderr: process.stderr,
     stdoutIsTTY: process.stdout.isTTY ?? false,
@@ -385,7 +383,7 @@ Streaming usage in the adapter:
 ```typescript
 const streamAnalysis = async (
   input: AnalyzeInput,
-  ctx: AnalyzePorts & { readonly ndjson: ReturnType<typeof createNdjsonFormatter> },
+  ctx: { readonly logger: Logger; readonly output: NodeJS.WritableStream; readonly ndjson: ReturnType<typeof createNdjsonFormatter> },
 ): Promise<number> => {
   const files = await discoverFiles(input.target);
   if (files.length === 0) {

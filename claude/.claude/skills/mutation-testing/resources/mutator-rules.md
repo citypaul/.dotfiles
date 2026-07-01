@@ -121,7 +121,9 @@ Tests that only assert "does not throw" often miss empty-body mutants. Verify re
 | `sort()` | removed | Ordering is necessary |
 | `min()` | `max()` | Correct extremum |
 | `max()` | `min()` | Correct extremum |
-| `trim()` | `trimStart()` | Correct trim behavior |
+| `trim()` | removed | Trimming is necessary |
+| `trimStart()` | `trimEnd()` | Correct trim direction |
+| `trimEnd()` | `trimStart()` | Correct trim direction |
 
 ### Optional Chaining
 

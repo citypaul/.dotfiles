@@ -62,9 +62,9 @@ const userNames = activeUsers.map(u => u.name);
 // ❌ OVER-ENGINEERED - Unnecessary abstraction
 const compose = <T>(...fns: Array<(arg: T) => T>) => (x: T) =>
   fns.reduceRight((v, f) => f(v), x);
-const activeUsers = compose(
-  filter((u: User) => u.active),
-  map((u: User) => u.name)
+const withoutInactive = compose(
+  (users: readonly User[]): readonly User[] => users.filter(u => u.active),
+  (users: readonly User[]): readonly User[] => users.filter(u => !u.suspended),
 )(users);
 ```
 

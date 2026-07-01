@@ -170,7 +170,7 @@ Check priority order (first match wins):
 | 1 | `--format json` or `--json` flag | Non-interactive, no color, no animation |
 | 2 | `--no-color` flag | Disable color (output may still be interactive) |
 | 3 | `NO_COLOR` env (non-empty) | Disable color |
-| 4 | `FORCE_COLOR` env | Enable color regardless |
+| 4 | `FORCE_COLOR` env | Enable color even when not a TTY (`NO_COLOR` still wins) |
 | 5 | `TERM=dumb` | Disable color and animations |
 | 6 | `CI=true` | No interactive prompts |
 | 7 | stdout is not a TTY (`!isatty(stdout)`) | Plain output, no animations on stdout |
