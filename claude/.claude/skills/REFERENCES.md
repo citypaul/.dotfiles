@@ -274,6 +274,12 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 - **Config precedence** (flags > env > project > user > system) → CLI design skill: "Config Precedence"
 - **Composability** (support `-` for stdin, detect interactive terminal) → CLI design skill: "Composability Patterns"
 - **Signal handling** (Ctrl-C: exit fast, bounded cleanup, crash-only) → `resources/stream-contracts.md`
+- **No secrets via env vars** (leak to child processes, `ps e`, crash reports — files/stdin only) → CLI design skill: "Prompts and Interactivity", "Config Precedence"
+- **Tiered confirmation by severity** (y/N → dry-run → typed resource name) → CLI design skill: "Prompts and Interactivity"
+- **State-change transparency** (confirm changes, `status` pattern, explicit hidden actions, pager via `less -FIRX`) → CLI design skill: "State Changes and Transparency"
+- **Robustness** (validate early, 100ms responsiveness, configurable network timeouts, recover by re-run, expect misuse) → CLI design skill: "Robustness"
+- **General-purpose env vars** (`DEBUG`, `EDITOR`, `PAGER`, proxies, `LINES`/`COLUMNS`; single-line values) → CLI design skill: "Config Precedence"
+- **Naming, distribution, telemetry consent** → CLI design skill: "Naming, Distribution, Telemetry"
 
 ### Jeff Dickey (oclif creator) — ["12 Factor CLI Apps"](https://medium.com/@jdxcode/12-factor-cli-apps-dd3c227a0e46) (2018)
 - **12 principles for CLI excellence** → CLI design skill: informed multiple sections
@@ -282,6 +288,12 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 - **Target < 500ms startup** → CLI design skill: verification checklist
 - **Error messages: code + title + description + fix + URL** → CLI design skill: "Error Design"
 - **Follow XDG-spec** for config file locations → CLI design skill: "Config Precedence"
+
+### Bloomberg Engineering — [Stricli](https://bloomberg.github.io/stricli/) ([source](https://github.com/bloomberg/stricli))
+- **Type-safe, functional CLI framework** — commands as plain typed functions with injected context, no decorators/classes, introspectable command tree → CLI design skill: "Recommended TypeScript Stack"
+
+### Bombshell — [Clack](https://github.com/bombshell-dev/clack)
+- **`@clack/prompts`** — interactive prompt components suited to an optional, TTY-gated presentation adapter → CLI design skill: "Recommended TypeScript Stack"
 
 ### Heroku Engineering — [Heroku CLI Style Guide](https://devcenter.heroku.com/articles/cli-style-guide)
 - **stdout stability guarantee** — "commands must not change their stdout after GA in ways that break scripts" → CLI design skill: "Output Stability Contract"
