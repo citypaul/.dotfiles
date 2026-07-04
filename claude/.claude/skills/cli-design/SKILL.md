@@ -242,7 +242,7 @@ Always provide long forms. Short flags only for the most common operations.
 - Text input → `--name=value`
 - Passwords → `--password-file=path` or stdin pipe
 - If stdin is not a TTY, never prompt — fail with a clear error or use defaults
-- **Secrets via files or stdin only** — never via flag values (leak to `ps` output and shell history) and not via env vars either (leak to child processes, `ps e`, and crash reports)
+- **Secrets: never via flag values** (leak to `ps` output and shell history). Prefer, in order: OS keychain or a `0600` credential file (`~/.config/mycli/credentials`), then stdin (`mycli login --with-token < token.txt`), then env vars **only where the platform injects them** (CI secret stores) — env leaks to child processes and crash reports, so never make it the primary documented path
 - **Scale confirmation to severity**: mild → `y/N` prompt with `--yes` bypass; moderate → prompt plus suggest `--dry-run` first; severe/irreversible (delete a database, overwrite production) → require typing the resource name to confirm
 
 ### Conventions
@@ -269,7 +269,7 @@ Highest to lowest priority:
 - Follow the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) for config file locations
 - Env var naming: `MYCLI_*` prefix, uppercase letters + digits + underscores; keep values single-line; don't commandeer POSIX names
 - Respect the general-purpose env vars where relevant: `NO_COLOR`, `FORCE_COLOR`, `DEBUG`, `EDITOR`, `PAGER`, `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`, `TMPDIR`, `TERM`, `LINES`/`COLUMNS`
-- Never accept secrets via flags **or env vars** — use credential files or stdin
+- Never accept secrets via flags; prefer keychain/credential files or stdin, env vars only when platform-injected (CI) — see "Prompts and Interactivity"
 - Read `.env` where appropriate, but don't use it as a substitute for proper config
 - If you modify configuration that belongs to another program, ask consent first
 
@@ -440,7 +440,7 @@ After designing or reviewing a CLI:
 - [ ] Existing flags, exit codes, output fields never removed or renamed
 - [ ] JSON schema is versioned (additions safe, removals breaking)
 - [ ] Config follows flags > env > project > user > defaults
-- [ ] Secrets accepted only via files/stdin, never via flags or env vars
+- [ ] Secrets never via flags; keychain/credential-file/stdin preferred, env only when platform-injected (CI)
 - [ ] Severe destructive actions require typed confirmation (resource name), not just y/N
 - [ ] Network operations have configurable timeouts (exit 75 on transient failure)
 - [ ] Startup < 500ms, print something in < 100ms

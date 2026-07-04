@@ -274,7 +274,7 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 - **Config precedence** (flags > env > project > user > system) → CLI design skill: "Config Precedence"
 - **Composability** (support `-` for stdin, detect interactive terminal) → CLI design skill: "Composability Patterns"
 - **Signal handling** (Ctrl-C: exit fast, bounded cleanup, crash-only) → `resources/stream-contracts.md`
-- **No secrets via env vars** (leak to child processes, `ps e`, crash reports — files/stdin only) → CLI design skill: "Prompts and Interactivity", "Config Precedence"
+- **Secrets channel hierarchy** (never flags; keychain/credential-file/stdin preferred; env leaks to child processes and crash reports — clig.dev takes the stricter never-env line, we allow platform-injected CI env) → CLI design skill: "Prompts and Interactivity", "Config Precedence"
 - **Tiered confirmation by severity** (y/N → dry-run → typed resource name) → CLI design skill: "Prompts and Interactivity"
 - **State-change transparency** (confirm changes, `status` pattern, explicit hidden actions, pager via `less -FIRX`) → CLI design skill: "State Changes and Transparency"
 - **Robustness** (validate early, 100ms responsiveness, configurable network timeouts, recover by re-run, expect misuse) → CLI design skill: "Robustness"
