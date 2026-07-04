@@ -91,6 +91,19 @@ For TypeScript implementation patterns (Result types, entry point wiring, format
 
 ---
 
+## Recommended TypeScript Stack
+
+Chosen because each maps directly onto rules in this skill — pick by the rules, not popularity:
+
+| Tool | Why it fits |
+|------|-------------|
+| [Stricli](https://bloomberg.github.io/stricli/) (command framework) | Commands are plain typed functions receiving an injected context — "Keep Handlers Pure" is the framework's native shape, so handlers test without subprocess spawning. No decorators or classes; strict flag/arg type inference; introspectable command tree (enables machine-readable self-description); minimal dependencies keep startup inside the 100ms responsiveness budget |
+| [@clack/prompts](https://github.com/bombshell-dev/clack) (interactivity) | Prompts as an optional presentation adapter: gate on TTY + `--no-input`/`--json`/`CI`, so interactivity is additive and every prompt stays bypassable. Cancel handling built in; tiny footprint |
+
+Alternatives and why not: **commander** is ubiquitous but stringly-typed — options arrive untyped, fighting strict mode. **oclif** is mature but class/decorator-based with heavy startup — wrong shape for pure handlers and hook-invoked CLIs. **@effect/cli** is schema-first with a free `--wizard` mode, but drags the entire Effect runtime and paradigm in — too much buy-in for a CLI layer that should stay thin.
+
+---
+
 ## Format Flag Contract
 
 Three-tier output hierarchy:
@@ -189,6 +202,7 @@ Optionally support `MYCLI_NO_COLOR` for app-specific color override.
 - **1 positional arg**: acceptable (the "main thing")
 - **2 positional args**: suspicious — consider flags instead
 - **3+ positional args**: never acceptable
+- **Exception**: variadic args of the same type are fine (`rm a.txt b.txt c.txt`), as are universal idioms (`cp source dest`)
 
 Flags are self-documenting, order-independent, and future-proof.
 
@@ -228,7 +242,8 @@ Always provide long forms. Short flags only for the most common operations.
 - Text input → `--name=value`
 - Passwords → `--password-file=path` or stdin pipe
 - If stdin is not a TTY, never prompt — fail with a clear error or use defaults
-- **Secrets via files/stdin/env only** — never via flag values (they leak to `ps` output and shell history)
+- **Secrets: never via flag values** (leak to `ps` output and shell history). Prefer, in order: OS keychain or a `0600` credential file (`~/.config/mycli/credentials`), then stdin (`mycli login --with-token < token.txt`), then env vars **only where the platform injects them** (CI secret stores) — env leaks to child processes and crash reports, so never make it the primary documented path
+- **Scale confirmation to severity**: mild → `y/N` prompt with `--yes` bypass; moderate → prompt plus suggest `--dry-run` first; severe/irreversible (delete a database, overwrite production) → require typing the resource name to confirm
 
 ### Conventions
 
@@ -252,8 +267,9 @@ Highest to lowest priority:
 **Rules:**
 
 - Follow the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) for config file locations
-- Env var naming: `MYCLI_*` prefix, uppercase letters + digits + underscores
-- Never accept secrets via flags — use env vars, files, or stdin
+- Env var naming: `MYCLI_*` prefix, uppercase letters + digits + underscores; keep values single-line; don't commandeer POSIX names
+- Respect the general-purpose env vars where relevant: `NO_COLOR`, `FORCE_COLOR`, `DEBUG`, `EDITOR`, `PAGER`, `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`, `TMPDIR`, `TERM`, `LINES`/`COLUMNS`
+- Never accept secrets via flags; prefer keychain/credential files or stdin, env vars only when platform-injected (CI) — see "Prompts and Interactivity"
 - Read `.env` where appropriate, but don't use it as a substitute for proper config
 - If you modify configuration that belongs to another program, ask consent first
 
@@ -304,6 +320,26 @@ The `transient` boolean tells retry logic whether the failure may be temporary.
 
 ---
 
+## State Changes and Transparency
+
+- **Confirm state changes** — say what changed and show (or point to) the resulting state; traditionally-silent commands look broken to humans
+- **Make current state easy to see** — a `status`-style command for anything with complex state (the `git status` pattern)
+- **Make hidden actions explicit** — if you read/write files not passed as arguments or talk to remote servers, say so (stderr in human mode)
+- **Page long output** through `$PAGER` (e.g. `less -FIRX`) — only when stdout is a TTY, never when piped
+
+---
+
+## Robustness
+
+- **Validate input early** — fail before any side effects, with a clear message
+- **Responsiveness beats speed** — print something within 100ms; show progress on stderr for anything long-running, with time estimates when progress can stall
+- **Timeouts on all network operations** — configurable, and exit 75 so retry logic knows the failure is transient
+- **Recoverable by re-run** — after a transient failure, re-running the command should resume or be safely idempotent
+- **Crash-only design** — exit fast on failure, defer cleanup to the next run; add timeouts to cleanup so Ctrl-C never hangs (second Ctrl-C skips cleanup) — see `resources/stream-contracts.md`
+- **Expect misuse** — script wrapping, bad connections, concurrent instances, environments you never tested
+
+---
+
 ## Composability Patterns
 
 Design for real-world pipes: filtering with `jq`, streaming NDJSON line-by-line, feeding stdin, chaining commands through emitted identifiers, selecting columns with `--fields`, and fanning out with `xargs -P`.
@@ -337,6 +373,8 @@ See `resources/composability.md` for the worked shell examples covering each of 
 - If run with missing required args, show concise help + 1-2 examples + "use --help for more"
 - **Examples are the most-read section** — lead with them
 - Include flag types, defaults, and allowed values for finite sets
+- Include a support/bug-report link in top-level help; pre-populate issue URLs with diagnostics where possible
+- Suggest the likely command on obvious typos ("Did you mean 'deploy'?") — ask, never auto-execute
 
 ---
 
@@ -355,7 +393,15 @@ See `resources/composability.md` for the worked shell examples covering each of 
 | Changing default behavior | **Breaking** |
 | Changing human-readable output | Usually OK (not a contract) |
 
-When in doubt, add alongside — don't modify. Deprecate with stderr warnings before removing.
+When in doubt, add alongside — don't modify. Deprecate with stderr warnings before removing — and once you can detect that users have migrated, stop warning.
+
+---
+
+## Naming, Distribution, Telemetry
+
+- **Name**: short, memorable, lowercase, easy to type; not so generic it collides with existing commands
+- **Distribution**: prefer a single binary; language-ecosystem tools (npm, pip) may reasonably assume their interpreter. Make uninstalling easy and documented
+- **Telemetry**: never collect usage/crash data without explicit consent — opt-in, stating what, why, and retention. Instrumented web docs or download counts are usually enough
 
 ---
 
@@ -394,7 +440,9 @@ After designing or reviewing a CLI:
 - [ ] Existing flags, exit codes, output fields never removed or renamed
 - [ ] JSON schema is versioned (additions safe, removals breaking)
 - [ ] Config follows flags > env > project > user > defaults
-- [ ] Secrets accepted only via files/stdin/env, never via flags
+- [ ] Secrets never via flags; keychain/credential-file/stdin preferred, env only when platform-injected (CI)
+- [ ] Severe destructive actions require typed confirmation (resource name), not just y/N
+- [ ] Network operations have configurable timeouts (exit 75 on transient failure)
 - [ ] Startup < 500ms, print something in < 100ms
 - [ ] Ctrl-C exits fast with bounded cleanup
 - [ ] `--help` includes 2-3 realistic examples
