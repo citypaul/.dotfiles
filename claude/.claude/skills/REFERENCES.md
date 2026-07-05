@@ -425,3 +425,9 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 - **LCP/INP/CLS at p75 of field data; lab measurement "is not a substitute for field measurement"** → Observability skill: frontend note (deferred from v1)
 
 ---
+
+## Specification
+- Jason Gorman (Codemanship) — specification as conversation; specs as educated guesses tested by reality.
+- Gojko Adzic, *Specification by Example* (Manning, 2011) — key examples; the counter-example challenge.
+- Matt Wynne, "Introducing Example Mapping" (cucumber.io, 2015) — the card grammar and map-shape diagnostics.
+- George Dinwiddie — the three amigos: business, development, testing in one conversation.
