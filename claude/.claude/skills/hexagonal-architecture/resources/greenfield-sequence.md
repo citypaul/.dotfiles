@@ -8,7 +8,7 @@ Before writing any code, create the skeleton: domain (with port locations), `ada
 
 ## Step 1: Driving Side — the App Returns a Constant
 
-Define the first driving port and the smallest possible implementation behind it: no parameters beyond the essentials, returning a constant. Write a test that calls the driving port and expects that constant.
+Define the first driving port — the interface only. Then RED first: write a unit test that calls the driving port and expects a constant, and watch it fail. Only then write the smallest implementation behind the port: no parameters beyond the essentials, returning that constant (the classic fake-it step).
 
 ```typescript
 // domain/tax/for-calculating-taxes.ts — first driving port
@@ -27,7 +27,7 @@ This first test is deliberately disposable — but be precise about which test t
 
 ## Step 2: Driven Side — a Fake Returns a Constant
 
-Define the first driven port and a fake in `adapters/fakes/` that returns a simple value. Change the app to take the driven port as a constructor/factory parameter and consult it instead of hardcoding. Update the test to build the fake, pass it in, and expect the fake's value (use a *different* value than Step 1, to prove the wiring changed).
+Define the first driven port and a fake in `adapters/fakes/` that returns a simple value. RED first again: update the test to build the fake, pass it in, and expect the fake's value — use a *different* value than Step 1 so the test fails against the hardcoded constant. Then triangulate: change the app to take the driven port as a constructor/factory parameter and consult it instead of hardcoding.
 
 ```typescript
 // domain/tax/tax-rate-provider.ts — first driven port
