@@ -8,7 +8,7 @@ Before writing any code, create the skeleton: domain (with port locations), `ada
 
 ## Step 1: Driving Side — the App Returns a Constant
 
-Define the first driving port — the interface only. Then RED first: write a unit test that calls the driving port and expects a constant, and watch it fail. Only then write the smallest implementation behind the port: no parameters beyond the essentials, returning that constant (the classic fake-it step).
+RED first: write a unit test that calls the driving port you wish existed, expecting a constant. It will not compile — that is the front edge of RED. Declare the port interface to satisfy the compiler (the test pulls it into existence), watch the assertion fail, and only then write the smallest implementation behind the port: no parameters beyond the essentials, returning that constant (the classic fake-it step).
 
 ```typescript
 // domain/tax/for-calculating-taxes.ts — first driving port
@@ -27,7 +27,7 @@ This first test is deliberately disposable — but be precise about which test t
 
 ## Step 2: Driven Side — a Fake Returns a Constant
 
-Define the first driven port and a fake in `adapters/fakes/` that returns a simple value. RED first again: update the test to build the fake, pass it in, and expect the fake's value — use a *different* value than Step 1 so the test fails against the hardcoded constant. Then triangulate: change the app to take the driven port as a constructor/factory parameter and consult it instead of hardcoding.
+RED first again: update the test to build a fake for the driven port you are about to declare, pass it in, and expect the fake's value — a *different* value than Step 1, so the test fails against the hardcoded constant. The compiler pulls the driven port interface into existence, and the fake lives in `adapters/fakes/` as test infrastructure. Then triangulate: change the app to take the driven port as a constructor/factory parameter and consult it instead of hardcoding.
 
 ```typescript
 // domain/tax/tax-rate-provider.ts — first driven port
