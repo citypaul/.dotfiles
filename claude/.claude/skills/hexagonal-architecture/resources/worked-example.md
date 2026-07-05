@@ -203,7 +203,7 @@ The route handler is thin glue: parse → wire → delegate → translate to HTT
 ## 8. Fakes for Testing
 
 ```typescript
-// test/fakes/fake-occasion-repository.ts
+// adapters/fakes/fake-occasion-repository.ts
 const createFakeOccasionRepository = (
   initial: readonly Occasion[] = [],
 ): OccasionRepository & { readonly savedEntities: readonly Occasion[] } => {
@@ -218,6 +218,8 @@ const createFakeOccasionRepository = (
 ```
 
 Fakes implement the real interface and maintain state. If the interface changes, the fake breaks at compile time.
+
+A fake is a driven *actor* that needs no adapter — it meets the port interface directly. It lives in `adapters/fakes/`, beside the driven adapters it substitutes for, not in test space.
 
 ## 9. Tests
 
@@ -323,6 +325,10 @@ src/
       drizzle-occasion-repository.ts    ← Driven adapter
       drizzle-contributor-repository.ts ← Driven adapter
     schema.ts               ← Drizzle table definitions
+  adapters/
+    fakes/
+      fake-occasion-repository.ts       ← In-memory driven actors (shared fakes)
+      fake-contributor-repository.ts
   app/
     api/occasions/[id]/
       pledge/route.ts       ← Driving adapter (route handler)
@@ -331,10 +337,7 @@ tests/
   occasions/
     pledge-contribution.test.ts  ← Use case tests (primary)
     pledge-rules.test.ts         ← Domain unit tests (complement)
-  fakes/
-    fake-occasion-repository.ts  ← Shared fakes
-    fake-contributor-repository.ts
-    test-factories.ts            ← getTestOccasion, getTestContributor
+  test-factories.ts              ← getTestOccasion, getTestContributor
 ```
 
 ## What Lives Where (Summary)
@@ -346,5 +349,5 @@ tests/
 | Use cases | `domain/` (takes ports as params) | Orchestration of domain operations |
 | Repository impls | `db/repositories/` | Driven adapters, translate domain ↔ DB |
 | Route handlers | `app/api/` | Driving adapters, thin glue |
-| Fakes | `tests/fakes/` | Shared across use case tests |
+| Fakes | `adapters/fakes/` | In-memory driven actors, shared across use case tests |
 | Tests | `tests/{concept}/` | Organized by domain concept, not file |

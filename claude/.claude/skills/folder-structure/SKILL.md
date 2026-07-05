@@ -42,6 +42,7 @@ Read `references/research-notes.md` when documenting rationale, comparing named 
    - Add 3-6 placement rules that explain where new files go.
    - Add 2-4 import/dependency rules that keep the structure honest.
    - Include lint/import-boundary rules when the project uses DDD, hexagonal architecture, or another explicit layered boundary.
+   - For a new DDD/hex context, create the skeleton folders before writing any code — an empty-but-correct structure makes every later file placement obvious.
 
 ## Feature Anatomy
 
@@ -117,6 +118,8 @@ src/
 
 When a project opts into DDD or hexagonal architecture, make `domain/` visible. This is the deliberate exception to "avoid technical folders": `domain/` marks the protected core of the hexagon, not a framework category.
 
+The ports-and-adapters pattern itself mandates no folder layout — only the inside/outside boundary (*Hexagonal Architecture Explained*, Cockburn & Garrido de Paz). This section is a recommended physical realization of that boundary's intent.
+
 Prefer bounded context first, protected core second:
 
 ```text
@@ -139,15 +142,15 @@ src/
         collect-payment.test.ts
         index.ts
     adapters/
-      driven/
+      outbound/
         stripe-payment-gateway.ts
         postgres-invoice-repository.ts
         invoice-row.ts
         invoice-mapper.ts
+      inbound/
+        billing-routes.ts         # thin driving adapter when framework allows
       fakes/
-        fake-invoice-repository.ts
-    delivery/
-      billing-routes.ts           # thin driving adapter when framework allows
+        fake-invoice-repository.ts  # in-memory driven actor for tests — needs no adapter
 ```
 
 If the framework forces routes elsewhere, keep those files thin and make the dependency direction obvious:
@@ -168,10 +171,14 @@ Placement rules for opted-in DDD/hex code:
 
 - Put entities, value objects, domain services, specifications, domain errors, repository interfaces, gateway interfaces, and business result types in `domain/`.
 - Put use cases/application services in `use-cases/` when separating orchestration from the pure domain model; they are still inside the hexagon and protected from adapters.
-- Put concrete DB, API, queue, email, payment, filesystem, and SDK implementations in `adapters/driven/` or `infrastructure/`.
-- Put route handlers, controllers, CLI commands, queue consumers, cron triggers, and server actions in `delivery/` or framework-required `app/` folders.
+- Put concrete DB, API, queue, email, payment, filesystem, and SDK implementations in `adapters/outbound/` (alternatives: `adapters/driven/`, `infrastructure/`).
+- Put route handlers, controllers, CLI commands, queue consumers, cron triggers, and server actions in `adapters/inbound/` (alternatives: `delivery/`, or framework-required `app/` folders).
 - Keep adapter DTOs, DB rows, SDK response types, mappers, and query DTOs with the adapter. Map them to domain types at the boundary.
 - Keep shared-kernel types tiny. `Money`, `EmailAddress`, and `Clock` can be shared; `Invoice`, `GiftIdea`, and `User` usually belong to a bounded context.
+
+Ports placement has two sound shapes. The default above colocates each driven port with its aggregate. The alternative from the source pattern gathers port definitions into dedicated folders — `ports/inbound/` and `ports/outbound/` (or `ports/driving/` and `ports/driven/`), optionally one file per port named for its purpose (`for-collecting-payment.ts`) — so adapters can depend on the interfaces without the rest of the context, and the application boundary is visible in the tree. Either way, keep driving and driven port definitions visibly separate; practitioners report this is the single biggest readability win for interface definitions.
+
+`adapters/inbound/` (driving side) and `adapters/outbound/` (driven side) are this skill's default folder names — "driving" and "driven" read too alike as siblings, and inbound/outbound is the source-endorsed cure. `delivery/` and `adapters/driven/` remain fine alternatives where a codebase already uses them; whatever the names, the inbound/outbound separation itself is the point.
 
 ## Import Boundary Rules
 
@@ -191,6 +198,7 @@ export default [
             group: [
               "**/adapters/**",
               "**/infrastructure/**",
+              "**/adapters/inbound/**",
               "**/delivery/**",
               "**/app/**",
               "**/use-cases/**",
@@ -218,6 +226,7 @@ export default [
             group: [
               "**/adapters/**",
               "**/infrastructure/**",
+              "**/adapters/inbound/**",
               "**/delivery/**",
               "**/app/**",
               "next",
@@ -246,6 +255,7 @@ export default [
               "**/use-cases/**",
               "**/adapters/**",
               "**/infrastructure/**",
+              "**/adapters/inbound/**",
               "**/delivery/**",
               "**/features/**",
             ],

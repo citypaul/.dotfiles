@@ -2,6 +2,10 @@
 
 Hex arch's primary value is testability. The architecture creates natural test boundaries — but the primary boundary is the **use case**, not each layer in isolation. This approach follows Use Case Driven Development (UCDD) — see `references.md` for sources.
 
+## A Port Is Only Real If It Is Tested
+
+Every port needs a test interactor: a test driver at each driving port, a fake at each driven port. Without one, the "port" is an arbitrary interface line — nothing enforces it as a boundary. The tests double as the leak detector: business logic drifting into an adapter, or technology detail drifting into the domain, breaks a boundary test the moment it happens. When reviewing, ask of each port: what drives it, or fakes it, in the test suite?
+
 ## Primary Boundary: The Use Case
 
 Test by calling the driving port implementation with driven ports replaced by in-memory fakes. This exercises the full business logic path without touching infrastructure.
