@@ -4,7 +4,7 @@ How to start a hexagonal project from scratch. For introducing hex arch into an 
 
 ## Step 0: Create the Folders First
 
-Before writing any code, create the skeleton: domain (with port locations), driven adapters (including `fakes/`), driving adapters/delivery, tests. With an empty-but-correct structure in place, every subsequent file placement is obvious — this one habit removes most "where does this go?" confusion. Use the `folder-structure` skill's protected-domain-core layout if it applies.
+Before writing any code, create the skeleton: domain (with port locations), `adapters/outbound/` (including `adapters/fakes/`), `adapters/inbound/`, tests. With an empty-but-correct structure in place, every subsequent file placement is obvious — this one habit removes most "where does this go?" confusion. Use the `folder-structure` skill's protected-domain-core layout if it applies.
 
 ## Step 1: Driving Side — the App Returns a Constant
 
@@ -23,7 +23,7 @@ it('returns the flat placeholder tax', () => {
 });
 ```
 
-This first test is deliberately disposable. Once the app consults a driven port (Step 2), the constant-only behavior disappears, and this test gets rewritten or deleted. That's fine — its job was to prove the driving-side connection.
+This first test is deliberately disposable — but be precise about which test that is. It is an inner-loop **unit** test, and returning the constant is the classic fake-it step: Step 2 triangulates the fake away, and rewriting or deleting this unit scaffold then is ordinary red-green work. It is **never** a locked acceptance test: where a project runs an ATDD outer loop with human-approved specs (see the `acceptance-testing` skill, where installed), the walking-skeleton acceptance spec is authored and confirmed failing *before* this sequence begins, asserts end-to-end plumbing rather than the placeholder value, and is not yours to rewrite or delete — this sequence orders the implementation *inside* that outer test, not around it.
 
 ## Step 2: Driven Side — a Fake Returns a Constant
 
