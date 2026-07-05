@@ -21,6 +21,8 @@ gh run rerun <run-id> --failed                 # re-run only failed jobs (for ev
 
 For step-level detail, re-run with debug logging: set the `ACTIONS_STEP_DEBUG=true` secret/variable, or `gh run rerun <run-id> --debug`. Compare the failing run against the last green run on the same branch (`gh run list`) — the diff in commits, dependency lockfiles, and workflow files between those two runs is the primary suspect list.
 
+If the system under test emits structured telemetry (canonical events, traces, in-memory exporter output from test runs), pull it as evidence alongside the logs — see the `observability` skill.
+
 ## Hypothesis-First Diagnosis
 
 Before investigating, list at least 3 possible root causes. Investigate each systematically rather than jumping to the first guess.

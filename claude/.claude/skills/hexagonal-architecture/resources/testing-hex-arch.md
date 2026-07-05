@@ -62,6 +62,42 @@ const createFakeOrderRepo = (): OrderRepository & { readonly savedEntities: read
 
 **Note on mutability in fakes:** Fakes use mutable internal state (`Map.set`, `Array.push`) to simulate a data store. This is a deliberate testing-only exception to the immutability rule — fakes are test infrastructure, not domain code. The domain types they store remain immutable.
 
+## Fakes for Instrumentation Ports (Domain Probes)
+
+A Domain Probe (see `cross-cutting-concerns.md`, Tier 2) is a driven port, so it gets a recording fake like any other. Use-case tests then assert observations as behavior — "placing a rejected pledge announces the rejection" — the same way they assert a save happened.
+
+```typescript
+const createRecordingPledgeInstrumentation = (): PledgeInstrumentation & {
+  readonly observed: readonly Record<string, unknown>[];
+} => {
+  const observed: Record<string, unknown>[] = [];
+  return {
+    pledgeRejected: (reason, occasionId) => { observed.push({ kind: 'pledge-rejected', reason, occasionId }); },
+    pledgeAccepted: (amount, occasionId) => { observed.push({ kind: 'pledge-accepted', amount, occasionId }); },
+    get observed() { return observed; },
+  };
+};
+
+it('announces the rejection when funding is closed', async () => {
+  const instrumentation = createRecordingPledgeInstrumentation();
+  const pledging = createPledgingToOccasions(
+    createFakeOccasionRepo({ occasions: [closedOccasion] }),
+    createFakeContributorRepo(),
+    instrumentation,
+  );
+
+  await pledging.pledgeToOccasion(getMockPledge({ occasionId: closedOccasion.id }));
+
+  expect(instrumentation.observed).toContainEqual({
+    kind: 'pledge-rejected',
+    reason: 'funding-closed',
+    occasionId: closedOccasion.id,
+  });
+});
+```
+
+The probe's adapter — translating observations into log lines, metrics, or span attributes — is tested separately as adapter code (see the `observability` skill's `resources/testing-telemetry.md` for in-memory exporter patterns). Mutation-testing note: an unasserted probe call is a surviving-mutant farm; asserting observations through the fake is what makes instrumentation mutation-proof behavior.
+
 ## Domain Unit Tests: A Complement
 
 Pure domain functions (business rules, calculations) can also be tested directly. This is behavioral testing — the domain function IS the public API. Use this for complex rules with many edge cases. For property-based testing of domain invariants with `fast-check`, see the DDD skill's `resources/testing-by-layer.md`.

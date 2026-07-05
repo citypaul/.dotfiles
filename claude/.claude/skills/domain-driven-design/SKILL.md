@@ -295,7 +295,7 @@ Domain events represent something meaningful that happened in the domain ("Order
 - Side effects are within the same transaction
 - Explicit return values from domain functions suffice
 
-For most projects, start without domain events and add them when the domain demands coordination. See `resources/domain-events.md` for the Decider pattern and detailed guidance. When events become the source of truth — persisted to an append-only log and replayed to rebuild state — that is event sourcing; load the `event-sourcing` skill (it builds directly on this Decider).
+For most projects, start without domain events and add them when the domain demands coordination. See `resources/domain-events.md` for the Decider pattern and detailed guidance. When events become the source of truth — persisted to an append-only log and replayed to rebuild state — that is event sourcing; load the `event-sourcing` skill (it builds directly on this Decider). Where domain events already exist, observability rides for free as another subscriber — an observability adapter on the existing publisher port, not a second announcement channel (see the `hexagonal-architecture` skill's four-tier observability model and the `observability` skill).
 
 ---
 

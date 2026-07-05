@@ -320,11 +320,12 @@ For a complete worked example showing one feature traced through every layer (gl
 |---------|-------|-----|
 | Authentication (who are you?) | Driving adapter | Protocol-specific (JWT, session, API key) |
 | Authorization (are you allowed?) | Domain | Business rule about permissions |
-| Logging | Adapters (both sides) | Side effect, not business logic |
+| Technical telemetry & correlation | Adapters (both sides) | Infrastructure side effect |
+| Domain observations (support logs, business metrics) | Driven port (probe) or domain events | Business-significant facts; tested with fakes like any port |
 | Transactions | Adapter / composition root | Infrastructure concern, domain unaware |
 | Error formatting | Driving adapter | Translates domain results to HTTP/gRPC |
 
-**The domain never imports a logger, catches HTTP errors, or manages transactions.** It returns results; adapters handle the rest. See `resources/cross-cutting-concerns.md` for detailed patterns.
+**The domain never imports a logger, catches HTTP errors, or manages transactions.** It returns results — and where a business-significant fact doesn't survive to the boundary, it announces the fact through an explicit driven port (Domain Probe) or a domain event, never a raw logger. See `resources/cross-cutting-concerns.md` for the four-tier observability model and detailed patterns; for what goes into telemetry (wide events, SLOs, alerting), see the `observability` skill.
 
 ---
 
@@ -453,5 +454,5 @@ const placeOrder = async (...) => ...
 - [ ] Schemas defined in domain, not duplicated in adapters
 - [ ] Reads that JOIN across aggregates use query functions (CQRS-lite)
 - [ ] Each layer has behavioral tests at the appropriate level
-- [ ] Cross-cutting concerns (auth, logging, transactions) live in adapters, not domain
+- [ ] Cross-cutting concerns (auth, technical telemetry, transactions) live in adapters; domain-significant observations go through an explicit driven port or domain events, never a raw logger import
 - [ ] Domain returns result types for expected outcomes, never throws for business rules

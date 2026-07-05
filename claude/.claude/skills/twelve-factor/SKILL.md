@@ -137,6 +137,8 @@ Maximize robustness with fast startup and graceful shutdown. See `resources/node
 
 Treat logs as event streams. Write structured output to stdout. Never route or store logs from within the app.
 
+This factor owns log *transport and shape*. For what goes into the stream — wide events / canonical log lines, traces, SLOs, alerting — see the `observability` skill.
+
 For internet-facing servers, RFC 6302 (BCP 162) specifies minimum logging requirements: source and destination addresses and ports, timestamps (preferably UTC), and transport protocol. These should be captured at the server/framework level in addition to application-level structured logging.
 
 ### Semantic Requirements
@@ -148,7 +150,7 @@ Regardless of which logging library or implementation a project uses, all logger
 - **Standard levels** — at minimum: `debug`, `info`, `warn`, `error` — configurable via environment
 - **Contextual data** — logs accept structured metadata (key-value pairs), not just message strings
 - **Timestamp included** — every log entry includes an ISO 8601 timestamp
-- **Request correlation** — include a `requestId` or trace ID to correlate logs across a single request
+- **Request correlation** — include a correlation identifier in every log record; prefer the W3C trace context trace ID (from the `traceparent` header) over a homegrown `requestId`, so logs join to distributed traces for free
 
 Projects may use any logging library (pino, winston with console transport, OpenTelemetry, custom) as long as these semantics are met. If an existing logger is missing levels or structured data support, adapt it to meet these requirements. See `resources/node-patterns.md` for an illustrative logger implementation.
 
@@ -231,7 +233,7 @@ Config injection via options objects makes all of these patterns naturally testa
 - [ ] Database pools and connections closed on shutdown
 - [ ] `/health` and `/ready` endpoints for orchestrator probes
 - [ ] Logs written as structured JSON to stdout, no file transports
-- [ ] Logs include request correlation IDs
+- [ ] Logs include a correlation ID (preferably the W3C trace context trace ID)
 - [ ] App binds to a port from config, includes its own HTTP server
 - [ ] Same backing service types used in development and production
 - [ ] Admin scripts live in the repo and use the same config/dependencies
