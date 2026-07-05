@@ -1,0 +1,199 @@
+<!doctype html>
+<!--
+  Specification review template (the three-amigos handoff page).
+
+  How to use (any agent, any provider):
+  1. Build the review data as JSON matching the shape below — sections share
+     one card engine: Rules (rule/examples/questions), Parked questions
+     (question/owner), Candidate vocabulary (term/gloss).
+  2. Replace the REVIEW_DATA placeholder token (the double-underscore-wrapped
+     one inside the review-data script tag at the bottom — replace ALL
+     occurrences) with that JSON, escaping every "<" in string values as
+     backslash-u003c so the JSON can never terminate the script tag.
+  3. Write the result to a session temp directory and open it in the
+     reviewers' local browser. Never commit the generated page.
+  4. This is a conversation artifact for the three-amigos round, not an
+     approval record: reviewers annotate any card, disagreements become new
+     questions, and the page is regenerated every round until the map is
+     stable.
+  5. Feedback: reviewers type into the card boxes and click "Copy feedback" —
+     route the pasted markdown back into the next specification round as
+     answers and new questions, never as silent edits.
+
+  Data shape:
+  {
+    "title": "Specification — <story>",
+    "context": {
+      "feature": "the story, in the words its owner used",
+      "background": "where this idea came from and what exists today",
+      "goodLooksLike": "what shared understanding would unlock — the outcome once these rules are agreed"
+    },
+    "banner": {
+      "headline": "Round <N> of this specification — what changed and what needs eyes",
+      "facts": ["how many rules/examples/questions the map holds …", "what feedback does: returns to the next round as answers and new questions …"]
+    },
+    "sections": [{
+      "heading": "<section heading: Rules / Parked questions / Candidate vocabulary>",
+      "intro": "plain-language description of the behaviour under specification",
+      "path": "<optional: the story artifact this map lives in>",
+      "digest": "<optional: content digest, when a round wants byte-accountability>",
+      "specs": [{
+        "name": "<rule — a policy in domain language>",
+        "plain": "the rule's concrete examples, one per line: real values, real outcomes",
+        "red": "open questions attached to this card (empty string when none)",
+        "code": "<the rule's map entry verbatim — rule, examples, questions>"
+      }]
+    }],
+    "footer": "where the working artifact lives and what happens after this round stabilises"
+  }
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Specification review</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font: 15px/1.55 -apple-system, sans-serif; max-width: 60rem; margin: 2rem auto 7rem; padding: 0 1.25rem; }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.15rem; margin-top: 2.5rem; }
+      .banner { border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-left: 6px solid #c62828; border-radius: 8px; padding: 0.9rem 1.1rem; }
+      .banner strong { color: #c62828; }
+      .context { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-left: 6px solid #1565c0; border-radius: 8px; padding: 0.4rem 1.1rem; margin: 1rem 0; }
+      .context strong { color: #1565c0; }
+      .intro { opacity: 0.85; }
+      .meta { font-size: 0.8rem; opacity: 0.6; word-break: break-all; }
+      .spec { border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 8px; margin: 0.7rem 0; padding: 0.15rem 0; }
+      .spec-name { padding: 0.55rem 0.9rem 0; font-weight: 650; }
+      .num { display: inline-block; min-width: 1.7rem; opacity: 0.5; font-variant-numeric: tabular-nums; }
+      .plain { padding: 0.35rem 0.9rem 0.2rem 2.6rem; }
+      .red { padding: 0 0.9rem 0.4rem 2.6rem; font-size: 0.78rem; color: #c62828; }
+      .code { margin: 0 0.9rem 0.6rem 2.6rem; border: 1px solid color-mix(in srgb, currentColor 14%, transparent); border-radius: 6px; }
+      .code summary { cursor: pointer; padding: 0.3rem 0.6rem; font-size: 0.78rem; opacity: 0.75; }
+      pre { margin: 0; padding: 0.7rem 0.9rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.5; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .note { display: block; width: calc(100% - 1.8rem); box-sizing: border-box; margin: 0 0.9rem 0.6rem; border: 1px dashed color-mix(in srgb, currentColor 25%, transparent); border-radius: 6px; background: color-mix(in srgb, currentColor 4%, transparent); padding: 0.5rem 0.7rem; font: 0.82rem/1.5 ui-monospace, Menlo, monospace; min-height: 2.3rem; resize: vertical; }
+      .note:focus { outline: 2px solid #1565c0; min-height: 4.5rem; }
+      .footer { margin-top: 3rem; font-size: 0.85rem; border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); padding-top: 1rem; opacity: 0.8; }
+      #bar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 0.8rem; align-items: center; justify-content: center; padding: 0.7rem; background: Canvas; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+      #bar button { font: 600 0.9rem/1 -apple-system, sans-serif; padding: 0.55rem 1.1rem; border-radius: 6px; border: none; background: #1565c0; color: white; cursor: pointer; }
+      #status { font-size: 0.85rem; opacity: 0.75; min-width: 14rem; }
+    </style>
+  </head>
+  <body>
+    <main id="app"></main>
+    <div id="bar">
+      <span id="status">Type suggestions in any box, then</span>
+      <button id="copy">Copy feedback</button>
+    </div>
+    <textarea id="export" hidden></textarea>
+    <script id="review-data" type="application/json">
+      __REVIEW_DATA__
+    </script>
+    <script>
+      const data = JSON.parse(document.getElementById("review-data").textContent);
+      document.title = data.title;
+      const el = (tag, cls, text) => {
+        const node = document.createElement(tag);
+        if (cls) node.className = cls;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      };
+      const app = document.getElementById("app");
+      app.append(el("h1", "", data.title));
+      if (data.context) {
+        const ctx = el("section", "context");
+        const rows = [
+          ["The feature", data.context.feature],
+          ["Where this fits", data.context.background],
+          ["What good looks like", data.context.goodLooksLike],
+        ];
+        for (const [label, text] of rows) {
+          if (!text) continue;
+          const p = el("p");
+          p.append(el("strong", "", label + ". "), text);
+          ctx.append(p);
+        }
+        app.append(ctx);
+      }
+      const banner = el("p", "banner");
+      banner.append(el("strong", "", data.banner.headline), " ");
+      banner.append(data.banner.facts.join(" "));
+      app.append(banner);
+
+      const noteBoxes = [];
+      const addNote = (parent, label) => {
+        const box = el("textarea", "note");
+        box.placeholder = "Suggest an improvement here (leave empty if it's fine)…";
+        box.dataset.spec = label;
+        parent.append(box);
+        noteBoxes.push(box);
+      };
+
+      for (const section of data.sections) {
+        app.append(el("h2", "", section.heading));
+        app.append(el("p", "intro", section.intro));
+        if (section.path !== undefined || section.digest !== undefined) {
+          const meta = el("p", "meta");
+          if (section.path !== undefined) meta.append(section.path);
+          if (section.path !== undefined && section.digest !== undefined)
+            meta.append(document.createElement("br"));
+          if (section.digest !== undefined) meta.append(section.digest);
+          app.append(meta);
+        }
+        section.specs.forEach((spec, index) => {
+          const card = el("div", "spec");
+          const name = el("div", "spec-name");
+          name.append(el("span", "num", String(index + 1)), spec.name);
+          card.append(name);
+          card.append(el("p", "plain", spec.plain));
+          card.append(el("p", "red", spec.red));
+          const codeBox = el("details", "code");
+          codeBox.append(el("summary", "", "the map entry, verbatim"));
+          const pre = el("pre");
+          pre.append(el("code", "", spec.code));
+          codeBox.append(pre);
+          card.append(codeBox);
+          addNote(card, section.heading + " #" + (index + 1) + " — " + spec.name);
+          app.append(card);
+        });
+      }
+      app.append(el("p", "footer", data.footer));
+      const overall = el("div", "spec");
+      overall.append(el("div", "spec-name", "Overall / batch-wide"));
+      addNote(overall, "general");
+      app.append(overall);
+
+      for (const box of noteBoxes) {
+        const key = data.title + "::" + box.dataset.spec;
+        try { box.value = localStorage.getItem(key) ?? ""; } catch {}
+        box.addEventListener("input", () => {
+          try { localStorage.setItem(key, box.value); } catch {}
+        });
+      }
+      const build = () => {
+        const notes = noteBoxes
+          .filter((box) => box.value.trim() !== "")
+          .map((box) => "### " + box.dataset.spec + "\n" + box.value.trim());
+        return notes.length === 0
+          ? "## " + data.title + " — feedback\n(no comments — looks good)"
+          : "## " + data.title + " — feedback\n\n" + notes.join("\n\n");
+      };
+      document.getElementById("copy").addEventListener("click", async () => {
+        const markdown = build();
+        const status = document.getElementById("status");
+        try {
+          await navigator.clipboard.writeText(markdown);
+          status.textContent = "Copied — paste it into the agent session.";
+        } catch {
+          const fallback = document.getElementById("export");
+          fallback.hidden = false;
+          fallback.value = markdown;
+          fallback.select();
+          document.execCommand("copy");
+          status.textContent = "Copied (fallback) — paste it into the agent session.";
+        }
+      });
+    </script>
+  </body>
+</html>

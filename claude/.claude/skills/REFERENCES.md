@@ -425,3 +425,52 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 - **LCP/INP/CLS at p75 of field data; lab measurement "is not a substitute for field measurement"** → Observability skill: frontend note (deferred from v1)
 
 ---
+
+## Ubiquitous Language
+
+### Eric Evans — "Domain-Driven Design" (2003) + [DDD Reference](https://www.domainlanguage.com/wp-content/uploads/2016/05/DDD_Reference_2015-03.pdf)
+- **"A change in the language is a change to the model"**; awkward terms are signal; rename after deciding → Ubiquitous-language skill: core principle, protocol steps 1 and 5
+
+### Vaughn Vernon — "Implementing Domain-Driven Design" (2013), ch. 1
+- **One UL per bounded context; team speech + code as the only guaranteed-current denotation** → "Where the Language Lives" priority order
+
+### Martin Fowler — [UbiquitousLanguage bliki](https://martinfowler.com/bliki/UbiquitousLanguage.html) + [StranglerFigApplication](https://martinfowler.com/bliki/StranglerFigApplication.html)
+- **UL framing**; **Strangler Fig** → brownfield protected-core ratchet
+
+### Chris Simon — [Contextive](https://github.com/dev-cycles/contextive)
+- **Glossary format + LSP editor experience, folder-scoped contexts** → `resources/glossary-format.md`
+
+### Peter Hilton — ["Living glossaries"](https://hilton.org.uk/blog/living-glossary) + Cyrille Martraire — "Living Documentation"
+- **Glossaries rot unless reconciled against code** → the lint-checked living glossary
+
+### Vladimir Khorikov — ["Ubiquitous Language and Naming"](https://enterprisecraftsmanship.com/posts/ubiquitous-language-naming/)
+- **Weasel-suffix critique** (`Info`, `Base`, `Item`, `Manager`, `Service`, `Dto`) → the banned-vocabulary seed list in SKILL.md
+
+### NDepend — [DDD ubiquitous-language identifier rule](https://blog.ndepend.com/checking-ddd-ubiquitous-language-with-ndepend/)
+- **Prior art (.NET, 2018)** for glossary-driven identifier checking with technical-word customization → the flagship rule's token-class design; no TS equivalent exists
+
+### Greg Young — ["Refactoring and the Ubiquitous Language"](https://gregfyoung.wordpress.com/2013/02/13/refactoring-and-the-ubiquitous-language/)
+- **Internal-vs-published boundary rule** (rename freely inside; version the published language) → protocol step 5
+
+### Olaf Zimmermann — [Y-statements](https://medium.com/olzzio/y-statements-10eb07b5a177)
+- **Micro-ADR template** for model-changing renames → `resources/language-protocol.md` + adr agent
+
+### Tomasz Ducin — ["Speaking Ubiquitous Language"](https://ducin.dev/ddd-speaking-ubiquitous-language)
+- **One word per concept; two phrases must mean two concepts** → DETECT triggers
+
+### Daniel Schleicher — [glossary-steered AI workflow](https://www.danielschleicher.com/software/engineering,/ai,/spec-driven/development/2026/01/04/removing-ambiguity-with-spec-driven-development.html)
+- **Propose-never-adopt semantics** (AI flags and proposes, never adopts without approval) → protocol step 2, adopted wholesale
+
+### Alvin Sng (Factory.ai) — ["Using Linters to Direct Agents"](https://factory.ai/news/using-linters-to-direct-agents) + Addy Osmani — [agent naming drift](https://medium.com/@addyosmani/my-llm-coding-workflow-going-into-2026-52fe1681325e)
+- **Linters as the executable spec inside the agent's loop; terminology-drift failure mode** → "Mechanical Enforcement"
+
+### Evan Czaplicki — ["Compiler Errors for Humans"](https://elm-lang.org/news/compiler-errors-for-humans)
+- **Errors as the documentation people actually read** → three-part teaching messages
+
+### Craig Spence — [Betterer](https://github.com/phenomnomnominal/betterer), Sairyss — [domain-driven-hexagon rules](https://github.com/sairyss/domain-driven-hexagon), typescript-eslint — [naming-convention](https://typescript-eslint.io/rules/naming-convention/), eslint-plugin-vitest — [valid-title](https://github.com/vitest-dev/eslint-plugin-vitest/blob/main/docs/rules/valid-title.md)
+
+## Specification
+- Jason Gorman (Codemanship) — specification as conversation; specs as educated guesses tested by reality.
+- Gojko Adzic, *Specification by Example* (Manning, 2011) — key examples; the counter-example challenge.
+- Matt Wynne, "Introducing Example Mapping" (cucumber.io, 2015) — the card grammar and map-shape diagnostics.
+- George Dinwiddie — the three amigos: business, development, testing in one conversation.
