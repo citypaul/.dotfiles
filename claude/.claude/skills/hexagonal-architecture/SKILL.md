@@ -20,6 +20,7 @@ If the `folder-structure` skill has been explicitly applied to this project, fol
 | `cqrs-lite.md` | Reads need to JOIN across aggregates, separating read/write paths |
 | `cross-cutting-concerns.md` | Placing auth, logging, transactions, or error formatting |
 | `incremental-adoption.md` | Introducing hex arch into an existing codebase |
+| `greenfield-sequence.md` | Starting a hex project from scratch — ordering the first ports, adapters, and tests |
 | `references.md` | Checking source rationale, especially port/public interface naming |
 
 For authoritative sources and naming rationale, see `resources/references.md`.
@@ -53,7 +54,11 @@ Business logic lives in the center. External systems connect through ports (inte
 **Driving adapters** (left): initiate actions on the application. They *call* use cases.
 **Driven adapters** (right): the application reaches out to them. They *implement* port interfaces.
 
-This asymmetry is fundamental. Driving adapters depend on driving port interfaces exposed by the application. Driven adapters implement repository/gateway interfaces defined by the domain.
+The pattern itself is symmetric: one rule — inside versus outside — and the application knows nothing about what is connected on either side. The left/right asymmetry appears only in implementation, as who knows whom: driving adapters know the application and call the driving port interfaces it exposes; the application knows its driven adapters only as injected parameters implementing the port interfaces it defines. That is why driving ports are provided interfaces and driven ports are required interfaces.
+
+The pattern defines exactly two zones — inside and outside — and says nothing about how either is structured internally. The domain/use-case layering in this skill is our recommended way to keep the inside honest, not part of the pattern.
+
+**Vocabulary:** An *actor* is anything with behavior outside the boundary — a human, a database, another program, a test. *Driving* (= *primary*) actors initiate a conversation with the application; *driven* (= *secondary*) actors are the ones the application calls. These are the only adjective pairs that apply equally to actors, ports, and adapters (inbound/outbound works for ports, adapters, and folders — but not actors). An *interactor* is an actor or its adapter, whichever touches the port directly: not every actor needs an adapter — tests, sibling hexagonal apps, and program-to-program callers can meet a port's interface as-is. Driving ports form the application's *provided interface* (API); driven ports form its *required interface* (SPI).
 
 ---
 
@@ -65,14 +70,14 @@ Use case implementations satisfy the driving port. The driving adapter should de
 
 ### Naming Ports and Public Interfaces
 
-Name every port from the application's point of view, using the domain language of the conversation:
+Name every port from the application's point of view, using the domain language of the conversation. The source pattern names *every* port — driving and driven — for the intention of the conversation: `ForPlacingOrders`, `ForGettingTaxRates`, `ForStoringTickets`. The pattern legislates no naming at all, though. This skill keeps intention names for driving ports and uses role nouns (`OrderRepository`, `PaymentGateway`) for driven ports as a deliberate house choice: both styles are purpose names, never technology names. A codebase already using `For...` names on the driven side is following the source convention — leave it be.
 
 | Boundary | Good names | Avoid | Why |
 |----------|------------|-------|-----|
 | Driving/public API | `ForPlacingOrders`, `ForPledgingToOccasions` | `PlaceOrderUseCase`, `PlaceOrderHandler`, `OrderInputPort` | Names the actor capability, not the pattern |
-| Aggregate persistence | `OrderRepository`, `ContributorRepository` | `OrderDatabase`, `OrderDao`, `SqlOrderPort` | Repository is a domain collection abstraction |
-| External service | `PaymentGateway`, `ExchangeRateProvider` | `StripeClient`, `HttpPaymentPort` | Names the capability the app needs, not the vendor/protocol |
-| Notifications/events | `OrderEventPublisher`, `ReceiptSender` | `SnsAdapter`, `MessageBusPort` | Names the business-side interaction |
+| Aggregate persistence | `OrderRepository`, `ContributorRepository` (or `ForStoringOrders`) | `OrderDatabase`, `OrderDao`, `SqlOrderPort` | Repository is a domain collection abstraction |
+| External service | `PaymentGateway`, `ExchangeRateProvider` (or `ForPaying`, `ForObtainingRates`) | `StripeClient`, `HttpPaymentPort` | Names the capability the app needs, not the vendor/protocol |
+| Notifications/events | `OrderEventPublisher`, `ReceiptSender` (or `ForNotifyingContributors`) | `SnsAdapter`, `MessageBusPort` | Names the business-side interaction |
 
 **Public interface naming rules:**
 - Use `interface` for behavior contracts, not data shapes that are better modeled as `type`/schemas.
@@ -192,7 +197,7 @@ For detailed CQRS-lite guidance, see `resources/cqrs-lite.md`. When the read/wri
 
 ---
 
-## Dependency Injection
+## Dependency Injection and the Configurator
 
 Inject all dependencies via function parameters. No DI container needed. The driving adapter gathers impure dependencies, passes them to the use case, and acts on the result — Seemann's "impureim sandwich" (impure/pure/impure).
 
@@ -244,6 +249,8 @@ export async function POST(request: Request) {
 
 The route handler is thin glue: parse input → wire adapters → call use case → return response. No business logic.
 
+**The configurator:** whatever code knows all the players and introduces them — the composition root here — is the pattern's fifth element. Constructor injection (this skill's default) is one of three sanctioned shapes: a setter or `ForConfiguring...` function allows driven adapters to be swapped while the system runs (hazard: an app constructed but never configured), and dependency lookup hands the application a broker it asks at call time. In tests, the test case itself plays configurator and driving actor at once; in production, the composition root does.
+
 **Non-HTTP driving adapters** follow the same pattern — parse, wire, delegate:
 
 ```typescript
@@ -262,6 +269,8 @@ const handlePledgeMessage = async (message: SQSMessage, env: Env) => {
 The use case doesn't know or care whether it was triggered by an HTTP request, a queue message, a cron job, or a CLI command. Every driving adapter is thin glue.
 
 **Naming:** Use case interfaces and implementations are named after the business capability — `ForPlacingOrders`, `createOrderPlacement`, `pledgeToOccasion`. Never `CreateOrderUseCase` or `PlaceOrderHandler`. Pattern suffixes are technical jargon, not domain language. You can tell a use case implementation from a domain function by its dependencies — use case implementations take driven ports (repositories, gateways) as parameters; domain functions take only domain types.
+
+*Terminology note:* in the source pattern literature, "use case" is a requirements technique — its primary/secondary actors map to driving/driven actors, and ports start out one per actor. This skill uses "use case" for the orchestration object that implements a driving port. Related, not the same thing.
 
 ---
 
@@ -298,6 +307,8 @@ Hex arch's primary benefit is testability. The primary test boundary is the **us
 | **Verification** | E2E (full stack) | User experience works |
 
 **Fakes over mocks:** Fakes implement the real interface and maintain state. Mocks verify call sequences and break on refactoring. See `resources/testing-hex-arch.md` for detailed patterns.
+
+**A port is only real if it is tested.** Every port needs a test interactor — a test driver at each driving port, a fake at each driven port. Without one, the "port" is just a line on a diagram; nothing enforces it as a boundary. The test wall doubles as the leak detector: business logic drifting into an adapter, or technology detail drifting into the domain, breaks a boundary test immediately.
 
 For a complete worked example showing one feature traced through every layer (glossary → types → domain → use case → adapters → tests → file locations), see `resources/worked-example.md`.
 
@@ -372,6 +383,14 @@ const result = await getActiveUsers(userRepo);
 
 Creating a port for every tiny abstraction. Ports should represent meaningful boundaries — one per aggregate (repositories) or per external capability (payment, email, auth).
 
+### Port for a Domain Concept
+
+A driven port represents a conversation with an external system — a database, a payment provider, a notification channel. Wrapping an internal domain abstraction in a port interface adds indirection with no boundary to protect. If nothing outside the hexagon will ever sit behind the interface, it is not a port.
+
+### Nested Hexagons
+
+Hexagons do not nest. The ports-and-adapters boundary belongs at the technology (or team-authority) edge, where system-level tests are worth maintaining. Inner hexagon boundaries duplicate that test wall; the inner tests decay, and the boundary stops being real. Structure the inside with modules, bounded contexts, or plain functions instead.
+
 ### Technology-Shaped Ports
 
 Port methods that expose technology details. Port methods should use domain language.
@@ -414,18 +433,25 @@ const placeOrder = async (...) => ...
 
 ## Checklist
 
-- [ ] Domain logic has zero framework/infrastructure dependencies
+**Required by the pattern:**
+
+- [ ] All external boundaries use ports/public contracts — nothing outside reaches past a port
+- [ ] Domain logic has zero framework/infrastructure dependencies (no source dependencies on any actor or adapter)
+- [ ] Driven actors are configurable at run time — the application never constructs them internally (the pattern leaves the configurator's shape open; parameter injection is this skill's house default)
+- [ ] Ports use business language only; port methods never expose technology types
+- [ ] Swapping any adapter requires zero domain code changes
+- [ ] Every port has a test interactor — a test driver on the driving side, a fake on the driven side
+
+**This skill's additions (house style):**
+
 - [ ] If `folder-structure` has been applied, protected-domain-core lint/import rules are present and passing
-- [ ] All external boundaries use ports/public contracts
 - [ ] Driving adapters (routes) are thin — parse, wire, delegate, respond
 - [ ] Driven adapters (repos) implement ports, contain no business logic
-- [ ] Dependencies injected via parameters, never created internally
 - [ ] Driven port interfaces live in domain, named by business purpose
 - [ ] Public interfaces avoid `I` prefixes, `Interface` suffixes, `Port` suffixes, and `Impl` implementations
 - [ ] Driving port and use case names use business capability language, not `UseCase`/`Handler` pattern names
 - [ ] Schemas defined in domain, not duplicated in adapters
 - [ ] Reads that JOIN across aggregates use query functions (CQRS-lite)
 - [ ] Each layer has behavioral tests at the appropriate level
-- [ ] Swapping any adapter requires zero domain code changes
 - [ ] Cross-cutting concerns (auth, logging, transactions) live in adapters, not domain
 - [ ] Domain returns result types for expected outcomes, never throws for business rules

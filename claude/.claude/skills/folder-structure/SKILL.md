@@ -42,6 +42,7 @@ Read `references/research-notes.md` when documenting rationale, comparing named 
    - Add 3-6 placement rules that explain where new files go.
    - Add 2-4 import/dependency rules that keep the structure honest.
    - Include lint/import-boundary rules when the project uses DDD, hexagonal architecture, or another explicit layered boundary.
+   - For a new DDD/hex context, create the skeleton folders before writing any code — an empty-but-correct structure makes every later file placement obvious.
 
 ## Feature Anatomy
 
@@ -117,6 +118,8 @@ src/
 
 When a project opts into DDD or hexagonal architecture, make `domain/` visible. This is the deliberate exception to "avoid technical folders": `domain/` marks the protected core of the hexagon, not a framework category.
 
+The ports-and-adapters pattern itself mandates no folder layout — only the inside/outside boundary (*Hexagonal Architecture Explained*, Cockburn & Garrido de Paz). This section is a recommended physical realization of that boundary's intent.
+
 Prefer bounded context first, protected core second:
 
 ```text
@@ -145,7 +148,7 @@ src/
         invoice-row.ts
         invoice-mapper.ts
       fakes/
-        fake-invoice-repository.ts
+        fake-invoice-repository.ts  # in-memory driven actor for tests — needs no adapter
     delivery/
       billing-routes.ts           # thin driving adapter when framework allows
 ```
@@ -172,6 +175,10 @@ Placement rules for opted-in DDD/hex code:
 - Put route handlers, controllers, CLI commands, queue consumers, cron triggers, and server actions in `delivery/` or framework-required `app/` folders.
 - Keep adapter DTOs, DB rows, SDK response types, mappers, and query DTOs with the adapter. Map them to domain types at the boundary.
 - Keep shared-kernel types tiny. `Money`, `EmailAddress`, and `Clock` can be shared; `Invoice`, `GiftIdea`, and `User` usually belong to a bounded context.
+
+Ports placement has two sound shapes. The default above colocates each driven port with its aggregate. The alternative from the source pattern gathers port definitions into dedicated folders — `ports/driving/` and `ports/driven/` (or `ports/inbound/` and `ports/outbound/`), optionally one file per port named for its purpose (`for-collecting-payment.ts`) — so adapters can depend on the interfaces without the rest of the context, and the application boundary is visible in the tree. Either way, keep driving and driven port definitions visibly separate; practitioners report this is the single biggest readability win for interface definitions.
+
+`delivery/` is this skill's name for the driving (inbound) adapter side; `adapters/driven/` is the driven (outbound) side. If "driving" and "driven" read too alike as sibling folder names, `inbound/` and `outbound/` are endorsed alternatives.
 
 ## Import Boundary Rules
 
