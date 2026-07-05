@@ -103,6 +103,7 @@ For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.
 For event-sourced systems or bounded contexts (events as the source of truth, the Decider write model, event stores, projections and read models, event versioning, snapshots), load the `event-sourcing` skill.
 For 12-factor service projects, load the `twelve-factor` skill.
+For production observability (wide events, OpenTelemetry, SLOs/alerting, telemetry testing), load the `observability` skill.
 For CLI tool design (stream separation, format flags, exit codes, composability), load the `cli-design` skill.
 For designing or auditing source trees (where files belong, feature folders, import boundaries), load the `folder-structure` skill.
 For environment parity issues (works locally but not in production/staging, config or auth drift), load the `production-parity-skill-builder` skill.

@@ -377,3 +377,51 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 ### Gary Bernhardt — ["Boundaries"](https://www.destroyallsoftware.com/talks/boundaries) (2012)
 - **Functional core, imperative shell** — pure domain logic surrounded by impure adapters → Hex arch skill: the fundamental structural principle
 - **Testing pure core with unit tests, shell with integration tests** → Both testing-by-layer resources
+
+## Observability
+
+### Stripe (Brandur Leach) — ["Fast and flexible observability with canonical log lines"](https://stripe.com/blog/canonical-log-lines) + [brandur.org/canonical-log-lines](https://brandur.org/canonical-log-lines)
+- **The canonical log line** — one information-dense structured event per request, accumulated by middleware, emitted in teardown so it survives failures → Observability skill: "The Wide Event" section + `resources/node-patterns.md` middleware
+- **Field inventory** (request, auth, rate limits, performance, business context) → Observability skill: wide-event field table
+
+### Charity Majors — ["There Is Only One Key Difference Between Observability 1.0 and 2.0"](https://charity.wtf/2024/11/19/there-is-only-one-key-difference-between-observability-1-0-and-2-0/) (2024) + ["Logs vs Structured Events"](https://charity.wtf/2019/02/05/logs-vs-structured-events/) (2019)
+- **The pillars critique** — many sources of truth, requests stored several times, cost multiplied per pillar; wide events as the single source of truth with read-time derivation → Observability skill: "Pillars, Honestly"
+- **One accumulated event per request per service**; capture any high-cardinality identifier → "The Wide Event" section
+- Skeptical counterweight informing the "honest limit": [Laban Eilers, "Are we ready for Observability 2.0?"](https://labaneilers.com/are-we-ready-for-observability-2.0)
+
+### OpenTelemetry — [JS getting started](https://opentelemetry.io/docs/languages/js/getting-started/nodejs/), [semantic conventions](https://opentelemetry.io/docs/specs/semconv/), [context propagation](https://opentelemetry.io/docs/concepts/context-propagation/), [sampling](https://opentelemetry.io/docs/concepts/sampling/), [Collector](https://opentelemetry.io/docs/collector/)
+- **Minimal Node adoption** (NodeSDK + auto-instrumentations, `--import` before app code, ESM caveats) → `resources/node-patterns.md`
+- **Semantic conventions** — never invent an attribute name the registry defines → semconv rule + cheat sheet
+- **W3C `traceparent` propagation** → correlation guidance here and in twelve-factor Factor XI
+- **Head vs tail sampling trade-offs** (tail = stateful Collector tier, complexity, possible lock-in) → "Sampling and Cost Economics"
+- **Collector pipeline** (receivers → processors → exporters; direct export in dev, Collector in production) → SKILL.md + Collector config in `resources/node-patterns.md`
+
+### Google SRE — [SRE book ch. 4 "Service Level Objectives"](https://sre.google/sre-book/service-level-objectives/), [ch. 6 "Monitoring Distributed Systems"](https://sre.google/sre-book/monitoring-distributed-systems/), [Workbook "Alerting on SLOs"](https://sre.google/workbook/alerting-on-slos/)
+- **SLI/SLO/SLA definitions, error budgets as the innovation contract, percentiles over averages, don't overachieve** → Observability skill: "SLIs, SLOs, Error Budgets" + `resources/slo-alerting.md`
+- **Four golden signals** with the dropped nuances (latency of failed requests separately; histograms for tails) → SLI menus
+- **Multiwindow multi-burn-rate alerting** (14.4×/6×/1× table; precision/recall/detection/reset framework) → "Alerting" section + full derivation in `resources/slo-alerting.md`
+
+### Rob Ewaschuk — ["My Philosophy on Alerting"](https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/mobilebasic)
+- **Symptom-based paging** ("Do your users care if your MySQL servers are down? No, they care if their queries are failing"); pages must be urgent, actionable, user-visible, intelligence-requiring; ~90% precision review bar → Observability skill: "Alerting" + runbook template. Endorsed by [Prometheus alerting practices](https://prometheus.io/docs/practices/alerting/)
+
+### Tom Wilkie — ["The RED Method"](https://grafana.com/blog/the-red-method-how-to-instrument-your-services/)
+- **Rate/Errors/Duration** for request-driven services as a user-experience proxy, contrasted with Brendan Gregg's infrastructure-focused USE method → Observability skill: SLI menus
+
+### Grafana Labs — ["How to manage high cardinality metrics in Prometheus and Kubernetes"](https://grafana.com/blog/how-to-manage-high-cardinality-metrics-in-prometheus-and-kubernetes/)
+- **Series-count multiplication and per-series cost** → Observability skill: the cardinality routing rule (bounded dimensions → metrics; unbounded → events/spans)
+
+### Dave Cheney — ["Let's talk about logging"](https://dave.cheney.net/2015/11/05/lets-talk-about-logging) (2015)
+- **"Nobody reads warnings"; a logged-and-handled error is not an error** — adopted as a per-line discipline on top of twelve-factor's four levels, not a level ban → Observability skill: "Structured Logging Craft"
+
+### OneUptime — ["Keep PII Out of Your Telemetry"](https://oneuptime.com/blog/post/2025-11-13-keep-pii-out-of-observability-telemetry/view) + ["Test Your OpenTelemetry Instrumentation with In-Memory Exporters"](https://oneuptime.com/blog/post/2026-02-06-test-opentelemetry-instrumentation-in-memory-exporters/view)
+- **Allowlist-based redaction at source; serializers dump whole objects** → hygiene rules + the substring-sweep test in `resources/testing-telemetry.md`
+- **In-memory exporters as the foundation of testable instrumentation** → `resources/testing-telemetry.md`
+
+### Pete Hodgson — ["Domain-Oriented Observability"](https://martinfowler.com/articles/domain-oriented-observability.html) (martinfowler.com)
+- **Domain Probe, announcement/event alternative, testing through the probe, AOP warning** → Hex arch skill: four-tier model in `resources/cross-cutting-concerns.md` + fake-probe example in `resources/testing-hex-arch.md`; Observability skill carries only the placement summary
+- Corroborating: [Gabriel Anhaia, "A Domain Logger Port"](https://dev.to/gabrielanhaia/a-domain-logger-port-decoupling-from-psr-3-without-losing-context-fmm) (severity-free port, adapter owns levels); Freeman & Pryce, *GOOS* ch. 20 "Logging Is a Feature" (support vs diagnostic logging split); [Mark Seemann, "Keeping cross-cutting concerns out of application code"](https://blog.ploeh.dk/2024/09/02/keeping-cross-cutting-concerns-out-of-application-code/) (decorators at the port boundary)
+
+### web.dev — [Core Web Vitals](https://web.dev/articles/vitals)
+- **LCP/INP/CLS at p75 of field data; lab measurement "is not a substitute for field measurement"** → Observability skill: frontend note (deferred from v1)
+
+---

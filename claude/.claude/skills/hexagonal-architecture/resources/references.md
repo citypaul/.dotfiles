@@ -50,6 +50,25 @@ Load this when checking the rationale behind hexagonal architecture guidance, es
   - Do not mark interfaces specially with `I...` or `...Interface` unless the environment requires it.
   - Name an interface for why it exists.
 
+## Observability and Cross-Cutting Concerns
+
+- Pete Hodgson, "Domain-Oriented Observability" (martinfowler.com): https://martinfowler.com/articles/domain-oriented-observability.html
+  - The Domain Probe: a collaborator with "a high-level instrumentation API that is oriented around domain semantics," so domain code announces facts in domain vocabulary while the probe's implementation owns log/metric/analytics plumbing → Tier 2 in `cross-cutting-concerns.md`.
+  - The announcement/event-based alternative (domain events consumed by observability monitors) and its trade-offs (max decoupling, more infrastructure, less explicit) → Tier 2's events-subscriber preference.
+  - Testing through the probe (spy/fake the probe, test the adapter's translation separately) → `testing-hex-arch.md` fake-probe section.
+  - Warning against AOP-style instrumentation ("impedance mismatch" with domain-level observability boundaries) → why decorators are bounded to Tier 3.
+- Gabriel Anhaia, "A Domain Logger Port" (dev.to): https://dev.to/gabrielanhaia/a-domain-logger-port-decoupling-from-psr-3-without-losing-context-fmm
+  - Severity-free, domain-owned port ("no `debug`, no `notice`... those are operator-facing severities"); severity mapping is the adapter's decision → Tier 2's severity-free rule and generic-Logger-port ban.
+  - RecordingLogger fake asserting emitted domain events like saved entities → fake-probe example.
+- Freeman & Pryce, *Growing Object-Oriented Software, Guided by Tests*, ch. 20 "Listening to the Tests," §"Logging Is a Feature": https://www.informit.com/store/growing-object-oriented-software-guided-by-tests-9780321503626
+  - Support logging (operators/support rely on it) is a feature — test-driven through a notification-style role interface; diagnostic logging is developer scaffolding, not test-driven, and shouldn't accumulate in domain code → the tier-organizing test and Tier 4's exemption.
+- Mark Seemann, "Keeping cross-cutting concerns out of application code" (2024): https://blog.ploeh.dk/2024/09/02/keeping-cross-cutting-concerns-out-of-application-code/
+  - Decorate ports at the composition root instead of injecting infrastructure concerns; injected concerns make "your real application code eventually disappear in 'infrastructure code'" → Tier 3's decorator option; its port-visibility limit is the Tier 2 criterion.
+- Brandur Leach, "Canonical log lines": https://brandur.org/canonical-log-lines
+  - One wide event per request, assembled by middleware at the edge → Tier 3's wide-event placement (content guidance lives in the `observability` skill).
+- Cockburn & Garrido de Paz, "Hexagonal Architecture Explained" (see the Canonical Architecture entry above) + Garrido de Paz's recipient/repository driven-actor taxonomy: https://jmgarridopaz.github.io/content/hexagonalarchitecture.html
+  - The book is silent on logging; but a telemetry backend is a textbook **recipient** driven actor — external, tell-and-forget, like the pager in the "for notifying" examples — so an intention-named probe port is consistent with the pattern, while a technology-shaped `log(level, msg)` port is not.
+
 ## Testing and Use Cases
 
 - Valentina Cupac/Jemuovic, "TDD and Hexagonal Architecture - Unit Testing Use Cases": https://optivem.com/tdd-and-hexagonal-architecture-unit-testing-use-cases/

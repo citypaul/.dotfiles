@@ -111,6 +111,8 @@ The standard format for machine-readable API errors for public APIs. Use `applic
 
 Errors should be **actionable**: the consumer should know what went wrong, why, and what to do about it. Error responses are not a debugging tool — never expose stack traces, internal paths, or implementation details.
 
+Include a correlation identifier (the trace ID, or an opaque reference to it) as an extension member or via `instance`, so a user-reported error joins to its trace and canonical log event — see the `observability` skill. The trace ID reveals nothing internal; it is a lookup key, not a detail leak.
+
 See `resources/problem-details.md` for full member semantics, single-error and validation-error JSON examples, extension member rules, when NOT to use Problem Details, and RFC 9457 §5 security guidance.
 
 ### HTTP Status Code Mapping
