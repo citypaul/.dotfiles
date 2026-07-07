@@ -17,6 +17,28 @@ AI-crawler requests fetch it; Google confirmed it won't support it
 assistants DO fetch it. Ship it for developer-tool docs — cheap, real
 consumers; skip it as an SEO/GEO tactic (the hype the data refutes).
 
+Refinements from field practice (verified 2026-07):
+
+- **Generate, never hand-author.** Staleness is the failure mode; every
+  major docs platform emits these at build time, and SSG plugins cover
+  the rest (Astro/Starlight: starlight-llms-txt emits llms.txt,
+  llms-full.txt, and llms-small.txt for tight context windows). A
+  build-time artifact has zero marginal maintenance cost.
+- **llms-full.txt is what agents actually consume** — the full-content
+  export is fetched at over twice the rate of the llms.txt index
+  (Mintlify monitoring, 2026). Publish both; the index alone serves
+  little.
+- **The Astro counter-example, read carefully.** Astro removed its
+  llms.txt (May 2026: low measured traffic, ~44s CI cost, MCP server
+  preferred). The critique that followed (Carey) is the durable
+  lesson: raw traffic is the wrong metric when nothing in-page points
+  agents at the file — low traffic is then the *expected* outcome — and
+  MCP serves configured power users while llms.txt serves plain-HTTP
+  discovery. They are complements, not substitutes; keep the cheap
+  primitive, link to it from the page (a `<link>` or visible pointer),
+  and measure agent sessions rather than page views before removing
+  anything.
+
 ## Serve clean markdown to agents
 
 Mintlify's traffic data: approaching half of docs traffic is agents;

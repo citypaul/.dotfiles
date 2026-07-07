@@ -28,6 +28,9 @@ sources.
 - Casey Burridge, state of llms.txt adoption — https://caseyrb.com/blog/state-of-llms-txt-adoption/
 - OtterlyAI, the llms.txt experiment — https://otterly.ai/blog/the-llms-txt-experiment/
 - Mintlify, "AI traffic" — https://www.mintlify.com/blog/ai-traffic
+- Mintlify, best llms.txt platforms and the llms-full.txt fetch-rate finding — https://www.mintlify.com/library/best-llms-txt-platforms
+- delucis, starlight-llms-txt (build-time llms.txt/full/small for Astro Starlight) — https://github.com/delucis/starlight-llms-txt
+- Dachary Carey, "Astro removed its llms.txt" (why traffic is the wrong removal metric; MCP and llms.txt as complements) — https://dacharycarey.com/2026/05/04/astro-removed-llms-txt/
 - Kapa.ai, optimizing technical documentation for LLMs — https://www.kapa.ai/blog/optimizing-technical-documentation-for-llms
 - Netlify, Agent Experience — https://www.netlify.com/agent-experience/ and https://agentexperience.ax/
 - John Carroll, minimalism — https://www.instructionaldesign.org/theories/minimalism/ and "Ten Misconceptions about Minimalism" (1996) — https://ris.utwente.nl/ws/files/249663536/Caroll1996ten.pdf
