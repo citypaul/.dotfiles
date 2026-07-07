@@ -474,3 +474,15 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 - Gojko Adzic, *Specification by Example* (Manning, 2011) — key examples; the counter-example challenge.
 - Matt Wynne, "Introducing Example Mapping" (cucumber.io, 2015) — the card grammar and map-shape diagnostics.
 - George Dinwiddie — the three amigos: business, development, testing in one conversation.
+
+## Technical Writing
+
+- Daniele Procida, Diátaxis (diataxis.fr) — the four-mode typology, compass, tutorial/how-to distinction, bottom-up adoption; Hillel Wayne's four-document-model critique as the honest limit.
+- Google developer documentation style guide + Microsoft Writing Style Guide — voice, front-loading, timeless docs; the Red Hat deltas-only pattern for adopting a guide.
+- noffle's Art of README (cognitive funnel), standard-readme, Preston-Werner's README-driven development.
+- Write the Docs docs-as-code; Vale prose lint; rustdoc doc-tests (executable examples); lychee; *Docs for Developers* (friction logs, errors-as-documentation); Mark Baker's *Every Page is Page One*.
+- Stripe's Markdoc post + DX teardowns (reference-generated-from-spec, runnable examples, errors first-class).
+- llms.txt (Howard) with measured adoption reality (Burridge, OtterlyAI); Kapa.ai RAG-chunkability; Netlify's Agent Experience.
+- John Carroll's minimalism (The Nurnberg Funnel; "Ten Misconceptions") — task-first, error recovery inline, every word earns its place.
+- Adam Bradley (mintuz), "Developer Writing Playbook" — the seed this skill adapted.
+- Full URLs: the skill's resources/references.md.
