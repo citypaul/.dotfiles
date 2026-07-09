@@ -278,7 +278,7 @@ save: async (occasion) => {
 },
 ```
 
-If two users load version 3 and both try to save, the first succeeds (version becomes 4) and the second fails (version 3 no longer matches). Per `error-modeling.md`, the use case does not catch this — it propagates like any infrastructure exception, and the driving adapter translates it (e.g. HTTP 409 with a "please retry" message). If retrying on conflict is itself a domain flow, model it explicitly in the use case (reload, re-run the domain logic, retry the save a bounded number of times) rather than catching-and-hoping — the event-sourcing skill's command handler shows this shape.
+If two users load version 3 and both try to save, the first succeeds (version becomes 4) and the second fails (version 3 no longer matches). Per `error-modeling.md`, the use case does not catch this — it propagates like any infrastructure exception, and the delivery/integration boundary translates it (a driving adapter in hexagonal architecture; for example, HTTP 409 with a "please retry" message). If retrying on conflict is itself a domain flow, model it explicitly in the use case (reload, re-run the domain logic, retry the save a bounded number of times) rather than catching-and-hoping — the event-sourcing skill's command handler shows this shape.
 
 **When to add optimistic locking:**
 - Multiple users can edit the same aggregate

@@ -48,7 +48,7 @@ const toPaymentResult = (charge: StripeCharge): PaymentResult => {
 };
 ```
 
-The ACL lives in the adapter layer. Domain code never sees `StripeCharge` — only `PaymentResult`.
+The ACL lives at the integration boundary — a driven adapter when hexagonal architecture is used. Domain code never sees `StripeCharge` — only `PaymentResult`.
 
 ## Shared Kernel
 
@@ -68,32 +68,52 @@ A minimal set of types shared across contexts. Keep it as small as possible — 
 
 ## Structuring Context Boundaries in Code
 
-The physical structure depends on your project and team setup. The principle is the same: each context owns its code and exposes a clear boundary.
+The physical structure depends on the selected application architecture. Use the `structure-codebase` skill for the target tree; bounded contexts define language/model authority and must not silently select hexagonal architecture.
 
-**Single app, directory-based separation:**
+**DDD without ports and adapters:**
 
 ```
 src/
   contexts/
     gifting/
-      domain/        # Aggregates, value objects, ports, use cases
-      db/            # Driven adapters (repositories, queries)
-      app/           # Driving adapters (route handlers)
+      glossary.md
+      occasions/
+      contributions/
+      application/
+      public.ts
     budgeting/
-      domain/
-      db/
-      app/
-  shared/            # Shared kernel (Money, Email)
+      glossary.md
+      budgets/
+      application/
+      public.ts
+  shared-kernel/     # Minimal stable value objects only
 ```
 
-**Monorepo with workspace packages** (enforced boundaries):
+This structure protects context public APIs without claiming an inside/outside technology test wall.
+
+**DDD plus explicitly adopted hexagonal architecture:**
 
 ```
 packages/
-  gifting/           # package.json with explicit exports
-  budgeting/         # package.json with explicit exports
-  shared-kernel/     # Minimal shared types
+  gifting/                           # context/capability grouping directory
+    hexagon/                         # visible provider-free inside
+      domain/                        # workspace package when warranted
+      application/                   # workspace package when warranted
+    adapters/
+      driving/
+      driven/
+    testing/
+  budgeting/
+    hexagon/
+      budget-management/
+    adapters/
+      driving/
+      driven/
+    testing/
+  shared-kernel/                     # minimal workspace package
 ```
+
+The grouping directories do not make a context real. Glossary scope, model authority, public contracts, and enforced imports do. The `hexagon/` directories add a separate claim: their packages are provider-free and independently testable from actors and adapters.
 
 **Separate services** (strongest isolation):
 

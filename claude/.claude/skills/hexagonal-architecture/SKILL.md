@@ -9,7 +9,7 @@ This skill applies only to projects that have opted in to hexagonal architecture
 
 For domain modeling (entities, value objects, aggregates, ubiquitous language), load the `domain-driven-design` skill. Hex arch and DDD are complementary but independent — hex arch provides structural isolation (how the outside connects), DDD provides the domain model (what lives in the center). A project may use one without the other.
 
-If the `folder-structure` skill has been explicitly applied to this project, follow its protected-domain-core layout and lint/import-boundary rules for DDD/hex contexts. Do not introduce those physical folder or lint rules into projects that have not applied `folder-structure`; in that case, preserve the repo's existing structure while enforcing the dependency direction described here.
+Use the `structure-codebase` skill when designing or changing the physical source tree. For an opted-in hexagonal backend it makes the entire provider-free inside visible under `hexagon/`, keeps concrete driving/driven technology and reusable test interactors outside, and defines proportional package/import enforcement. If physical restructuring is not requested, preserve the repo's existing layout while enforcing the dependency direction described here.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
@@ -93,13 +93,13 @@ interface ForPlacingOrders {
   readonly placeOrder: (command: PlaceOrderCommand) => Promise<PlaceOrderResult>;
 }
 
-// Driven port — defined in domain, implemented by adapters
+// Driven port — owned inside beside application policy, implemented by adapters
 interface UserRepository {
   readonly findById: (id: UserId) => Promise<User | undefined>;
   readonly save: (user: User) => Promise<void>;
 }
 
-// Driven port — defined in domain, implemented by adapters
+// Driven port — owned inside beside application policy, implemented by adapters
 interface PaymentGateway {
   readonly charge: (amount: Money, paymentInfo: PaymentInfo) => Promise<ChargeResult>;
 }
@@ -176,11 +176,11 @@ Not all reads need to go through repositories. The repository pattern enforces a
 | Read (single aggregate) | Repository | `userRepo.findById(id)` |
 | Read (cross-aggregate, display) | Query function (JOINs freely) | `getEventDetail(db, eventId)` |
 
-Query functions are driven adapters too — they live in the adapter layer (e.g., `db/queries/`) and return read-optimized DTOs. They bypass the repository pattern intentionally.
+Query functions are driven adapters too — in the visible layout they live under the relevant provider edge (for example, `adapters/driven/postgres/queries/`) and return read-optimized DTOs. They bypass the repository pattern intentionally.
 
 ```typescript
 // Query function — JOINs across aggregates for display
-// Lives in db/queries/, NOT in domain/
+// Lives at adapters/driven/postgres/queries/, outside the hexagon
 const getParticipantEventView = async (db: Database, eventId: string) => {
   return db.select({ ... })
     .from(events)
@@ -191,7 +191,7 @@ const getParticipantEventView = async (db: Database, eventId: string) => {
 };
 ```
 
-Domain-layer pure functions can transform query results into display types — these encode business rules about what data means (e.g., "is this item claimed by the current user?"). The query fetches; the domain function interprets.
+Provider-free inside functions may interpret query results when the interpretation expresses genuine business meaning (for example, "is this item claimed by the current user?"). Display-only formatting stays at the driving edge. The query fetches; business policy interprets.
 
 For detailed CQRS-lite guidance, see `resources/cqrs-lite.md`. When the read/write split goes all the way — events as the source of truth, rebuilt into read models by replay — that is event sourcing; load the `event-sourcing` skill.
 
@@ -230,7 +230,8 @@ const createOrderPlacement = (
 **Composition root:** Wiring happens at the application entry point — where adapters are created from environment/config and injected into use cases. This is the only place that knows about concrete implementations.
 
 ```typescript
-// Route handler = composition root + driving adapter
+// Serverless executable entrypoint = inline composition + driving adapter
+// Valid only while this object graph remains trivial and unshared.
 export async function POST(request: Request) {
   const { env } = getCloudflareContext();
   const db = createDb(env.DB);
@@ -247,14 +248,14 @@ export async function POST(request: Request) {
 }
 ```
 
-The route handler is thin glue: parse input → wire adapters → call use case → return response. No business logic.
+This handler may combine two roles only because the framework makes it the executable deployment entrypoint and the graph is trivial. Keep the inline wiring visually distinct from request translation. In a shared or nontrivial host, construct the graph once in `main.ts` or `composition/` and give the route a prepared `ForPlacingOrders`; an ordinary route module never selects implementations. No business logic belongs in either role.
 
 **The configurator:** whatever code knows all the players and introduces them — the composition root here — is the pattern's fifth element. Constructor injection (this skill's default) is one of three sanctioned shapes: a setter or `ForConfiguring...` function allows driven adapters to be swapped while the system runs (hazard: an app constructed but never configured), and dependency lookup hands the application a broker it asks at call time. In tests, the test case itself plays configurator and driving actor at once; in production, the composition root does.
 
-**Non-HTTP driving adapters** follow the same pattern — parse, wire, delegate:
+**Non-HTTP executable entrypoints** follow the same boundary. A queue callback that is itself the deployment entrypoint may compose a trivial graph inline; an ordinary consumer receives a prepared driving port and only parses, delegates, and translates:
 
 ```typescript
-// Queue consumer = driving adapter (same structure as route handler)
+// Queue deployment entrypoint = inline composition + driving adapter
 const handlePledgeMessage = async (message: SQSMessage, env: Env) => {
   const db = createDb(env.DB);
   const occasionRepo = createDrizzleOccasionRepository(db);
@@ -266,7 +267,7 @@ const handlePledgeMessage = async (message: SQSMessage, env: Env) => {
 };
 ```
 
-The use case doesn't know or care whether it was triggered by an HTTP request, a queue message, a cron job, or a CLI command. Every driving adapter is thin glue.
+The use case doesn't know or care whether it was triggered by an HTTP request, a queue message, a cron job, or a CLI command. Every driving adapter remains thin translation glue; only an executable-entrypoint exception may also select a trivial concrete graph.
 
 **Naming:** Use case interfaces and implementations are named after the business capability — `ForPlacingOrders`, `createOrderPlacement`, `pledgeToOccasion`. Never `CreateOrderUseCase` or `PlaceOrderHandler`. Pattern suffixes are technical jargon, not domain language. You can tell a use case implementation from a domain function by its dependencies — use case implementations take driven ports (repositories, gateways) as parameters; domain functions take only domain types.
 
@@ -276,22 +277,27 @@ The use case doesn't know or care whether it was triggered by an HTTP request, a
 
 ## File Organization
 
-The locations below describe the logical layers — physical layout is governed by the `folder-structure` note at the top of this skill. Use cases live in `domain/` by default; when the `folder-structure` skill's layout is applied, they live in a sibling `use-cases/` folder instead — required there, because its lint rules forbid `domain/` from importing `use-cases/`.
+These are logical roles, not mandatory folder names. The `structure-codebase` skill owns physical layout and recommends a visible `hexagon/` beside outside adapters when restructuring is in scope.
 
-| Layer | Location | Contains | Tests |
-|-------|----------|----------|-------|
-| Domain | `src/domain/` | Business logic (pure functions), types, port interfaces, use cases (orchestration) | Unit + use case tests (fakes) |
-| Adapters (driven) | `src/db/`, `src/infrastructure/` | Repository impls, API clients, query functions | Integration tests (real DB/MSW) |
-| Adapters (driving) | `src/app/` | Route handlers, event listeners | E2E tests (Playwright) |
-| Wiring | `src/lib/`, `src/context.ts` | Adapter factories, config, composition | Covered by E2E |
+| Role | Zone | Contains | Tests |
+|------|------|----------|-------|
+| Domain policy | Inside | Pure business rules, types, state transitions | Focused behavior/property tests |
+| Application policy | Inside | Provider-free orchestration, driving-port implementations, driven-port use | Use-case tests with test interactors |
+| Port contracts | Inside | Purposeful provided/required application conversations | Exercised from both sides of each port |
+| Driven adapters | Outside | Repository implementations, API clients, query functions | Integration/contract tests |
+| Driving adapters | Outside | Route handlers, event listeners, CLI/queue entrypoints | Transport/E2E tests |
+| Test interactors | Outside | Test drivers, fakes, reusable behavioral contract suites | Test support only |
+| Composition root | Executable host | Concrete construction, configuration, resource lifecycle | Startup/smoke/E2E coverage |
 
 **Key rules:**
-- Domain has zero external dependencies (no framework, database, or HTTP imports)
-- Driven port interfaces live in domain alongside the entity or capability they serve
-- Schemas co-locate with their entity in domain
-- Adapters import from domain, never the reverse
-- Route handlers are thin — parse, wire, delegate, respond
-- When `folder-structure` has been applied, enforce these rules with its recommended import-boundary lint configuration.
+- Domain policy has zero framework/infrastructure dependencies and remains genuinely pure.
+- Application policy may call injected ports but performs no concrete I/O and remains runnable in-process.
+- Driving and driven port contracts live inside, preferably beside the policy that owns the conversation.
+- Trust-boundary/wire schemas live with the adapter that parses them; domain-owned validation may live inside when it expresses business invariants without leaking a provider representation.
+- Adapters import inside public contracts, never the reverse.
+- Driving adapters are thin — parse, authenticate, translate, delegate, respond.
+- Concrete wiring belongs near the executable entrypoint. A tiny entrypoint may compose inline; a nontrivial host uses an explicit composition root.
+- When `structure-codebase` is applied, enforce these roles with its package/import-boundary guidance.
 
 ---
 
@@ -445,13 +451,13 @@ const placeOrder = async (...) => ...
 
 **This skill's additions (house style):**
 
-- [ ] If `folder-structure` has been applied, protected-domain-core lint/import rules are present and passing
-- [ ] Driving adapters (routes) are thin — parse, wire, delegate, respond
+- [ ] If `structure-codebase` has been applied, the visible inside/outside package or import rules are present and passing
+- [ ] Driving adapters are thin — parse, authenticate, translate, delegate, respond; only a trivial executable-entrypoint exception also composes
 - [ ] Driven adapters (repos) implement ports, contain no business logic
-- [ ] Driven port interfaces live in domain, named by business purpose
+- [ ] Driven port interfaces live inside beside their owning policy, named by business purpose
 - [ ] Public interfaces avoid `I` prefixes, `Interface` suffixes, `Port` suffixes, and `Impl` implementations
 - [ ] Driving port and use case names use business capability language, not `UseCase`/`Handler` pattern names
-- [ ] Schemas defined in domain, not duplicated in adapters
+- [ ] Wire schemas stay at trust boundaries; business-invariant validation stays inside without provider leakage
 - [ ] Reads that JOIN across aggregates use query functions (CQRS-lite)
 - [ ] Each layer has behavioral tests at the appropriate level
 - [ ] Cross-cutting concerns (auth, technical telemetry, transactions) live in adapters; domain-significant observations go through an explicit driven port or domain events, never a raw logger import

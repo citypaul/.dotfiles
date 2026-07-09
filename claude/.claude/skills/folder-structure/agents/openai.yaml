@@ -1,4 +1,6 @@
 interface:
-  display_name: "Folder Structure"
-  short_description: "Design screaming feature-based folders"
-  default_prompt: "Use $folder-structure to propose a screaming, feature-based project structure for this codebase."
+  display_name: "Folder Structure — Deprecated"
+  short_description: "Legacy alias for Structure Codebase"
+  default_prompt: "Use $folder-structure to redirect this legacy request to the canonical $structure-codebase guidance."
+policy:
+  allow_implicit_invocation: false

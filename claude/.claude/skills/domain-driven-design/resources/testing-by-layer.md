@@ -1,12 +1,21 @@
 # Testing Strategy for DDD
 
-> For fakes implementation patterns, `createTestDb` helper, and the Swappability Test, see the hexagonal-architecture skill's `resources/testing-hex-arch.md`. This resource focuses on DDD-specific testing concerns.
+DDD does not require ports and adapters, a root `tests/` folder, a use case for every model, or one universal testing pyramid. Keep tests organized by domain behavior under the physical shape selected for the project. If the project also adopts hexagonal architecture, see that skill's `resources/testing-hex-arch.md` for test interactors, adapter contracts, and swappability.
 
 This testing approach follows Valentina Jemuović's Use Case Driven Design (UCDD) — see `../../REFERENCES.md` for sources.
 
-## Primary Test Boundary: The Use Case
+## Choose the Primary Behavioral Boundary
 
-The primary test boundary is the **use case** (application service / driving port). Test by calling the use case with driven ports replaced by in-memory fakes. This exercises domain entities, domain services, value objects, and orchestration together — proving the feature works as a whole.
+Use the broadest stable public behavior the selected architecture actually exposes:
+
+| Project shape | Primary boundary |
+|---------------|------------------|
+| Domain-only model or library | Aggregate operation, domain service, or Decider |
+| Application with use cases | Use case/application service with collaboration substitutes |
+| DDD plus hexagonal architecture | Driving port with outside test interactors replacing driven actors |
+| Event-sourced domain | Decider and projection public APIs using given/when/then behavior |
+
+Do not manufacture a use case or port solely to satisfy a test template. When a real use case coordinates repositories or integrations, test it with in-memory fakes or focused stubs so domain entities, services, value objects, and orchestration run together.
 
 ```typescript
 describe('pledge contribution', () => {
@@ -28,7 +37,7 @@ describe('pledge contribution', () => {
 });
 ```
 
-This single test exercises:
+For an application that owns these repository contracts, this single test exercises:
 - The use case orchestration (loading, calling domain service, conditional save)
 - The domain service business rule (balance check)
 - The entity invariant (budget not exceeded)
@@ -36,9 +45,9 @@ This single test exercises:
 
 Testing each of these in isolation would require 4 separate tests that individually pass but don't prove the feature works together.
 
-## Fakes, Not Mocks
+## Collaboration Substitutes: Prefer Fakes to Interaction Mocks
 
-Replace driven ports with **in-memory fakes** that maintain state — not mocks that verify call sequences.
+When application policy has repository or integration contracts, prefer **in-memory fakes** that maintain state over mocks that verify call sequences. In hexagonal architecture these contracts are driven ports and reusable fakes are outside test interactors; another architecture may give them different roles and locations.
 
 | Double | Purpose | Use for |
 |--------|---------|---------|
@@ -65,7 +74,7 @@ vi.mock('../repositories/user-repository');
 
 **Note on mutability in fakes:** Fakes use mutable internal state (`Map.set`, `Array.push`) to simulate a data store. This is a deliberate testing-only exception to the immutability rule — fakes are test infrastructure, not domain code.
 
-## Domain Unit Tests: A Complement, Not the Primary Strategy
+## Domain Tests: Primary or Complementary
 
 Pure domain functions (business rules, calculations, invariants) CAN be tested directly — they are the public API of the domain. This is legitimate behavioral testing when the test describes a business rule.
 
@@ -87,14 +96,14 @@ it('committed total includes only non-idea items', () => {
 });
 ```
 
-These are fast, focused, and directly test business rules. They complement use case tests — they don't replace them.
+These are fast, focused, and directly test business rules. They complement use-case tests when application orchestration exists; for a domain-only model they may be the primary suite.
 
 **When to test domain functions directly:**
 - Complex business rules with many edge cases (boundary conditions, state transitions)
 - Pure calculations that benefit from exhaustive input testing
 - Invariant enforcement where the rule itself is the primary concern
 
-**When to test through the use case instead:**
+**When to test through a real use case instead:**
 - Simple logic that's already exercised by the use case test
 - Logic where the correctness depends on the orchestration context (order of operations matters)
 - Anything where testing directly would mean testing implementation rather than behavior
@@ -123,9 +132,9 @@ it('pledged amount never exceeds contributor balance', () => {
 
 Use property-based tests for domain invariants that must hold for all inputs. Use example-based tests for specific business scenarios.
 
-## Adapter Tests: Narrow Integration Tests
+## Integration Tests for Concrete Boundaries
 
-Driven adapters (repositories, API clients) need their own integration tests to verify they correctly translate between domain types and infrastructure. These are secondary to use case tests.
+Concrete repositories and API integrations need narrow integration tests to verify that they translate between domain types and infrastructure correctly. They are driven adapters only when hexagonal architecture is selected.
 
 ```typescript
 // Repository against real database — fresh DB per test
@@ -140,17 +149,17 @@ describe('DrizzleOrderRepository', () => {
 });
 ```
 
-## End-to-End Tests: Proving Delivery
+## Delivery Tests When Risk Justifies Them
 
-E2E tests (Playwright) prove the full stack works — from UI interaction through routing, use case, domain, adapter, and back. They are the final verification that the feature works as the user experiences it.
+Use an HTTP contract test, message-consumer test, CLI test, or browser E2E test as appropriate to prove the delivered behavior. Playwright is relevant only when a browser journey is the real boundary.
 
-These are not a substitute for use case tests. Use case tests are fast and deterministic (in-memory fakes). E2E tests are slow and touch real infrastructure. Both are needed.
+Delivery tests do not replace fast domain/application tests, but neither are they mandatory for every DDD package. Add them where integration risk or user-visible workflow warrants the cost.
 
 ## The Testing Strategy
 
 | Priority | Boundary | What it proves | Speed |
 |----------|----------|----------------|-------|
-| **Primary** | Use case (driving port + faked driven ports) | Feature works as a whole | Fast (in-memory) |
-| **Complement** | Domain pure functions directly | Complex business rules in isolation | Very fast |
-| **Secondary** | Driven adapters (real infrastructure) | Adapter translates correctly | Slower |
-| **Verification** | E2E (full stack) | User experience works | Slowest |
+| **Primary** | Selected public domain or application behavior | Business capability works | Very fast to fast |
+| **Complement** | Focused pure domain functions | Complex rules and edge cases | Very fast |
+| **Integration** | Concrete repository/API boundary | Infrastructure translation works | Slower |
+| **Verification** | Appropriate delivery boundary | User/system workflow works | Slowest |

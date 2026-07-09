@@ -160,7 +160,7 @@ const handlePlaceOrder = async (
   return { success: true, order: newState };
 };
 
-// EventOutbox port — driven adapter
+// Policy-side outbox contract — a driven port when hexagonal architecture is used
 interface EventOutbox {
   readonly save: (events: readonly OrderEvent[]) => Promise<void>;
 }

@@ -9,7 +9,7 @@ This skill applies only to projects that have opted in to DDD. Do not apply thes
 
 For hexagonal architecture (ports and adapters), load the `hexagonal-architecture` skill. DDD and hexagonal architecture are complementary but independent — a project may use one without the other.
 
-If the `folder-structure` skill has been explicitly applied to this project, follow its protected-domain-core layout and lint/import-boundary rules for DDD/hex contexts. Do not introduce those physical folder or lint rules into projects that have not applied `folder-structure`; in that case, preserve the repo's existing structure while keeping domain logic isolated.
+Use the `structure-codebase` skill when designing or changing physical placement. It keeps bounded context, feature/use-case cohesion, package enforcement, and any opted-in hexagonal inside/outside boundary as separate structural axes. If physical restructuring is not requested, preserve the repo's existing layout while keeping domain logic isolated.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
@@ -57,38 +57,38 @@ DDD adds value for **complex domains** with rich business rules. Not every proje
 
 This is the most common decision in DDD. When unsure, use this framework:
 
-The `domain/` locations below are logical placement guidance — see the `folder-structure` note at the top of this skill for how physical layout is decided.
+The roles below are logical placement guidance. Use `structure-codebase` to choose their physical folders and packages.
 
 | Question | If yes → | If no ↓ |
 |----------|----------|---------|
-| Does it enforce a business rule or compute a business value? | `domain/` (entity function, value object, or domain service) | ↓ |
-| Does it orchestrate multiple domain operations without owning logic? | Use case / application service | ↓ |
-| Does it format, transform, or prepare data for display? | `lib/` or inline in the view | ↓ |
-| Does it talk to an external system (DB, API, file system)? | Adapter (implements a port defined in domain) | ↓ |
-| Is it framework-specific glue (route handler, middleware)? | Delivery layer (`app/`) | — |
+| Does it enforce a business rule or compute a business value? | Domain policy (entity function, value object, or domain service) | ↓ |
+| Does it orchestrate domain operations without owning the rules? | Application policy / use case | ↓ |
+| Does it format, transform, or prepare data for display? | Presentation code; in hexagonal architecture, often at the driving edge | ↓ |
+| Does it talk to an external system (DB, API, file system)? | Infrastructure/integration code; in hexagonal architecture, a driven adapter implements an inside-owned port | ↓ |
+| Is it framework-specific glue (route handler, middleware)? | Framework entrypoint; in hexagonal architecture, a driving adapter | — |
 
-**The purity test is necessary but not sufficient.** A pure function that formats a date for display does not belong in `domain/` just because it's pure. The question is always: "Is this a business rule?"
+**The purity test is necessary but not sufficient.** A pure function that formats a date for display does not belong in domain policy just because it's pure. The question is always: "Is this a business rule?"
 
 ```typescript
 // ❌ Pure but NOT domain — formats for human display
 export const formatEventDate = (date: string | null) =>
   date ? format(parseISO(date), "MMMM d, yyyy") : undefined;
-// → Belongs in lib/format.ts
+// → Belongs in presentation code; a hexagonal app may place it at the driving edge
 
 // ✅ Pure AND domain — business rule that affects behavior
 export const isPastEvent = (eventDate: string | null, now: Date) =>
   eventDate ? parseISO(eventDate) < now : false;
-// → Belongs in domain/event/
+// → Belongs in domain policy for events
 
 // ✅ Pure AND domain — business calculation
 export const calculateCommittedTotal = (items: readonly GiftItem[]) =>
   items.filter(i => i.status !== "idea").reduce((sum, i) => sum + i.pricePence, 0);
-// → Belongs in domain/budget/
+// → Belongs in domain policy for budgets
 ```
 
-**Why placement matters:** `domain/` files typically have strict coverage requirements and zero infrastructure imports. Putting code in the wrong layer creates unnecessary testing obligations and architectural violations.
+**Why placement matters:** Domain-policy code typically has strict coverage requirements and zero infrastructure imports. Putting code in the wrong role creates unnecessary testing obligations and architectural violations.
 
-When `folder-structure` has been applied, domain isolation should also be enforced mechanically with its import-boundary lint rules.
+When `structure-codebase` has been applied, enforce domain and any visible hexagonal boundary mechanically with its package/import rules.
 
 ---
 
@@ -172,8 +172,8 @@ const PledgeInputSchema = z.object({
   amount: z.object({ amount: z.number().positive(), currency: CurrencySchema }),
 });
 
-// Reconstitution from persistence — same pattern, used in driven adapters
-// (the adapter loads the aggregate's gift ideas alongside the row)
+// Reconstitution from persistence — same pattern, used at the integration boundary
+// (a driven adapter in hexagonal architecture loads the gift ideas alongside the row)
 const toOccasion = (row: OccasionRow, giftIdeas: ReadonlyArray<GiftIdea>): Occasion => ({
   id: createOccasionId(row.id),
   name: row.name,
@@ -331,11 +331,11 @@ const pledgeContribution = (
 | | Domain Service | Use Case |
 |--|----------------|----------|
 | Contains business logic? | Yes | No — orchestration only |
-| Lives in | `domain/` | `domain/` — identifiable by taking ports as params |
-| Depends on | Domain types only | Repositories, ports, domain services |
+| Logical role | Domain policy | Application policy — coordinates domain operations and collaborations |
+| Depends on | Domain types only | Domain services and repository/integration contracts; ports when the architecture defines them |
 | Example | `pledgeContribution(occasion, contributor, amount)` | `handlePledge(repo, dto)` — loads, calls domain service, saves |
 
-Use cases live in `domain/` by default; when the `folder-structure` skill's layout is applied, they live in a sibling `use-cases/` folder instead — required there, because its lint rules forbid `domain/` from importing `use-cases/`.
+Physical placement depends on the selected architecture. In a visible hexagonal backend both roles are inside, commonly in separate domain/application packages when that dependency boundary earns its cost, or in cohesive feature/use-case modules inside one package. DDD without hexagonal architecture may use another context-first arrangement. Follow `structure-codebase` rather than assuming `domain/` contains all inside code.
 
 For detailed guidance, see `resources/domain-services.md`.
 
@@ -359,16 +359,17 @@ For detailed error modeling patterns and how errors propagate through layers, se
 
 ## Repository Pattern
 
-Repositories provide collection-like access to aggregates. **Interfaces** in the domain layer, **implementations** in the adapter layer. Repositories use `interface` (not `type`) because they define behavior contracts — this aligns with the TypeScript strict rule "reserve `interface` for behavior contracts." Name methods using domain language.
+Repositories provide collection-like access to aggregates. Put the **interface on the policy side that consumes it** and the concrete implementation with infrastructure or integration code. In an explicitly hexagonal system the interface is an inside-owned driven port, preferably beside its owning application policy, and the implementation is a driven adapter. DDD without ports and adapters does not gain adapter layers by implication; follow the architecture selected by `structure-codebase`. Repositories use `interface` (not `type`) because they define behavior contracts, and their methods use domain language.
 
 ```typescript
-// Port (domain layer) — interface because it's a behavior contract
+// Policy-side repository contract — an inside-owned port when hexagonal architecture is used
 interface OccasionRepository {
   readonly findById: (id: OccasionId) => Promise<Occasion | undefined>;
   readonly save: (occasion: Occasion) => Promise<void>;
 }
 
-// Adapter (infrastructure layer) — see hexagonal-architecture skill
+// Concrete implementation belongs with infrastructure/integration;
+// in hexagonal architecture it is a driven adapter.
 ```
 
 **Repositories handle writes and single-aggregate reads.** For reads that need to JOIN across aggregates (dashboard views, detail pages combining data from multiple entities), repositories are the wrong tool — they enforce aggregate boundaries that reads need to cross. Use query functions that JOIN freely instead. This is the CQRS-lite pattern: writes go through repositories (consistency), reads go through query functions (flexibility). See the `hexagonal-architecture` skill's CQRS-lite section and its `resources/cqrs-lite.md` for details.
@@ -381,23 +382,28 @@ For simple domains where reads map cleanly to a single aggregate, repository rea
 
 ### Test by Domain Concept, Not Implementation File
 
+Follow the physical shape selected for the project and keep focused tests beside the behavior they describe; DDD does not require a root `tests/` directory.
+
 ```
-tests/
+<selected-context-or-feature>/
   occasions/
     create-occasion.test.ts       # Behavior: creating occasions
     add-gift-idea.test.ts         # Behavior: managing gift ideas
     occasion-budget.test.ts       # Behavior: budget constraints
 ```
 
-### Primary Test Boundary: The Use Case
+### Select the Primary Behavioral Boundary
 
-Test by calling use cases with driven ports replaced by in-memory **fakes** (not mocks). This exercises domain entities, domain services, and orchestration together — proving the feature works as a whole.
+Test through the broadest stable public behavior that the chosen architecture actually has:
 
-Domain unit tests **complement** use case tests for complex pure business rules. They don't replace them.
+- For a domain-only model or library, call aggregate operations, domain services, or Deciders directly; these tests are primary, not a fallback.
+- When application policy exists, call the use case with simple fakes or stubs for its collaboration contracts. This exercises domain behavior and orchestration together without inventing ports.
+- In an explicitly hexagonal system, exercise the driving port with driven actors replaced by outside test interactors; load `hexagonal-architecture` for that testing strategy.
+- Add integration and delivery tests according to real infrastructure and user risk, not because DDD mandates a layer pyramid.
 
-The full testing-priority table (use case with fakes → domain pure functions → driven adapters → E2E) lives in the `hexagonal-architecture` skill's Testing Strategy section; for DDD layer-by-layer testing detail, see `resources/testing-by-layer.md`.
+Focused tests for complex pure business rules complement application tests when both exist. They may be the complete primary suite for a provider-free domain package.
 
-For a complete worked example showing one feature through every layer with tests, see the hexagonal-architecture skill's `resources/worked-example.md`.
+See `resources/testing-by-layer.md` for the architecture-neutral decision. For a DDD system that also adopts hexagonal architecture, the hexagonal skill's `resources/worked-example.md` traces one feature across ports, adapters, and tests.
 
 ### Test Factories Use Domain Language
 
@@ -442,11 +448,11 @@ Using `Item`, `Entity`, `Record`, `Data`, `Info` instead of domain terms. Always
 
 ### Presentation Logic in Domain
 
-Display formatting does not belong in `domain/`. The test: "make this look right for a human" = presentation (`lib/`). "Enforce a business rule" = domain. Purity is not sufficient — a pure formatting function is still presentation.
+Display formatting does not belong in domain policy. The test: "make this look right for a human" = presentation. "Enforce a business rule" = domain. Purity is not sufficient — a pure formatting function is still presentation.
 
 ### Leaking Domain Logic
 
-Business logic in route handlers, database queries, or adapters. Keep it in `domain/`.
+Business logic in route handlers, database queries, or adapters. Keep it in domain-policy modules under the physical shape selected for the project.
 
 ### Relationship-Driven Aggregates
 
@@ -481,11 +487,11 @@ Treating the initial model as sacred — refusing to rename types, split aggrega
 - [ ] Aggregates contain no read-only properties that exist solely for query convenience
 - [ ] Other aggregates referenced by ID, not embedded
 - [ ] Cross-aggregate logic in domain services, not crammed into one entity
-- [ ] Repository interfaces defined in domain layer
+- [ ] Repository interfaces live on the consuming policy side; concrete implementations live with infrastructure/integration
 - [ ] Discriminated unions have exhaustive switch handling
 - [ ] Expected business outcomes use result types, not exceptions
 - [ ] Domain logic has zero infrastructure dependencies
-- [ ] If `folder-structure` has been applied, protected-domain-core lint/import rules are present and passing
-- [ ] Presentation logic is NOT in domain/ (even if pure)
+- [ ] If `structure-codebase` has been applied, its domain/context and any visible inside/outside rules are present and passing
+- [ ] Presentation logic is NOT in domain policy (even if pure)
 - [ ] Tests organized by domain concept, not implementation file
-- [ ] Each layer has behavioral tests at the appropriate level
+- [ ] Each logical role has behavioral tests at the appropriate level

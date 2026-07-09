@@ -1,6 +1,6 @@
 # Worked Example: Full Request Lifecycle
 
-One feature traced through every layer, showing how hex arch and DDD fit together in practice.
+One feature traced through every role, showing how hex arch and DDD fit together in practice. The paths use `structure-codebase`'s single-package visible-hexagon shape; a monorepo may enforce the same roles as separate workspace packages.
 
 **Feature:** "Pledge a contribution to an occasion's gift fund"
 
@@ -15,7 +15,7 @@ One feature traced through every layer, showing how hex arch and DDD fit togethe
 ## 2. Domain Types
 
 ```
-src/domain/occasion/
+src/hexagon/occasion/
   types.ts          ← types + branded IDs
   occasion.ts       ← entity functions
   pledge.ts         ← domain service (cross-aggregate logic)
@@ -23,7 +23,7 @@ src/domain/occasion/
 ```
 
 ```typescript
-// domain/occasion/types.ts
+// hexagon/occasion/types.ts
 type OccasionId = string & { readonly __brand: 'OccasionId' };
 type ContributorId = string & { readonly __brand: 'ContributorId' };
 type Currency = 'GBP' | 'USD' | 'EUR';
@@ -51,7 +51,7 @@ type PledgeResult =
 ## 3. Domain Function (Pure Business Rule)
 
 ```typescript
-// domain/occasion/pledge.ts — domain service, pure function
+// hexagon/occasion/pledge.ts — domain service, pure function
 const pledgeContribution = (
   occasion: Occasion,
   contributor: Contributor,
@@ -85,10 +85,10 @@ const pledgeContribution = (
 
 No ports, no infrastructure, no async. Just domain types in and domain types out.
 
-## 4. Port Interfaces (Domain Layer)
+## 4. Port Interfaces (Inside Application Boundary)
 
 ```typescript
-// domain/occasion/pledging.ts — driving port
+// hexagon/occasion/pledging.ts — driving port
 interface ForPledgingToOccasions {
   readonly pledgeToOccasion: (dto: {
     readonly occasionId: OccasionId;
@@ -97,13 +97,13 @@ interface ForPledgingToOccasions {
   }) => Promise<PledgeResult>;
 }
 
-// domain/occasion/repository.ts
+// hexagon/occasion/repository.ts
 interface OccasionRepository {
   readonly findById: (id: OccasionId) => Promise<Occasion | undefined>;
   readonly save: (occasion: Occasion) => Promise<void>;
 }
 
-// domain/contributor/repository.ts
+// hexagon/contributor/repository.ts
 interface ContributorRepository {
   readonly findById: (id: ContributorId) => Promise<Contributor | undefined>;
   readonly save: (contributor: Contributor) => Promise<void>;
@@ -113,7 +113,7 @@ interface ContributorRepository {
 ## 5. Use Case (Orchestration)
 
 ```typescript
-// domain/occasion/pledge-to-occasion.ts — use case implementation
+// hexagon/occasion/pledge-to-occasion.ts — application policy / use case implementation
 const createPledgingToOccasions = (
   occasionRepo: OccasionRepository,
   contributorRepo: ContributorRepository,
@@ -140,14 +140,14 @@ The use case implementation is identifiable by its dependencies — it takes dri
 ## 6. Driven Adapter (Repository Implementation)
 
 ```
-src/db/
+src/adapters/driven/postgres/
   repositories/
     drizzle-occasion-repository.ts
   schema.ts
 ```
 
 ```typescript
-// db/repositories/drizzle-occasion-repository.ts
+// adapters/driven/postgres/drizzle-occasion-repository.ts
 const createDrizzleOccasionRepository = (db: Database): OccasionRepository => ({
   findById: async (id) => {
     const row = await db.select().from(occasions).where(eq(occasions.id, id)).get();
@@ -162,19 +162,19 @@ const createDrizzleOccasionRepository = (db: Database): OccasionRepository => ({
 
 The adapter translates between domain types (`Occasion`) and infrastructure types (database rows). No business logic.
 
-## 7. Driving Adapter (Route Handler)
+## 7. Driving Adapter at a Serverless Executable Entry Point
 
 ```
-src/app/api/occasions/[id]/pledge/route.ts
+src/adapters/driving/http/occasions/by-id/pledge/post.ts
 ```
 
 ```typescript
-// app/api/occasions/[id]/pledge/route.ts
+// adapters/driving/http/occasions/by-id/pledge/post.ts
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const { env } = getCloudflareContext();
   const db = createDb(env.DB);
 
-  // Wire adapters (composition root)
+  // Inline composition: this handler is the executable entrypoint and the graph is trivial
   const occasionRepo = createDrizzleOccasionRepository(db);
   const contributorRepo = createDrizzleContributorRepository(db);
   const pledging: ForPledgingToOccasions = createPledgingToOccasions(occasionRepo, contributorRepo);
@@ -198,12 +198,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
 }
 ```
 
-The route handler is thin glue: parse → wire → delegate → translate to HTTP. Business logic decisions (what status code for what reason) are the only logic here, and even that is mechanical translation.
+This deliberately small serverless handler combines a driving adapter with inline composition because it is the executable deployment entrypoint and its graph is trivial. Keep those roles visibly separate in the file. An ordinary route module receives a prepared application capability and only parses → delegates → translates. When several endpoints share an object graph, configuration families, or resource lifecycle, move wiring into the host's explicit `composition/` directory. The status selection here is protocol translation, not business policy.
 
 ## 8. Fakes for Testing
 
 ```typescript
-// adapters/fakes/fake-occasion-repository.ts
+// testing/fakes/fake-occasion-repository.ts
 const createFakeOccasionRepository = (
   initial: readonly Occasion[] = [],
 ): OccasionRepository & { readonly savedEntities: readonly Occasion[] } => {
@@ -219,14 +219,14 @@ const createFakeOccasionRepository = (
 
 Fakes implement the real interface and maintain state. If the interface changes, the fake breaks at compile time.
 
-A fake is a driven *actor* that needs no adapter — it meets the port interface directly. It lives in `adapters/fakes/`, beside the driven adapters it substitutes for, not in test space.
+A fake is a driven *actor* that needs no adapter — it meets the port interface directly. It lives outside the production hexagon under `testing/fakes/`, separate from concrete production adapters.
 
 ## 9. Tests
 
 ### Use Case Test (Primary)
 
 ```typescript
-// tests/occasions/pledge-contribution.test.ts
+// hexagon/occasion/pledge-contribution.test.ts
 describe('pledge contribution', () => {
   const testOccasion = getTestOccasion({ totalPledged: createMoney(0, 'GBP') });
   const testContributor = getTestContributor({ walletBalance: createMoney(100, 'GBP') });
@@ -289,7 +289,7 @@ One test file, three scenarios. Each test exercises the use case → domain serv
 ### Domain Unit Test (Complement)
 
 ```typescript
-// tests/occasions/pledge-rules.test.ts
+// hexagon/occasion/pledge-rules.test.ts
 describe('pledgeContribution', () => {
   it('transfers exact amount from contributor to occasion', () => {
     const occasion = getTestOccasion({ totalPledged: createMoney(50, 'GBP') });
@@ -312,42 +312,41 @@ Direct domain tests complement use case tests for complex rules with many edge c
 
 ```
 src/
-  domain/
+  hexagon/                              ← INSIDE
     occasion/
       types.ts              ← Occasion, Contributor, PledgeResult, Money, branded IDs
       occasion.ts           ← Entity functions (renameOccasion, etc.)
       pledge.ts             ← Domain service (pledgeContribution)
       repository.ts         ← OccasionRepository interface (port)
+      pledge-to-occasion.ts ← Application policy / driving-port implementation
+      pledge-contribution.test.ts
+      pledge-rules.test.ts
     contributor/
       repository.ts         ← ContributorRepository interface (port)
-  db/
-    repositories/
-      drizzle-occasion-repository.ts    ← Driven adapter
-      drizzle-contributor-repository.ts ← Driven adapter
-    schema.ts               ← Drizzle table definitions
-  adapters/
+  adapters/                            ← OUTSIDE
+    driven/
+      postgres/
+        drizzle-occasion-repository.ts    ← Driven adapter
+        drizzle-contributor-repository.ts ← Driven adapter
+        schema.ts                         ← Drizzle table definitions
+    driving/
+      http/occasions/by-id/pledge/
+        post.ts                         ← Driving adapter
+  testing/                             ← OUTSIDE TEST INTERACTORS
     fakes/
       fake-occasion-repository.ts       ← In-memory driven actors (shared fakes)
       fake-contributor-repository.ts
-  app/
-    api/occasions/[id]/
-      pledge/route.ts       ← Driving adapter (route handler)
-
-tests/
-  occasions/
-    pledge-contribution.test.ts  ← Use case tests (primary)
-    pledge-rules.test.ts         ← Domain unit tests (complement)
-  test-factories.ts              ← getTestOccasion, getTestContributor
+    test-factories.ts                   ← getTestOccasion, getTestContributor
 ```
 
 ## What Lives Where (Summary)
 
 | What | Where | Why |
 |------|-------|-----|
-| Business rules | `domain/` pure functions | Testable without infrastructure, the core value |
-| Port interfaces | `domain/` alongside entities | Domain defines what it needs |
-| Use cases | `domain/` (takes ports as params) | Orchestration of domain operations |
-| Repository impls | `db/repositories/` | Driven adapters, translate domain ↔ DB |
-| Route handlers | `app/api/` | Driving adapters, thin glue |
-| Fakes | `adapters/fakes/` | In-memory driven actors, shared across use case tests |
-| Tests | `tests/{concept}/` | Organized by domain concept, not file |
+| Business rules | `hexagon/{concept}/` pure functions | Testable without infrastructure, the core value |
+| Application policy and ports | `hexagon/{concept}/` beside owned behavior | Entire inside boundary is visible and provider-free |
+| Repository implementations | `adapters/driven/postgres/` | Driven adapters translate domain ↔ DB |
+| Route handlers | `adapters/driving/http/` | Driving adapters remain thin glue |
+| Fakes | `testing/fakes/` | Outside in-memory actors shared across use-case tests |
+| Focused tests | Colocated with inside behavior | Organized by behavior and protected from implementation coupling |
+| Concrete wiring | `composition/` or this tiny route entrypoint | Only the executable host selects implementations |
