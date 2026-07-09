@@ -1,4 +1,22 @@
-# Migration Guide: v1.x → v2.0.0
+# Migration Guide
+
+## `folder-structure` → `structure-codebase`
+
+`structure-codebase` replaces the former screaming-architecture-based `folder-structure` guidance. It selects a project-appropriate frontend or backend shape before generating folders and makes a hexagonal inside/outside boundary visible only for projects that have actually adopted ports and adapters.
+
+Install or update the canonical skill:
+
+```bash
+npx skills add citypaul/.dotfiles -g -s structure-codebase -y
+```
+
+Update custom prompts, commands, and project documentation from `$folder-structure` to `$structure-codebase`.
+
+For a transition release, `folder-structure` remains as a deprecated explicit-invocation redirect and contains none of the previous architecture rules. It requires the canonical sibling skill. Users who installed only the old skill must install `structure-codebase` with the command above.
+
+The old protected-`domain/` plus sibling-`use-cases/` folder convention is not retained. Projects explicitly using hexagonal architecture should re-evaluate their structure rather than mechanically rename folders; the new skill separates provider dependency inversion, behavior refactoring, and physical movement into different migration steps.
+
+## v1.x → v2.0.0
 
 This guide helps you upgrade from the monolithic CLAUDE.md (v1.x) to the modular structure (v2.0.0).
 

@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, 29 auto-discovered skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, auto-discovered first-party skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -87,8 +87,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Story Splitting** | Turn broad stories, epics, features, and backlog items into independently valuable child stories; based on Tim Ottinger's story-splitting resource list and linked articles | [→ skills/story-splitting](claude/.claude/skills/story-splitting/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Production Parity Skill Builder** | Creates app-specific skills that inspect docs, code, tests, CI, deployment, infrastructure, config, auth, and environment setup to catch drift between production and non-production environments | [→ skills/production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) |
-| **Folder Structure** | Screaming architecture plus feature-based and vertical-slice organization, protected domain cores, linted import boundaries, and monorepo scope grouping | [→ skills/folder-structure](claude/.claude/skills/folder-structure/SKILL.md) |
-| **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 6 resources including source notes | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
+| **Structure Codebase** | Selects the lightest honest source-tree shape: first-class frontend structures, visible hexagonal boundaries when earned, and feature-, context-, endpoint-, workflow-, framework-, or shallow forms elsewhere; package/import enforcement and safe migrations | [→ skills/structure-codebase](claude/.claude/skills/structure-codebase/SKILL.md) |
+| **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 7 resources including source notes | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
 | **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
 | **Event Sourcing** | Events as the source of truth, current state as a left fold (the Decider); event stores with optimistic concurrency, projections and read models, event versioning (tolerant reader/upcasting), snapshots, sagas, GDPR crypto-shredding, and behaviour-driven testing of deciders. Leads with a when-to-use complexity ladder. 8 deep-dive resources + source notes | [→ skills/event-sourcing](claude/.claude/skills/event-sourcing/SKILL.md) |
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
@@ -142,7 +142,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Backlog items keep turning into frontend/backend tickets | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Reject component stories; split by capability, path, interface, data, rules, quality, or learning |
 | CI pipeline keeps failing | [ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) | Every failure is real until proven otherwise, hypothesis-first diagnosis |
 | Local, CI, PR, or staging differs from production | [production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) | Generate an app-specific parity skill that inspects source, infra, config, and auth before asking targeted questions |
-| Project folders hide what the product does | [folder-structure](claude/.claude/skills/folder-structure/SKILL.md) | Organize by business capability first; protect DDD/hex domain code with linted boundaries |
+| Project folders hide ownership or architecture | [structure-codebase](claude/.claude/skills/structure-codebase/SKILL.md) | Select the lightest honest shape; make hexagonal inside/outside visible only when real and keep every interior featureful |
 | Separating domain from infrastructure | [hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) | Ports define contracts, adapters implement them, domain stays pure |
 | Complex business rules need modeling | [domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) | Ubiquitous language, glossary enforcement, value objects, aggregates |
 | History and audit are part of the domain | [event-sourcing](claude/.claude/skills/event-sourcing/SKILL.md) | Events are the source of truth; current state is a left fold you can always rebuild |
@@ -480,11 +480,42 @@ const wrong = "incorrect approach";
 
 ---
 
+### 🧭 Structure Codebase → [skills/structure-codebase](claude/.claude/skills/structure-codebase/SKILL.md)
+
+**Problem it solves:** Frontend and backend source trees that either hide product behavior behind technical layers or apply the same architecture template to every project
+
+**What's inside (main skill + 5 references):**
+- **Architecture selection before folder generation** — frontend route/feature, shallow, DDD-context, visible hexagonal, endpoint-first BFF, framework-host, and workflow-first operational forms
+- **Visible hexagonal boundaries** — `hexagon/` as the complete provider-free inside, with driving/driven adapters and test interactors outside
+- **Featureful interiors** — domain concepts and use cases below the boundary instead of flat god files
+- **BFF specialization** — URL-first endpoints, explicit routers, sibling workflows, raw upgrade handling, and one-way development routing
+- **Composition roots** — explicit concrete wiring in nontrivial executable hosts without ceremonial folders in libraries or small apps
+- **Mechanical truth** — package manifests, public exports, recursive discovery, role-based imports, architecture tests, and target-depth fixtures
+- **Safe migration** — separate characterization, dependency inversion, behavioral decomposition, and physical reparenting
+- **Proportionate fallbacks** — ordinary CRUD services, framework-constrained backends, ops tools, and small libraries avoid DDD/hexagonal cargo culting
+- **Frontend architecture** — first-class route-colocated, feature-first, meta-framework, design-system, state/data ownership, runtime-boundary, and monorepo guidance
+
+**The core insight:**
+
+```text
+product or capability
+  ├── hexagon/             # inside, only when ports-and-adapters is real
+  │   └── feature/use-case
+  ├── adapters/            # concrete outside technology
+  └── testing/             # outside test interactors
+```
+
+Product meaning belongs at the capability root, architectural vocabulary belongs at real seams, and behavior that changes together stays close inside each zone. Folder names make claims; packages and import rules prove them.
+
+`folder-structure` remains temporarily as a deprecated explicit-invocation redirect for installed users; all new guidance and documentation use `structure-codebase`.
+
+---
+
 ### 🏗️ Hexagonal Architecture → [skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md)
 
 **Problem it solves:** Business logic tangled with database queries and HTTP handlers; untestable code; changing a database requires rewriting business rules
 
-**What's inside (main skill + 6 resources):**
+**What's inside (main skill + 7 resources):**
 - **Driving/driven adapter asymmetry** with visual diagram — HTTP routes, queue consumers, cron jobs
 - **Dependency injection** via parameters — wrong/right comparison, composition root pattern
 - **CQRS-lite** — reads bypass repositories, query functions JOIN freely
@@ -533,11 +564,11 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 
 | Question | If yes → |
 |----------|----------|
-| Does it enforce a business rule? | `domain/` |
-| Does it orchestrate without owning logic? | Use case (takes ports as params) |
-| Does it format data for display? | `lib/` — purity is not sufficient |
-| Does it talk to an external system? | Adapter (implements a port) |
-| Is it framework glue? | Delivery layer (`app/`) |
+| Does it enforce a business rule? | Domain policy; physical location follows the selected project structure |
+| Does it orchestrate without owning the rule? | Application policy / use case |
+| Does it format data for display? | Presentation code — purity is not sufficient |
+| Does it talk to an external system? | Integration/infrastructure code; a driven adapter only in a hexagonal system |
+| Is it framework glue? | Framework entrypoint; a driving adapter only in a hexagonal system |
 
 **Key insight:** Domain models evolve as understanding deepens — this is expected and ideal, not a sign of failure. TDD makes this evolution safe: rename a concept, update the glossary, and the tests guide the migration.
 
@@ -1442,7 +1473,7 @@ Both patterns resolve to the same content on disk, so the first `--agent codex` 
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~160 lines - lean core principles)
 - ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) (`npx skills add`):
-  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — 29 auto-discovered patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, event-sourcing, and more)
+  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — auto-discovered first-party patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, event-sourcing, and more)
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
   - [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) — Next.js best practices, Cache Components, and upgrade workflow
@@ -1695,7 +1726,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + 29 auto-discovered skills + 5 slash commands + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + auto-discovered skills + 5 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1718,7 +1749,7 @@ The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~160 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns. 29 from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1895,7 +1926,7 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + skills (29 from this repo plus external skill bundles) + 10 agents (development guidelines)
+- ✅ CLAUDE.md + first-party skills plus external skill bundles + 10 agents (development guidelines)
 - ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ OpenCode configuration (guidelines plus built-in LSP servers, including TypeScript)

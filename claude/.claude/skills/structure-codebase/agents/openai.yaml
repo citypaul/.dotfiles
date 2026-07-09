@@ -1,0 +1,4 @@
+interface:
+  display_name: "Structure Codebase"
+  short_description: "Make codebase boundaries and features obvious"
+  default_prompt: "Use $structure-codebase to analyze this repository and propose an enforceable target source tree."

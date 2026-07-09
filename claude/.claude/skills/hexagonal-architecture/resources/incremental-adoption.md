@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 Pull the business rule into a pure function. No infrastructure, no async.
 
 ```typescript
-// domain/billing/deduct-balance.ts — extracted pure function
+// hexagon/billing/deduct-balance.ts — extracted pure function
 type DeductResult =
   | { readonly success: true; readonly user: User }
   | { readonly success: false; readonly reason: 'insufficient-balance' | 'not-found' };
@@ -45,10 +45,10 @@ const deductBalance = (user: User, amount: Money): DeductResult => {
 
 ### Step 3: Extract the Port Interface
 
-Define what the domain needs from infrastructure.
+Define the external conversation that application policy needs. Keep the contract inside and express it in domain language.
 
 ```typescript
-// domain/billing/repository.ts — port
+// hexagon/billing/repository.ts — inside port
 interface UserRepository {
   readonly findById: (id: UserId) => Promise<User | undefined>;
   readonly save: (user: User) => Promise<void>;
@@ -60,7 +60,7 @@ interface UserRepository {
 Wrap the existing database access behind the port interface.
 
 ```typescript
-// db/repositories/drizzle-user-repository.ts — driven adapter
+// adapters/driven/postgres/drizzle-user-repository.ts — driven adapter
 const createDrizzleUserRepository = (db: Database): UserRepository => ({
   findById: async (id) => {
     const row = await db.select().from(users).where(eq(users.id, id)).get();
@@ -77,7 +77,7 @@ const createDrizzleUserRepository = (db: Database): UserRepository => ({
 Wire the domain function to the port.
 
 ```typescript
-// domain/billing/deduct-user-balance.ts — driving port + implementation
+// hexagon/billing/deduct-user-balance.ts — driving port + implementation
 interface ForDeductingUserBalances {
   readonly deductUserBalance: (dto: { readonly userId: UserId; readonly amount: Money }) => Promise<DeductResult>;
 }
@@ -95,10 +95,10 @@ const createUserBalanceDeduction = (
 });
 ```
 
-### Step 6: Thin Out the Route Handler
+### Step 6: Thin Out the Executable Entry Point
 
 ```typescript
-// AFTER — route handler is thin glue
+// AFTER — serverless executable entrypoint; inline composition is still trivial
 export async function POST(request: Request) {
   const db = createDb(env.DB);
   const userRepo = createDrizzleUserRepository(db);
@@ -112,6 +112,8 @@ export async function POST(request: Request) {
 }
 ```
 
+Inline construction is valid here only when the framework makes this handler the executable deployment entrypoint and the graph remains trivial and unshared. In a conventional or shared host, move database, repository, and use-case construction to `main.ts` or `composition/`; inject the prepared `ForDeductingUserBalances` into an ordinary route adapter.
+
 ## What to Migrate First
 
 | Signal | Priority |
@@ -124,7 +126,7 @@ export async function POST(request: Request) {
 
 ## What NOT to Do
 
-- **Don't create a `use-cases/` folder and migrate everything at once.** Extract one boundary, write tests, verify, then move to the next.
+- **Don't create a complete `hexagon/` skeleton and migrate everything at once.** Use `structure-codebase` to establish the first honest inside/outside slice, write tests, verify it, then move to the next.
 - **Don't introduce ports for things that don't need them.** A simple config lookup doesn't need a `ConfigPort` interface.
 - **Don't force hex arch on CRUD endpoints.** If a route handler just reads from a database and returns JSON with no business logic, leave it alone.
 - **Don't create abstract base classes** (`BaseRepository<T>`). Each port is specific to its aggregate.

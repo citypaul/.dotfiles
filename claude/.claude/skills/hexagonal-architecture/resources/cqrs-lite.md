@@ -13,10 +13,10 @@ CQRS-lite: writes go through repositories, reads use query functions that JOIN f
 
 ## Query Functions
 
-Query functions are driven adapters. They live in the adapter layer (`db/queries/`) alongside repositories.
+Query functions are driven adapters. In `structure-codebase`'s visible single-package layout they live under `adapters/driven/` beside the relevant persistence implementation; other established layouts may use a different physical path without changing the role.
 
 ```typescript
-// db/queries/dashboard.ts — JOINs across 4 tables for display
+// adapters/driven/postgres/queries/dashboard.ts — JOINs across 4 tables for display
 const getDashboardCards = async (db: Database, userId: string) => {
   return db.select({
     eventTitle: events.title,
@@ -35,10 +35,10 @@ const getDashboardCards = async (db: Database, userId: string) => {
 
 ## Domain Transforms on Read Data
 
-Query functions return raw joined data. Domain-layer pure functions transform it into display-ready types, encoding business rules about what the data means:
+Query functions return raw joined data. Provider-free inside functions may interpret it when the transformation encodes business meaning; presentation-only formatting stays at the driving edge.
 
 ```typescript
-// domain/dashboard/dashboard-status.ts — pure function, no DB imports
+// hexagon/dashboard/dashboard-status.ts — provider-free read-model policy, no DB imports
 const toDashboardCard = (row: DashboardRow, now: Date): DashboardCard => ({
   title: row.eventTitle,
   emoji: row.occasionEmoji,
@@ -48,7 +48,7 @@ const toDashboardCard = (row: DashboardRow, now: Date): DashboardCard => ({
 });
 ```
 
-`isUrgent` is a business rule (what counts as urgent). `daysAway` is a business calculation. These belong in domain. The query that fetches the data does not.
+`isUrgent` is a business rule (what counts as urgent). `daysAway` is a business calculation. These are inside-eligible policy. Human-only formatting is not. The query that fetches the data remains outside.
 
 ## Testing
 

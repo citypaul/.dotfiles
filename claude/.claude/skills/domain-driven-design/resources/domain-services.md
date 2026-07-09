@@ -12,14 +12,14 @@ When business logic doesn't naturally belong to a single entity or value object,
 
 - Logic belongs on a single entity (put it there as a pure function)
 - Logic is orchestration (loading from repos, calling services, saving) — that's a use case
-- Logic is presentation (formatting for display) — that's `lib/` or the view layer
-- Logic is infrastructure (sending emails, calling APIs) — that's an adapter
+- Logic is presentation (formatting for display) — that's presentation code under the selected client/application structure
+- Logic is infrastructure (sending emails, calling APIs) — that's integration/infrastructure code; a driven adapter only when hexagonal architecture is used
 
 ## Domain Service vs Use Case
 
 ```typescript
 // DOMAIN SERVICE — contains business logic, operates on domain types
-// Lives in domain/ alongside the entities it operates on
+// Colocate with the domain concepts it serves under the selected physical structure
 const pledgeContribution = (
   occasion: Occasion,
   contributor: Contributor,
@@ -38,8 +38,8 @@ const pledgeContribution = (
   };
 };
 
-// USE CASE — orchestration only, no business logic
-// Lives in domain/ — identifiable by taking ports as parameters
+// USE CASE — application orchestration only, no business rules
+// Place as application policy; never assume it belongs in a domain/ folder
 const handlePledge = async (
   occasionRepo: OccasionRepository,
   contributorRepo: ContributorRepository,
@@ -60,12 +60,12 @@ const handlePledge = async (
 
 ## Naming
 
-All domain functions — domain services, use cases, entity operations — are named after the business operation: `pledgeContribution`, `transferMoney`, `placeOrder`. Never after technical patterns: `ContributionService`, `PlaceOrderUseCase`, `ShippingCalculator`. Your domain experts say "place an order", not "execute the place order use case."
+Name domain operations and use cases after the business operation: `pledgeContribution`, `transferMoney`, `placeOrder`. Never after technical patterns: `ContributionService`, `PlaceOrderUseCase`, `ShippingCalculator`. Your domain experts say "place an order", not "execute the place order use case."
 
 You can tell a use case from a domain function by its signature, not its name:
 
 ```typescript
-// Use case — takes ports (infrastructure interfaces)
+// Use case — takes policy-side collaboration contracts when needed
 const placeOrder = async (repo: OrderRepository, gateway: PaymentGateway, order: NewOrder) => ...
 
 // Domain service — takes only domain types

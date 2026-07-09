@@ -90,7 +90,7 @@ const createDrizzleOccasionRepository = (db: Database, logger: Logger): Occasion
 The result-inspection default breaks down when the interesting fact is *intermediate* (which pricing rule fired, cache-hit vs. remote lookup, retry count) — smuggling it into the return type pollutes the domain contract with observability freight — or when the observation is a *requirement in its own right* (support logging, business metrics, product analytics). Then model the observability backend as what it is: a driven **recipient** actor, behind a per-capability, intention-named, severity-free, fire-and-forget port (Hodgson's Domain Probe, martinfowler.com):
 
 ```typescript
-// Driven port — defined in domain, domain vocabulary only
+// Driven port — owned inside beside the policy, business vocabulary only
 interface PledgeInstrumentation {
   readonly pledgeRejected: (reason: PledgeRejectionReason, occasionId: OccasionId) => void;
   readonly pledgeAccepted: (amount: Money, occasionId: OccasionId) => void;
