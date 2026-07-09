@@ -35,6 +35,23 @@ The verifier runs in the repo's working directory, so the brief can reference fi
 
 ---
 
+## Fresh same-provider fallback
+
+Use this only after no different-lab verifier can be reached. Prefer a host-native subagent that starts with no parent conversation; otherwise start a new process with the host provider's command below.
+
+| Host | Preferred fresh-context launch | Process fallback |
+|------|--------------------------------|------------------|
+| Codex | Spawn a Codex subagent with zero inherited turns (for example, `fork_turns: "none"`) | New `codex exec`; do not use `resume` in round 1 |
+| Claude Code | Launch a fresh Claude subagent with only the verifier brief | New `claude -p`; do not use `--resume` or `--continue` in round 1 |
+| Gemini CLI | Launch a fresh Gemini subagent if the host exposes isolated subagents | New `gemini -p`; do not continue an existing session in round 1 |
+| Cursor | Launch a fresh isolated subagent if available | New `cursor-agent -p`; the no-read-only warning below still applies |
+
+For round 1, pass only the cold brief and access to the named artifact. Do not fork or paste the parent conversation, hidden reasoning, suspected answer, or desired verdict. Once the verifier has formed its own findings, later rounds may resume that verifier session or include the full findings ledger and host responses.
+
+Use the same maximum-effort and read-only settings as a cross-provider check. If the native subagent cannot guarantee context isolation, prefer the new CLI process. If neither option is isolated, report that the fallback could not run. Always describe a successful fallback as `same-provider fresh-context fallback`, never as independent or cross-provider verification.
+
+---
+
 ## codex — OpenAI Codex CLI
 
 Non-interactive subcommand: `codex exec`. With `-` (or no prompt arg) it reads instructions from stdin.
