@@ -69,7 +69,7 @@ Running `pnpm changeset` creates a file like `.changeset/fuzzy-pandas-dance.md`:
 
 ```markdown
 ---
-"@paulhammond/dotfiles": minor
+"@citypaul/dotfiles": minor
 ---
 
 Add new refactoring assessment agent
