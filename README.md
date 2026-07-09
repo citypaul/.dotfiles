@@ -1461,14 +1461,17 @@ chmod +x install-claude.sh
 
 Skills.sh supports 40+ coding agents (Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, …). Use `--agent <name>` (repeatable) to add extra targets alongside the default `claude-code`. Use `--no-claude-code` with `--agent` to target only non-Claude agents. After install, `npx skills list -g` shows which skills each agent can see.
 
-Under the hood, the skills CLI distinguishes two kinds of agent:
+The skills CLI installs the **complete skill directory**, not just `SKILL.md`. Companion files such as `agents/openai.yaml`, `references/`, `scripts/`, and `assets/` therefore travel with the skill. For `structure-codebase`, Codex receives its interface metadata at `agents/openai.yaml` without a separate installation step.
 
-- **Universal agents** (Codex, OpenCode, and others whose `skillsDir` is `.agents/skills`) read directly from the shared `~/.agents/skills/` cache. Installing for these adds nothing to the agent's own config dir — the cache path is the read path.
-- **Per-agent agents** (Claude Code, Cursor, …) get a symlink into their own skills directory (e.g. `~/.claude/skills/<name> -> ~/.agents/skills/<name>`).
+The destination depends on the selected agents:
 
-Both patterns resolve to the same content on disk, so the first `--agent codex` install makes skills visible to Codex with no duplicate storage.
+- **A universal agent only** (Codex, OpenCode, and others whose `skillsDir` is `.agents/skills`) gets a copy under `~/.agents/skills/<name>/`; that shared path is the agent's read path.
+- **A per-agent client only** (Claude Code, Cursor, …) gets a copy in its own skills directory, such as `~/.claude/skills/<name>/`.
+- **Universal and per-agent clients together** share one canonical copy under `~/.agents/skills/<name>/`; the per-agent directory is a symlink to it.
 
-**Migration from the old curl-based installer is automatic.** If `~/.claude/skills/` contains regular directories left behind by a previous install, the installer moves them to `~/.claude/skills.pre-skills-sh.<timestamp>/` before running `npx skills add`, so the CLI can route each source through the universal cache and every targeted agent (Claude Code *and* Codex, etc.) picks them up. The move is non-destructive — the timestamped backup stays on disk until you remove it.
+All three layouts expose the same complete bundle. Include `--agent codex` when Codex should discover and use the skill (the installer targets Claude Code only by default).
+
+**Migration from the old curl-based installer is automatic.** If `~/.claude/skills/` contains regular directories left behind by a previous install, the installer moves them to `~/.claude/skills.pre-skills-sh.<timestamp>/` before running `npx skills add`, so the CLI can create the correct copy/symlink layout for every selected agent. The move is non-destructive — the timestamped backup stays on disk until you remove it.
 
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~160 lines - lean core principles)

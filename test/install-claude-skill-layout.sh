@@ -57,8 +57,12 @@ echo "# linked" > "$AGENTS_DIR/skills/linked-skill/SKILL.md"
 ln -s "../../.agents/skills/linked-skill" "$SKILLS_DIR/linked-skill"
 
 # 2. New-CLI layout: a regular directory tracked in the skills lock file.
-mkdir -p "$SKILLS_DIR/managed-skill"
+mkdir -p "$SKILLS_DIR/managed-skill/agents"
 echo "# managed" > "$SKILLS_DIR/managed-skill/SKILL.md"
+cat > "$SKILLS_DIR/managed-skill/agents/openai.yaml" <<'YAML'
+interface:
+  display_name: "Managed Skill"
+YAML
 cat > "$AGENTS_DIR/.skill-lock.json" <<'LOCK'
 {
   "version": 3,
@@ -96,6 +100,14 @@ if [[ -d "$SKILLS_DIR/managed-skill" && -f "$SKILLS_DIR/managed-skill/SKILL.md" 
   pass "lock-managed skill directory is left in place"
 else
   fail "lock-managed skill directory must not be treated as legacy and moved"
+fi
+
+# Nested companion files stay with the managed skill bundle. In particular,
+# Codex reads product metadata from agents/openai.yaml.
+if grep -q 'display_name: "Managed Skill"' "$SKILLS_DIR/managed-skill/agents/openai.yaml"; then
+  pass "lock-managed skill keeps nested agents/openai.yaml metadata"
+else
+  fail "installer must preserve the complete managed skill bundle"
 fi
 
 # The old-CLI symlink stays put.
