@@ -72,7 +72,7 @@ git push --tags
 
 ```markdown
 ---
-"@paulhammond/dotfiles": minor
+"@citypaul/dotfiles": minor
 ---
 
 Add new TypeScript enforcement agent

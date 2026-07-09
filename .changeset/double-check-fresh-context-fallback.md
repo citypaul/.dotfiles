@@ -1,5 +1,5 @@
 ---
-"@paulhammond/dotfiles": patch
+"@citypaul/dotfiles": patch
 ---
 
 Add a fresh same-provider fallback to the `double-check` skill.
