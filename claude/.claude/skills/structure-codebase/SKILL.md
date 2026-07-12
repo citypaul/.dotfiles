@@ -189,6 +189,7 @@ Reject these structures:
 - Ports that reproduce SQL, HTTP, ORM, or SDK APIs.
 - Test adapters and reusable fakes beneath `hexagon/`.
 - Business behavior, provider construction, or shared runtime state hidden in endpoint handlers.
+- HTTP route leaves or CLI command entries buried inside capability or hexagon folders instead of the public interface tree (`endpoints/`, `commands/`).
 - Production code importing development-only routes or test packages.
 - `shared`, `common`, `utils`, `helpers`, or `services` as unowned dumping grounds.
 - Empty folder skeletons added for symmetry.

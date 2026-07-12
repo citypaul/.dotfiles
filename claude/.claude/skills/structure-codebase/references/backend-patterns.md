@@ -2,6 +2,8 @@
 
 Use these patterns after classifying the project. They are starting grammars, not templates to reproduce blindly. Create only directories that own real code.
 
+When a system's public interface has a shape — an HTTP URL tree, a CLI command tree — that shape is the primary navigation axis: every entry leaf lives under it (`endpoints/`, `commands/`), whatever internal capability fulfils the request.
+
 ## Contents
 
 1. Feature-first service
@@ -109,6 +111,8 @@ Apply these rules:
 
 Do not give the BFF a hexagon merely because it calls hexagonal packages. Extract a provider-free inside package only when the BFF itself owns substantial, durable application policy.
 
+When the BFF does earn an internal capability hexagon, that hexagon owns the use-case, its ports, and the driven adapters — never the inbound HTTP translation. The endpoint's transport-thin leaf still lives at `endpoints/<url>/<method>.ts` and delegates into the capability's use-case, exactly like a leaf that calls an external hexagonal package. Every route must be discoverable by its URL under `endpoints/`, whatever internal capability fulfils it — in the tree above, `sessions/by-room-id/init/post.ts` stays in `endpoints/` even when an in-BFF capability behind `composition/video.ts` fulfils it. A route file inside a capability folder's `inbound-adapters/` is a structure smell: move the leaf to `endpoints/`, keep the use-case and driven adapters in the hexagon.
+
 ## Framework-Constrained Backend
 
 Preserve required framework locations and keep them thin:
@@ -173,7 +177,7 @@ src/
 └── main.ts
 ```
 
-For a command-line application, command names are often the most useful navigation axis:
+For a command-line application, command names are often the most useful navigation axis — the same public-shape rule as `endpoints/` in a BFF: a command's entry leaf lives under `commands/` whatever internal capability implements it:
 
 ```text
 src/
