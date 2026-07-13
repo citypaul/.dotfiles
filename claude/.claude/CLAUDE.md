@@ -64,6 +64,7 @@ For verifying test effectiveness through mutation analysis, load the `mutation-t
 
 For detailed TypeScript patterns and rationale, load the `typescript-strict` skill.
 For API and interface design patterns, load the `api-design` skill.
+For OAuth 2.0 or OpenID Connect design, implementation, review, testing, incident analysis, or migration, load the `secure-oauth-oidc` skill.
 
 ## Code Style
 

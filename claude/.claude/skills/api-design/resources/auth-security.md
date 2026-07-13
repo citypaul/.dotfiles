@@ -1,6 +1,6 @@
 # Authentication and Token Security
 
-Deep-dive on JWT and OAuth 2.0 security based on RFC 8725 "JWT Best Current Practices" (BCP 225, February 2020) and RFC 9700 "Best Current Practice for OAuth 2.0 Security" (BCP 240, January 2025). See `api-security.md` for OWASP API Top 10 and authentication pattern selection. See `http-fundamentals.md` for browser security headers.
+Deep-dive on JWT security based on RFC 8725 "JWT Best Current Practices" (BCP 225, February 2020). See `api-security.md` for OWASP API Top 10 and authentication pattern selection, `http-fundamentals.md` for browser security headers, and the `secure-oauth-oidc` skill for OAuth 2.0 or OpenID Connect design, implementation, review, testing, and migration.
 
 ## JWT Security (RFC 8725)
 
@@ -59,98 +59,15 @@ JWT header values are attacker-controlled input:
 - MUST use UTF-8 for all JSON encoding/decoding in headers and claims
 - SHOULD NOT compress data before encryption -- compression leaks information about plaintext content (CRIME/BREACH-style compression oracle attacks)
 
-## OAuth 2.0 Security (RFC 9700)
+## OAuth and OpenID Connect routing
 
-### Grant Type Selection
+Load the `secure-oauth-oidc` skill for any OAuth 2.0 or OIDC work. Its RFC 9700 control catalog preserves normative strength and applicability, while its OIDC guide covers issuer and transaction binding, Discovery, ID Token validation, UserInfo subject matching, multi-issuer clients, logout, and negative tests. Do not recreate an OAuth checklist here: protocol controls must be selected from the complete flow, client type, trust topology, and applicable profile.
 
-| Grant Type | Recommendation |
-|-----------|---------------|
-| Authorization Code + PKCE | Use for ALL client types (web apps, native apps, SPAs) |
-| Resource Owner Password Credentials | MUST NOT use. Exposes credentials to client, prevents MFA/WebAuthn. |
-| Implicit (`response_type=token`) | SHOULD NOT use. Tokens leak via URLs, browser history, and Referer headers. |
+## JWT review checklist
 
-### PKCE (Proof Key for Code Exchange)
-
-PKCE is mandatory, not optional:
-
-- Authorization servers MUST support PKCE (RFC 7636)
-- Public clients MUST use PKCE. Confidential clients SHOULD also use PKCE.
-- Use `S256` as the code challenge method (not `plain`)
-- Challenge and verifier MUST be transaction-specific and securely bound to the client and user agent
-- Authorization servers MUST enforce `code_verifier` at the token endpoint if `code_challenge` was present
-- Authorization servers MUST prevent PKCE downgrade attacks: reject a `code_verifier` if no `code_challenge` was in the original request
-
-### Redirect URI Validation
-
-- Authorization servers MUST use exact string matching for redirect URIs. No pattern matching, no wildcards.
-- Exception: native apps using localhost, where variable port numbers MUST be allowed.
-- MUST NOT allow `http://` redirect URIs except for native apps using loopback interface.
-- Clients and authorization servers MUST NOT expose open redirectors -- endpoints that forward the browser to arbitrary URIs from query parameters.
-
-### Token Handling
-
-**Access tokens:**
-- MUST NOT pass in URI query parameters (e.g., `?access_token=...`). Use the `Authorization` header. Query parameters leak via browser history, server logs, and Referer headers.
-- SHOULD be audience-restricted to specific resource servers. Resource servers MUST verify the audience.
-- SHOULD be restricted to minimum required privileges (scope, resources, actions).
-- SHOULD be sender-constrained via DPoP (RFC 9449) or Mutual TLS (RFC 8705) to prevent stolen token replay.
-
-**Refresh tokens:**
-- For public clients, MUST be sender-constrained or use refresh token rotation.
-- MUST be bound to the scope and resource servers as consented by the resource owner.
-- SHOULD expire after inactivity (no refresh request for a period).
-
-**Authorization codes:**
-- MUST be invalidated after first use.
-- If a code is redeemed twice, the authorization server SHOULD revoke all tokens previously issued for that code.
-
-### CSRF Defense
-
-Clients MUST prevent CSRF on their redirection endpoint. Acceptable mechanisms:
-
-1. **PKCE** (if the authorization server definitely supports it)
-2. **OpenID Connect `nonce`**
-3. **One-time-use `state` parameter** cryptographically bound to the user agent session
-
-### Redirect Security
-
-- Authorization servers MUST NOT use HTTP 307 redirects for requests that may contain user credentials (e.g., login form POSTs). Use HTTP 303 instead, which rewrites POST to GET and drops the form body.
-- The OAuth redirect landing page SHOULD NOT include third-party resources or external links.
-- Apply `Referrer-Policy: no-referrer` to suppress credential leakage via Referer headers.
-- Invalidate `state` after first use at the redirection endpoint.
-
-### Clickjacking Prevention
-
-Authorization servers MUST prevent clickjacking on authorization endpoints and login pages:
-
-- `Content-Security-Policy: frame-ancestors 'none'` (or specific trusted origins)
-- `X-Frame-Options: DENY`
-- Frame-busting JavaScript as a fallback
-
-### Authorization Server Metadata
-
-- Publish OAuth Authorization Server Metadata (RFC 8414) and have clients consume it.
-- Prevents misconfiguration and facilitates key rotation and feature discovery.
-
-### postMessage Security (Browser-Based Flows)
-
-- MUST NOT use wildcard origins (`"*"`) when sending authorization responses via postMessage.
-- Authorization servers MUST send only to the pre-registered, exact client origin.
-- Clients MUST validate the sender origin using exact string matching.
-
-## Practical Checklist
-
-When implementing auth in a TypeScript application:
-
-- [ ] JWT algorithms hardcoded in verification config (never from token header alone)
-- [ ] `iss`, `sub`, `aud`, and `exp` validated on every JWT
-- [ ] Explicit `typ` header on issued JWTs to prevent cross-JWT confusion
-- [ ] Authorization Code + PKCE (S256) for all OAuth flows
-- [ ] Tokens stored in memory or httpOnly cookies, never in URLs or localStorage
-- [ ] Tokens sent via `Authorization` header, never as query parameters
-- [ ] Exact redirect URI matching, no patterns or wildcards
-- [ ] `Referrer-Policy: no-referrer` on OAuth callback pages
-- [ ] CSP `frame-ancestors` on auth-related pages
-- [ ] Refresh tokens rotated or sender-constrained for public clients
-- [ ] Authorization codes invalidated after first use
-- [ ] Short-lived access tokens with narrow audience and scope
+- [ ] Accepted algorithms are configured by the verifier, not selected from an untrusted token header
+- [ ] Keys are bound to exactly one algorithm and expected issuer
+- [ ] The validation rules distinguish each JWT kind and prevent cross-JWT substitution
+- [ ] Required claims and application-specific semantics are validated before the payload is consumed
+- [ ] `kid`, `jku`, and `x5u` cannot cause injection, SSRF, or trust in attacker-selected keys
+- [ ] Tokens and claims containing sensitive data are excluded from URLs, logs, traces, and errors

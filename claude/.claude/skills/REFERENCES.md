@@ -246,13 +246,6 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 - **Input sanitization** — kid as injection vector, jku/x5u as SSRF vector → `resources/auth-security.md`: "Input Sanitization"
 - **Compression oracle** — don't compress before encryption → `resources/auth-security.md`: "Encoding and Compression"
 
-### RFC 9700 (BCP 240) — [OAuth 2.0 Security Best Current Practice](https://www.rfc-editor.org/rfc/rfc9700) (2025, IETF)
-- **Grant type selection** — Authorization Code + PKCE for all clients, no Implicit or ROPC → `resources/auth-security.md`: "Grant Type Selection"
-- **PKCE enforcement** — mandatory for public clients, recommended for all → `resources/auth-security.md`: "PKCE"
-- **Redirect URI validation** — exact string matching only → `resources/auth-security.md`: "Redirect URI Validation"
-- **Token handling** — sender-constraining, audience restriction, no query params → `resources/auth-security.md`: "Token Handling"
-- **CSRF defense** → `resources/auth-security.md`: "CSRF Defense"
-
 ### RFC 9325 (BCP 195) — [TLS Recommendations](https://www.rfc-editor.org/rfc/rfc9325) (2022, IETF) + RFC 8996 — [Deprecating TLS 1.0/1.1](https://www.rfc-editor.org/rfc/rfc8996) (2021)
 - **TLS 1.2 minimum, TLS 1.3 preferred** → `resources/api-security.md`: "Transport Security"
 
@@ -261,6 +254,44 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 
 ### RFC 6302 (BCP 162) — [Logging Recommendations for Internet-Facing Servers](https://www.rfc-editor.org/rfc/rfc6302) (2011, IETF)
 - **What to log for internet-facing servers** — source/destination addresses and ports, timestamps, transport protocol → Twelve-factor skill: Factor XI (Logs)
+
+---
+
+## Secure OAuth and OpenID Connect
+
+These primary sources support `secure-oauth-oidc/SKILL.md` and its five files under `secure-oauth-oidc/references/`. The skill treats RFC 9700 as the baseline, then layers on only the specifications and profiles that apply to the deployment.
+
+### Security baseline and protocol foundations
+
+- **RFC 9700 / BCP 240 — [Best Current Practice for OAuth 2.0 Security](https://www.rfc-editor.org/rfc/rfc9700) (2025, IETF)** — normative control strengths, attack model, redirect and code protections, refresh-token replay detection, mix-up defense, browser/deployment guidance, and deprecated modes → `rfc9700-control-catalog.md`, `attack-and-test-catalog.md`
+- **RFC 6749 — [The OAuth 2.0 Authorization Framework](https://www.rfc-editor.org/rfc/rfc6749) (2012, IETF)** and **RFC 6750 — [Bearer Token Usage](https://www.rfc-editor.org/rfc/rfc6750) (2012, IETF)** — base roles, grants, endpoint semantics, token transport, and error contracts; read with RFC 9700's updates → `standards-map.md`
+- **RFC 7636 — [Proof Key for Code Exchange](https://www.rfc-editor.org/rfc/rfc7636) (2015, IETF)** — verifier/challenge syntax and token-endpoint verification → `rfc9700-control-catalog.md`
+- **RFC 8252 / BCP 212 — [OAuth 2.0 for Native Apps](https://www.rfc-editor.org/rfc/rfc8252) (2017, IETF)** — external user agents, claimed HTTPS/app links, custom schemes, and the narrow loopback redirect exception → `standards-map.md`
+- **OpenID Connect Core 1.0 incorporating errata set 2 — [Core](https://openid.net/specs/openid-connect-core-1_0.html) (2023, OpenID Foundation)** — authentication request/response semantics, ID Token validation, subject identity, UserInfo binding, nonce, and flow-specific hashes → `oidc-validation.md`
+- **OpenID Connect Discovery 1.0 incorporating errata set 2 — [Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html) (2023, OpenID Foundation)** — issuer discovery, provider metadata, and issuer equality checks → `oidc-validation.md`
+- **OpenID Connect Dynamic Client Registration 1.0 incorporating errata set 2 — [Registration](https://openid.net/specs/openid-connect-registration-1_0.html) (2023, OpenID Foundation)** — OIDC-specific redirect, response/grant, subject type, JOSE algorithm, request object, and sector-identifier metadata → `standards-map.md`
+- **OpenID Connect logout/session family — [RP-Initiated Logout](https://openid.net/specs/openid-connect-rpinitiated-1_0.html), [Front-Channel Logout](https://openid.net/specs/openid-connect-frontchannel-1_0.html), [Back-Channel Logout](https://openid.net/specs/openid-connect-backchannel-1_0.html), and [Session Management](https://openid.net/specs/openid-connect-session-1_0.html) (OpenID Foundation)** — mechanism-specific issuer, audience, browser, session, token-hint, callback, and replay requirements; keeps local logout, OP session termination, and token revocation distinct → `standards-map.md`, `oidc-validation.md`
+
+### Metadata, issuer binding, and token restriction
+
+- **RFC 8414 — [OAuth 2.0 Authorization Server Metadata](https://www.rfc-editor.org/rfc/rfc8414) (2018, IETF)** and **RFC 9728 — [OAuth 2.0 Protected Resource Metadata](https://www.rfc-editor.org/rfc/rfc9728) (2025, IETF)** — trusted endpoint/capability discovery and protected-resource metadata → `standards-map.md`
+- **RFC 7591 — [OAuth 2.0 Dynamic Client Registration](https://www.rfc-editor.org/rfc/rfc7591) (2015, IETF)** and **RFC 7592 — [Dynamic Client Registration Management](https://www.rfc-editor.org/rfc/rfc7592) (2015, Experimental)** — registration metadata, endpoint authorization, registration access tokens, client lifecycle, and attacker-controlled URI/metadata boundaries → `standards-map.md`
+- **RFC 9207 — [OAuth 2.0 Authorization Server Issuer Identification](https://www.rfc-editor.org/rfc/rfc9207) (2022, IETF)** — authorization-response issuer binding for mix-up resistance → `oidc-validation.md`, `rfc9700-control-catalog.md`
+- **RFC 8707 — [Resource Indicators for OAuth 2.0](https://www.rfc-editor.org/rfc/rfc8707) (2020, IETF)** — explicit resource selection and audience restriction → `standards-map.md`
+- **RFC 8705 — [OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound Access Tokens](https://www.rfc-editor.org/rfc/rfc8705) (2020, IETF)** and **RFC 9449 — [OAuth 2.0 Demonstrating Proof of Possession](https://www.rfc-editor.org/rfc/rfc9449) (2023, IETF)** — sender-constrained tokens, proof/key binding, and replay boundaries → `standards-map.md`, `attack-and-test-catalog.md`
+- **RFC 9068 — [JWT Profile for OAuth 2.0 Access Tokens](https://www.rfc-editor.org/rfc/rfc9068) (2021, IETF)** and **RFC 8725 / BCP 225 — [JSON Web Token Best Current Practices](https://www.rfc-editor.org/rfc/rfc8725) (2020, IETF)** — profiled JWT access-token validation and cross-JWT confusion defenses → `standards-map.md`
+
+### Hardened authorization and regulated profiles
+
+- **RFC 9101 — [JWT-Secured Authorization Request](https://www.rfc-editor.org/rfc/rfc9101) (2021, IETF)** and **RFC 9126 — [Pushed Authorization Requests](https://www.rfc-editor.org/rfc/rfc9126) (2021, IETF)** — integrity-protected and back-channel authorization requests → `standards-map.md`
+- **JWT Secured Authorization Response Mode for OAuth 2.0 — [JARM Final](https://openid.net/specs/oauth-v2-jarm-final.html) (2022, OpenID Foundation)** — signed/encrypted authorization responses and their distinct validation contract → `oidc-validation.md`, `standards-map.md`
+- **FAPI 2.0 Security Profile — [Final specification](https://openid.net/specs/fapi-security-profile-2_0-final.html) (2025, OpenID Foundation)** — a stricter interoperable profile for high-value APIs; its added requirements supplement rather than replace RFC 9700 → `standards-map.md`
+- **RFC 9396 — [Rich Authorization Requests](https://www.rfc-editor.org/rfc/rfc9396) (2023, IETF)** — structured authorization details and privilege validation → `standards-map.md`
+
+### Freshness and source discipline
+
+- **IETF Datatracker — [OAuth 2.1 draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-v2-1/)** — checked only for explicitly requested forward-looking analysis; the skill labels it as a draft until publication and does not silently promote draft language to a BCP requirement → `standards-map.md`
+- The RFC Editor info page and errata database determine RFC status and corrections. OpenID Foundation final/errata documents determine OIDC and FAPI profile status. Vendor documentation is used only for observed implementation behavior, never to weaken a normative requirement.
 
 ---
 
