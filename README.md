@@ -94,6 +94,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Impeccable Design** | Comprehensive frontend design vocabulary: distinctive interfaces, systematic typography, OKLCH color, anti-AI-slop methodology + 17 steering commands | [→ impeccable](https://impeccable.style/skills/) |
 | **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 5 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
+| **Secure OAuth and OIDC** | RFC 9700 / BCP 240 security workflow for OAuth 2.0 and OpenID Connect: applicability-aware controls, issuer and transaction binding, ID Token validation, attack catalog, negative tests, migrations, and evidence-based audits | [→ skills/secure-oauth-oidc](claude/.claude/skills/secure-oauth-oidc/SKILL.md) |
 | **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 4 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
 | **Finding Seams** | Identifying substitution points in untestable code -- function parameter, configuration, module, and object seams for TypeScript/JS. FP-first with OOP patterns in a separate resource for legacy class-based code. Based on Michael Feathers' *Working Effectively with Legacy Code*. 3 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
 | **Characterisation Tests** | Documenting actual behavior of existing code before making changes. The 5-step algorithm, heuristics, modern tooling (Vitest snapshots, combination testing, approval testing). Based on Michael Feathers' *Working Effectively with Legacy Code*. 2 deep-dive resources | [→ skills/characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) |
@@ -154,6 +155,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | Typography or color needs work | [impeccable](https://impeccable.style/skills/) | `/typeset` for font selection and hierarchy, `/colorize` for strategic OKLCH color |
 | Designing REST APIs or module contracts | [api-design](claude/.claude/skills/api-design/SKILL.md) | Contract-first, Hyrum's Law, consistent error semantics, pagination |
 | Breaking changes keep surprising consumers | [api-design](claude/.claude/skills/api-design/SKILL.md) | Additive-only changes, One-Version Rule, input/output separation |
+| Designing or auditing OAuth/OIDC login or delegated access | [secure-oauth-oidc](claude/.claude/skills/secure-oauth-oidc/SKILL.md) | Establish the security profile, then prove every issuer, transaction, code, token, and identity binding |
+| Debugging token replay, mix-up, or multi-issuer login | [secure-oauth-oidc](claude/.claude/skills/secure-oauth-oidc/SKILL.md) | Trace the attack path and test hostile issuer, callback, redemption, and validation behavior |
 | CLI output breaks when piped to jq | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | stdout for data only, stderr for everything else |
 | JSON mode includes spinners or progress | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | Format flag contract, TTY detection, stream separation |
 | Building a CLI that composes with Unix tools | [cli-design](claude/.claude/skills/cli-design/SKILL.md) | --json/--plain flags, exit codes, NDJSON streaming, stdin support |
@@ -184,6 +187,7 @@ Skills are **auto-discovered** by Claude when relevant:
 - After MUTATE + KILL MUTANTS? → `refactoring` skill assesses opportunities
 - Reviewing test effectiveness? → `mutation-testing` skill identifies weak tests
 - Designing API endpoints? → `api-design` skill provides contract-first patterns
+- Building or reviewing OAuth/OIDC? → `secure-oauth-oidc` applies RFC 9700 plus the relevant identity and extension profiles
 - Splitting epics, large stories, or backlog items? → `story-splitting` preserves vertical user-value slices
 - Investigating local/prod drift? → `production-parity-skill-builder` creates an app-specific parity skill from docs, source, tests, config, auth, and infra
 - Code with hard-to-test dependencies? → `finding-seams` skill identifies substitution points
@@ -590,11 +594,28 @@ if (decision.accepted) await store.appendToStream(streamId, decision.events, { e
 - **Red flags and verification checklist**
 - [`resources/api-evolution.md`](claude/.claude/skills/api-design/resources/api-evolution.md) — Versioning strategies (Stripe's date-pinning, URL, header), Postel's Law, Sunset/Deprecation headers, enum evolution, consumer-driven contract testing (Pact)
 - [`resources/api-security.md`](claude/.claude/skills/api-design/resources/api-security.md) — OWASP API Security Top 10 with TypeScript code examples, authentication patterns (API keys, OAuth2+PKCE, JWT tradeoffs), security checklist
-- [`resources/auth-security.md`](claude/.claude/skills/api-design/resources/auth-security.md) — JWT best practices (RFC 8725) and OAuth 2.0 security (RFC 9700): algorithm allowlisting, claim validation, PKCE, redirect URI validation, token handling
+- [`resources/auth-security.md`](claude/.claude/skills/api-design/resources/auth-security.md) — JWT best practices (RFC 8725): algorithm allowlisting, claim validation, explicit typing, untrusted header inputs, and routing to the specialist OAuth/OIDC skill
 - [`resources/http-fundamentals.md`](claude/.claude/skills/api-design/resources/http-fundamentals.md) — Building on HTTP semantics (RFC 9205): status code discipline, caching, URI schemes, browser security headers
 - [`resources/problem-details.md`](claude/.claude/skills/api-design/resources/problem-details.md) — RFC 9457 deep detail: ProblemDetail type, type-URI semantics, extension members, security considerations
 
 **Adapted from** [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), significantly expanded with RFC 9457, idempotency, rate limiting, OWASP API Security Top 10, versioning strategies, and deprecation patterns. Modified to align with existing skills: TypeScript patterns deferred to `typescript-strict`, data structures use `type` with `readonly` per `functional` skill conventions.
+
+---
+
+### 🔐 Secure OAuth and OpenID Connect → [skills/secure-oauth-oidc](claude/.claude/skills/secure-oauth-oidc/SKILL.md)
+
+**Problem it solves:** OAuth and OIDC systems that pass a happy-path login test while leaving issuer mix-up, code injection, redirect, replay, token-substitution, or identity-binding weaknesses undiscovered
+
+**What's inside (main skill + 5 focused references):**
+- **Security-profile first** — identifies goals, parties, real client confidentiality, every enabled flow, issuer/resource topology, applicable profiles, and inspected evidence before choosing controls
+- **Transaction ledger** — follows `state`, PKCE, `nonce`, authorization responses and codes, access and refresh tokens, and ID Tokens across creation, binding, validation, expiry, replay, and revocation
+- **RFC 9700 control catalog** — preserves BCP 14 strength, conditions, role, and source section instead of flattening every requirement into a generic checklist
+- **OIDC validation** — trusted issuer selection, Discovery and key binding, atomic ID Token validation, `(iss, sub)` identity, UserInfo subject equality, multi-issuer callbacks, hybrid/JARM distinctions, and logout boundaries
+- **Complete threat catalog** — maps RFC 9700's attacks to prerequisites, broken invariants, controls, and safe negative tests
+- **Standards map** — routes to PKCE, native apps, metadata, resource indicators, mTLS, DPoP, JWT access tokens, PAR/JAR/JARM, issuer identification, rich authorization requests, OIDC, and stricter FAPI profiles without treating drafts as final standards
+- **Evidence-based review contract** — distinguishes normative non-compliance, exploitable weakness, defense-in-depth, and unknowns; requires attack scenarios, precise evidence, remediation, and verification
+
+**Primary baseline:** [RFC 9700 / BCP 240](https://www.rfc-editor.org/info/rfc9700/) with the applicable OAuth extension and OpenID Connect specifications layered on top.
 
 ---
 

@@ -5,7 +5,7 @@ description: Stable API and interface design patterns. Use when designing REST e
 
 # API and Interface Design
 
-For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill.
+For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill. For OAuth 2.0 or OpenID Connect, load the `secure-oauth-oidc` skill rather than treating authentication as an ordinary API-key decision.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
@@ -14,7 +14,7 @@ For TypeScript type patterns (branded types, discriminated unions, schema-first)
 | `problem-details.md` | Implementing RFC 9457 error responses — member semantics, single-error and validation-error JSON examples, extension members, §5 security guidance |
 | `api-evolution.md` | Versioning strategies and deprecation patterns |
 | `api-security.md` | Securing the API boundary |
-| `auth-security.md` | JWT and OAuth 2.0 security deep-dive |
+| `auth-security.md` | JWT BCP security and routing to the dedicated OAuth/OIDC skill |
 | `http-fundamentals.md` | HTTP protocol fundamentals — caching directives, content negotiation, browser security, status codes, header design |
 
 ## When to Use

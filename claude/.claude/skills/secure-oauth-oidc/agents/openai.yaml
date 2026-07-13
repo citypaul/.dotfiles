@@ -1,0 +1,4 @@
+interface:
+  display_name: "Secure OAuth and OIDC"
+  short_description: "Design and audit secure OAuth and OIDC flows"
+  default_prompt: "Use $secure-oauth-oidc to threat-model and review this OAuth or OpenID Connect design against current security best practice."
