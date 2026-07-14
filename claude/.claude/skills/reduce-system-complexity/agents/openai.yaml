@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reduce System Complexity"
+  short_description: "Remove mechanism while conserving behavior"
+  default_prompt: "Use $reduce-system-complexity to reduce total mechanism in this selected system while preserving behavior and non-functional guarantees."

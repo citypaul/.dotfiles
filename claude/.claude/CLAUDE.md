@@ -4,7 +4,7 @@
 >
 > **Architecture:**
 > - **CLAUDE.md** (this file): Core philosophy + quick reference (~160 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (specification, ubiquitous-language, tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, expectations, planning, story-splitting, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, event-sourcing, twelve-factor, api-design, cli-design, structure-codebase, finding-seams, characterisation-tests, production-parity-skill-builder, storyboard, teach-me, diagrams, technical-writing, find-skills, find-gaps, double-check)
+> - **Skills**: Detailed patterns loaded on-demand (specification, ubiquitous-language, tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, reduce-system-complexity, expectations, planning, story-splitting, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, event-sourcing, twelve-factor, api-design, cli-design, codebase-design, improve-codebase-architecture, structure-codebase, evaluate-existing-solutions, finding-seams, characterisation-tests, production-parity-skill-builder, storyboard, teach-me, diagrams, technical-writing, find-skills, find-gaps, double-check)
 > - **External skills**: Loaded on-demand from community repos (impeccable + 17 steering commands from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), grill-me from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), seo-audit from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit))
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
@@ -14,7 +14,7 @@
 
 ## Core Philosophy
 
-**TEST-DRIVEN DEVELOPMENT IS NON-NEGOTIABLE.** Every single line of production code must be written in response to a failing test. No exceptions. This is not a suggestion or a preference - it is the fundamental practice that enables all other principles in this document.
+**TEST-DRIVEN DEVELOPMENT IS NON-NEGOTIABLE FOR NEW OR CHANGED BEHAVIOR.** Every production behavior change must be written in response to a failing behavior test. Pure behavior-preserving refactoring and mechanism reduction begin from passing preservation evidence and remain behaviorally green. Use mutation evidence where meaningful; for unreachable, configuration, contract, integration, or operational changes, record proportionate alternate evidence and `N/A` instead of fabricating RED or structural mutants.
 
 I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven testing and functional programming principles. All work should be done in small, incremental changes that maintain a working state throughout development.
 
@@ -22,7 +22,7 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 
 **Key Principles:**
 
-- Write tests first (TDD)
+- Write behavior tests first for new or changed behavior (TDD)
 - Test behavior, not implementation
 - No `any` types or type assertions
 - Immutable data only
@@ -41,7 +41,7 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 **Core principle**: Test behavior, not implementation. 100% coverage through business behavior.
 
 **Quick reference:**
-- Write tests first (TDD non-negotiable)
+- Write behavior tests first for new or changed behavior (TDD non-negotiable)
 - Test through public API exclusively
 - Use factory functions for test data (no `let`/`beforeEach`)
 - Tests must document expected business behavior
@@ -77,24 +77,26 @@ For OAuth 2.0 or OpenID Connect design, implementation, review, testing, inciden
 - No comments - code should be self-documenting
 - Prefer options objects over positional parameters
 - Use array methods (`map`, `filter`, `reduce`) over loops
+- Compose small private functions behind cohesive, stable module contracts; do not equate one helper with one public module
 
 For detailed patterns and examples, load the `functional` skill.
 
 ## Development Workflow
 
-**Core principle**: RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR in small, known-good increments. TDD is the fundamental practice.
+**Core principle**: RED-GREEN with mutation or reviewed alternate evidence, conditional mutant handling, and refactoring when applicable, in small known-good increments. TDD is the fundamental practice for changed behavior.
 
 **Quick reference:**
-- RED: Write failing test first (NO production code without failing test)
+- RED: Write a failing behavior test before new or changed behavior
 - GREEN: Write MINIMUM code to pass test
-- MUTATE: Run mutation testing to verify test effectiveness, produce a report
-- KILL MUTANTS: Address surviving mutants (ask human when value is ambiguous)
-- REFACTOR: Assess improvement opportunities (only refactor if adds value)
+- MUTATE OR ALTERNATE EVIDENCE: Run mutation testing where meaningful; otherwise record `N/A` plus proportionate reachability, configuration, contract, integration, or operational evidence
+- KILL MUTANTS: Address surviving mutants when mutation testing applies (ask human when value is ambiguous)
+- REFACTOR OR REDUCE: Assess improvement opportunities only when the applicable skill and preservation evidence support the change
 - **Wait for commit approval** before every commit
 - Each increment leaves codebase in working state
 For detailed TDD workflow, load the `tdd` skill.
-For implementation of any planned slice, load `tdd`, `testing`, `mutation-testing`, and `refactoring` before code changes begin.
+For a behavior-changing planned slice, load `tdd`, `testing`, `mutation-testing`, and `refactoring` before code changes begin. For a pure behavior-preserving refactor/reduction, load only the applicable testing, mutation-testing, refactoring, and reduction skills; load `reduce-system-complexity` when net mechanism removal is claimed, and record why any other skill is `N/A`. Do not load the full RED workflow merely to assert implementation shape.
 For refactoring methodology, load the `refactoring` skill.
+For removing total branches, states, dependencies, layers, flags, retries, jobs, or operational moving parts from a selected existing path while conserving behavior, load the `reduce-system-complexity` skill. Pure reductions use the verified REFACTOR path, not a fabricated structural RED test.
 For fuzzy product/design decisions, load `grill-me` to pressure-test the decision tree before writing stories or plans.
 For turning fuzzy intent into shared understanding and acceptance criteria — specification as a conversation, agent round first, then a real three-amigos round — load the `specification` skill.
 For naming domain concepts, glossary work, or any new/changed domain term — the five-step language protocol, never silent coinage — load the `ubiquitous-language` skill.
@@ -108,7 +110,10 @@ For event-sourced systems or bounded contexts (events as the source of truth, th
 For 12-factor service projects, load the `twelve-factor` skill.
 For production observability (wide events, OpenTelemetry, SLOs/alerting, telemetry testing), load the `observability` skill.
 For CLI tool design (stream separation, format flags, exit codes, composability), load the `cli-design` skill.
+For designing a selected module's coherent responsibility, full caller-facing contract, information hiding, depth, leverage, and justified seams, load the `codebase-design` skill.
+For finding and ranking evidence-backed architecture improvements across a repository or subsystem — with a self-contained visual HTML report — load the `improve-codebase-architecture` skill.
 For designing or auditing source trees, frontend route/feature/state/design-system ownership, package boundaries, visible hexagonal layouts, feature folders, BFF route organization, composition roots, or folder migrations, load the `structure-codebase` skill.
+Before introducing a material generic mechanism or durable new dependency, load `evaluate-existing-solutions` proportionately: run a lightweight local/platform preflight before bespoke generic machinery; run due diligence without reopening alternatives for a named but newly introduced dependency; use the full comparison for consequential unresolved choices. Do not turn this into a search tax for domain-specific logic, small glue, routine use of an already-adopted tool, or ordinary fixes and refactors.
 For environment parity issues (works locally but not in production/staging, config or auth drift), load the `production-parity-skill-builder` skill.
 For making untestable code testable, load the `finding-seams` skill.
 For documenting existing behavior before changes, load the `characterisation-tests` skill.
@@ -135,7 +140,7 @@ For an independent second opinion on finished work — spinning up a *different*
 **Core principle**: Think deeply, follow TDD strictly, capture learnings while context is fresh.
 
 **Quick reference:**
-- ALWAYS FOLLOW TDD - no production code without failing test
+- ALWAYS FOLLOW TDD for behavior change; keep pure refactors/reductions behaviorally green from passing, proportionate preservation evidence
 - Assess refactoring after every green (but only if adds value)
 - Update CLAUDE.md when introducing meaningful changes
 - Ask "What do I wish I'd known at the start?" after significant changes

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codebase Design"
+  short_description: "Design deep, cohesive modules and contracts"
+  default_prompt: "Use $codebase-design to design a deep module with a small, stable public contract."

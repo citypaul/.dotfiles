@@ -1,0 +1,4 @@
+interface:
+  display_name: "Improve Codebase Architecture"
+  short_description: "Find high-leverage architecture improvements"
+  default_prompt: "Use $improve-codebase-architecture to audit this codebase and produce a visual, evidence-backed architecture report."

@@ -62,6 +62,8 @@ Question rules:
 
 Load `resources/question-patterns.md` for reusable question shapes.
 
+Build the parity map before comparing emulator, local service, hosted sandbox, or testing-tool options. When repository evidence cannot settle a consequential choice among them, route the known parity contract and constraints through `evaluate-existing-solutions`; do not let a tool search define what production fidelity means.
+
 Example:
 
 ```markdown

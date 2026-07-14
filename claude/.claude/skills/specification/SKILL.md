@@ -67,6 +67,7 @@ Specification conversations coin vocabulary constantly — that is half their va
 | An existing story/plan/spec that needs holes poked | `find-gaps` |
 | The agreed map is too big; slicing into child stories | `story-splitting` |
 | Turning a child story into PR-sized plans | `planning` |
+| Comparing libraries, tools, applications, services, platform primitives, or bespoke implementation after behavior and constraints stabilize | `evaluate-existing-solutions` |
 | Per-slice executable specification (where installed) | `acceptance-testing` |
 | Naming the vocabulary the conversation surfaced (where installed) | `ubiquitous-language` |
 

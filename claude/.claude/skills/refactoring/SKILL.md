@@ -1,15 +1,17 @@
 ---
 name: refactoring
-description: Refactoring assessment and patterns for already-tested code. Use when the user asks to refactor, clean up, simplify, or restructure existing code, and automatically after mutation testing validates test strength (the REFACTOR step of the TDD cycle). Covers commit-before-refactoring discipline, when refactoring adds value vs when to skip it, and the priority classification of improvement opportunities. Do NOT use for untested code (see characterisation-tests and finding-seams first) or for adding behavior (see tdd).
+description: Refactoring assessment and behavior-preserving patterns for code with a passing baseline and sufficient preservation evidence. Use when the user asks to clean up, simplify, or restructure a selected area, and after mutation testing or reviewed proportionate alternate evidence establishes confidence for the REFACTOR step. Covers commit-before-refactoring discipline, when refactoring adds value vs when to skip it, and priority classification. For any slice in a selected whole-path reduction program—transition or terminal—use reduce-system-complexity as the governing skill; refactoring may be secondary when applicable. For repository-wide architecture discovery use improve-codebase-architecture; for a module contract use codebase-design. Do NOT use for insufficiently evidenced code or adding behavior.
 ---
 
 # Refactoring
 
-Refactoring is the final step of TDD. After mutation testing confirms test strength, assess if refactoring adds value.
+Refactoring is the final step of TDD when restructuring is applicable. Assess it after mutation testing—or reviewed proportionate alternate evidence when mutation is not meaningful—establishes enough preservation confidence for the proposed change.
+
+This skill safely implements a bounded, behavior-preserving improvement. Use `improve-codebase-architecture` to discover and rank architecture candidates, then `codebase-design` to design a selected module contract before returning here for implementation. If the slice participates in a selected whole-path reduction program, whether as a transition or terminal reduction, `reduce-system-complexity` governs the ledger and gate state; use this skill only as a secondary refactoring assessment when applicable.
 
 ## When to Refactor
 
-- Always assess after mutation testing confirms test strength
+- Assess after mutation testing or reviewed proportionate alternate evidence establishes preservation confidence
 - Only refactor if it improves the code
 - **Commit working code BEFORE refactoring** (critical safety net)
 
@@ -22,10 +24,10 @@ Having a working baseline before refactoring:
 - Shows clear separation in git history
 
 **Workflow:**
-1. GREEN: Tests pass
-2. MUTATE: Verify test effectiveness
-3. KILL MUTANTS: Address surviving mutants
-4. COMMIT: Save working code with strong tests
+1. BASELINE: Applicable tests pass and/or the conserved behavior and guarantees have proportionate evidence
+2. MUTATE OR ALTERNATE EVIDENCE: Verify preservation strength; record explicit `N/A` when mutation is not meaningful
+3. KILL MUTANTS WHEN APPLICABLE: Address valuable survivors
+4. COMMIT: Save the working baseline with its preservation evidence
 5. REFACTOR: Improve structure
 6. COMMIT: Save refactored code
 
@@ -34,7 +36,7 @@ Having a working baseline before refactoring:
 | Priority | Action | Examples |
 |----------|--------|----------|
 | Critical | Fix now | Data mutation (see the `functional` skill), knowledge duplication, >3 levels nesting |
-| High | This session | Magic numbers, unclear names, >30 line functions |
+| High | This session | Magic numbers, unclear names, functions coordinating multiple responsibilities |
 | Nice | Later | Minor naming, single-use helpers |
 | Skip | Don't change | Already clean code |
 
@@ -53,7 +55,7 @@ Having a working baseline before refactoring:
 ## Example Assessment
 
 ```typescript
-// After MUTATE + KILL MUTANTS:
+// After mutation or reviewed alternate evidence establishes preservation confidence:
 const processOrder = (order: Order): ProcessedOrder => {
   const itemsTotal = order.items.reduce((sum, item) => sum + item.price, 0);
   const shipping = itemsTotal > 50 ? 0 : 5.99;
@@ -70,7 +72,7 @@ const processOrder = (order: Order): ProcessedOrder => {
 
 If code isn't driven by a failing test, don't write it.
 
-**Key lesson**: Every line must have a test that demanded its existence.
+**Key lesson**: Every new behavior must have a failing test that demanded it. A behavior-preserving refactor may change lines without a new RED test, but only to improve structure while proportionate preservation evidence stays green. Use mutation evidence where meaningful and explicit alternate evidence where it is not; never invent structural mutants. Do not add speculative behavior.
 
 ❌ **Speculative code examples:**
 - "Just in case" logic
@@ -124,10 +126,11 @@ refactor: rename ambiguous parameter names
 
 ## Refactoring Checklist
 
-- [ ] All tests pass without modification
-- [ ] No new public APIs added
+- [ ] Existing behavior tests pass; test edits are not hiding a behavior change
+- [ ] Mutation results are reviewed where meaningful, or explicit `N/A` plus proportionate alternate evidence is recorded
+- [ ] No unplanned consumer-facing API was added; internal or temporary contracts follow the selected design and compatibility plan
 - [ ] Code more readable than before
 - [ ] Committed separately from features
 - [ ] Committed BEFORE refactoring (safety net)
 - [ ] No speculative code added
-- [ ] Behavior unchanged (tests prove this)
+- [ ] Behavior unchanged within the confidence and fidelity of the passing preservation evidence

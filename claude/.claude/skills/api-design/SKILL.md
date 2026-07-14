@@ -1,9 +1,11 @@
 ---
 name: api-design
-description: Stable API and interface design patterns. Use when designing REST endpoints, module boundaries, component prop interfaces, or any public contract between systems. Covers contract-first development, error semantics (RFC 9457), REST conventions, pagination, idempotency, rate limiting, and backward compatibility. For TypeScript type patterns (branded types, discriminated unions, schemas), see typescript-strict. For validation at trust boundaries, see typescript-strict.
+description: Stable consumer-facing API and interface design patterns. Use when designing REST endpoints, reusable component prop interfaces, cross-team boundaries, or any externally consumed or versioned contract. Covers contract-first development, error semantics (RFC 9457), REST conventions, pagination, idempotency, rate limiting, and backward compatibility. For an in-process feature or module's coherent responsibility and interface depth, use codebase-design. For TypeScript type patterns and trust-boundary validation, see typescript-strict.
 ---
 
 # API and Interface Design
+
+Use this skill for consumer compatibility and protocol semantics. For an in-process module's responsibility, full caller burden, information hiding, and depth, load `codebase-design`; use both when an internal module also exposes a public or cross-team contract. Use `evaluate-existing-solutions` only when a material gateway, framework, SDK, provider, or protocol-implementation choice remains unresolved; API semantics and compatibility stay here.
 
 For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill. For OAuth 2.0 or OpenID Connect, load the `secure-oauth-oidc` skill rather than treating authentication as an ordinary API-key decision.
 
@@ -20,8 +22,8 @@ For TypeScript type patterns (branded types, discriminated unions, schema-first)
 ## When to Use
 
 - Designing new API endpoints
-- Defining module boundaries or contracts between teams
-- Creating component prop interfaces
+- Defining contracts between teams or independently released consumers
+- Creating reusable consumer-facing component prop interfaces
 - Changing existing public interfaces
 - Establishing database schema that informs API shape
 

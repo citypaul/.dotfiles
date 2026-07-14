@@ -7,17 +7,17 @@ This directory contains specifications for specialized Claude Code agents that w
 ### Development Process Agents
 
 #### `tdd-guardian`
-**Purpose**: Ensures strict Test-Driven Development compliance throughout the coding process.
+**Purpose**: Ensures strict Test-Driven Development compliance for new or changed observable behavior.
 
 **Use proactively when**:
 - Planning to implement a new feature
-- About to write any production code
+- About to implement new or changed production behavior
 
 **Use reactively when**:
-- Code has been written (verify TDD was followed)
+- Behavior-changing code has been written (verify TDD was followed)
 - Tests are green (assess refactoring opportunities)
 
-**Core responsibility**: Enforce RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR cycle, verify tests written first.
+**Core responsibility**: Enforce RED-GREEN with mutation or reviewed alternate evidence, conditional mutant handling, and refactoring when applicable for behavior change. Pure behavior-preserving refactors/reductions route to `refactor-scan` or `reduce-system-complexity` with passing proportionate evidence instead of fabricated RED.
 
 ---
 
@@ -38,7 +38,7 @@ This directory contains specifications for specialized Claude Code agents that w
 ---
 
 #### `refactor-scan`
-**Purpose**: Assesses refactoring opportunities after mutation testing validates test strength (TDD's final step).
+**Purpose**: Assesses refactoring opportunities after mutation testing or reviewed proportionate alternate evidence establishes preservation confidence.
 
 **Use proactively when**:
 - Mutation testing is complete and surviving mutants addressed
@@ -72,7 +72,7 @@ This directory contains specifications for specialized Claude Code agents that w
 **Core responsibility**: Ensure PRs meet quality standards before merge.
 
 **Review categories**:
-1. TDD Compliance - Was test-first development followed?
+1. Change-path compliance - Is exactly one of behavior change, pure refactor, reduction transition, or terminal reduction classified with its required evidence and truthful gate state?
 2. Testing Quality - Are tests behavior-focused?
 3. TypeScript Strictness - No `any`, proper types?
 4. Functional Patterns - Immutability, pure functions?
@@ -219,9 +219,9 @@ progress-guardian (orchestrates)
     ├─► Creates: plans/<name>.md
     │
     ├─► For each step:
-    │   ├─→ tdd-guardian (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR)
+    │   ├─→ tdd-guardian (RED-GREEN + mutation or reviewed alternate evidence)
     │   ├─→ ts-enforcer (before commits)
-    │   └─→ refactor-scan (after MUTATE + KILL MUTANTS)
+    │   └─→ refactor-scan (after mutation or reviewed alternate evidence, when applicable)
     │
     ├─► When decisions arise:
     │   └─→ adr (architectural decisions)
@@ -239,7 +239,7 @@ progress-guardian (orchestrates)
 
 ### Typical Workflow
 
-**Recommended command flow:** `/setup` → `/plan` → RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR → `/pr` → `/continue` → repeat
+**Recommended command flow:** `/setup` → `/plan` → behavior-change TDD or preservation-only REFACTOR/reduction path → `/pr` → `/continue` → repeat
 
 1. **Onboard project** (once)
    - Run `/setup` to detect tech stack and generate project-level config
@@ -250,11 +250,11 @@ progress-guardian (orchestrates)
    - Get approval for the plan before writing any code
 
 3. **For each step in plan**
-   - LOAD: `tdd`, `testing`, `mutation-testing`, and `refactoring` before code changes
-   - RED: Write failing behavior test (TDD non-negotiable)
-   - GREEN: Minimal code to pass
-   - MUTATE: Run `mutation-testing` skill and produce a report
-   - KILL MUTANTS: Address surviving mutants or justify equivalent mutants
+   - CLASSIFY: Behavior change, pure behavior-preserving refactor/reduction, or mixed
+   - LOAD: For behavior change, `tdd`, `testing`, `mutation-testing`, and `refactoring`; for pure preservation, the applicable testing/refactoring/reduction skills
+   - RED/GREEN: Required for changed behavior; pure preservation starts from passing evidence and stays behaviorally green
+   - MUTATE/ALTERNATE EVIDENCE: Run mutation testing where meaningful; otherwise record proportionate reachability, configuration, contract, integration, or operational evidence and `N/A`
+   - KILL MUTANTS: Address valuable survivors when mutation testing applies
    - REFACTOR: Run `refactoring` skill and invoke `refactor-scan` to assess improvements
    - **WAIT FOR COMMIT APPROVAL**
 
@@ -266,12 +266,12 @@ progress-guardian (orchestrates)
 
 6. **Before commits**
    - Invoke `ts-enforcer`: Verify TypeScript compliance
-   - Invoke `tdd-guardian`: Verify TDD compliance
+   - Invoke `tdd-guardian` for behavior changes; use `refactor-scan` or `reduce-system-complexity` for pure preservation work
    - **Ask for commit approval**
 
 7. **Pre-PR quality gate**
-   - Verify `tdd`, `testing`, `mutation-testing`, and `refactoring` were loaded for implemented slices
-   - Run `mutation-testing` skill: Verify tests detect changes, kill surviving mutants
+   - Verify each implemented slice loaded the skills for its behavior-changing or preservation-only path
+   - Run mutation testing where meaningful, or review the documented alternate evidence and `N/A`
    - Run `refactoring` skill and invoke `refactor-scan`: Assess improvements (only if adds value)
    - Invoke `pr-reviewer`: Self-review changes
    - Fix any issues found
@@ -407,14 +407,14 @@ These agents work together to create a comprehensive development workflow:
 - **Analysis**: use-case-data-patterns maps use cases to implementation patterns
 - **Compliance**: twelve-factor-audit assesses 12-factor methodology adherence
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
-- **Improvement**: refactor-scan optimizes code after mutation testing validates test strength
+- **Improvement**: refactor-scan assesses code after mutation testing or reviewed proportionate alternate evidence establishes preservation confidence
 - **Review**: pr-reviewer validates PRs before merge
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
 - **Progress**: progress-guardian tracks work through plan files in `plans/`
 
 **Key workflow principles** (see `planning` skill for details):
 - All work in small, known-good increments
-- TDD non-negotiable (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR)
+- TDD non-negotiable for behavior change; pure preservation follows an evidenced REFACTOR/reduction path
 - Commit approval required before every commit
 - Learnings captured at end via `learn` and `adr` agents
 

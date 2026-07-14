@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evaluate Existing Solutions"
+  short_description: "Choose reuse, adoption, or bespoke deliberately"
+  default_prompt: "Use $evaluate-existing-solutions to compare established solutions with a bespoke baseline before we commit to this mechanism."

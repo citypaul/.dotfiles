@@ -14,6 +14,8 @@ description: Functional programming patterns with immutable data. Use when writi
 
 ---
 
+Small pure functions are an implementation technique, not a mandate to publish one function per module. Keep related helpers private and colocated when they compose into one coherent responsibility; use `codebase-design` when choosing the stable caller-facing contract.
+
 ## Core Principles
 
 - **No data mutation** - immutable structures only

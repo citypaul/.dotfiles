@@ -146,10 +146,14 @@ This reviewer enforces:
 
 ## Global Rules (Non-Negotiable)
 
-### TDD Compliance
-- Every production code change needs corresponding tests
-- Tests come BEFORE implementation (test-first)
-- Tests verify behavior, not implementation
+### Change-Path Compliance
+- New or changed observable behavior needs corresponding tests written before implementation
+- Pure behavior-preserving refactors or reductions need a passing pre/post baseline plus proportionate alternate evidence where tests cannot observe the mechanism
+- Mutation results must be reviewed where meaningful; otherwise record an explicit `N/A` rationale and proportionate reachability, configuration, contract, integration, or operational evidence
+- Run only the applicable refactoring/reduction assessment and record `N/A` when neither applies
+- A reduction transition must reference its program, terminal slice, and conserved contract; pass the behavior gate and independent verification; record owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none); and state `mechanism gate: pending — no net-reduction claim`
+- A terminal reduction must link its reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge prior transition obligations, and pass both gates before claiming net reduction
+- Any tests verify behavior, not implementation
 
 ### Testing Quality
 - Test through public API only
@@ -242,8 +246,12 @@ This reviewer enforces:
 When reviewing PRs for this project:
 
 ### Must Pass (Blocking)
-- [ ] All production code has tests (TDD)
-- [ ] Tests are behavior-focused
+- [ ] Exactly one path is classified; behavior changes have test-first evidence and pure refactors have a passing baseline
+- [ ] Mutation results are reviewed where meaningful, or explicit `N/A` plus proportionate alternate evidence is recorded
+- [ ] Applicable refactoring/reduction assessment is complete, or explicitly `N/A`
+- [ ] Reduction transitions link their terminal slice, pass the behavior gate and independent verification, record temporary-bridge ownership/removal metadata or `N/A`, and mark the mechanism gate pending without claiming net reduction
+- [ ] Terminal reductions link their program/report/ledger (or authorized single-slice `N/A`), discharge transition obligations, pass both gates, and remove old machinery/expired bridges
+- [ ] Any tests are behavior-focused
 - [ ] No `any` types
 - [ ] No data mutation
 - [ ] No security issues
@@ -327,16 +335,28 @@ allowed-tools: Bash(git:*), Bash(gh:*), Bash([PACKAGE_MANAGER]:*)
 ---
 
 Current branch state:
-!`git log main..HEAD --oneline`
+!`git log [DETECTED_DEFAULT_BRANCH]..HEAD --oneline`
+
+Current branch:
+!`git branch --show-current`
 
 Changes summary:
-!`git diff main...HEAD --stat`
+!`git diff [DETECTED_DEFAULT_BRANCH]...HEAD --stat`
+
+If the current branch is `[DETECTED_DEFAULT_BRANCH]`, STOP. Do not create a PR until the work is moved to a feature branch with user approval.
 
 Before creating the PR, run these checks in order:
 
-1. [DETECTED_TYPE_CHECK_COMMAND]
-2. [DETECTED_LINT_COMMAND]
-3. [DETECTED_TEST_COMMAND]
+1. Classify exactly one change path: behavior change, pure refactor, reduction transition, or terminal reduction
+2. Apply exactly one evidence branch:
+   - Behavior change: verify RED before GREEN plus mutation results, or explicit mutation `N/A` with proportionate alternate evidence
+   - Pure refactor: verify the passing baseline plus mutation results, or explicit mutation `N/A` with proportionate alternate evidence; run refactoring assessment when applicable
+   - Reduction transition: reference the program/terminal slice and record the conserved contract, `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), `mechanism gate: pending — no net-reduction claim`, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
+   - Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge transition obligations, run both `reduce-system-complexity` gates, confirm old machinery and expired bridges are gone, and include mutation results or explicit mutation `N/A` with proportionate alternate evidence
+3. [DETECTED_TYPE_CHECK_COMMAND]
+4. [DETECTED_LINT_COMMAND]
+5. [DETECTED_TEST_COMMAND]
+6. [DETECTED_BUILD_COMMAND]
 
 If any check fails, fix the issue before proceeding.
 
@@ -346,12 +366,16 @@ Create a PR with:
 - 1-3 bullet points describing the changes
 - Focus on WHAT changed and WHY
 
-Note: No test plan section needed - TDD means tests are already written and passing.
+## Verification
+- Changed behavior: name test-first evidence plus mutation results or explicit `N/A` and alternate evidence
+- Pure refactor: name the passing baseline plus mutation results or explicit `N/A` and alternate evidence
+- Reduction transition: link the program and terminal slice; name the conserved contract, passing behavior gate, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), pending mechanism gate without a net claim, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
+- Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), show discharged transition obligations, passing behavior/mechanism gates, removal of superseded machinery and expired bridges, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
 
 Use `gh pr create` (or project-specific CLI) with appropriate title and body.
 ```
 
-Replace all `[DETECTED_*]` placeholders with actual commands from `package.json` scripts.
+Replace `[DETECTED_DEFAULT_BRANCH]` with the repository's detected default branch. Replace every command placeholder with the actual project command; when a check is unavailable, record it as `N/A` with a reason instead of emitting a broken command.
 
 ## Step 5: Optionally Create Project Skill
 

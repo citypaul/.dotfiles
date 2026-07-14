@@ -1,11 +1,13 @@
 ---
 name: find-skills
-description: Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.
+description: Discover and, with authorization, install agent skills from the open skills ecosystem. Use when the user explicitly asks to find or install a skill from the external skills ecosystem, asks whether an installable agent skill exists for a task, or wants to extend agent capabilities through skills.sh or a skill repository. Not for choosing among already-installed local skills or selecting software libraries, developer tools, applications, services, frameworks, or platform primitives; use evaluate-existing-solutions for technology choices.
 ---
 
 # Find Skills
 
 This skill helps you discover and install skills from the open agent skills ecosystem.
+
+It does not search for ordinary software dependencies, tools, templates, applications, or services. Route those technology choices to `evaluate-existing-solutions`.
 
 > Sourced from [vercel-labs/skills](https://github.com/vercel-labs/skills/tree/main/skills/find-skills) under the MIT License (see `LICENSE` in this directory). Browse the skills directory at [skills.sh](https://skills.sh/).
 
@@ -13,12 +15,10 @@ This skill helps you discover and install skills from the open agent skills ecos
 
 Use this skill when the user:
 
-- Asks "how do I do X" where X might be a common task with an existing skill
 - Says "find a skill for X" or "is there a skill for X"
-- Asks "can you do X" where X is a specialized capability
-- Expresses interest in extending agent capabilities
-- Wants to search for tools, templates, or workflows
-- Mentions they wish they had help with a specific domain (design, testing, deployment, etc.)
+- Explicitly asks to search the agent-skills ecosystem
+- Expresses interest in extending agent capabilities with an installable skill
+- Mentions a recurring agent workflow they want packaged as a skill
 
 ## What is the Skills CLI?
 
@@ -42,17 +42,11 @@ When a user asks for help with something, identify:
 2. The specific task (e.g., writing tests, creating animations, reviewing PRs)
 3. Whether this is a common enough task that a skill likely exists
 
-### Step 2: Check the Leaderboard First
+### Step 2: Search the Ecosystem
 
-Before running a CLI search, check the [skills.sh leaderboard](https://skills.sh/) to see if a well-known skill already exists for the domain. The leaderboard ranks skills by total installs, surfacing the most popular and battle-tested options.
+Use [skills.sh](https://skills.sh/) and the CLI search to discover candidates. Leaderboard position and install count can surface candidates, but they do not establish safety, quality, maintenance, or fit.
 
-For example, top skills for web development include:
-- `vercel-labs/agent-skills` — React, Next.js, web design (100K+ installs each)
-- `anthropics/skills` — Frontend design, document processing (100K+ installs)
-
-### Step 3: Search for Skills
-
-If the leaderboard doesn't cover the user's need, run the find command:
+Run the find command:
 
 ```bash
 npx skills find [query]
@@ -60,33 +54,39 @@ npx skills find [query]
 
 For example:
 
-- User asks "how do I make my React app faster?" → `npx skills find react performance`
-- User asks "can you help me with PR reviews?" → `npx skills find pr review`
-- User asks "I need to create a changelog" → `npx skills find changelog`
+- User asks "find an agent skill for React performance" → `npx skills find react performance`
+- User asks "is there a PR-review skill?" → `npx skills find pr review`
+- User asks "find a skill that helps create changelogs" → `npx skills find changelog`
 
-### Step 4: Verify Quality Before Recommending
+### Step 3: Verify Quality Before Recommending
 
 **Do not recommend a skill based solely on search results.** Always verify:
 
-1. **Install count** — Prefer skills with 1K+ installs. Be cautious with anything under 100.
-2. **Source reputation** — Official sources (`vercel-labs`, `anthropics`, `microsoft`) are more trustworthy than unknown authors.
-3. **GitHub stars** — Check the source repository. A skill from a repo with <100 stars should be treated with skepticism.
+1. **Inspect the complete bundle** — Read `SKILL.md` and every linked instruction, script, reference, asset, and companion metadata file.
+2. **Inspect capabilities and risk** — Identify commands, code execution, network access, external writes, credentials, permissions, installers, and data the skill may send or change.
+3. **Verify provenance and license** — Link the exact source and revision, author, full applicable license, and any attribution obligations.
+4. **Check maintenance and compatibility** — Review current source activity, releases, issues, host assumptions, and fit with the local skill conventions.
+5. **Check overlap and trigger quality** — Prefer a skill with a coherent missing responsibility over a broad duplicate or ambiguous trigger.
+6. **Treat popularity as a weak signal** — Installs, stars, and source reputation help discovery but never replace inspection.
 
-### Step 5: Present Options to the User
+### Step 4: Present Options to the User
 
 When you find relevant skills, present them to the user with:
 
 1. The skill name and what it does
-2. The install count and source
-3. The install command they can run
-4. A link to learn more at skills.sh
+2. The exact source, revision/currentness, author, and license
+3. Material permissions, scripts, network behavior, host assumptions, or overlaps found
+4. Install count or stars only as secondary context
+5. The install command and a direct source link
 
 Example response:
 
 ```
-I found a skill that might help! The "react-best-practices" skill provides
-React and Next.js performance optimization guidelines from Vercel Engineering.
-(185K installs)
+I found a skill that might help. "react-best-practices" provides React and
+Next.js performance guidance. I inspected its complete bundle at <exact source
+and revision>; it is <license>, requests <capabilities>, and its main local
+overlap is <skill>. Its install count is secondary discovery context, not the
+quality verdict.
 
 To install it:
 npx skills add vercel-labs/agent-skills@react-best-practices
@@ -94,9 +94,9 @@ npx skills add vercel-labs/agent-skills@react-best-practices
 Learn more: https://skills.sh/vercel-labs/agent-skills/react-best-practices
 ```
 
-### Step 6: Offer to Install
+### Step 5: Offer to Install
 
-If the user wants to proceed, you can install the skill for them:
+Installation changes user-level state. Only install after the user explicitly authorizes the selected source and scope:
 
 ```bash
 npx skills add <owner/repo@skill> -g -y
@@ -122,7 +122,7 @@ When searching, consider these common categories:
 
 1. **Use specific keywords**: "react testing" is better than just "testing"
 2. **Try alternative terms**: If "deploy" doesn't work, try "deployment" or "ci-cd"
-3. **Check popular sources**: Many skills come from `vercel-labs/agent-skills` or `ComposioHQ/awesome-claude-skills`
+3. **Inspect canonical sources**: Follow each candidate to its exact repository/revision and search beyond one publisher or leaderboard
 
 ## When No Skills Are Found
 
