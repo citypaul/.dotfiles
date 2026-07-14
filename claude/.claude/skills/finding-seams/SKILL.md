@@ -5,7 +5,7 @@ description: Use when existing code has untestable dependencies that prevent wri
 
 # Finding Seams
 
-For writing tests that document existing behavior once you have seams, load the `characterisation-tests` skill. For test-driving new behavior, load the `tdd` skill. For general test patterns, load the `testing` skill. For refactoring after tests are in place, load the `refactoring` skill.
+For writing tests that document existing behavior once you have seams, load the `characterisation-tests` skill. For test-driving new behavior, load the `tdd` skill. For general test patterns, load the `testing` skill. For refactoring after tests are in place, load the `refactoring` skill. Use `codebase-design` when deciding a module's lasting responsibility and caller-facing contract; this skill introduces the minimum enabling point needed to place existing behavior under test.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
@@ -20,6 +20,8 @@ For writing tests that document existing behavior once you have seams, load the 
 > A **seam** is a place where you can alter behavior in your program without editing in that place.
 
 Every seam has an **enabling point** -- the place where you choose which behavior to activate. The source code at the seam stays identical in production and test; only the enabling point differs.
+
+A seam is not automatically a public module interface, port, or permanent abstraction. Introduce the narrowest safe substitution point first; once behavior is characterized, let `codebase-design` decide whether that point belongs in the durable contract or should remain private scaffolding.
 
 *-- Michael Feathers, Working Effectively with Legacy Code (2004)*
 

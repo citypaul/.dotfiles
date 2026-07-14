@@ -38,7 +38,7 @@ Do NOT document what the repo already records: code structure, git history, anyt
 | Learning | Destination | Why |
 |----------|-------------|-----|
 | Gotcha, pattern, anti-pattern, tool knowledge that affects how Claude works in this repo | Project `CLAUDE.md` | Loaded every session for this project |
-| Architectural decision with rationale and rejected alternatives | ADR (`docs/adr/` or project convention) — use the `adr` agent | Decisions need permanence and context beyond a config file |
+| Architectural, dependency, platform, or build-versus-adopt decision with rationale and rejected alternatives | ADR (`docs/adr/` or project convention) — use the `adr` agent | Durable technology decisions need permanence, evidence, and context beyond a config file |
 | In-flight discoveries during planned work (blockers, scope changes) | The active plan file in `plans/` | Travels with the work; merged or discarded when the plan completes |
 | Cross-project user preferences and corrections | Auto-memory (`MEMORY.md`) | Persists across projects and sessions |
 | User-facing behavior, setup steps, API usage | README / docs — use the `docs-guardian` agent | Humans read these, not CLAUDE.md |

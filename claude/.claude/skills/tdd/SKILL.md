@@ -1,20 +1,22 @@
 ---
 name: tdd
-description: RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR workflow for writing production code. Use before ANY production code change - new features, bug fixes, or behavior changes. Triggers on starting implementation work of any kind. Covers the cycle itself - failing test first, minimum code to pass, mutation verification, refactor assessment. For how to write good tests, see testing. For the refactoring step in detail, see refactoring. TDD is non-negotiable.
+description: RED-GREEN with mutation or alternate evidence, conditional mutant handling, and refactor assessment for production behavior changes. Use before implementing new features, bug fixes, or any changed observable behavior, and as the governing workflow for mixed implementation work. Do not use for pure behavior-preserving refactoring or mechanism reduction; those start from passing proportionate evidence via refactoring or reduce-system-complexity, never fabricated RED or structural mutants. Not for plan-only requests; use planning first for significant multi-slice work.
 ---
 
 # Test-Driven Development
 
-TDD is the fundamental practice. Every line of production code must be written in response to a failing test.
+TDD is the fundamental practice for new or changed observable behavior: every such production change must be written in response to a failing behavior test.
+
+Pure behavior-preserving work is different. `refactoring` and `reduce-system-complexity` begin from passing proportionate preservation evidence and stay behaviorally green while internal structure changes. Use mutation testing where meaningful; otherwise record reachability, configuration, contract, integration, or operational evidence and mark mutation `N/A`. Do not manufacture a failing test or structural mutant merely to make a REFACTOR slice look RED. If the work changes behavior or fixes a disputed bug, return to RED.
 
 **For how to write good tests**, load the `testing` skill. This skill focuses on the TDD workflow/process. For mutation-aware test planning, load the `mutation-testing` skill and use its `resources/mutator-rules.md` resource as the source of truth.
 
 ---
 
-## RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR Cycle
+## RED-GREEN-(MUTATE OR ALTERNATE EVIDENCE)-REFACTOR Cycle
 
 ### RED: Write Failing Test First
-- NO production code until you have a failing test
+- For new or changed behavior, NO production code until you have a failing behavior test
 - Test describes desired behavior, not implementation
 - Test should fail for the right reason
 - Before finalizing the test, scan the intended behavior against the mutator rules: boundaries, boolean combinations, equality, arithmetic identities, array/string operations, optional chaining, and side effects
@@ -25,21 +27,21 @@ TDD is the fundamental practice. Every line of production code must be written i
 - Resist adding functionality not demanded by a test
 - Faking it is legitimate: hardcode the return value if that passes, then triangulate — add a second test case that forces the real implementation. Generalize only when a test demands it
 
-### MUTATE: Verify Test Effectiveness
-- Run `mutation-testing` skill against the changed code
-- Produce a mutation testing report (killed/survived/score)
-- This validates whether the RED-phase mutator scan caught the important gaps
+### MUTATE OR ALTERNATE EVIDENCE: Verify Preservation Strength
+- Run `mutation-testing` against changed code where meaningful and produce a killed/survived/score report
+- Otherwise record an explicit `N/A` rationale plus proportionate reachability, configuration, contract, integration, or operational evidence
+- Never invent structural mutants merely to fill the workflow
 
-### KILL MUTANTS: Address Surviving Mutants
+### KILL MUTANTS WHEN APPLICABLE: Address Surviving Mutants
 - Add or strengthen tests to kill surviving mutants
 - Fix obvious gaps directly
 - Ask the human with the harness's ask-question facility when a surviving mutant's value is ambiguous
 - All tests pass after fixes
 
 ### REFACTOR: Assess Improvements
-- Assess AFTER mutation testing confirms test strength
-- Load the `refactoring` skill before deciding what, if anything, to restructure
-- Commit before refactoring
+- Assess only after mutation or reviewed alternate evidence establishes enough preservation strength for the proposed restructuring
+- Load the `refactoring` skill only when restructuring is applicable; record `N/A` otherwise
+- Obtain approval for the working-baseline commit before refactoring when the workflow uses commits as safety checkpoints
 - All tests must pass after refactoring
 
 ---
@@ -48,7 +50,7 @@ TDD is the fundamental practice. Every line of production code must be written i
 
 ### Default Expectation
 
-Commit history should show clear RED → GREEN → MUTATE → KILL MUTANTS → REFACTOR progression.
+Commit history should show clear RED → GREEN → MUTATE/KILL MUTANTS when meaningful (or reviewed alternate evidence) → REFACTOR when applicable.
 
 **Ideal progression:**
 ```
@@ -75,7 +77,7 @@ TDD evidence may not be linearly visible in commits in these cases:
 - **Evidence**: Reference to RED commit in PR description
 
 **3. Refactoring Commits**
-- Large refactors after GREEN + MUTATE + KILL MUTANTS
+- Large refactors after GREEN plus sufficient mutation or reviewed alternate evidence
 - Multiple small refactors combined into single commit
 - All tests remained green throughout
 - **Evidence**: Commit message notes "refactor only, no behavior change"
@@ -96,7 +98,7 @@ Test Evidence:
 ✅ 4/4 tests passing (7.7s with 4 workers)
 ```
 
-**Important**: Exception is for EVIDENCE presentation, not TDD practice. TDD process must still be followed - these are cases where commit history doesn't perfectly reflect the process that was actually followed.
+**Important**: These exceptions concern evidence presentation. New or changed behavior still follows RED. A true behavior-preserving refactor follows the explicit REFACTOR path above and should document its passing pre-change oracles rather than inventing a RED phase.
 
 ---
 
@@ -231,10 +233,10 @@ The burden of proof is on the requester. 100% is the default expectation.
 2. **Run test** - confirm it fails (`pnpm test:watch`)
 3. **Implement minimum** - just enough to pass
 4. **Run test** - confirm it passes
-5. **Run mutation testing** - verify tests catch real bugs
-6. **Kill surviving mutants** - strengthen tests (ask human when ambiguous)
-7. **Refactor if valuable** - improve code structure
-8. **STOP and wait for commit approval** - present the work and mutation report; never commit without explicit user approval
+5. **Verify preservation strength** - run mutation testing where meaningful, or record explicit `N/A` plus proportionate alternate evidence
+6. **Kill surviving mutants when applicable** - strengthen tests (ask human when ambiguous)
+7. **Refactor if applicable and valuable** - improve code structure only when evidence supports it
+8. **STOP and wait for commit approval** - present the work and mutation report or reviewed alternate-evidence record; never commit without explicit user approval
 9. **Commit** - with conventional commit message, once approved
 
 ### Workflow Example
@@ -251,13 +253,13 @@ if (user.name === '') {
   return { success: false, error: 'Name required' };
 } # ✅ Test passes
 
-# 3. Run mutation testing to verify test strength
+# 3. Run mutation testing where meaningful, or record reviewed alternate evidence
 
-# 4. Kill surviving mutants (ask human when ambiguous)
+# 4. Kill surviving mutants when mutation testing applies (ask human when ambiguous)
 
 # 5. Refactor if needed (extract validation, improve naming)
 
-# 6. STOP — present work + mutation report, wait for commit approval
+# 6. STOP — present work + mutation report or alternate-evidence record, wait for commit approval
 
 # 7. Commit (after approval)
 git add .
@@ -326,13 +328,14 @@ REFACTOR: commit 6e5f4a3 (extract permission resolution logic)
 
 ## Refactoring Priority
 
-After mutation testing confirms test strength, assess and classify improvement opportunities. For the priority classification table and detailed refactoring methodology, load the `refactoring` skill — it owns that guidance.
+After mutation or reviewed alternate evidence establishes sufficient preservation strength, assess and classify improvement opportunities when restructuring is applicable. For the priority classification table and detailed methodology, load the `refactoring` skill — it owns that guidance.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- ❌ Writing production code without failing test
+- ❌ Writing new or changed production behavior without a failing behavior test
+- ❌ Fabricating failing tests for implementation shape to justify a behavior-preserving refactor
 - ❌ Testing implementation details (spies on internal methods)
 - ❌ 1:1 mapping between test files and implementation files
 - ❌ Using `let`/`beforeEach` for test data
@@ -350,12 +353,12 @@ After mutation testing confirms test strength, assess and classify improvement o
 
 Before marking work complete:
 
-- [ ] Every production code line has a failing test that demanded it
+- [ ] Every new or changed behavior has a failing behavior test that demanded it, or the change is explicitly evidenced as a behavior-preserving REFACTOR slice
 - [ ] Commit history shows TDD evidence (or documented exception)
 - [ ] All tests pass
 - [ ] Coverage verified at 100% (or exception documented)
-- [ ] Mutation testing run and surviving mutants addressed
+- [ ] Mutation testing run and valuable survivors addressed where meaningful, or explicit `N/A` plus proportionate alternate evidence reviewed
 - [ ] Test factories used (no `let`/`beforeEach`)
 - [ ] Tests verify behavior (not implementation details)
-- [ ] Refactoring assessed and applied if valuable
+- [ ] Refactoring assessed when applicable and applied if valuable, or explicitly `N/A`
 - [ ] Conventional commit messages used

@@ -1,6 +1,65 @@
 # Architectural Skill References
 
-Authoritative sources used to develop the DDD, hexagonal architecture, and event sourcing skills. Each entry documents what was taken from the source and where it appears in our skills.
+Authoritative sources used to develop the module-design, architecture-improvement, system-reduction, technology-selection, DDD, hexagonal architecture, and event-sourcing skills. Each entry documents what was taken from the source and where it appears in our skills.
+
+---
+
+## Module Design and Architecture Improvement
+
+### Matt Pocock — [`codebase-design`](https://github.com/mattpocock/skills/tree/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/codebase-design) and [`improve-codebase-architecture`](https://github.com/mattpocock/skills/tree/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/improve-codebase-architecture) (pinned commit `66898f60`, MIT)
+
+- **Deep modules, interface burden, information hiding, locality, leverage, deepening, and Design It Twice** → `codebase-design/SKILL.md`, `references/deepening.md`, and `references/design-it-twice.md`
+- **Evidence-led repository exploration, ranked architecture candidates, before/after visuals, and a top recommendation** → `improve-codebase-architecture/SKILL.md`
+- **HTML architecture report as a first-class deliverable** → `improve-codebase-architecture/references/html-report.md`
+- **Adapted agent metadata** → [`codebase-design/agents/openai.yaml`](https://github.com/mattpocock/skills/blob/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/codebase-design/agents/openai.yaml) and [`improve-codebase-architecture/agents/openai.yaml`](https://github.com/mattpocock/skills/blob/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/improve-codebase-architecture/agents/openai.yaml)
+- **Local adaptation** → retains established API/component/service/boundary vocabulary; restores Feathers' seam/enabling-point definition; treats adapters, test seams, and small functions as contextual rather than numeric rules; balances consolidation with cohesion, ownership, runtime, trust, and failure boundaries; makes HTML output offline and script-free by default
+- **License and exact file-level provenance** → each adapted skill's `LICENSE` and `references/source-notes.md`
+
+### John Ousterhout — [*A Philosophy of Software Design*](https://web.stanford.edu/~ouster/cgi-bin/book.php) and [Stanford modular-design notes](https://web.stanford.edu/~ouster/cgi-bin/cs190-winter18/lecture.php?topic=modularDesign)
+
+- **Deep modules and information hiding** → `codebase-design`: complete useful behavior behind a smaller caller-facing contract
+- **Complexity as dependencies and obscurity** → both skills: measure what callers and maintainers must know, not file or method length
+- **Design It Twice** → `codebase-design/references/design-it-twice.md`: compare materially different interfaces before an expensive-to-reverse decision
+
+Michael Feathers' seam and enabling-point terminology remains authoritative for both module-design/architecture skills; see the legacy-code sources later in this document and `finding-seams` for the dependency-breaking workflow.
+
+---
+
+## System Complexity Reduction
+
+### Adam Bulmer (`mintuz`) — [`reducer/SKILL.md`](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/plugins/core/skills/reducer/SKILL.md) and [`agents/openai.yaml`](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/plugins/core/skills/reducer/agents/openai.yaml) (pinned commit `d698a88f`, MIT)
+
+- **Conserve behavior; minimize mechanism** → `reduce-system-complexity/SKILL.md`
+- **Behavior/non-functional guarantee ledger and explicit evidence gaps** → workflow step 1 and `references/ledger-template.md`
+- **Whole-mechanism baseline across control, state/time, structure, variability, and operations** → workflow step 2
+- **First-principles minimum, subtraction order, and prohibition on relocating complexity** → workflow step 3
+- **Separate behavior and mechanism gates with same-scope before/after evidence** → workflow step 6
+- **Local adaptation** → renamed to avoid functional/Redux reducer ambiguity; narrowed to an already-selected path; distinguishes contracts, reliance, intent, bugs, and obsolete internals; replaces proof and numeric-ranking language with calibrated qualitative evidence; adds mutation, provider-fidelity, privacy, migration, recovery, implementation-authority, and dirty-worktree safeguards
+- **License and exact provenance** → `reduce-system-complexity/LICENSE` and `references/source-notes.md`, including the [complete upstream license](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/LICENSE) and [introduction commit](https://github.com/mintuz/skills/commit/1a433a5170560df40b0b9493a9cdb389958d0777)
+
+---
+
+## Existing-Solution Evaluation
+
+### Titus Winters, Tom Manshreck, and Hyrum Wright — [*Software Engineering at Google*, Chapter 21: Dependency Management](https://abseil.io/resources/swe-book/html/ch21.html)
+
+- **Reuse when an external dependency actually satisfies the task, while accounting for ongoing compatibility, maintenance, security, and support cost** → `evaluate-existing-solutions/SKILL.md`
+- **A dependency as an ongoing provider/consumer contract; tests and CI as stronger compatibility evidence than version-number assumptions** → `references/evidence-and-currentness.md`
+
+### UK Government Digital Service — [Managing software dependencies](https://www.gov.uk/service-manual/technology/managing-software-dependencies) and [Technology Code of Practice](https://www.gov.uk/data-ethics-guidance/the-technology-code-of-practice)
+
+- **Reuse across open-source, commercial, and internal software can save delivery time, while every dependency must remain current, tested, secured, and actively managed** → local-first candidate search and total-ownership comparison
+- **Technology selection spans design, build, buy, migration, procurement, and full lifecycle** → hard gates, ownership, exit strategy, and re-evaluation triggers
+
+### NIST — [Secure Software Development Framework, SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final)
+
+- **Third-party and supplier security as part of secure development and acquisition** → security/privacy/supply-chain gates and current primary evidence requirements
+
+### Open Source Security Foundation — [OpenSSF Scorecard](https://openssf.org/scorecard/)
+
+- **Automated open-source security-health checks as one use-case-specific signal** → explicitly retained as input, never a universal trust verdict or aggregate decision score
+
+The full method/evidence map lives in `evaluate-existing-solutions/references/evidence-and-currentness.md`. Real decisions must add current, candidate-specific primary sources.
 
 ---
 

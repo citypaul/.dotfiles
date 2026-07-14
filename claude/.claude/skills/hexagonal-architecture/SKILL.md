@@ -1,6 +1,6 @@
 ---
 name: hexagonal-architecture
-description: Hexagonal (ports and adapters) architecture patterns for TypeScript. Use when implementing ports, adapters, dependency inversion, or domain isolation. Only applies to projects that explicitly use hexagonal architecture. Do NOT use for projects without ports/adapters structure.
+description: Use only when the user or project explicitly adopts hexagonal (ports and adapters) architecture. Implements TypeScript ports, driving/driven adapters, dependency inversion, and domain isolation. Do NOT infer hexagonal architecture from a generic adapter, interface, test seam, or isolation request.
 ---
 
 # Hexagonal Architecture (Ports & Adapters)
@@ -10,6 +10,8 @@ This skill applies only to projects that have opted in to hexagonal architecture
 For domain modeling (entities, value objects, aggregates, ubiquitous language), load the `domain-driven-design` skill. Hex arch and DDD are complementary but independent — hex arch provides structural isolation (how the outside connects), DDD provides the domain model (what lives in the center). A project may use one without the other.
 
 Use the `structure-codebase` skill when designing or changing the physical source tree. For an opted-in hexagonal backend it makes the entire provider-free inside visible under `hexagon/`, keeps concrete driving/driven technology and reusable test interactors outside, and defines proportional package/import enforcement. If physical restructuring is not requested, preserve the repo's existing layout while enforcing the dependency direction described here.
+
+Use `codebase-design` for the coherent responsibility and full caller burden behind a port or in-process module. Not every module interface or test seam is a hexagonal port, and intentionally thin driving/driven adapters should remain thin. Use `finding-seams` for the minimum enabling point needed to characterize hard-coupled legacy behavior before deciding whether a durable port is warranted.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 

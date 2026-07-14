@@ -1,13 +1,13 @@
 ---
 name: planning
-description: Planning work as vertical slices in small, known-good increments. Use when starting significant work, turning already-split stories into PR-sized implementation plans, planning PRs, or sequencing complex tasks. If the input is a broad story, epic, feature idea, or backlog item that still needs product slicing, use story-splitting first.
+description: Planning work as vertical slices or an explicitly selected mechanism-reduction program in small, known-good increments. Use when starting significant work, turning already-split stories into PR-sized implementation plans, planning PRs, or sequencing complex tasks. For a mechanism-reduction program, use reduce-system-complexity first to define the conserved contract, terminal mechanism-removal state, and behavior/mechanism gates; planning then sequences it. If the input is a broad story, epic, feature idea, or backlog item that still needs product slicing, use story-splitting first.
 ---
 
 # Planning in Vertical Slices
 
 **Plan by vertical slices wherever possible.** Each slice delivers the smallest end-to-end behavior a real actor can observe, while leaving the codebase in a known-good state where all tests pass.
 
-Horizontal work is allowed only when it explicitly unblocks the next vertical slice and is independently verifiable.
+Horizontal work is allowed only when it explicitly unblocks the next vertical slice and is independently verifiable, or when it belongs to an explicitly selected reduction program whose terminal state retires one complete mechanism while conserving behavior.
 
 Use the `/plan` command to create plans. Use the `/continue` command to resume work after a merged PR.
 
@@ -17,9 +17,11 @@ Use the `/plan` command to create plans. Use the `/continue` command to resume w
 
 Use `story-splitting` before this skill when the request is still an epic, large story, feature idea, roadmap item, or backlog item with multiple possible customer outcomes. Once a child story or narrow capability has been selected, use this skill to turn it into a `plans/<feature>.md` file with PR-sized slices, acceptance criteria, and TDD execution steps.
 
-If a plan starts producing database-only, API-only, UI-only, or "do all plumbing first" slices, pause and return to `story-splitting` unless the horizontal work explicitly unlocks the next vertical slice and has independent verification.
+If a plan starts producing database-only, API-only, UI-only, or "do all plumbing first" slices, pause and return to `story-splitting` unless the horizontal work explicitly unlocks the next vertical slice with independent verification or advances an explicitly selected reduction program toward its named terminal mechanism-removal state.
 
 Use `grill-me` before planning when the selected story still contains unresolved product or design decisions. Use `find-gaps` before or after drafting the plan when acceptance criteria, failure modes, roles, states, or release constraints are missing or unverifiable.
+
+Before freezing slices that introduce a material generic mechanism or durable new dependency, run the proportionate `evaluate-existing-solutions` preflight, due diligence, or full comparison. Link a decision-owner-accepted result when a choice was unresolved. Planning sequences the chosen solution; it does not silently turn the first plausible library or a bespoke sketch into the plan.
 
 | Input state | Use | Output |
 |-------------|-----|--------|
@@ -80,15 +82,15 @@ If the answer still contains multiple customer outcomes, roles, workflow branche
 
 ## Horizontal Work Exceptions
 
-Avoid plans that do all database, API, UI, or infrastructure work up front. Horizontal work may be its own slice only when all of these are true:
+Avoid plans that do all database, API, UI, or infrastructure work up front. Horizontal work may be its own slice only when all applicable conditions are true:
 
-- It names the next vertical slice it unlocks
+- It names the next vertical slice it unlocks, or belongs to an explicitly selected reduction program with a terminal mechanism-removal outcome
 - It leaves the codebase deployable
 - It has observable verification (test, command output, migration dry-run, or runtime check)
 - It is smaller than doing it inside the vertical slice
 - It does not introduce unused abstractions or speculative flexibility
 
-Valid horizontal exceptions include dependency upgrades, migrations, test harness setup, infrastructure wiring, mechanical refactors, and safety fixes. Keep them rare and explicit.
+Valid horizontal exceptions include dependency upgrades, migrations, test harness setup, infrastructure wiring, mechanical refactors, safety fixes, and a selected `reduce-system-complexity` program whose **terminal state** conserves behavior while retiring one complete mechanism. Keep them rare and explicit. An intermediate reduction transition may temporarily add a bridge when it is independently verifiable and the same plan names the terminal slice and behavior/mechanism gates; record an owner, removal condition, and bounded lifetime for any bridge, or `N/A` when none exists.
 
 ## What Makes a Known-Good Slice
 
@@ -98,9 +100,9 @@ Each slice MUST:
 - Have clear done criteria
 - Fit in a single PR (the smallest independently mergeable unit)
 - Be describable in one sentence
-- Deliver or directly unblock observable behavior
+- Deliver or directly unblock observable behavior, or safely advance an explicitly selected reduction program toward its terminal behavior/mechanism gates
 
-A slice is the unit of planning and review — one PR. Within a slice, TDD increments (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR) may produce multiple commits, but the slice itself is what gets reviewed and merged as a coherent unit.
+A slice is the unit of planning and review — one PR. Within a behavior-changing slice, TDD increments (RED-GREEN with mutation or alternate evidence, conditional mutant handling, and refactoring when applicable) may produce multiple commits, but the slice itself is what gets reviewed and merged as a coherent unit.
 
 **If you can't describe a slice in one sentence, break it down further.**
 
@@ -123,16 +125,16 @@ A slice is the unit of planning and review — one PR. Within a slice, TDD incre
 
 ## TDD Integration
 
-**Every slice follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR.** Before any implementation work for a slice, load `tdd`, `testing`, `mutation-testing`, and `refactoring`. This section is a routing contract, not a replacement for those skills.
+**Every behavior-changing slice follows RED-GREEN with mutation or alternate evidence, conditional mutant handling, and refactoring when applicable.** Before implementation, load `tdd` and `testing`, plus applicable `mutation-testing` and `refactoring` guidance; record `N/A` where either does not apply. A true behavior-preserving refactor or `reduce-system-complexity` slice starts from passing proportionate preservation evidence. Never fabricate a failing mechanism-count test or structural mutant. This section is a routing contract, not a replacement for those skills.
 
 ```
-FOR EACH SLICE:
+FOR EACH BEHAVIOR-CHANGING SLICE:
     │
     ├─► LOAD: Required implementation skills
-    │   - `tdd` for RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR workflow
+    │   - `tdd` for RED-GREEN plus mutation or alternate evidence
     │   - `testing` for behavior-driven tests and factories
-    │   - `mutation-testing` for mutator-aware planning and verification
-    │   - `refactoring` for the final refactor assessment
+    │   - `mutation-testing` where meaningful; otherwise explicit `N/A` plus proportionate alternate evidence
+    │   - `refactoring` when restructuring is applicable; otherwise `N/A`
     │
     ├─► CONFIRM: Present acceptance criteria for this slice
     │   - Human must approve criteria before any code is written
@@ -149,11 +151,11 @@ FOR EACH SLICE:
     │   - No premature optimization
     │   - Just make the test pass
     │
-    ├─► MUTATE: Verify test effectiveness
-    │   - Run `mutation-testing` skill
-    │   - Produces a mutation testing report
+    ├─► MUTATE OR ALTERNATE EVIDENCE: Verify preservation strength
+    │   - Run `mutation-testing` where meaningful and produce a report
+    │   - Otherwise record explicit `N/A` plus proportionate reachability, configuration, contract, integration, or operational evidence
     │
-    ├─► KILL MUTANTS: Address surviving mutants
+    ├─► KILL MUTANTS WHEN APPLICABLE: Address surviving mutants
     │   - Add or strengthen tests for surviving mutants
     │   - Ask the human when a surviving mutant's value is ambiguous
     │   - All tests pass after fixes
@@ -164,22 +166,29 @@ FOR EACH SLICE:
     │   - All tests still pass
     │
     └─► STOP: Present the work and wait for commit approval
-         - Show what was implemented and the mutation testing report
+         - Show what was implemented and the mutation report or reviewed alternate-evidence record
          - Human reviews and approves before commit
 ```
 
-**No exceptions. No "I'll add tests later."**
+A **pure refactor** substitutes: confirm the preserved consumer contract → run the applicable passing baseline → establish proportionate preservation strength through mutation or reviewed alternate evidence → restructure while staying green → verify the preserved surface.
+
+A **reduction transition** substitutes: link the reducer program/ledger and terminal slice → confirm the conserved contract → run the applicable baseline and mutation/alternate evidence → make the independently verifiable transition → pass the behavior gate → record any bridge ownership/removal/bounded lifetime (`N/A` when none) → keep `mechanism gate: pending — no net-reduction claim`.
+
+A **terminal reduction** substitutes: link the program/ledger (or authorized single-slice `N/A`) → run the applicable baseline and mutation/alternate evidence → remove superseded machinery and expired bridges → discharge transition obligations → pass both behavior and mechanism gates.
+
+**No untested behavior changes. No "I'll add tests later."**
 
 ## Commit Discipline
 
 **NEVER commit without user approval.**
 
-After completing a slice (RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR):
+After completing one classified slice:
 
-1. Verify all tests pass
+1. Verify applicable tests pass and/or the approved preservation evidence still holds
 2. Verify static analysis passes
-3. Present the mutation testing report
-4. **STOP and ask**: "Ready to commit [description]. Approve?"
+3. Present the mutation testing report, or the reviewed alternate-evidence record and `N/A` rationale when mutation testing is not meaningful
+4. Present class-specific evidence: RED/GREEN for behavior change; preserved contract for pure refactor; passing behavior gate plus independent verification and pending mechanism gate/no net claim for a transition; or linked program/ledger, discharged obligations, both passing gates, and retired machinery for a terminal reduction
+5. **STOP and ask**: "Ready to commit [description]. Approve?"
 
 Only proceed with commit after explicit approval.
 
@@ -206,8 +215,9 @@ Each plan file in `plans/` follows this structure:
 
 ## Acceptance Criteria
 
-[Behaviour-driven criteria — describe observable business outcomes, not implementation details.
-Test at the lowest level that gives confidence: prefer unit tests (vitest) for logic and domain behaviour, browser tests (vitest browser mode) for UI interaction, Playwright integration tests only for end-to-end flows. Avoid defaulting to Playwright for everything.]
+[For a behavior-change delivery plan, use behavior-driven criteria that describe observable business outcomes, not implementation details. Test at the lowest level that gives confidence: prefer unit tests for logic/domain behavior, browser tests for UI interaction, and end-to-end tests only for end-to-end flows.
+
+For a reduction program, define the conserved observable contract, terminal same-scope mechanism delta, retirement of superseded machinery and expired bridges, passing behavior/mechanism gates, and mutation results or explicit mutation `N/A` with proportionate alternate evidence. Do not invent new product behavior or tests for mechanism shape.]
 
 - [ ] Criterion 1
 - [ ] Criterion 2
@@ -215,40 +225,44 @@ Test at the lowest level that gives confidence: prefer unit tests (vitest) for l
 
 ## Slices
 
-Every slice follows RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. No production code without a failing test.
+Classify every slice as **behavior change**, **pure refactor**, **reduction transition**, or **terminal reduction**. Behavior-changing slices follow RED-GREEN with mutation or alternate evidence. Pure refactors start from passing preservation evidence. Every reduction transition and terminal reduction loads `reduce-system-complexity` and references the plan-level reduction program. A transition may add a bounded bridge but never claims net reduction: its mechanism gate remains explicitly pending until the terminal slice removes the old mechanism and expired bridges. Only the terminal reduction may claim net removal after both behavior and mechanism gates pass.
 Read the project's CLAUDE.md and testing rules before writing slices.
+
+## Reduction Program (include only when applicable)
+
+**Ledger/report**: [Link to the `reduce-system-complexity` diagnosis and conservation ledger.]
+**Conserved contract**: [Behavior and guarantees that every transition and the terminal state preserve.]
+**Superseded mechanism**: [The complete mechanism the terminal slice will retire.]
+**Terminal slice**: [Slice name/number that removes the old mechanism and expired bridges.]
+**Owner and removal condition**: [For each temporary bridge: accountable owner, objective removal condition, and latest acceptable removal point; otherwise `N/A — no temporary bridge`.]
+**Behavior gate**: [Required evidence and fidelity.]
+**Mechanism gate**: [Like-for-like whole-mechanism accounting required at the terminal slice.]
 
 ### Slice 1: [One sentence observable behaviour]
 
-**Value**: [Who gets what value?]
-**Path**: [Entry point -> business path -> state/output -> observability. Name any intentionally skipped states.]
-**Required implementation skills**: Before code changes, load `tdd`, `testing`, `mutation-testing`, and `refactoring` (plus UI/domain/architecture skills when relevant).
-**Acceptance criteria**: [What observable behaviour proves this slice is done? Be specific — "user sees X", "API returns Y", "test covers Z". Vague criteria like "it works" are not acceptable. **Present to human and get confirmation before writing any code.**]
-**RED**: What failing test will we write? (Describes expected behaviour, not implementation. Include likely mutator gaps from the `mutation-testing` skill's `resources/mutator-rules.md` resource.)
-**GREEN**: What minimum code makes the test pass?
-**MUTATE**: Run `mutation-testing` skill — produce a report.
-**KILL MUTANTS**: Address surviving mutants (ask human when value is ambiguous).
+**Value**: [Behavior change: actor and observable outcome. Pure refactor: preserved consumer surface and maintenance value. Reduction transition: why this independently verifiable increment is necessary to reach the terminal state. Terminal reduction: conserved contract plus the ownership/mechanism retired.]
+**Path**: [Behavior change: entry point -> business path -> state/output -> observability. Pure refactor: preserved public surface. Either reduction class: affected trigger-to-outcome path, program/terminal link, and mechanism scope.]
+**Class**: Behavior change / pure refactor / reduction transition / terminal reduction.
+**Required implementation skills**: For changed behavior, load `tdd`, `testing`, and applicable mutation-testing/refactoring guidance. For a pure refactor, load only applicable testing, mutation-testing, and refactoring skills. Every reduction transition and terminal reduction loads `reduce-system-complexity` plus applicable evidence skills. Record why any otherwise expected skill is `N/A`. Add UI/domain/architecture skills only when relevant.
+**Reduction program**: [For either reduction class: reference the plan-level program and terminal slice; otherwise `N/A`.]
+**Transition/terminal evidence**: [Transition: `behavior gate: pass`, independent verification, bridge owner/removal/bounded-lifetime metadata when a bridge exists (`N/A` otherwise), and `mechanism gate: pending — no net-reduction claim`. Terminal: passing behavior gate, like-for-like mechanism gate, and removal of the superseded mechanism/expired bridges. Otherwise `N/A`.]
+**Acceptance criteria**: [Behavior change: specific observable outcome. Pure refactor: conserved surface plus preservation evidence. Transition: passing behavior gate, independent verification, optional bridge metadata or `N/A`, and pending mechanism gate/no net claim. Terminal: both gates pass and superseded machinery/expired bridges are gone. **Present to the human and get confirmation before writing any code.**]
+**RED or preservation baseline**: For behavior change, what failing behavior test will we write? For a pure refactor/reduction, which passing oracles and proportionate non-test evidence conserve the affected behavior and guarantees? Never assert implementation shape merely to create RED.
+**GREEN or preservation change**: What minimum code makes the new behavior pass, or what smallest mechanism-only change preserves the baseline?
+**MUTATE or alternate evidence**: Run mutation testing where meaningful. Otherwise mark `N/A` and name reachability, configuration, contract, integration, or operational evidence; never invent structural mutants.
+**KILL MUTANTS**: Address valuable survivors when mutation testing applies (ask human when value is ambiguous).
 **REFACTOR**: Assess improvements (only if they add value).
-**Done when**: All acceptance criteria met, mutation report reviewed, human approves commit.
+**Done when**: All acceptance criteria and mutation/alternate-evidence obligations are met. A transition is done when its behavior gate and independent checks pass while the mechanism gate remains truthfully pending with no net claim; a terminal reduction is done only when both gates pass and old machinery/expired bridges are gone. The human approves the commit.
 
 ### Slice 2: [One sentence observable behaviour]
 
-**Value**: ...
-**Path**: ...
-**Required implementation skills**: ...
-**Acceptance criteria**: ...
-**RED**: ...
-**GREEN**: ...
-**MUTATE**: ...
-**KILL MUTANTS**: ...
-**REFACTOR**: ...
-**Done when**: ...
+Use the same adaptive fields as Slice 1. Classify the slice independently; do not inherit a behavior-change workflow when this slice only preserves behavior or removes mechanism.
 
 ## Pre-PR Quality Gate
 
 Before each PR:
-1. Mutation testing — run `mutation-testing` skill
-2. Refactoring assessment — run `refactoring` skill
+1. Mutation or alternate evidence — run `mutation-testing` where meaningful; otherwise review the explicit `N/A` rationale and proportionate evidence
+2. Refactoring/reduction assessment — run the applicable `refactoring` and/or `reduce-system-complexity` skill; record `N/A` when neither applies
 3. Typecheck and lint pass
 4. DDD glossary check — if the project uses DDD, verify all domain terms match the canonical glossary
 
@@ -270,7 +284,7 @@ Plans are not immutable, but changes must be explicit and approved.
 
 When all slices are complete:
 
-1. **Verify completion** — all acceptance criteria met, all tests passing
+1. **Verify completion** — all acceptance criteria met; applicable tests and mutation/alternate evidence pass; any reduction program reaches a terminal slice with both gates passed and old machinery/expired bridges gone
 2. **Merge learnings** — if significant insights were gained, use the `learn` agent for CLAUDE.md updates or `adr` agent for architectural decisions
 3. **Delete plan file** — remove from `plans/`, delete `plans/` if empty
 
@@ -294,8 +308,8 @@ When all slices are complete:
 ❌ **Slices that span multiple PRs**
 - Break down further until one slice = one PR
 
-❌ **Writing code before tests**
-- RED comes first, always
+❌ **Writing changed behavior before its test**
+- RED comes first for behavior change; a true REFACTOR slice records passing preservation evidence instead
 
 ❌ **Plans that change silently**
 - All plan changes require discussion and approval
@@ -310,16 +324,19 @@ START FEATURE
 │
 ├─► Create plan in plans/ (get approval)
 │
-│   FOR EACH SLICE:
+│   FOR EACH BEHAVIOR-CHANGING SLICE:
 │   │
 │   ├─► LOAD: `tdd` + `testing` + `mutation-testing` + `refactoring`
 │   ├─► CONFIRM: Present acceptance criteria, **wait for human approval**
 │   ├─► RED: Failing test
 │   ├─► GREEN: Make it pass
-│   ├─► MUTATE: Run mutations, produce report
-│   ├─► KILL MUTANTS: Address survivors (ask human when ambiguous)
-│   ├─► REFACTOR: If valuable
+│   ├─► MUTATE OR ALT: Run mutations and report, or record reviewed `N/A` alternate evidence
+│   ├─► KILL MUTANTS: Address survivors when mutation testing applies (ask human when ambiguous)
+│   ├─► REFACTOR: If applicable and valuable
 │   └─► **PRESENT WORK + REPORT, WAIT FOR COMMIT APPROVAL**
+│
+│   FOR EACH PURE REFACTOR/REDUCTION SLICE:
+│   └─► PASSING BASELINE → MUTATION OR ALTERNATE EVIDENCE → REFACTOR/REDUCE → VERIFY GATES
 │
 END FEATURE
 │
