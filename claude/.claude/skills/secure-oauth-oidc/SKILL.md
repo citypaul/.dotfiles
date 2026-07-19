@@ -9,6 +9,8 @@ Treat OAuth security as a set of end-to-end protocol invariants, not a checklist
 
 OAuth delegates access. OpenID Connect adds authentication. Never infer a login identity from OAuth alone, and never use an access token as an ID Token.
 
+This skill owns the OAuth/OIDC protocol layer. For the application session that results in a browser-facing BFF — session cookies, CSRF and browser-request policy, public/protected endpoint classification, and keeping tokens out of the browser — load the `bff-entry-points` skill.
+
 ## Load the right references
 
 | Reference | Load when |

@@ -1,0 +1,4 @@
+interface:
+  display_name: "BFF Entry Points"
+  short_description: "Classify and protect BFF HTTP entry points"
+  default_prompt: "Use $bff-entry-points to classify every entry point, install protection through a prepared registrar, and enforce it with automated gates."
