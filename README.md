@@ -1578,6 +1578,7 @@ chmod +x install-claude.sh
 ./install-claude.sh --no-agents                          # Install without agents
 ./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit)
 ./install-claude.sh --no-impeccable                      # Skip impeccable design skills only
+./install-claude.sh --no-ponytail                        # Skip the ponytail plugin (https://ponytail.dev, Claude Code + Codex)
 ./install-claude.sh --with-opencode                      # Also target OpenCode for skills + install OpenCode config
 ./install-claude.sh --agent codex --agent cursor         # Also install skills for Codex and Cursor (repeatable)
 ./install-claude.sh --skills-only --no-claude-code \     # Install skills ONLY for a non-Claude agent

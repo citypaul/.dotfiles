@@ -37,6 +37,7 @@ INSTALL_AGENTS=true
 INSTALL_OPENCODE=false
 INSTALL_EXTERNAL=true
 INSTALL_IMPECCABLE=true
+INSTALL_PONYTAIL=true
 BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 
 # Skill sources on skills.sh (https://skills.sh)
@@ -61,6 +62,7 @@ while [[ $# -gt 0 ]]; do
       INSTALL_SKILLS=false
       INSTALL_COMMANDS=false
       INSTALL_AGENTS=false
+      INSTALL_PONYTAIL=false
       shift
       ;;
     --no-agents)
@@ -72,6 +74,7 @@ while [[ $# -gt 0 ]]; do
       INSTALL_COMMANDS=false
       INSTALL_AGENTS=false
       INSTALL_SKILLS=true
+      INSTALL_PONYTAIL=false
       shift
       ;;
     --agents-only)
@@ -79,6 +82,7 @@ while [[ $# -gt 0 ]]; do
       INSTALL_SKILLS=false
       INSTALL_COMMANDS=false
       INSTALL_AGENTS=true
+      INSTALL_PONYTAIL=false
       shift
       ;;
     --agent)
@@ -104,6 +108,7 @@ while [[ $# -gt 0 ]]; do
       INSTALL_COMMANDS=false
       INSTALL_AGENTS=false
       INSTALL_OPENCODE=true
+      INSTALL_PONYTAIL=false
       shift
       ;;
     --no-external)
@@ -113,6 +118,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-impeccable)
       INSTALL_IMPECCABLE=false
+      shift
+      ;;
+    --no-ponytail)
+      INSTALL_PONYTAIL=false
       shift
       ;;
     --version)
@@ -143,6 +152,7 @@ Options:
   --opencode-only      Install only OpenCode configuration (no skills/agents/commands)
   --no-external        Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit)
   --no-impeccable      Skip impeccable design skills only
+  --no-ponytail        Skip the ponytail plugin (Claude Code + Codex)
   --version VERSION    Version for CLAUDE.md/commands/agents (default: main). Skills always latest.
   --help, -h           Show this help message
 
@@ -391,6 +401,32 @@ verify_skills_installed() {
   fi
 }
 
+# Install the ponytail plugin (https://ponytail.dev) for an agent CLI.
+# Registers the marketplace then installs the plugin; a missing CLI is
+# skipped and a failed install warns rather than aborting the rest of setup.
+PONYTAIL_MARKETPLACE="DietrichGebert/ponytail"
+PONYTAIL_PLUGIN="ponytail@ponytail"
+
+install_ponytail_for() {
+  local cli="$1"
+  local install_subcommand="$2"
+
+  if ! command -v "$cli" >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠${NC}  $cli CLI not found — skipping ponytail for $cli"
+    return 0
+  fi
+
+  # Re-adding an already-registered marketplace can fail; the install below
+  # is the step that matters.
+  "$cli" plugin marketplace add "$PONYTAIL_MARKETPLACE" >/dev/null 2>&1 || true
+
+  if "$cli" plugin "$install_subcommand" "$PONYTAIL_PLUGIN" >/dev/null 2>&1; then
+    echo -e "${GREEN}✓${NC} ponytail installed for $cli"
+  else
+    echo -e "${RED}✗${NC} Failed to install ponytail for $cli — install manually: $cli plugin $install_subcommand $PONYTAIL_PLUGIN"
+  fi
+}
+
 # Create directories for non-skills artifacts
 echo -e "${BLUE}Creating directories...${NC}"
 mkdir -p ~/.claude/agents ~/.claude/commands
@@ -441,6 +477,14 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     echo -e "    These are third-party community sources; setup continued without them."
     echo -e "    Re-run ${YELLOW}$0 --skills-only${NC} later, or check the source on skills.sh."
   fi
+  echo ""
+fi
+
+# Install the ponytail plugin for Claude Code and Codex
+if [[ "$INSTALL_PONYTAIL" == true ]]; then
+  echo -e "${BLUE}Installing ponytail plugin (https://ponytail.dev)...${NC}"
+  install_ponytail_for claude install
+  install_ponytail_for codex add
   echo ""
 fi
 
@@ -563,6 +607,10 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     echo -e "     • pbakaus/impeccable — design vocabulary + steering commands"
   fi
   echo -e "     Run ${YELLOW}npx skills list -g${NC} to see paths for each agent."
+fi
+
+if [[ "$INSTALL_PONYTAIL" == true ]]; then
+  echo -e "  ${GREEN}✓${NC} ponytail plugin (https://ponytail.dev) for Claude Code + Codex, where the CLIs are installed"
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
