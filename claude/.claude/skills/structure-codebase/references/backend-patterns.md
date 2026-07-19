@@ -109,7 +109,7 @@ Apply these rules:
 - Make development routing a one-way extension. Production entrypoints must have no import path to `.dev` modules.
 - Keep OpenAPI generation aligned with the explicit route catalog.
 
-This section owns the physical shape only. For each endpoint's access classification, the composition-prepared registrar that installs session/CSRF/Origin policy by construction, protected SSE and WebSocket registration, and the derived entry catalog with its enforcement gates, load the `bff-entry-points` skill.
+This section owns the physical shape only. For whether a BFF is warranted, how many, aggregation and partial-failure design, and upstream identity mediation, load the `bff-design` skill. For each endpoint's access classification, the composition-prepared registrar that installs session/CSRF/Origin policy by construction, protected SSE and WebSocket registration, and the derived entry catalog with its enforcement gates, load the `bff-entry-points` skill.
 
 Do not give the BFF a hexagon merely because it calls hexagonal packages. Extract a provider-free inside package only when the BFF itself owns substantial, durable application policy.
 
