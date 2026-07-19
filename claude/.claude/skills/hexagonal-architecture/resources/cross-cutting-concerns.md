@@ -53,6 +53,8 @@ const closeFunding = (occasion: Occasion, requesterId: ContributorId): CloseResu
 
 **Authentication** (who are you?) = adapter. **Authorization** (are you allowed?) = domain.
 
+For browser-facing HTTP/BFF entry points, the `bff-entry-points` skill turns this rule into an enforceable model: explicit public/protected classification per route, a composition-prepared registrar that installs session/CSRF/Origin policy by construction, a provider-free `AuthenticatedPrincipal`, and direct provider-free tests proving no driving adapter can bypass in-application authorization.
+
 ## Logging & Observability
 
 "Logging" conflates two different things: technical telemetry (unambiguously adapter territory) and domain-significant observations (facts about the business process, with stakeholders of their own). The organizing test comes from GOOS's "Logging Is a Feature" (Freeman & Pryce, ch. 20): **is this observation a feature — someone outside the dev team relies on it — or developer scaffolding?** Four tiers follow. (For what goes *into* telemetry — wide events, SLOs, alerting — see the `observability` skill; this section is about *where the code lives*.)

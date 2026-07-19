@@ -60,7 +60,6 @@ src/
 │       │       ├── router.ts
 │       │       ├── commands/
 │       │       │   ├── post.ts
-│       │       │   ├── authenticate.ts
 │       │       │   └── to-command.ts
 │       │       ├── events/
 │       │       │   ├── get.sse.ts
@@ -101,13 +100,16 @@ Apply these rules:
 
 - Keep `router.ts` explicit, but delegate route branches so it remains a catalog rather than a god file.
 - Use plain names such as `by-order-id`; do not imitate `[orderId]` file-router syntax unless the framework requires it.
-- Keep endpoint leaves transport-thin: parse, authenticate, translate, call, and respond.
+- Keep endpoint leaves transport-thin: parse, translate, call, and respond. Authentication and browser policy arrive installed by the prepared registrar, not chosen per leaf.
+- Give every endpoint leaf a feature-local contract with an explicit access classification — public, protected read, protected browser mutation, or protected upgrade — and mount it through a composition-prepared registrar instead of per-route middleware choices. The public set stays small and reviewed. Raw WebSocket upgrade leaves (`upgrade.websocket.ts`) get the same classification and appear in the same derived catalog even though ordinary middleware never runs for them.
 - Keep connection-local SSE writer, cursor, and back-pressure state with the endpoint.
 - Keep per-stream replay, fan-out, subscriptions, and resynchronization in a route-independent workflow because multiple transports share them.
 - Keep concrete stores, provider clients, registries, configuration, resource ownership, and shutdown in composition.
 - Let a routing factory return both the HTTP app and a raw upgrade handler when WebSocket upgrade bypasses normal routing.
 - Make development routing a one-way extension. Production entrypoints must have no import path to `.dev` modules.
 - Keep OpenAPI generation aligned with the explicit route catalog.
+
+This section owns the physical shape only. For each endpoint's access classification, the composition-prepared registrar that installs session/CSRF/Origin policy by construction, protected SSE and WebSocket registration, and the derived entry catalog with its enforcement gates, load the `bff-entry-points` skill.
 
 Do not give the BFF a hexagon merely because it calls hexagonal packages. Extract a provider-free inside package only when the BFF itself owns substantial, durable application policy.
 
