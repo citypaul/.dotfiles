@@ -1,0 +1,4 @@
+interface:
+  display_name: "BFF Design"
+  short_description: "Decide, size, and shape backend-for-frontends"
+  default_prompt: "Use $bff-design to decide whether this system needs a BFF, how many, and what each one may own — including aggregation, resilience, and upstream identity."
