@@ -37,14 +37,26 @@ Do not ask when the gap is plainly a missing assertion, missing boundary, missin
 
 ---
 
-## Test Through Public API Only
+## Test Through the Subject's Public Interface
 
-Never test implementation details. Test behavior through public APIs.
+Never test implementation details. Test behavior through the subject's public interface — **at the layer named by the test's claim**.
 
 **Why this matters:**
 - Tests remain valid when refactoring
 - Tests document intended behavior
 - Tests catch real bugs, not implementation changes
+
+"Public API" does not mean "the HTTP API": every layer has its own public interface, and the claim under test decides which one owns the evidence.
+
+| Claim under test | Public interface that owns the evidence |
+|---|---|
+| Domain/application behavior | Exported domain/application operation |
+| HTTP API contract | HTTP client and documented request/response contract |
+| Component behavior | Rendered component DOM and its public props/events |
+| Browser/frontend behavior | Navigation, accessible UI, browser lifecycle, and browser-observed network |
+| User journey | Accessible user actions and user-visible outcomes across the real journey |
+
+An HTTP endpoint can be public and still be the **wrong** interface for a browser claim: a "user creates X" test that calls the endpoint directly proves an HTTP contract while bypassing the UI handler, cookie policy, CSRF/Fetch Metadata checks, redirects, loading/error state, and rendering — and stays green when any of those break. Test names, comments, CI step labels, docs, and PR prose must state the **narrowest evidence actually proved**. For the E2E evidence model, request observation, and the direct-transport audit, load the `front-end-testing` skill's `resources/playwright-e2e.md`.
 
 ### Examples
 
@@ -480,7 +492,7 @@ tests/
 
 When writing tests, verify:
 
-- [ ] Testing behavior through public API (not implementation details)
+- [ ] Testing behavior through the subject's public interface at the layer the claim names (not implementation details, not a lower layer standing in for it)
 - [ ] No mocks of the function being tested
 - [ ] No tests of private methods or internal state
 - [ ] Factory functions return complete, valid objects

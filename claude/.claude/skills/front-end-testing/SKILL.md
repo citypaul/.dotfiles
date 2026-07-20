@@ -1,16 +1,17 @@
 ---
 name: front-end-testing
-description: Behavior-driven UI testing patterns. Covers Vitest Browser Mode (preferred) and DOM Testing Library. Use when testing any front-end application, writing UI tests, querying DOM elements, or simulating user interactions. For React-specific patterns, see the react-testing skill.
+description: Behavior-driven UI testing patterns. Covers Vitest Browser Mode (preferred), Playwright E2E evidence boundaries, and DOM Testing Library. Use when testing any front-end application, writing UI or end-to-end tests, querying DOM elements, simulating user interactions, or reviewing whether a browser/user-journey test actually proves what it claims. For React-specific patterns, see the react-testing skill.
 ---
 
 # Front-End Testing
 
-For React-specific patterns (components, hooks, context), load the `react-testing` skill. For TDD workflow, load the `tdd` skill. For general testing patterns (factories, public API testing), load the `testing` skill.
+For React-specific patterns (components, hooks, context), load the `react-testing` skill. For TDD workflow, load the `tdd` skill. For general testing patterns (factories, public-interface testing), load the `testing` skill.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
 | Resource | Load when... |
 |----------|-------------|
+| `resources/playwright-e2e.md` | Writing or auditing Playwright Test E2E/user-journey suites against a running app — who may initiate requests, observing network without performing it, the direct-transport audit, auth/lifecycle evidence |
 | `resources/async-patterns.md` | Using `findBy`/`waitFor`/`waitForElementToBeRemoved`, testing loading states, debounce, or reviewing waitFor usage |
 | `resources/msw.md` | Mocking APIs — full setupWorker (Browser Mode) and setupServer (Node/jsdom) setup, per-test overrides |
 | `resources/dom-testing-library-legacy.md` | Working in a jsdom/`@testing-library/dom` codebase — screen object, fireEvent vs userEvent, jest-dom matchers, ESLint plugins |
@@ -219,6 +220,14 @@ it('creates and displays a user', async () => {
 
 ---
 
+## Playwright E2E Is a Different Subject
+
+Vitest Browser Mode tests a **component in isolation**; Playwright Test against a running application tests **whatever the test's claim names** — a user journey, the frontend's own network behavior, cookie/CSRF posture, redirects, rendering. Same browser engines, different subject and harness: never assume guidance transfers between them.
+
+The one rule that governs E2E suites: **a browser or user-journey claim must be proved by a browser initiator** — an accessible locator action or a navigation — never by a direct HTTP call standing in for the user or the frontend. `page.request.post('/api/...')` in a test named "user creates ..." proves an HTTP contract, not a journey; it stays green when the button, cookie policy, CSRF check, redirect, or rendering breaks. Load `resources/playwright-e2e.md` before writing or reviewing any E2E/journey suite — it carries the decision rule, the evidence-boundary table, safe request observation, the direct-transport audit procedure, and the auth/lifecycle evidence contract.
+
+---
+
 ## Query Selection Priority
 
 **Most critical skill: choosing the right query.** Near-identical for Browser Mode locators and Testing Library queries — the two naming differences are flagged below.
@@ -339,6 +348,7 @@ For factory patterns, see the `testing` skill.
 4. **Fetch/axios mocking instead of MSW** — see `resources/msw.md`.
 5. **waitFor misuse** — see `resources/async-patterns.md`.
 6. **jsdom-specific anti-patterns** (skipping `screen`, `fireEvent`, manual `cleanup()`, property assertions instead of jest-dom matchers, missing ESLint plugins) — see `resources/dom-testing-library-legacy.md`.
+7. **HTTP-level shortcuts wearing browser names** — `page.request`/`page.evaluate(fetch)` performing work a "journey"/"browser"/"E2E" test claims the user or frontend did, or forged browser headers (`Sec-Fetch-*`, `Origin`) admitting a non-browser client — see `resources/playwright-e2e.md`.
 
 ---
 
@@ -357,4 +367,5 @@ Before merging UI tests, verify:
 - [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom
 - [ ] Following TDD workflow (see `tdd` skill)
 - [ ] Using test factories for data (see `testing` skill)
+- [ ] In Playwright E2E suites: every browser/journey claim has a browser initiator, and direct HTTP appears only in the narrowly named roles `resources/playwright-e2e.md` classifies (contract, setup, readiness, post-condition, diagnostic, external actor) — never borrowed as browser evidence
 - [ ] For React-specific patterns (hooks, context, components), see `react-testing` skill

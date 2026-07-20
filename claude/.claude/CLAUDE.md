@@ -42,7 +42,7 @@ I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven
 
 **Quick reference:**
 - Write behavior tests first for new or changed behavior (TDD non-negotiable)
-- Test through public API exclusively
+- Test through the subject's public interface at the layer the claim names (an HTTP endpoint is the wrong interface for a browser claim)
 - Use factory functions for test data (no `let`/`beforeEach`)
 - Tests must document expected business behavior
 - No 1:1 mapping between test files and implementation files
