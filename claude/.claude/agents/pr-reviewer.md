@@ -520,7 +520,7 @@ Analyzing..."
 - Tests verify behavior, not that code was called
 
 ### Testing Rules
-- Test through public API only
+- Test through the subject's public interface at the layer the claim names
 - No `let`/`beforeEach` - use factory functions
 - No spying on internal methods
 - No mocking the function being tested

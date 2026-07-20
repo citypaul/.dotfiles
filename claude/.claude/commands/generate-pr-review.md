@@ -156,7 +156,7 @@ This reviewer enforces:
 - Any tests verify behavior, not implementation
 
 ### Testing Quality
-- Test through public API only
+- Test through the subject's public interface at the layer the claim names
 - No `let`/`beforeEach` - use factory functions
 - Factory functions validate with real schemas (don't redefine)
 - No spying on internal methods

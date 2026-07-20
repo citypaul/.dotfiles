@@ -82,7 +82,7 @@ For each behavior-changing production code change:
 Check that tests follow principles:
 - ✅ Tests describe WHAT the code should do (behavior)
 - ❌ Tests do NOT describe HOW it does it (implementation)
-- ✅ Tests use the public API only
+- ✅ Tests use the subject's public interface at the layer the claim names
 - ❌ Tests do NOT access private methods or internal state
 - ✅ Tests have descriptive names documenting business behavior
 - ❌ Tests do NOT have names like "should call X method"
