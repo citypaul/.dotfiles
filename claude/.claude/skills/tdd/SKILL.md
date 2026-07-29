@@ -21,12 +21,13 @@ The RED-GREEN-REFACTOR inner loop must optimize for fast, relevant feedback. **D
 
 Before RED, inspect package scripts, test configuration, and runner help. Repository-owned commands take precedence over generic examples:
 
-1. **RED** — run the new or changed test file/name and confirm the expected failure.
-2. **Select the watcher deliberately** — prefer a tested repository-owned watch command. It may run the complete relevant development tier once to populate the runtime graph, then rerun only affected tests. For Vitest without such a command, use `--changed <real-base> --watch` only when the installed version and repository configuration have the required live proof.
-3. **GREEN/REFACTOR** — keep one watcher in a dedicated reusable terminal/session. Let the runner or repository graph choose affected tests; do not hand-pick a smaller ongoing GREEN scope.
-4. **AI/non-interactive fallback** — when a persistent watcher cannot be owned reliably, run the equivalent affected one-shot after each edit.
-5. **Repair the right boundary** — restart or reseed for stale or newly graph-visible relationships. For non-import/dynamic dependencies, configuration, global setup, public contracts, or shared-package uncertainty, add repository-owned triggers or widen to the owning suite/tier; restart alone cannot create an absent graph edge.
-6. **PR readiness** — stop every watcher, then follow the repository's mutation/alternate-evidence policy and complete non-watch PR gate. In a monorepo, that final gate includes every configured project and required integration/E2E suite, not only the development subset.
+1. **Honor the repository's watcher start point** — if it requires a proven watcher before the first edit, start it once now. Otherwise strict TDD may write RED first and start the watcher immediately afterwards. Repository timing overrides the generic example below.
+2. **RED** — run the new or changed test file/name and confirm the expected failure.
+3. **Select or reuse the watcher deliberately** — prefer a tested repository-owned watch command. It may run the complete relevant development tier once to populate the runtime graph, then rerun only affected tests. For Vitest without such a command, use `--changed <real-base> --watch` only when the installed version and repository configuration have the required live proof.
+4. **GREEN/REFACTOR** — keep one watcher in a dedicated reusable terminal/session. Let the runner or repository graph choose affected tests; do not hand-pick a smaller ongoing GREEN scope.
+5. **AI/non-interactive fallback** — when a persistent watcher cannot be owned reliably, run the equivalent affected one-shot after each edit.
+6. **Repair the right boundary** — restart or reseed for stale or newly graph-visible relationships. For non-import/dynamic dependencies, configuration, global setup, public contracts, or shared-package uncertainty, add repository-owned triggers or widen to the owning suite/tier; restart alone cannot create an absent graph edge.
+7. **PR readiness** — stop every watcher, then follow the repository's mutation/alternate-evidence policy and complete non-watch PR gate. In a monorepo, that final gate includes every configured project and required integration/E2E suite, not only the development subset.
 
 Read [resources/vitest-watch-feedback.md](resources/vitest-watch-feedback.md) before selecting, adding, or changing a reusable Vitest watcher. It is the canonical detail for seed strategies, native discovery, blind spots, and the required live process proof.
 
@@ -317,9 +318,9 @@ The burden of proof is on the requester. 100% is the default expectation.
 
 ### Adding a New Feature
 
-1. **Write failing test** - describe expected behavior
-2. **Start focused feedback** - prefer the repository-owned watcher; otherwise use a diff-selected Vitest watcher only after its installed version/configuration has passed the canonical live proof, or use the affected one-shot equivalent
-3. **Run the narrow test** - confirm it fails for the expected reason
+1. **Honor the repository start point** - start its proven watcher before the first edit when required; otherwise start it immediately after RED
+2. **Write failing test** - describe expected behavior
+3. **Start or observe focused feedback** - prefer the repository-owned watcher; otherwise use a diff-selected Vitest watcher only after its installed version/configuration has passed the canonical live proof, or use the affected one-shot equivalent; confirm the expected test fails for the expected reason
 4. **Implement minimum** - just enough to pass
 5. **Run focused/affected tests** - confirm the behavior and its related tests pass
 6. **Refactor if applicable and valuable** - improve code structure while focused and affected tests stay green
@@ -331,14 +332,18 @@ The burden of proof is on the requester. 100% is the default expectation.
 ### Workflow Example
 
 ```bash
-# 1. Write failing test
+# 1. If the repository requires its watcher before the first edit, start it now:
+# pnpm test:watch
+
+# 2. Write failing test
 it('should reject empty user names', () => {
   const result = createUser({ id: 'user-123', name: '' });
   expect(result.success).toBe(false);
 }); # ❌ Test fails (no implementation)
 
-# 2. Start the tested repository watcher in a dedicated session. Starting after
-#    RED makes the expected initial execution easy to verify.
+# 3. If it is not already running, start the tested repository watcher now.
+#    Starting after RED makes the expected initial execution easy to verify when
+#    the repository does not mandate an earlier start.
 pnpm test:watch
 # If no repository watcher exists and this Vitest version/configuration has
 # passed the live proof:
@@ -346,29 +351,29 @@ pnpm exec vitest --changed origin/main --watch
 # Or use an affected one-shot:
 pnpm exec vitest --changed origin/main --run
 
-# 3. Confirm the expected RED test executed, then implement minimum code
+# 4. Confirm the expected RED test executed, then implement minimum code
 if (user.name === '') {
   return { success: false, error: 'Name required' };
 } # ✅ Test passes
 
-# 4. Refactor if needed (extract validation, improve naming)
+# 5. Refactor if needed (extract validation, improve naming)
 
-# 5. STOP — present the increment + ordinary verification, wait for commit approval
+# 6. STOP — present the increment + ordinary verification, wait for commit approval
 
-# 6. Commit (after approval)
+# 7. Commit (after approval)
 git add .
 git commit -m "feat: reject empty user names"
 
-# 7. Repeat RED-GREEN-REFACTOR increments without running the mutation harness
+# 8. Repeat RED-GREEN-REFACTOR increments without running the mutation harness
 
-# 8. After the final edit, stop the watcher with Ctrl+C. When the accumulated work
+# 9. After the final edit, stop the watcher with Ctrl+C. When the accumulated work
 #    is otherwise ready to create the PR, run the
 #    end-of-phase mutation gate once and address valuable survivors within it.
 
-# 9. Exit watch mode and finish the remaining PR verification, including the
+# 10. Exit watch mode and finish the remaining PR verification, including the
 #    inspected repository-defined complete non-watch test gate.
 
-# 10. If later verification changes mutation-relevant production or applicable
+#     If later verification changes mutation-relevant production or applicable
 #     tests/evidence, apply the target repository's invalidation rule. Use this
 #     distribution's commands/pr.md freshness model only when no stricter rule exists.
 #     Keep the complete non-watch project verification current for the final tree.
