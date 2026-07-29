@@ -91,6 +91,6 @@ For a transition, record `behavior gate: pass` and `mechanism gate: pending — 
 
 For diagnosis, state the recommended next decision without claiming realized reduction or equivalence.
 
-For a reduction transition, state the linked terminal slice, passing behavior gate, independent verification, mutation results or explicit `N/A` alternate evidence, bridge owner/removal/bounded-lifetime metadata (`N/A` when none), and the pending mechanism gate without claiming realized reduction.
+For a PR-ready reduction transition, state the linked terminal slice, passing behavior gate, independent verification, the single end-of-phase mutation result for the accumulated slice or explicit `N/A` alternate evidence, bridge owner/removal/bounded-lifetime metadata (`N/A` when none), and the pending mechanism gate without claiming realized reduction.
 
 For a terminal reduction, claim realized reduction only when both gates pass and superseded machinery plus expired bridges are gone. List essential complexity retained, remaining uncertainty, and separately authorized follow-up work.

@@ -73,7 +73,7 @@ For every protected operation, a test invokes it directly — no HTTP, no cookie
 
 If this test cannot be written, authorization lives only in HTTP middleware — that is the finding, and it is a defect regardless of how good the middleware is. Gate 9's operation enumeration makes "every" checkable; the enrollment map above makes a missing test a CI failure.
 
-Registrar unit tests are separate: the registrar itself is production machinery and gets behavior tests for chain ordering (policy before session before CSRF before handler), stable 401 shape, and doc emission per classification. Mutation-test it like any code; where a control is configuration (cookie flags, header values), record `N/A` plus configuration/integration evidence per the house `tdd` rule instead of fabricating structural mutants.
+Registrar unit tests are separate: the registrar itself is production machinery and gets behavior tests for chain ordering (policy before session before CSRF before handler), stable 401 shape, and doc emission per classification. Include it in the accumulated mutation scope at the end-of-phase PR-readiness gate; where a control is configuration (cookie flags, header values), record `N/A` plus configuration/integration evidence per the house `tdd` rule instead of fabricating structural mutants.
 
 ## Browser Tests
 

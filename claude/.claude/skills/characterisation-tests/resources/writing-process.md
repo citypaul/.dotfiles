@@ -89,9 +89,9 @@ it('boundary: amount exactly 10000 (no flat bonus)', () => {
 
 These boundary tests reveal the exact conditions (strict `>`, not `>=`). This is characterisation at work -- the code told us its behavior.
 
-### Step 4: Validate with mutation testing
+### Step 4: Strengthen likely mutation gaps cheaply
 
-Run the `mutation-testing` skill against `calculateDiscount`. If mutants survive in paths you plan to change, add more targeted tests. For example, if changing `* 0.15` to `* 0.16` doesn't fail a test, your inputs need more variety.
+Use the `mutation-testing` mutator rules to inspect `calculateDiscount` and add targeted examples for obvious risks. For example, make sure changing `* 0.15` to `* 0.16` would fail a test by choosing inputs with enough variety. Do not run the automated mutation harness here; run it once for the accumulated change when the phase is otherwise ready for its PR.
 
 ```typescript
 // Rounding: fractional results exercise the Math.round path
@@ -104,7 +104,7 @@ it('rounding: fractional results are rounded to 2 decimal places', () => {
 
 1. **Cover every branch your change touches.** If you're modifying the premium loyalty bonus, ensure tests exercise both sides of `years > 5`.
 2. **Cover one layer out.** If your change is inside `calculateDiscount`, also characterise its callers -- they may depend on specific return shapes.
-3. **Run mutation testing.** If no mutants survive in the code you're about to modify, your safety net is adequate.
+3. **Scan likely mutation risks.** Use the mutator rules to choose examples that would detect realistic changes in the path; the automated harness runs later at the end-of-phase PR-readiness gate.
 4. **Stop when confident.** If you're certain your tests would catch any mistake you could make in the upcoming change, that's enough.
 
 ## Targeted Testing

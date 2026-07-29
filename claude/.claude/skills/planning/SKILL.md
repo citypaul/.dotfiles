@@ -102,7 +102,7 @@ Each slice MUST:
 - Be describable in one sentence
 - Deliver or directly unblock observable behavior, or safely advance an explicitly selected reduction program toward its terminal behavior/mechanism gates
 
-A slice is the unit of planning and review — one PR. Within a behavior-changing slice, TDD increments (RED-GREEN with mutation or alternate evidence, conditional mutant handling, and refactoring when applicable) may produce multiple commits, but the slice itself is what gets reviewed and merged as a coherent unit.
+A slice is the unit of planning and review — one PR. Within a behavior-changing slice, fast RED-GREEN-REFACTOR increments may produce multiple commits. Mutation testing or alternate evidence is applied once to the accumulated slice at the end-of-phase PR-readiness gate, not after each increment.
 
 **If you can't describe a slice in one sentence, break it down further.**
 
@@ -125,15 +125,14 @@ A slice is the unit of planning and review — one PR. Within a behavior-changin
 
 ## TDD Integration
 
-**Every behavior-changing slice follows RED-GREEN with mutation or alternate evidence, conditional mutant handling, and refactoring when applicable.** Before implementation, load `tdd` and `testing`, plus applicable `mutation-testing` and `refactoring` guidance; record `N/A` where either does not apply. A true behavior-preserving refactor or `reduce-system-complexity` slice starts from passing proportionate preservation evidence. Never fabricate a failing mechanism-count test or structural mutant. This section is a routing contract, not a replacement for those skills.
+**Every behavior-changing slice uses fast RED-GREEN-REFACTOR increments, followed by one end-of-phase mutation or alternate-evidence gate when the slice is otherwise ready for its PR.** Before implementation, load `tdd`, `testing`, and applicable `refactoring` guidance. Use the `mutation-testing` mutator rules for cheap test-design guidance, but defer the automated harness until PR readiness. A true behavior-preserving refactor or `reduce-system-complexity` slice starts from passing proportionate preservation evidence and uses the same end-of-phase gate. Never fabricate a failing mechanism-count test or structural mutant. This section is a routing contract, not a replacement for those skills.
 
 ```
 FOR EACH BEHAVIOR-CHANGING SLICE:
     │
     ├─► LOAD: Required implementation skills
-    │   - `tdd` for RED-GREEN plus mutation or alternate evidence
+    │   - `tdd` for RED-GREEN-REFACTOR
     │   - `testing` for behavior-driven tests and factories
-    │   - `mutation-testing` where meaningful; otherwise explicit `N/A` plus proportionate alternate evidence
     │   - `refactoring` when restructuring is applicable; otherwise `N/A`
     │
     ├─► CONFIRM: Present acceptance criteria for this slice
@@ -151,30 +150,30 @@ FOR EACH BEHAVIOR-CHANGING SLICE:
     │   - No premature optimization
     │   - Just make the test pass
     │
-    ├─► MUTATE OR ALTERNATE EVIDENCE: Verify preservation strength
-    │   - Run `mutation-testing` where meaningful and produce a report
-    │   - Otherwise record explicit `N/A` plus proportionate reachability, configuration, contract, integration, or operational evidence
-    │
-    ├─► KILL MUTANTS WHEN APPLICABLE: Address surviving mutants
-    │   - Add or strengthen tests for surviving mutants
-    │   - Ask the human when a surviving mutant's value is ambiguous
-    │   - All tests pass after fixes
-    │
     ├─► REFACTOR: Assess improvements
     │   - See `refactoring` skill
     │   - Only if it adds value
     │   - All tests still pass
     │
+    ├─► REPEAT: Continue RED-GREEN-REFACTOR as needed
+    │   - Do not run the automated mutation harness after each increment, refactor, or commit
+    │
     └─► STOP: Present the work and wait for commit approval
-         - Show what was implemented and the mutation report or reviewed alternate-evidence record
+         - Show what was implemented and the ordinary verification
          - Human reviews and approves before commit
+
+WHEN THE SLICE IS OTHERWISE READY FOR ITS PR:
+    ├─► LOAD: `mutation-testing`
+    ├─► MUTATE OR ALTERNATE EVIDENCE: Run once for the accumulated slice scope, or record explicit `N/A` plus proportionate alternate evidence
+    ├─► KILL MUTANTS: Address valuable survivors and re-run focused/diff mutations within the same gate
+    └─► COMPLETE: Finish the remaining PR checks and present the final report
 ```
 
-A **pure refactor** substitutes: confirm the preserved consumer contract → run the applicable passing baseline → establish proportionate preservation strength through mutation or reviewed alternate evidence → restructure while staying green → verify the preserved surface.
+A **pure refactor** substitutes: confirm the preserved consumer contract → run the applicable passing baseline → restructure while staying green → verify the preserved surface → at PR readiness, run mutation testing once for the accumulated scope or review proportionate alternate evidence.
 
-A **reduction transition** substitutes: link the reducer program/ledger and terminal slice → confirm the conserved contract → run the applicable baseline and mutation/alternate evidence → make the independently verifiable transition → pass the behavior gate → record any bridge ownership/removal/bounded lifetime (`N/A` when none) → keep `mechanism gate: pending — no net-reduction claim`.
+A **reduction transition** substitutes: link the reducer program/ledger and terminal slice → confirm the conserved contract → run the applicable baseline → make the independently verifiable transition → pass the behavior gate → record any bridge ownership/removal/bounded lifetime (`N/A` when none) → keep `mechanism gate: pending — no net-reduction claim` → apply the mutation/alternate-evidence gate once at PR readiness.
 
-A **terminal reduction** substitutes: link the program/ledger (or authorized single-slice `N/A`) → run the applicable baseline and mutation/alternate evidence → remove superseded machinery and expired bridges → discharge transition obligations → pass both behavior and mechanism gates.
+A **terminal reduction** substitutes: link the program/ledger (or authorized single-slice `N/A`) → run the applicable baseline → remove superseded machinery and expired bridges → discharge transition obligations → pass both behavior and mechanism gates → apply the mutation/alternate-evidence gate once at PR readiness.
 
 **No untested behavior changes. No "I'll add tests later."**
 
@@ -182,12 +181,13 @@ A **terminal reduction** substitutes: link the program/ledger (or authorized sin
 
 **NEVER commit without user approval.**
 
-After completing one classified slice:
+After completing an implementation increment:
 
 1. Verify applicable tests pass and/or the approved preservation evidence still holds
 2. Verify static analysis passes
-3. Present the mutation testing report, or the reviewed alternate-evidence record and `N/A` rationale when mutation testing is not meaningful
-4. Present class-specific evidence: RED/GREEN for behavior change; preserved contract for pure refactor; passing behavior gate plus independent verification and pending mechanism gate/no net claim for a transition; or linked program/ledger, discharged obligations, both passing gates, and retired machinery for a terminal reduction
+3. Present class-specific evidence: RED/GREEN for behavior change; preserved contract for pure refactor; passing behavior gate plus independent verification and pending mechanism gate/no net claim for a transition; or linked program/ledger, discharged obligations, both passing gates, and retired machinery for a terminal reduction
+
+Do not require a mutation report for every commit. When the complete slice is otherwise ready for its PR, run the end-of-phase mutation gate once and present its final report (or the reviewed alternate-evidence record and `N/A` rationale).
 5. **STOP and ask**: "Ready to commit [description]. Approve?"
 
 Only proceed with commit after explicit approval.
@@ -225,7 +225,7 @@ For a reduction program, define the conserved observable contract, terminal same
 
 ## Slices
 
-Classify every slice as **behavior change**, **pure refactor**, **reduction transition**, or **terminal reduction**. Behavior-changing slices follow RED-GREEN with mutation or alternate evidence. Pure refactors start from passing preservation evidence. Every reduction transition and terminal reduction loads `reduce-system-complexity` and references the plan-level reduction program. A transition may add a bounded bridge but never claims net reduction: its mechanism gate remains explicitly pending until the terminal slice removes the old mechanism and expired bridges. Only the terminal reduction may claim net removal after both behavior and mechanism gates pass.
+Classify every slice as **behavior change**, **pure refactor**, **reduction transition**, or **terminal reduction**. Behavior-changing slices use RED-GREEN-REFACTOR increments and all classes use one end-of-phase mutation or alternate-evidence gate at PR readiness. Pure refactors start from passing preservation evidence. Every reduction transition and terminal reduction loads `reduce-system-complexity` and references the plan-level reduction program. A transition may add a bounded bridge but never claims net reduction: its mechanism gate remains explicitly pending until the terminal slice removes the old mechanism and expired bridges. Only the terminal reduction may claim net removal after both behavior and mechanism gates pass.
 Read the project's CLAUDE.md and testing rules before writing slices.
 
 ## Reduction Program (include only when applicable)
@@ -243,16 +243,15 @@ Read the project's CLAUDE.md and testing rules before writing slices.
 **Value**: [Behavior change: actor and observable outcome. Pure refactor: preserved consumer surface and maintenance value. Reduction transition: why this independently verifiable increment is necessary to reach the terminal state. Terminal reduction: conserved contract plus the ownership/mechanism retired.]
 **Path**: [Behavior change: entry point -> business path -> state/output -> observability. Pure refactor: preserved public surface. Either reduction class: affected trigger-to-outcome path, program/terminal link, and mechanism scope.]
 **Class**: Behavior change / pure refactor / reduction transition / terminal reduction.
-**Required implementation skills**: For changed behavior, load `tdd`, `testing`, and applicable mutation-testing/refactoring guidance. For a pure refactor, load only applicable testing, mutation-testing, and refactoring skills. Every reduction transition and terminal reduction loads `reduce-system-complexity` plus applicable evidence skills. Record why any otherwise expected skill is `N/A`. Add UI/domain/architecture skills only when relevant.
+**Required implementation skills**: For changed behavior, load `tdd`, `testing`, and applicable refactoring guidance. For a pure refactor, load only applicable testing and refactoring skills. Every reduction transition and terminal reduction loads `reduce-system-complexity` plus applicable evidence skills. At PR readiness, load `mutation-testing` for the accumulated slice where meaningful or record the alternate-evidence `N/A`. Add UI/domain/architecture skills only when relevant.
 **Reduction program**: [For either reduction class: reference the plan-level program and terminal slice; otherwise `N/A`.]
 **Transition/terminal evidence**: [Transition: `behavior gate: pass`, independent verification, bridge owner/removal/bounded-lifetime metadata when a bridge exists (`N/A` otherwise), and `mechanism gate: pending — no net-reduction claim`. Terminal: passing behavior gate, like-for-like mechanism gate, and removal of the superseded mechanism/expired bridges. Otherwise `N/A`.]
 **Acceptance criteria**: [Behavior change: specific observable outcome. Pure refactor: conserved surface plus preservation evidence. Transition: passing behavior gate, independent verification, optional bridge metadata or `N/A`, and pending mechanism gate/no net claim. Terminal: both gates pass and superseded machinery/expired bridges are gone. **Present to the human and get confirmation before writing any code.**]
 **RED or preservation baseline**: For behavior change, what failing behavior test will we write? For a pure refactor/reduction, which passing oracles and proportionate non-test evidence conserve the affected behavior and guarantees? Never assert implementation shape merely to create RED.
 **GREEN or preservation change**: What minimum code makes the new behavior pass, or what smallest mechanism-only change preserves the baseline?
-**MUTATE or alternate evidence**: Run mutation testing where meaningful. Otherwise mark `N/A` and name reachability, configuration, contract, integration, or operational evidence; never invent structural mutants.
-**KILL MUTANTS**: Address valuable survivors when mutation testing applies (ask human when value is ambiguous).
 **REFACTOR**: Assess improvements (only if they add value).
-**Done when**: All acceptance criteria and mutation/alternate-evidence obligations are met. A transition is done when its behavior gate and independent checks pass while the mechanism gate remains truthfully pending with no net claim; a terminal reduction is done only when both gates pass and old machinery/expired bridges are gone. The human approves the commit.
+**PRE-PR MUTATION or alternate evidence**: Once the slice is otherwise ready for its PR, run mutation testing once for the accumulated scope. Address valuable survivors and re-run focused/diff checks inside the same gate. Otherwise mark `N/A` and name reachability, configuration, contract, integration, or operational evidence; never invent structural mutants.
+**Done when**: All acceptance criteria and end-of-phase mutation/alternate-evidence obligations are met. A transition is done when its behavior gate and independent checks pass while the mechanism gate remains truthfully pending with no net claim; a terminal reduction is done only when both gates pass and old machinery/expired bridges are gone. The human approves the commit.
 
 ### Slice 2: [One sentence observable behaviour]
 
@@ -261,8 +260,8 @@ Use the same adaptive fields as Slice 1. Classify the slice independently; do no
 ## Pre-PR Quality Gate
 
 Before each PR:
-1. Mutation or alternate evidence — run `mutation-testing` where meaningful; otherwise review the explicit `N/A` rationale and proportionate evidence
-2. Refactoring/reduction assessment — run the applicable `refactoring` and/or `reduce-system-complexity` skill; record `N/A` when neither applies
+1. Implementation complete — confirm applicable refactoring/reduction assessment and ordinary verification are complete
+2. Mutation or alternate evidence — run `mutation-testing` once for the accumulated PR scope where meaningful; address valuable survivors within the same gate, or review the explicit `N/A` rationale and proportionate evidence
 3. Typecheck and lint pass
 4. DDD glossary check — if the project uses DDD, verify all domain terms match the canonical glossary
 
@@ -324,19 +323,13 @@ START FEATURE
 │
 ├─► Create plan in plans/ (get approval)
 │
-│   FOR EACH BEHAVIOR-CHANGING SLICE:
+│   FOR EACH PR-SIZED SLICE:
 │   │
-│   ├─► LOAD: `tdd` + `testing` + `mutation-testing` + `refactoring`
-│   ├─► CONFIRM: Present acceptance criteria, **wait for human approval**
-│   ├─► RED: Failing test
-│   ├─► GREEN: Make it pass
-│   ├─► MUTATE OR ALT: Run mutations and report, or record reviewed `N/A` alternate evidence
-│   ├─► KILL MUTANTS: Address survivors when mutation testing applies (ask human when ambiguous)
-│   ├─► REFACTOR: If applicable and valuable
-│   └─► **PRESENT WORK + REPORT, WAIT FOR COMMIT APPROVAL**
-│
-│   FOR EACH PURE REFACTOR/REDUCTION SLICE:
-│   └─► PASSING BASELINE → MUTATION OR ALTERNATE EVIDENCE → REFACTOR/REDUCE → VERIFY GATES
+│   ├─► BEHAVIOR CHANGE: LOAD → CONFIRM → RED → GREEN → REFACTOR → REPEAT WITHOUT MUTATION HARNESS
+│   ├─► OR PURE REFACTOR/REDUCTION: PASSING BASELINE → REFACTOR/REDUCE → VERIFY GATES
+│   ├─► **PRESENT WORK, WAIT FOR COMMIT APPROVAL**
+│   ├─► PRE-PR: Run mutation once for the accumulated slice (or alternate evidence), handle survivors within the gate
+│   └─► Verify criteria and create the slice's PR
 │
 END FEATURE
 │

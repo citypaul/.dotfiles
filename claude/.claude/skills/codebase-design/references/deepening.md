@@ -79,7 +79,7 @@ Treat time, randomness, identifiers, environment, and scheduling as dependencies
 ## Safe Migration
 
 1. **Fix the review target.** Name the behavior being preserved and the callers in scope. Do not combine unrelated feature changes with the deepening.
-2. **Establish safety.** Use existing behavior tests. If behavior is untested, load `finding-seams` only as needed, then `characterisation-tests` and mutation-test the paths that will move.
+2. **Establish safety.** Use existing behavior tests. If behavior is untested, load `finding-seams` only as needed, then `characterisation-tests`; use mutator rules for cheap test-design guidance and defer the automated mutation run until the accumulated change is otherwise ready for its PR.
 3. **Define the target contract.** Specify observable behavior, errors, effects, performance, and compatibility. Test it through representative caller scenarios.
 4. **Move one decision at a time.** Pull duplicated policy, ordering, mapping, or recovery behind the target contract in small known-good slices.
 5. **Use a temporary compatibility facade only when required.** State which consumers need it and the exact removal condition. Do not count the facade itself as architectural depth.

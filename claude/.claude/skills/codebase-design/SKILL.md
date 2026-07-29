@@ -122,7 +122,7 @@ Ask:
 - Use `hexagonal-architecture` only for an opted-in ports-and-adapters system with purposeful actor conversations.
 - Use `finding-seams` when existing hard-coded dependencies block a test harness.
 - Use `characterisation-tests` before restructuring untested behavior.
-- Use `tdd`, `testing`, `mutation-testing`, and `refactoring` for implementation according to whether behavior changes and whether the safety net is trustworthy.
+- Use `tdd`, `testing`, and `refactoring` during implementation according to whether behavior changes and whether the safety net is trustworthy; use `mutation-testing` once for the accumulated change at the end-of-phase PR-readiness gate.
 - Use `ubiquitous-language` when a domain term must be proposed or changed; never coin it silently.
 
 ## Design Output

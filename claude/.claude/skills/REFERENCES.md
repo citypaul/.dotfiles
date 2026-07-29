@@ -462,7 +462,7 @@ These primary sources support `secure-oauth-oidc/SKILL.md` and its five files un
 - **Tests as documentation of behavior** → Testing skill: test naming guidance
 
 ### Eran Boudjnah — RED-GREEN-MUTATE-REFACTOR reordering, extended with KILL MUTANTS
-- **Mutation testing before refactoring** → TDD skill: RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR ordering. Insight: verify test strength and address valuable survivors *before* restructuring code, so you refactor with genuine confidence. Pointed out on LinkedIn that the original RED-GREEN-REFACTOR-MUTATE order means refactoring with unverified test effectiveness.
+- **Mutation testing as test-strength evidence** → Mutation Testing skill: survivor triage and test strengthening. The per-increment ordering is intentionally not adopted because automated mutation runs become a progressively slower inner-loop tax. This repository keeps RED-GREEN-REFACTOR fast, then runs mutation testing once for the accumulated change at the end-of-phase PR-readiness gate.
 
 ### Gary Bernhardt — ["Boundaries"](https://www.destroyallsoftware.com/talks/boundaries) (2012)
 - **Functional core, imperative shell** — pure domain logic surrounded by impure adapters → Hex arch skill: the fundamental structural principle

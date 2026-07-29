@@ -142,10 +142,10 @@ For the selected candidate:
 
 Only implement when requested:
 
-- Untested or untestable existing behavior: `finding-seams` as needed, then `characterisation-tests` and `mutation-testing` over the change area.
+- Untested or untestable existing behavior: `finding-seams` as needed, then `characterisation-tests`; run `mutation-testing` over the accumulated change area at the end-of-phase PR-readiness gate.
 - Behavior-preserving restructuring with a trustworthy safety net: `refactoring`, keeping observable behavior stable.
 - Selected whole-path subtraction with a trustworthy safety net: `reduce-system-complexity`, preserving behavior while applying the behavior gate on every slice and the mechanism gate at terminal reduction.
-- New or changed behavior: `tdd`, `testing`, `mutation-testing`, and `refactoring`.
+- New or changed behavior: `tdd`, `testing`, and `refactoring` during implementation, then `mutation-testing` once for the accumulated change at PR readiness.
 - Public compatibility: `api-design`.
 - Package and import migration: `structure-codebase` and its migration gates.
 - Explicit ports-and-adapters design: `hexagonal-architecture`.

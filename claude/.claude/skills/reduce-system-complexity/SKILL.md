@@ -54,9 +54,9 @@ Classify observed behavior before promising to conserve it:
 
 Inventory outputs, effects, errors, ordering, persistence, integrations, authorization, security, privacy, reliability, resource budgets, compatibility, concurrency, retries, migrations, and recovery behavior. Record each in the behavior-and-guarantee ledger with its evidence and gaps.
 
-Characterisation tests reveal what the code does; they do not decide what it ought to do. During diagnosis, record missing oracles without editing. If implementation and test-harness work are separately authorized, load `characterisation-tests` and `finding-seams` when current behavior lacks a usable oracle. Load `testing` for behavior-level oracle design and `mutation-testing` where applicable to check whether affected executable oracles detect relevant regressions.
+Characterisation tests reveal what the code does; they do not decide what it ought to do. During diagnosis, record missing oracles without editing. If implementation and test-harness work are separately authorized, load `characterisation-tests` and `finding-seams` when current behavior lacks a usable oracle. Load `testing` for behavior-level oracle design. Record the eventual mutation scope, but defer the automated `mutation-testing` harness until the reduction slice is otherwise ready for its PR.
 
-Mutation testing is not meaningful for every proven-unreachable path, configuration-only change, generated boundary, or operational mechanism. Mark it `N/A` with reachability, configuration, contract, integration, or operational evidence instead. Never invent structural mutants or fake RED to satisfy the workflow.
+At that end-of-phase PR-readiness gate, mutation testing is not meaningful for every proven-unreachable path, configuration-only change, generated boundary, or operational mechanism. Mark it `N/A` with reachability, configuration, contract, integration, or operational evidence instead. Never invent structural mutants or fake RED to satisfy the workflow.
 
 Implementation remains diagnosis while any material behavior the proposed slice can affect has an unresolved evidence gap.
 
@@ -125,14 +125,14 @@ Classify the authorized slice before editing:
 
 A transition can be a safe mergeable increment while the **program** remains unfinished. Do not describe it as a completed reduction or let it lose the reducer ledger merely because its own mechanism gate is pending.
 
-A behavior-preserving reduction begins from passing behavior oracles whose strength is mutation-checked where applicable, or from proportionate reachability, configuration, contract, integration, and operational evidence where mutation testing is not meaningful. It is a REFACTOR path, not a reason to fabricate a failing test that asserts branch, layer, state, or dependency counts. If the desired outcome changes observable behavior or fixes a disputed bug, stop this workflow, resolve the intended contract, and use `tdd` for the behavior change.
+A behavior-preserving reduction begins from passing behavior oracles plus proportionate reachability, configuration, contract, integration, and operational evidence. It is a REFACTOR path, not a reason to fabricate a failing test that asserts branch, layer, state, or dependency counts. Mutation-check the accumulated result where applicable once the slice is otherwise ready for its PR. If the desired outcome changes observable behavior or fixes a disputed bug, stop this workflow, resolve the intended contract, and use `tdd` for the behavior change.
 
 For each safe slice:
 
 1. Record the pre-slice state and run affected behavior, type, build, integration, and operational checks.
 2. Identify database, queue, deployment, message, authorization, concurrency, and other irreversible effects before editing.
 3. Make the smallest coherent change that advances the complete reduction.
-4. Preserve behavior-facing tests. Retire implementation-shaped tests only after equivalent behavioral coverage plus mutation evidence where meaningful, or reviewed proportionate alternate evidence when mutation is not meaningful.
+4. Preserve behavior-facing tests. Retire implementation-shaped tests only after equivalent behavioral coverage is in place; the end-of-phase mutation or alternate-evidence gate will verify the accumulated suite before the PR.
 5. Run focused checks immediately, then the broader relevant suite and provider/contract checks where mocks cannot establish fidelity. Keep provider checks read-only or sandboxed unless explicit authority covers the exact live effects; never perform live migrations, failover, rollback, publication, or external writes by implication.
 6. Remove superseded code, dependencies, flags, state, configuration, tests of discarded internals, and temporary bridges whose removal condition is met.
 7. Re-read the full path, including callers, operations, failure, and recovery.
@@ -164,7 +164,7 @@ Write a fresh Markdown report using [`references/ledger-template.md`](references
 
 For diagnosis, report proposed reductions, target deltas, evidence gaps, risks, and the next decision. Claim neither equivalence nor realized reduction.
 
-For a reduction transition, lead with the conserved contract and program/terminal-slice link; show `behavior gate: pass`, independent verification, mutation results or explicit `N/A` alternate evidence, any bridge ownership/removal metadata (`N/A` when none), and `mechanism gate: pending — no net-reduction claim`.
+For a PR-ready reduction transition, lead with the conserved contract and program/terminal-slice link; show `behavior gate: pass`, independent verification, the single end-of-phase mutation result or explicit `N/A` alternate evidence, any bridge ownership/removal metadata (`N/A` when none), and `mechanism gate: pending — no net-reduction claim`.
 
 For a terminal reduction, lead with the program/ledger link (or `N/A — authorized single terminal slice`), conserved contract, and removed mechanism; show like-for-like before/after evidence, list all verification performed, confirm prior transition obligations and expired bridges are discharged, and disclose remaining fidelity gaps or essential complexity.
 

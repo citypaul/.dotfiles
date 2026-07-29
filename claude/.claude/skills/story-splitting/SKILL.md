@@ -30,7 +30,7 @@ Use `grill-me` when the issue is unresolved product or design decision-making ra
 
 Use `storyboard` when the work spans multiple UX surfaces or mock states; the storyboard can reveal missing screens and flow gaps that become child stories. Use design skills such as `shape`, `critique`, and `polish` to improve the mocks themselves, not to replace product slicing.
 
-This skill must not drive implementation directly. When a selected child story is ready to implement, load `planning` first. Planning must turn that child story into implementation slices/stages, and every slice/stage must repeat the full implementation cycle before code changes begin: load `tdd`, `testing`, `mutation-testing`, and `refactoring`; run RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR; then present the work before moving to the next slice. Treat this as a per-slice mandatory handoff, not a one-time feature reminder. Use `finding-seams` and `characterisation-tests` when a slice touches legacy code that cannot yet be tested safely. Use domain and architecture skills (`domain-driven-design`, `hexagonal-architecture`, `api-design`, `cli-design`, `twelve-factor`, `production-parity-skill-builder`) to keep each slice coherent; do not split stories by those technical layers.
+This skill must not drive implementation directly. When a selected child story is ready to implement, load `planning` first. Planning must turn that child story into implementation slices/stages. Within each slice, use fast RED-GREEN-REFACTOR increments without running the automated mutation harness after every increment. When the complete slice is otherwise ready for its PR, load `mutation-testing`, run it once for the accumulated scope, and handle valuable survivors normally within that gate. Treat this as a per-slice mandatory handoff, not a one-time feature reminder. Use `finding-seams` and `characterisation-tests` when a slice touches legacy code that cannot yet be tested safely. Use domain and architecture skills (`domain-driven-design`, `hexagonal-architecture`, `api-design`, `cli-design`, `twelve-factor`, `production-parity-skill-builder`) to keep each slice coherent; do not split stories by those technical layers.
 
 ## Requirement Refinement Pipeline
 
@@ -242,7 +242,7 @@ Why this first: [value, risk, learning, or bargain]
 [Component splits, unsafe deferrals, unclear ownership, or missing examples]
 
 ## Next Step
-[Usually: load `planning` for the selected first slice, run `find-gaps` on the split, or ask one decision question. If implementing, every planned implementation slice/stage must explicitly require `tdd`, `testing`, `mutation-testing`, and `refactoring` before code changes, then complete RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR before the next slice/stage starts.]
+[Usually: load `planning` for the selected first slice, run `find-gaps` on the split, or ask one decision question. If implementing, every planned implementation slice/stage must explicitly require `tdd`, `testing`, and applicable `refactoring` guidance before code changes; use RED-GREEN-REFACTOR increments, then run `mutation-testing` once for the accumulated scope when the slice is otherwise ready for its PR.]
 ```
 
 If the user wants an interactive refinement session, ask one high-value question at a time rather than dumping a questionnaire. Start with the question that most changes the split: usually actor, outcome, release constraint, highest-value customer segment, or biggest risk.

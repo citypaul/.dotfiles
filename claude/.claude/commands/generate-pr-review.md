@@ -149,8 +149,8 @@ This reviewer enforces:
 ### Change-Path Compliance
 - New or changed observable behavior needs corresponding tests written before implementation
 - Pure behavior-preserving refactors or reductions need a passing pre/post baseline plus proportionate alternate evidence where tests cannot observe the mechanism
-- Mutation results must be reviewed where meaningful; otherwise record an explicit `N/A` rationale and proportionate reachability, configuration, contract, integration, or operational evidence
-- Run only the applicable refactoring/reduction assessment and record `N/A` when neither applies
+- Run only the applicable refactoring/reduction assessment during implementation and record `N/A` when neither applies
+- Once the completed phase is otherwise PR-ready, run mutation testing once for the accumulated scope where meaningful; otherwise record an explicit `N/A` rationale and proportionate reachability, configuration, contract, integration, or operational evidence
 - A reduction transition must reference its program, terminal slice, and conserved contract; pass the behavior gate and independent verification; record owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none); and state `mechanism gate: pending — no net-reduction claim`
 - A terminal reduction must link its reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge prior transition obligations, and pass both gates before claiming net reduction
 - Any tests verify behavior, not implementation
@@ -247,8 +247,8 @@ When reviewing PRs for this project:
 
 ### Must Pass (Blocking)
 - [ ] Exactly one path is classified; behavior changes have test-first evidence and pure refactors have a passing baseline
-- [ ] Mutation results are reviewed where meaningful, or explicit `N/A` plus proportionate alternate evidence is recorded
 - [ ] Applicable refactoring/reduction assessment is complete, or explicitly `N/A`
+- [ ] The end-of-phase mutation gate ran once for the accumulated PR scope where meaningful and valuable survivors were addressed, or explicit `N/A` plus proportionate alternate evidence is recorded
 - [ ] Reduction transitions link their terminal slice, pass the behavior gate and independent verification, record temporary-bridge ownership/removal metadata or `N/A`, and mark the mechanism gate pending without claiming net reduction
 - [ ] Terminal reductions link their program/report/ledger (or authorized single-slice `N/A`), discharge transition obligations, pass both gates, and remove old machinery/expired bridges
 - [ ] Any tests are behavior-focused
@@ -348,15 +348,16 @@ If the current branch is `[DETECTED_DEFAULT_BRANCH]`, STOP. Do not create a PR u
 Before creating the PR, run these checks in order:
 
 1. Classify exactly one change path: behavior change, pure refactor, reduction transition, or terminal reduction
-2. Apply exactly one evidence branch:
-   - Behavior change: verify RED before GREEN plus mutation results, or explicit mutation `N/A` with proportionate alternate evidence
-   - Pure refactor: verify the passing baseline plus mutation results, or explicit mutation `N/A` with proportionate alternate evidence; run refactoring assessment when applicable
-   - Reduction transition: reference the program/terminal slice and record the conserved contract, `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), `mechanism gate: pending — no net-reduction claim`, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
-   - Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge transition obligations, run both `reduce-system-complexity` gates, confirm old machinery and expired bridges are gone, and include mutation results or explicit mutation `N/A` with proportionate alternate evidence
-3. [DETECTED_TYPE_CHECK_COMMAND]
-4. [DETECTED_LINT_COMMAND]
-5. [DETECTED_TEST_COMMAND]
-6. [DETECTED_BUILD_COMMAND]
+2. Confirm the implementation phase and its applicable assessment are complete:
+   - Behavior change: verify RED before GREEN and complete any applicable refactoring
+   - Pure refactor: verify the passing baseline and complete the refactoring assessment
+   - Reduction transition: reference the program/terminal slice and record the conserved contract, `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), and `mechanism gate: pending — no net-reduction claim`
+   - Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge transition obligations, run both `reduce-system-complexity` gates, and confirm old machinery and expired bridges are gone
+3. Run the end-of-phase mutation gate once for the accumulated PR scope where meaningful, address valuable survivors and scoped reruns inside that gate, or record explicit mutation `N/A` with proportionate alternate evidence. Do not run the automated mutation harness once per prior increment or commit.
+4. [DETECTED_TYPE_CHECK_COMMAND]
+5. [DETECTED_LINT_COMMAND]
+6. [DETECTED_TEST_COMMAND]
+7. [DETECTED_BUILD_COMMAND]
 
 If any check fails, fix the issue before proceeding.
 
