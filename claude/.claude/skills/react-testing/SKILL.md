@@ -7,6 +7,8 @@ description: React component testing patterns including components, hooks, conte
 
 For general UI testing patterns (queries, events, async, accessibility, MSW), load the `front-end-testing` skill. For TDD workflow, load the `tdd` skill.
 
+Follow the `tdd` skill's canonical fast-feedback and watcher-lifecycle policy plus the `front-end-testing` skill's browser-specific differences. React adds no separate Vitest graph guarantee: prefer the repository-owned watcher, use diff-selected watch only under the canonical version/configuration proof, and keep every affected app/package consumer eligible through the root graph. Exact files remain RED/debug-only. At PR readiness, stop watchers and apply the target repository's mutation policy plus complete non-watch UI/project gate.
+
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
 | Resource | Load when... |
@@ -315,5 +317,6 @@ React-specific checks:
 - [ ] Using `expect.element()` for auto-retrying assertions (Browser Mode)
 - [ ] RSCs tested via e2e or extracted logic, not Browser Mode component tests
 - [ ] Following TDD workflow (see `tdd` skill)
+- [ ] GREEN/REFACTOR used complete affected feedback derived by the runner, workspace orchestrator, or repository mapping—or the documented widened fallback when no reliable graph exists—rather than hand-picked test files; the complete repository PR test gate is current and includes the full configured UI suite
 - [ ] Using general UI testing patterns (see `front-end-testing` skill)
 - [ ] Using test factories for data (see `testing` skill)

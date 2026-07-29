@@ -92,6 +92,17 @@ export default defineConfig({
 
 Quick setup wizard: `npx vitest init browser`
 
+### Focused Browser-Test Feedback
+
+Apply the `tdd` skill's fast-feedback policy to browser tests too:
+
+- Vitest Browser Mode follows the same repository-owned versus diff-selected strategy, lifecycle, cleanup, native-discovery, and live-proof rules in the `tdd` skill and its [Vitest watch reference](../tdd/resources/vitest-watch-feedback.md). The Node/SSR 4.1.10 clean-start proof does not prove Browser Mode; verify its installed version/configuration independently. Do not assume `--changed --watch` reloads VCS impact after startup.
+- Browser dependencies are often outside the import graph. Widen for routing, global styling, browser setup, templates, generated assets, type-only relationships, browser-mode orchestration, and Docker-backed services. Preserve repository `watchTriggerPatterns`, `forceRerunTriggers`, and root monorepo project/task graphs.
+- Playwright Test has a native affected one-shot: prefer the repository script or `playwright test --only-changed[=<real-base>]` for GREEN/REFACTOR when the installed version supports it. It selects changed test files and tests that import changed files, but Playwright documents this as a heuristic. Browser journeys often exercise application code at runtime rather than importing it, and dynamic/non-import dependencies can remain invisible. For those changes, use the repository-mapped affected journey/project set, including every consumer of shared fixtures, auth state, setup, routing, styling, and UI packages; widen when uncertain.
+- Use a Playwright file, `--grep`, `--last-failed`, or hand-picked project filter only to prove RED or debug a known failure. For GREEN/REFACTOR, project filters are valid only when the runner/workspace graph mechanically derived the complete affected project set, including transitive consumers. Confirm `--only-changed` actually executes expected tests; an empty selection is not GREEN evidence.
+- With a one-shot runner, rerun the affected command after creating a test. Never count an empty affected set, Vitest `--passWithNoTests`, or Playwright `--pass-with-no-tests` as evidence.
+- At PR readiness, stop watchers and apply the target repository's mutation policy plus complete non-watch test gate. That gate includes the full required UI matrix across every configured browser/project; targeted Chromium-only, `--grep`, or UI-only evidence is insufficient.
+
 ### Built-in Locators
 
 Vitest Browser Mode has built-in locators that mirror Testing Library queries. **No separate `@testing-library/dom` import needed.**
@@ -366,6 +377,11 @@ Before merging UI tests, verify:
 - [ ] No manual `act()` calls for component interactions (Browser Mode handles timing)
 - [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom
 - [ ] Following TDD workflow (see `tdd` skill)
+- [ ] RED/debug browser runs use the narrowest file/project/grep selection that proves the result
+- [ ] GREEN/REFACTOR browser feedback uses the complete affected scope derived by the runner, workspace orchestrator, or repository mapping; when no reliable graph exists, use the documented owning-suite-plus-known-consumers fallback and widen on uncertainty, never hand-picked test files
+- [ ] Newly created tests join the active watcher, or the affected one-shot reruns after creation; every claimed result executed an expected test
+- [ ] Monorepo runs use the root project/task graph and retain all affected workspace consumers
+- [ ] The complete repository PR test gate passes in non-watch mode against the final tree, including the full required browser/project matrix
 - [ ] Using test factories for data (see `testing` skill)
 - [ ] In Playwright E2E suites: every browser/journey claim has a browser initiator, and direct HTTP appears only in the narrowly named roles `resources/playwright-e2e.md` classifies (contract, setup, readiness, post-condition, diagnostic, external actor) — never borrowed as browser evidence
 - [ ] For React-specific patterns (hooks, context, components), see `react-testing` skill

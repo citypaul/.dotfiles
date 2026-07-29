@@ -143,17 +143,23 @@ FOR EACH BEHAVIOR-CHANGING SLICE:
     ├─► RED: Write failing test FIRST
     │   - Test describes expected behavior
     │   - Test fails for the right reason
+    │   - Run only the exact test/test name needed to prove RED
     │   - Test plan accounts for likely mutants from the `mutation-testing` skill's `resources/mutator-rules.md` resource
     │
     ├─► GREEN: Write MINIMUM code to pass
     │   - No extra features
     │   - No premature optimization
     │   - Just make the test pass
+    │   - Follow the `tdd` skill's canonical watcher selection, lifecycle, cleanup, and live-proof policy
+    │   - Prefer a proven repository-owned watcher; use diff-selected Vitest watch only under the canonical version/configuration proof
+    │   - Use the affected one-shot when watch is unreliable; do not hand-pick GREEN test files
+    │   - Keep watcher discovery live for new tests, or rerun the affected one-shot after creation; reject zero-test/`--passWithNoTests` results
+    │   - In monorepos, run through the root project/task graph so shared-package consumers remain eligible
     │
     ├─► REFACTOR: Assess improvements
     │   - See `refactoring` skill
     │   - Only if it adds value
-    │   - All tests still pass
+    │   - Focused and affected tests stay green; do not rerun the full suite after every edit
     │
     ├─► REPEAT: Continue RED-GREEN-REFACTOR as needed
     │   - Do not run the automated mutation harness after each increment, refactor, or commit
@@ -264,6 +270,8 @@ Before each PR:
 2. Mutation or alternate evidence — run `mutation-testing` once for the accumulated PR scope where meaningful; address valuable survivors within the same gate, or review the explicit `N/A` rationale and proportionate evidence
 3. Typecheck and lint pass
 4. DDD glossary check — if the project uses DDD, verify all domain terms match the canonical glossary
+5. Complete tests — stop watchers and run the repository-defined complete non-watch PR test gate; in a monorepo include every configured project and required integration/E2E suite, not only the affected development subset
+6. Evidence freshness — apply the target repository's mutation-evidence rule after later fixes. Use this distribution's `commands/pr.md` model only when the repository has no stricter invalidation policy, and keep project verification current after resulting fixes
 
 ---
 *Delete this file when the plan is complete. If `plans/` is empty, delete the directory.*

@@ -15,6 +15,36 @@ For verifying test effectiveness through mutation analysis, load the `mutation-t
 
 ---
 
+## Fast, Relevant Test Execution
+
+Follow the `tdd` skill's canonical fast-feedback, watcher lifecycle, process cleanup, monorepo, final-gate, and repository-authority policy. For Vitest seed semantics and reusable-command proof, read its [resources/vitest-watch-feedback.md](../tdd/resources/vitest-watch-feedback.md).
+
+Start with an exact selector for RED. For GREEN/REFACTOR, prefer a behaviorally proven repository-owned watcher, then the runner/orchestrator-derived affected scope or affected one-shot. A repository-owned command may deliberately run its complete relevant tier once to seed the runtime graph. Do not hand-pick a smaller ongoing scope, accept zero-test evidence, leave a watcher behind, or substitute watch mode for the complete non-watch PR gate.
+
+Inspect project scripts and installed runner help rather than guessing flags. Representative runner-specific choices:
+
+Preference order:
+
+1. Tested repository-owned watch/affected command.
+2. Native VCS-aware selection when the installed runner and repository configuration have proven its watch behavior.
+3. Native dependency-aware selection from a complete, mechanically derived changed-source list.
+4. Runner/orchestrator-selected affected packages/projects, including transitive dependents.
+5. Exact test file/name only for proving RED or debugging, followed by one of the broader affected scopes for GREEN.
+
+| Runner | GREEN/REFACTOR affected scope | RED/debug-only selector |
+|---|---|---|
+| Vitest | Repository-owned watcher first. Otherwise use `vitest --changed <real-base> --watch` only under the `tdd` skill's version/configuration proof conditions; for one-shot use `--run`. Use `vitest related <all-changed-source-paths>` only when that list is derived mechanically | `vitest run <test-file> -t <name>` or exact-file watch |
+| Jest | `jest --watch`, adding `--changedSince=<base>` when the task spans commits; for one-shot use `--onlyChanged`, `--changedSince=<base>`, or `--findRelatedTests <all-changed-source-paths>` with watch disabled | `jest --runTestsByPath <test-file> -t <name>` |
+| pytest | Use an existing repository affected/watch task. Without one, run the complete owning package/suite plus known consumers and widen when dependency impact is uncertain | `pytest path/to/test_file.py::test_name` or `pytest -k <name> <path>` |
+| Playwright Test | Prefer the repository script or `playwright test --only-changed[=<real-base>]` as a runner-selected affected one-shot. A mechanically derived complete affected-project set may be supplied with project filters. For runtime app code not imported by tests, dynamic/non-import dependencies, or shared global inputs, use the repository-mapped affected journey/project set and widen when uncertain | A file, `--grep`, `--last-failed`, or hand-picked project filter used only to prove RED or repair a known failure |
+| Go / Rust / JVM | Use the repository's existing affected/watch task or a dependency-graph-derived package/module set including transitive consumers | Exact package/class/test-name selectors chosen only to prove RED or debug |
+
+If the runner lacks a dependency graph, use its exact selector only for RED/debugging. For GREEN/REFACTOR, run the behavior test plus every known consumer and the complete owning suite/project set; widen when impact is uncertain. Do not mistake “changed test files” for “all relevant tests.” The target is the tests affected by changed behavior, whether or not those test files changed.
+
+Vitest `related` implicitly permits an empty result to pass. Require at least one expected test to execute. Vitest `--standalone` is not a TDD substitute; follow the canonical TDD policy instead.
+
+---
+
 ## Mutation-Aware Test Planning
 
 When planning or writing tests, automatically scan the intended behavior and changed production code against the mutator rules from the `mutation-testing` skill's `resources/mutator-rules.md` resource. A good test should fail if a realistic mutant changes the behavior.
@@ -502,3 +532,7 @@ When writing tests, verify:
 - [ ] Edge cases covered (not just happy path)
 - [ ] Tests would pass even if implementation is refactored
 - [ ] No 1:1 mapping between test files and implementation files
+- [ ] TDD inner-loop runs use focused watch or related/affected selectors rather than repeated full suites
+- [ ] GREEN/REFACTOR uses the complete affected scope derived by the runner, workspace orchestrator, or repository mapping; when no reliable graph exists, use the documented owning-suite-plus-known-consumers fallback and widen on uncertainty, never hand-picked test files
+- [ ] When using a watcher, new tests join it; otherwise the affected one-shot is rerun after test creation. Every claimed result executed at least one expected test without `--passWithNoTests`
+- [ ] The watcher and its child processes were stopped; a completed non-watch full-suite run is current for the final tree, and mutation or alternate evidence satisfies the target repository's policy
