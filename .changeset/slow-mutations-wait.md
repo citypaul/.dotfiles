@@ -1,5 +1,5 @@
 ---
-"@citypaul/dotfiles": patch
+"@citypaul/dotfiles": minor
 ---
 
-Move automated mutation testing out of each TDD increment and into a single end-of-phase PR-readiness gate.
+Keep mutation-aware test design in RED while moving the automated harness to one end-of-phase PR-readiness gate over the accumulated change. Survivor handling still starts with a failing test, and focused or diff-based reruns remain available inside that final gate.

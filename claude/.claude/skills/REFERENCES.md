@@ -446,8 +446,8 @@ These primary sources support `secure-oauth-oidc/SKILL.md` and its five files un
 - **"Testable interfaces inherently constitute good interfaces regardless of testing contexts"** → Finding seams skill: seams as design improvement, not just test scaffolding
 
 ### Nicolas Carlo (understandlegacycode.com) — ["Key Points of Working Effectively with Legacy Code"](https://understandlegacycode.com/blog/key-points-of-working-effectively-with-legacy-code/)
-- **3-step characterization process under deadline pressure** (generate output, achieve coverage, verify with mutation testing) → `characterisation-tests/resources/writing-process.md`
-- **Coverage-guided + mutation-verified characterisation** → `characterisation-tests/resources/modern-tooling.md`
+- **3-step characterization process under deadline pressure** (generate output, achieve coverage, verify with mutation testing) → `characterisation-tests/resources/writing-process.md`; this repository keeps mutation-aware design during characterisation but defers automated validation to PR readiness
+- **Coverage-guided + mutation-verified characterisation** → `characterisation-tests/resources/modern-tooling.md`; this repository adapts the source by deferring the automated mutation harness to PR readiness
 
 ---
 

@@ -7,6 +7,8 @@ description: Refactoring assessment and behavior-preserving patterns for code wi
 
 Refactoring is the final step of each fast RED-GREEN-REFACTOR increment when restructuring is applicable. Assess it after GREEN establishes a passing behavior-test baseline. Do not run the automated mutation harness before or after each refactor; mutation testing verifies the completed phase once the work is otherwise ready for a PR.
 
+Because automated mutation evidence is intentionally deferred, the baseline's strength is not yet mutation-harness-verified during refactoring. Keep each refactor small, strictly behavior-preserving, and green under the existing oracles; the final gate validates the accumulated result.
+
 This skill safely implements a bounded, behavior-preserving improvement. Use `improve-codebase-architecture` to discover and rank architecture candidates, then `codebase-design` to design a selected module contract before returning here for implementation. If the slice participates in a selected whole-path reduction program, whether as a transition or terminal reduction, `reduce-system-complexity` governs the ledger and gate state; use this skill only as a secondary refactoring assessment when applicable.
 
 ## When to Refactor

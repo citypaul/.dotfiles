@@ -18,6 +18,8 @@
 
 I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven testing and functional programming principles. All work should be done in small, incremental changes that maintain a working state throughout development.
 
+For mutation-testing cadence, a **phase of work** means one PR-sized, independently mergeable slice: the accumulated scope of one branch and PR. It does not mean a multi-PR feature or the numbered lifecycle phases in `README.md`.
+
 ## Quick Reference
 
 **Key Principles:**

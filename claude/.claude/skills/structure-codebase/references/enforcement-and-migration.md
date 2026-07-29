@@ -108,15 +108,17 @@ The exact order of steps 5–7 may vary, but never label provider-dependent code
 
 ## Validation
 
-After every migration slice, check:
+During a migration slice, after every migration step, check:
 
-- Formatting, linting, typechecking, unit/integration/E2E tests, coverage, and mutation tests required by the project.
+- Formatting, linting, typechecking, unit/integration/E2E tests, and coverage required by the project.
 - Package manifests and generated lockfile/workspace state.
 - Public exports and consumer compilation.
 - Import/package boundary validation.
 - Production versus development import graphs.
 - Runtime startup, resource shutdown, and framework route discovery.
 - Documentation links and package indexes.
+
+When the complete PR-sized migration slice is otherwise ready for review, run the mutation or alternate-evidence gate once over the accumulated scope. Do not run the automated mutation harness after each migration step.
 
 Use a dependency graph or architecture report to confirm direction; do not rely on a visually convincing tree alone.
 

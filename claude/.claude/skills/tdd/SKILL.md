@@ -9,6 +9,8 @@ TDD is the fundamental practice for new or changed observable behavior: every su
 
 Pure behavior-preserving work is different. `refactoring` and `reduce-system-complexity` begin from passing proportionate preservation evidence and stay behaviorally green while internal structure changes. At the end-of-phase PR-readiness gate, use mutation testing where meaningful; otherwise record reachability, configuration, contract, integration, or operational evidence and mark mutation `N/A`. Do not manufacture a failing test or structural mutant merely to make a REFACTOR slice look RED. If the work changes behavior or fixes a disputed bug, return to RED.
 
+In this skill, a **phase** means one PR-sized, independently mergeable slice: the accumulated scope of one branch and PR. It does not mean a multi-PR feature or the numbered lifecycle phases in `README.md`.
+
 **For how to write good tests**, load the `testing` skill. This skill focuses on the TDD workflow/process. For mutation-aware test planning, load the `mutation-testing` skill and use its `resources/mutator-rules.md` resource as the source of truth.
 
 ---
