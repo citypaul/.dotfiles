@@ -1,17 +1,19 @@
 ---
 name: refactoring
-description: Refactoring assessment and behavior-preserving patterns for code with a passing baseline and sufficient preservation evidence. Use when the user asks to clean up, simplify, or restructure a selected area, and after mutation testing or reviewed proportionate alternate evidence establishes confidence for the REFACTOR step. Covers commit-before-refactoring discipline, when refactoring adds value vs when to skip it, and priority classification. For any slice in a selected whole-path reduction program—transition or terminal—use reduce-system-complexity as the governing skill; refactoring may be secondary when applicable. For repository-wide architecture discovery use improve-codebase-architecture; for a module contract use codebase-design. Do NOT use for insufficiently evidenced code or adding behavior.
+description: Refactoring assessment and behavior-preserving patterns for code with a passing baseline and proportionate preservation evidence. Use when the user asks to clean up, simplify, or restructure a selected area, or after GREEN establishes the passing baseline for a TDD increment. Mutation testing verifies the accumulated result later at the end-of-phase PR-readiness gate. Covers commit-before-refactoring discipline, when refactoring adds value vs when to skip it, and priority classification. For any slice in a selected whole-path reduction program—transition or terminal—use reduce-system-complexity as the governing skill; refactoring may be secondary when applicable. For repository-wide architecture discovery use improve-codebase-architecture; for a module contract use codebase-design. Do NOT use for insufficiently evidenced code or adding behavior.
 ---
 
 # Refactoring
 
-Refactoring is the final step of TDD when restructuring is applicable. Assess it after mutation testing—or reviewed proportionate alternate evidence when mutation is not meaningful—establishes enough preservation confidence for the proposed change.
+Refactoring is the final step of each fast RED-GREEN-REFACTOR increment when restructuring is applicable. Assess it after GREEN establishes a passing behavior-test baseline. Do not run the automated mutation harness before or after each refactor; mutation testing verifies the completed phase once the work is otherwise ready for a PR.
+
+Because automated mutation evidence is intentionally deferred, the baseline's strength is not yet mutation-harness-verified during refactoring. Keep each refactor small, strictly behavior-preserving, and green under the existing oracles; the final gate validates the accumulated result.
 
 This skill safely implements a bounded, behavior-preserving improvement. Use `improve-codebase-architecture` to discover and rank architecture candidates, then `codebase-design` to design a selected module contract before returning here for implementation. If the slice participates in a selected whole-path reduction program, whether as a transition or terminal reduction, `reduce-system-complexity` governs the ledger and gate state; use this skill only as a secondary refactoring assessment when applicable.
 
 ## When to Refactor
 
-- Assess after mutation testing or reviewed proportionate alternate evidence establishes preservation confidence
+- Assess after GREEN or another passing proportionate preservation baseline
 - Only refactor if it improves the code
 - **Commit working code BEFORE refactoring** (critical safety net)
 
@@ -25,11 +27,11 @@ Having a working baseline before refactoring:
 
 **Workflow:**
 1. BASELINE: Applicable tests pass and/or the conserved behavior and guarantees have proportionate evidence
-2. MUTATE OR ALTERNATE EVIDENCE: Verify preservation strength; record explicit `N/A` when mutation is not meaningful
-3. KILL MUTANTS WHEN APPLICABLE: Address valuable survivors
-4. COMMIT: Save the working baseline with its preservation evidence
-5. REFACTOR: Improve structure
-6. COMMIT: Save refactored code
+2. COMMIT: Save the working baseline with its preservation evidence
+3. REFACTOR: Improve structure
+4. VERIFY: Keep the applicable behavior tests and other proportionate evidence green
+5. COMMIT: Save refactored code
+6. PRE-PR GATE: When the phase is otherwise ready for a PR, run mutation testing once for the accumulated scope where meaningful, or record explicit `N/A` plus proportionate alternate evidence; address valuable survivors within that gate
 
 ## Priority Classification
 
@@ -55,7 +57,7 @@ Having a working baseline before refactoring:
 ## Example Assessment
 
 ```typescript
-// After mutation or reviewed alternate evidence establishes preservation confidence:
+// After GREEN establishes a passing behavior-test baseline:
 const processOrder = (order: Order): ProcessedOrder => {
   const itemsTotal = order.items.reduce((sum, item) => sum + item.price, 0);
   const shipping = itemsTotal > 50 ? 0 : 5.99;
@@ -72,7 +74,7 @@ const processOrder = (order: Order): ProcessedOrder => {
 
 If code isn't driven by a failing test, don't write it.
 
-**Key lesson**: Every new behavior must have a failing test that demanded it. A behavior-preserving refactor may change lines without a new RED test, but only to improve structure while proportionate preservation evidence stays green. Use mutation evidence where meaningful and explicit alternate evidence where it is not; never invent structural mutants. Do not add speculative behavior.
+**Key lesson**: Every new behavior must have a failing test that demanded it. A behavior-preserving refactor may change lines without a new RED test, but only to improve structure while proportionate preservation evidence stays green. At PR readiness, use mutation evidence for the accumulated scope where meaningful and explicit alternate evidence where it is not; never invent structural mutants. Do not add speculative behavior.
 
 ❌ **Speculative code examples:**
 - "Just in case" logic
@@ -127,7 +129,7 @@ refactor: rename ambiguous parameter names
 ## Refactoring Checklist
 
 - [ ] Existing behavior tests pass; test edits are not hiding a behavior change
-- [ ] Mutation results are reviewed where meaningful, or explicit `N/A` plus proportionate alternate evidence is recorded
+- [ ] If the refactored phase is ready for a PR, mutation results were reviewed once for the accumulated scope where meaningful, or explicit `N/A` plus proportionate alternate evidence was recorded
 - [ ] No unplanned consumer-facing API was added; internal or temporary contracts follow the selected design and compatibility plan
 - [ ] Code more readable than before
 - [ ] Committed separately from features

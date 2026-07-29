@@ -1,6 +1,6 @@
 ---
 name: mutation-testing
-description: Set up and run mutation testing with Stryker, including full-project and diff-against-main runs, then use surviving mutants to strengthen weak or missing tests. Use during the MUTATE phase of the TDD cycle, when verifying that tests actually catch bugs (coverage alone is not enough), when the user mentions mutation testing, Stryker, mutation score, or surviving mutants, or when assessing whether a test suite would detect realistic regressions. For writing the tests themselves, see testing.
+description: Set up and run mutation testing with Stryker, including full-project and diff-against-main runs, then use surviving mutants to strengthen weak or missing tests. Use as the end-of-phase PR-readiness gate after implementation and refactoring are complete, not inside each RED-GREEN increment. Also use when the user explicitly asks for mutation testing, Stryker, mutation score, or surviving-mutant analysis. For writing the tests themselves, see testing.
 ---
 
 # Mutation Testing
@@ -37,8 +37,9 @@ Code coverage tells you what code your tests execute. Mutation testing tells you
 
 Use mutation testing analysis when:
 
+- A completed phase of work is ready to become a PR
 - Reviewing code changes on a branch
-- Verifying test effectiveness after TDD
+- Verifying test effectiveness after TDD and refactoring
 - Identifying weak tests that appear to have coverage
 - Finding missing edge case tests
 - Validating that refactoring didn't weaken test suite
@@ -46,26 +47,29 @@ Use mutation testing analysis when:
 **Integration with planning and TDD:**
 
 ```
-FOR EACH STEP:
+FOR EACH TDD INCREMENT:
     ├─► CONFIRM: Human approves observable acceptance criteria
     ├─► RED: Write failing test, using mutator rules to spot likely gaps
     ├─► GREEN: Make it pass
-    ├─► Run mutation testing
-    ├─► KILL MUTANTS: Strengthen tests for worthwhile survivors
     ├─► REFACTOR: If valuable
-    └─► STOP: Present work, mutation report, and wait for commit approval
+    └─► Repeat without running the mutation harness
 
-PRE-PR QUALITY GATE:
-    └─► Re-run mutation testing for the branch/repo scope
+END-OF-PHASE PR-READINESS GATE:
+    ├─► Run mutation testing once for the accumulated branch/PR scope
+    ├─► KILL MUTANTS: Strengthen tests for worthwhile survivors
+    ├─► Re-run focused mutation checks, then the branch diff check
+    └─► Present the final mutation report and proceed to PR verification
 ```
 
-Mutation testing is not a replacement for RED-GREEN-MUTATE-KILL MUTANTS-REFACTOR. It verifies the tests created during those increments are strong enough to catch real behavioral regressions before refactoring and before PR.
+The automated mutation harness is deliberately **not** part of the inner RED-GREEN-REFACTOR loop. Do not run it after each test, increment, refactor, or commit: its cost grows with the codebase and makes short feedback loops progressively slower. During RED, use the mutator rules to choose strong examples cheaply. Run the harness when the implementation and refactoring phase is complete and the work is otherwise ready for a PR.
+
+Once that PR-readiness gate begins, the normal mutation process takes over: triage the complete report, add or strengthen behavior tests for valuable survivors, and re-run focused mutations until they are killed or classified. These focused reruns are part of the same gate, not a return to per-increment mutation testing.
 
 ---
 
 ## Harness-First Mutation Workflow
 
-When analyzing code on a branch, prove test effectiveness with Stryker whenever practical. Do not stop at reasoning about whether a test would catch a mutation; run the harness, then use the report to drive focused test improvements.
+At the end-of-phase PR-readiness gate, prove test effectiveness with Stryker whenever practical. Do not stop at reasoning about whether a test would catch a mutation; run the harness against the accumulated change, then use the report to drive focused test improvements.
 
 ### Step 1: Inspect Setup and Scope
 
@@ -132,7 +136,7 @@ npx stryker run --incremental --force --mutate src/example.ts:42-57
 
 ### Step 4: Run and Triage
 
-Start with `mutation:diff` for branch feedback. Run `mutation` across the full project when introducing Stryker, changing shared test infrastructure, preparing CI gates, or validating a broad test-strengthening pass.
+At the PR-readiness gate, start with `mutation:diff` for branch feedback. Run `mutation` across the full project when introducing Stryker, changing shared test infrastructure, preparing CI gates, or validating a broad test-strengthening pass.
 
 Categorize Stryker findings:
 

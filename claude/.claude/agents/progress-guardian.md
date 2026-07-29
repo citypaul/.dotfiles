@@ -82,16 +82,15 @@ Classify every slice as **behavior change**, **pure refactor**, **reduction tran
 - **Value**: Behavior change — actor/outcome; pure refactor — preserved surface/maintenance value; transition — why this increment is necessary for the terminal state; terminal — conserved contract plus retired mechanism/ownership
 - **Path**: Behavior change — entry-to-observable path; pure refactor — preserved surface; either reduction class — affected path, program/terminal link, and mechanism scope
 - **Class**: Behavior change / pure refactor / reduction transition / terminal reduction
-- **Required implementation skills**: Behavior change — `tdd`, `testing`, plus applicable mutation-testing/refactoring; pure refactor — applicable evidence/refactoring; either reduction class — `reduce-system-complexity` plus applicable evidence skills
+- **Required implementation skills**: Behavior change — `tdd`, `testing`, plus applicable refactoring; pure refactor — applicable evidence/refactoring; either reduction class — `reduce-system-complexity` plus applicable evidence skills; at PR readiness — `mutation-testing` for the accumulated slice where meaningful
 - **Reduction program**: For either reduction class, reference the plan-level program and terminal slice; otherwise `N/A`
 - **Transition/terminal evidence**: Transition — `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any bridge (`N/A` otherwise), `mechanism gate: pending — no net-reduction claim`; terminal — both gates pass and superseded machinery/expired bridges are gone; otherwise `N/A`
 - **Acceptance criteria**: Behavior change — observable outcome; pure refactor — conserved surface/evidence; transition — passing behavior gate, independent verification, optional bridge metadata or `N/A`, pending mechanism gate/no net claim; terminal — both gates and retired old machinery/expired bridges
 - **RED or preservation baseline**: Behavior change — failing behavior test; pure refactor — passing consumer-surface baseline; either reduction class — conserved-contract baseline from the reducer ledger
 - **GREEN or preservation change**: Minimum behavior implementation, or smallest mechanism-only change
-- **MUTATE or alternate evidence**: Mutation testing where meaningful; otherwise explicit `N/A` plus reachability/configuration/contract/integration/operational evidence
-- **KILL MUTANTS**: Address valuable survivors when mutation testing applies
 - **REFACTOR or REDUCE**: Run the applicable `refactoring` and/or `reduce-system-complexity` skill; record `N/A` when neither applies
-- **Done when**: Include mutation or alternate evidence. A transition requires its behavior gate and independent checks to pass while its mechanism gate remains pending with no net claim; a terminal reduction requires both gates and retired old machinery/expired bridges.
+- **PRE-PR MUTATION or alternate evidence**: Once the slice is otherwise ready for its PR, run mutation testing once for the accumulated scope and address valuable survivors within that gate; otherwise record explicit `N/A` plus reachability/configuration/contract/integration/operational evidence
+- **Done when**: Include the end-of-phase mutation or alternate evidence. A transition requires its behavior gate and independent checks to pass while its mechanism gate remains pending with no net claim; a terminal reduction requires both gates and retired old machinery/expired bridges.
 
 ### Slice 2: [One sentence observable behaviour]
 
@@ -100,8 +99,8 @@ Use the same adaptive fields as Slice 1. Classify the slice independently; do no
 ## Pre-PR Quality Gate
 
 Before each PR:
-1. Mutation or alternate evidence — run `mutation-testing` where meaningful; otherwise review the explicit `N/A` rationale and proportionate evidence
-2. Refactoring/reduction assessment — run the applicable `refactoring` and/or `reduce-system-complexity` skill; record `N/A` when neither applies
+1. Implementation complete — confirm applicable refactoring/reduction assessment and ordinary verification are complete
+2. Mutation or alternate evidence — run `mutation-testing` once for the accumulated PR scope where meaningful, address valuable survivors within the same gate, or review the explicit `N/A` rationale and proportionate evidence
 3. Typecheck and lint pass
 4. DDD glossary check (if applicable)
 
@@ -128,13 +127,12 @@ Do you approve this plan change?"
 
 ### 2. Commit Approval Required
 
-After one classified slice, present its applicable passing baseline, mutation report or explicit `N/A` alternate evidence, and class-specific state before asking for approval. A transition must show `behavior gate: pass`, independent verification, optional bridge metadata or `N/A`, and `mechanism gate: pending — no net-reduction claim`; a terminal reduction must link its program/ledger (or authorized single-slice `N/A`), discharge transition obligations, pass both gates, and retire old machinery/expired bridges.
+After an implementation increment, present its applicable passing baseline and class-specific state before asking for commit approval. Do not require mutation evidence for every commit. A transition must show `behavior gate: pass`, independent verification, optional bridge metadata or `N/A`, and `mechanism gate: pending — no net-reduction claim`; a terminal reduction must link its program/ledger (or authorized single-slice `N/A`), discharge transition obligations, pass both gates, and retire old machinery/expired bridges. When the completed slice is otherwise ready for its PR, run the single end-of-phase mutation gate and present that report separately.
 
 ```markdown
 "Slice 3 complete. Applicable tests/evidence pass.
 
 Change path: [behavior change / pure refactor / reduction transition / terminal reduction]
-Mutation or alternate evidence: [report or explicit N/A]
 Class-specific evidence: [RED/GREEN, preserved contract, transition gate state, or terminal gate/removal result]
 
 Ready to commit: 'feat: add email validation'
@@ -150,7 +148,7 @@ When all slices are complete:
 
 1. **Verify completion**
    - All acceptance criteria met?
-   - Applicable tests and mutation/alternate evidence passing?
+   - Applicable tests passing and every PR-ready slice's end-of-phase mutation/alternate evidence complete?
    - All slices complete?
    - For a reduction program, did the terminal slice pass both gates, discharge transitions, and remove old machinery/expired bridges?
 
@@ -176,7 +174,7 @@ When all slices are complete:
 |-------|-----------------|
 | `tdd-guardian` | Before behavior-change commits, to verify TDD compliance |
 | `ts-enforcer` | Before commits, to check TypeScript strictness |
-| `refactor-scan` | After mutation or reviewed alternate evidence, when refactoring is applicable |
+| `refactor-scan` | After GREEN or another passing preservation baseline, when refactoring is applicable |
 | `learn` | At end of feature, to merge learnings into CLAUDE.md |
 | `adr` | When architectural decisions need recording |
 | `docs-guardian` | When permanent docs need updating |
@@ -230,25 +228,22 @@ What's the failing test?"
 User: "Test passes now"
 
 progress-guardian: "Slice 1 status: GREEN.
-Next: run mutation testing where meaningful, or record explicit mutation `N/A` plus proportionate alternate evidence."
+Next: assess any valuable refactoring, then commit or continue the next RED-GREEN increment. Mutation testing waits until this slice is otherwise ready for its PR."
+
+User: "The slice is complete and ready for a PR"
+
+progress-guardian: "Implementation and refactoring are complete.
+Now run mutation testing once for the accumulated slice where meaningful, or record explicit mutation `N/A` plus proportionate alternate evidence. Handle valuable survivors and scoped reruns inside this same gate."
 
 User: "Mutation testing complete; valuable survivors are handled"
 
-progress-guardian: "Mutation evidence reviewed.
-Any applicable refactoring needed, or ready for commit approval?"
-
-User: "Ready to commit"
-
-progress-guardian: "Ready to commit: 'feat: add basic email validation'
+progress-guardian: "End-of-phase mutation evidence reviewed. Finish the remaining PR checks.
 
 Change path: behavior change
 RED/GREEN evidence: ✅
 Mutation or alternate evidence: ✅
 Applicable tests passing: ✅
-
-Do you approve this commit?"
-
-User: "Yes"
+Ready to create the PR."
 
 progress-guardian: "Committed.
 Current: Slice 2

@@ -52,7 +52,7 @@ CLAUDE.md is a **living document** that defines development principles, patterns
 
 ### Core Philosophy
 
-- **TDD is non-negotiable for behavior change** - New or changed behavior begins RED; pure refactors/reductions begin from passing proportionate preservation evidence, with mutation or alternate evidence as applicable
+- **TDD is non-negotiable for behavior change** - New or changed behavior uses fast RED-GREEN-REFACTOR increments; mutation or alternate evidence is applied once at the end-of-phase PR-readiness gate
 - **Behavior over implementation** - Tests verify what code does, not how it does it
 - **Immutability by default** - Pure functions and immutable data structures
 - **Schema-first with nuance** - Runtime validation at trust boundaries, types for internal logic
@@ -75,12 +75,12 @@ Unlike typical style guides, CLAUDE.md provides:
 | Section | What It Provides | Detailed Patterns |
 |---------|-----------------|-------------------|
 | **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
-| **Mutation Testing** | Stryker setup, full/diff mutation runs, survivor triage, mutator-rule resource | [→ skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) |
+| **Mutation Testing** | End-of-phase Stryker full/diff runs, survivor triage, mutator-rule resource | [→ skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) |
 | **Test Design Review** | Dave Farley's 8 properties evaluation, Farley Score calculation, test quality assessment | [→ skills/test-design-reviewer](claude/.claude/skills/test-design-reviewer/SKILL.md) |
 | **Front-End Testing** | Vitest Browser Mode (preferred) + DOM Testing Library patterns, real browser testing with Playwright | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
 | **React Testing** | Vitest Browser Mode with vitest-browser-react (preferred) + React Testing Library patterns | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
 | **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
-| **TDD Process** | RED-GREEN with mutation or reviewed alternate evidence, conditional mutant handling/refactoring, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
+| **TDD Process** | RED-GREEN-REFACTOR increments, end-of-phase mutation/alternate-evidence PR gate, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
 | **Reduce System Complexity** | Behavior and guarantee conservation ledger, whole-mechanism accounting, first-principles minimum, and separate behavior/mechanism gates | [→ skills/reduce-system-complexity](claude/.claude/skills/reduce-system-complexity/SKILL.md) |
 | **Codebase Design** | Deep, cohesive modules; full caller-facing contract burden; information hiding; leverage and locality; justified seams; Design It Twice | [→ skills/codebase-design](claude/.claude/skills/codebase-design/SKILL.md) |
@@ -195,7 +195,8 @@ Unlike typical style guides, CLAUDE.md provides:
 Skills are **auto-discovered** by Claude when relevant:
 - Writing TypeScript? → `typescript-strict` skill loads automatically
 - Running tests? → `testing` skill provides factory patterns
-- After MUTATE + KILL MUTANTS? → `refactoring` skill assesses opportunities
+- After GREEN? → `refactoring` skill assesses opportunities while behavior tests stay green
+- Ready to create a PR? → `mutation-testing` runs once for the accumulated change and drives survivor handling
 - Removing whole-path mechanism without changing agreed behavior? → `reduce-system-complexity` keeps conservation and reduction as separate evidence gates
 - Designing one module's lasting responsibility and contract? → `codebase-design` applies deep-module, locality, and Design It Twice lenses
 - Looking for the highest-value architecture improvement? → `improve-codebase-architecture` creates an evidence-backed visual HTML report
@@ -223,7 +224,7 @@ For product work, the skills form a requirements-to-code pipeline. Each skill ow
 | 3. Tighten | What is missing, ambiguous, unverifiable, or unsafe? | `find-gaps` | Confirmed artifact updates: AC, plan paragraphs, mock-state specs, or a return to `story-splitting` |
 | 4. Select technology when needed | Should we reuse, adopt, adapt, combine, build, defer, or do nothing? | `evaluate-existing-solutions` | Current evidence, hard gates, qualitative trade-offs, ownership, and exit strategy |
 | 5. Plan | How do we implement the selected child story safely? | `planning` | PR-sized implementation slices in `plans/` |
-| 6. Build | How do we change code without outrunning tests? | `tdd` + `testing` + applicable `mutation-testing` / `refactoring` | RED-GREEN with mutation or reviewed alternate evidence for behavior change; verified preservation path for pure restructuring |
+| 6. Build | How do we change code without outrunning tests? | `tdd` + `testing` + applicable `refactoring`, then `mutation-testing` at PR readiness | RED-GREEN-REFACTOR for behavior change; verified preservation path for pure restructuring; one accumulated-scope mutation gate before PR |
 
 Use the earliest stage that matches the uncertainty. Skip `grill-me` when the decision is already clear. Skip `story-splitting` for tiny or already-narrow work. Use `find-gaps` only once there is an artifact to inspect. Use technology selection proportionately for a material generic mechanism or durable new dependency—not domain logic, small glue, routine use of an already-adopted tool, or ordinary fixes. Use `planning` only after one child story or narrow capability and any consequential technology choice have been selected.
 
@@ -275,6 +276,7 @@ it("should reject payments with negative amounts", () => {
 
 **What's inside:**
 - Stryker-first workflow for full-project, incremental, and diff-against-main mutation runs
+- A single end-of-phase PR-readiness gate instead of mutation runs after every TDD increment
 - Setup guidance for projects that do not already have a mutation testing harness
 - Survivor triage: fix obvious gaps immediately, ask for human judgment on subtle domain questions
 - On-demand mutator-rule resource with operator reference and weak vs strong test examples
@@ -361,7 +363,7 @@ const user = UserSchema.parse(apiResponse);
 
 **What's inside:**
 - **TDD process with quality gates** (what to verify before each commit)
-- **RED-GREEN with mutation or reviewed alternate evidence** and conditional mutant/refactor steps, with complete examples
+- **RED-GREEN-REFACTOR increments** followed by one mutation or reviewed alternate-evidence gate when the phase is ready for a PR
 - **Refactoring priority classification** (Critical/High/Nice/Skip)
 - **Semantic vs structural abstraction** (the most important refactoring rule)
 - **Understanding DRY** - knowledge vs code duplication
@@ -786,9 +788,9 @@ characterisation-tests → Document actual behavior as a safety net
     ↓
 tdd / testing          → Write proper behavior-driven tests for new changes
     ↓
-mutation-testing       → Verify test effectiveness
+refactoring            → Improve structure while behavior tests stay green
     ↓
-refactoring            → Improve structure with confidence
+mutation-testing       → At PR readiness, verify the accumulated change once
 ```
 
 ---
@@ -844,9 +846,9 @@ expect(result.total).toBe(108);
 - **Core concept** -- "A characterisation test characterizes the actual behavior of a piece of code. There's no 'it should do this' -- the tests document what the system really does."
 - **The 5-step algorithm** -- use code in test harness, write assertion you know will fail, let failure tell you the behavior, change test to expect actual behavior, repeat
 - **Feathers' heuristics** -- use coverage as guide, production behavior IS the specification, focus on the change area, mark suspicious behavior
-- **When to stop** -- cover every branch your change touches + one layer out, then validate with mutation testing
+- **When to stop** -- cover every branch your change touches + one layer out; validate the accumulated change later at the end-of-phase mutation gate
 - **Bug handling** -- if system is deployed, someone may depend on the "bug"; document it, mark as suspicious, escalate
-- **Preservation-strength validation** -- after characterising, run mutation testing where meaningful; otherwise record explicit `N/A` plus proportionate alternate evidence
+- **Preservation-strength validation** -- use mutator rules cheaply while characterising, then run mutation testing once at PR readiness where meaningful; otherwise record explicit `N/A` plus proportionate alternate evidence
 - **Sensing via parameter injection** -- prefer function parameters over monkey-patching for observing code behavior
 - **Modern tooling** -- Vitest inline snapshots (`toMatchInlineSnapshot()`), combination testing, approval testing, coverage-guided characterisation
 
@@ -1149,7 +1151,7 @@ Claude Code: [Launches ts-enforcer agent]
 
 ### 3. `refactor-scan` - Refactoring Opportunity Scanner
 
-**Use after mutation testing or reviewed proportionate alternate evidence establishes preservation confidence** (the applicable REFACTOR step in the change workflow).
+**Use after GREEN establishes a passing behavior-test baseline** (the applicable REFACTOR step in the change workflow). Mutation testing verifies the accumulated result later at PR readiness.
 
 **What it analyzes:**
 - 🎯 Knowledge duplication (DRY violations)
@@ -1454,32 +1456,31 @@ This is the full lifecycle for working on a feature, from project setup through 
 
 **Why before code:** Planning in a separate phase prevents the most common friction point — Claude jumping straight to implementation before the approach is agreed. The plan becomes a PR you can review and approve before any code is written. Each behavior-changing slice specifies its failing test; a true behavior-preserving refactor or reduction instead specifies passing proportionate preservation evidence and applicable gates.
 
-#### Phase 3: Implement (repeat for each slice in the plan)
+#### Phase 3: Implement (repeat fast increments within each slice)
 
 ```
-LOAD         →  Behavior change: tdd + testing + mutation-testing + refactoring; preservation: applicable testing/refactoring/reduction skills
+LOAD         →  Behavior change: tdd + testing + refactoring; preservation: applicable testing/refactoring/reduction skills
 RED          →  For changed behavior, write a failing behavior test (tdd-guardian verifies test-first)
 GREEN        →  Write minimum code to pass (ts-enforcer checks type safety)
-MUTATE / ALT →  Run mutation testing where meaningful, or record explicit `N/A` plus proportionate alternate evidence
-KILL MUTANTS →  Address surviving mutants when mutation testing applies (ask human when ambiguous)
 REFACTOR / REDUCE →  Run only the applicable assessment and any claimed reduction gates
 COMMIT       →  Wait for approval, then commit
 ```
 
-**Why this order:** The implementation skills are loaded first so the agent has the full workflow, test-writing patterns, mutation rules, and refactoring rubric in context before touching code. Mutation testing comes *before* refactoring when it is meaningful so you restructure code with evidenced test strength. For pure refactors or reductions, the workflow enters at a passing proportionate-evidence REFACTOR path; unreachable, configuration, contract, integration, or operational work can record alternate evidence and `N/A` rather than inventing RED or structural mutants. `tdd-guardian` catches behavior written before tests, `ts-enforcer` catches type safety violations, and `refactor-scan` runs only after preservation strength is established. Each cycle produces one small, reviewable commit.
+**Why this order:** RED-GREEN-REFACTOR keeps implementation feedback fast. The mutation harness does not run after each test, increment, refactor, or commit; its runtime grows with the codebase. Pure refactors or reductions enter at a passing proportionate-evidence path rather than inventing RED or structural mutants. `tdd-guardian` catches behavior written before tests, `ts-enforcer` catches type safety violations, and `refactor-scan` can run as soon as GREEN provides a passing behavior-test baseline. Each increment remains small and reviewable.
 
 #### Phase 4: Pre-PR Quality Gate
 
 Before creating any PR, run these checks in order:
 
 ```
-1. skill routing     →  Verify behavior-change or preservation-only skills were loaded as applicable
-2. evidence          →  Review mutation results, or explicit `N/A` plus proportionate alternate evidence
-3. change assessment →  Run applicable refactoring and/or reduction gates; record `N/A` when neither applies
-4. /pr               →  Runs typecheck + lint + test + build, then creates PR
+/pr →
+  1. phase complete    →  Verify implementation and applicable refactoring/reduction work are finished
+  2. mutation gate     →  Run mutation testing once for the accumulated PR scope, or record explicit `N/A` plus proportionate alternate evidence
+  3. survivor handling →  Address valuable survivors; re-run focused/diff mutation checks inside the same gate
+  4. remaining checks  →  Run typecheck + lint + test + build, then create the PR
 ```
 
-**Why evidence before the PR:** When mutation testing is meaningful, it verifies that tests would catch behavioral faults rather than merely execute code. When the affected mechanism is unreachable, declarative, contractual, integrational, or operational, an explicit `N/A` plus proportionate alternate evidence is more honest. Run `refactor-scan` or the reduction gates only when that path applies.
+**Why evidence at PR readiness:** One accumulated-scope run verifies that the completed implementation and refactoring would catch behavioral faults without taxing every inner TDD loop. Once the gate starts, surviving mutants are handled normally and scoped mutation checks are rerun until the report is ready. When the affected mechanism is unreachable, declarative, contractual, integrational, or operational, an explicit `N/A` plus proportionate alternate evidence is more honest.
 
 #### Phase 5: Continue to the Next Slice
 
@@ -1524,7 +1525,7 @@ docs-guardian     →  Updates user-facing documentation
 
 ### How the Workflow Works (Regardless of Installation Method)
 
-Once installed, the full development lifecycle is: `/setup` → `/plan` → RED-GREEN with mutation or reviewed alternate evidence and conditional mutant/refactor steps → `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each phase.
+Once installed, the full development lifecycle is: `/setup` → `/plan` → fast RED-GREEN-REFACTOR increments → end-of-phase mutation gate in `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each phase.
 
 **Agent invocation examples:**
 

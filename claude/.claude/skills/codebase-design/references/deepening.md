@@ -79,11 +79,11 @@ Treat time, randomness, identifiers, environment, and scheduling as dependencies
 ## Safe Migration
 
 1. **Fix the review target.** Name the behavior being preserved and the callers in scope. Do not combine unrelated feature changes with the deepening.
-2. **Establish safety.** Use existing behavior tests. If behavior is untested, load `finding-seams` only as needed, then `characterisation-tests` and mutation-test the paths that will move.
+2. **Establish safety.** Use existing behavior tests. If behavior is untested, load `finding-seams` only as needed, then `characterisation-tests`; use mutator rules for cheap test-design guidance and defer the automated mutation run until the accumulated change is otherwise ready for its PR.
 3. **Define the target contract.** Specify observable behavior, errors, effects, performance, and compatibility. Test it through representative caller scenarios.
 4. **Move one decision at a time.** Pull duplicated policy, ordering, mapping, or recovery behind the target contract in small known-good slices.
 5. **Use a temporary compatibility facade only when required.** State which consumers need it and the exact removal condition. Do not count the facade itself as architectural depth.
-6. **Retire redundancy after equivalence is proven.** Remove old modules and their implementation-shaped tests only when the new behavior surface covers the same risk and mutation testing confirms protection. Keep distinct adapter contract and algorithm tests that still add evidence.
+6. **Retire redundancy after equivalence is proven.** Remove old modules and their implementation-shaped tests only when the new behavior surface covers the same risk under passing behavior tests and proportionate preservation evidence. Verify the accumulated result through the PR-readiness mutation or alternate-evidence gate before creating the PR. Keep distinct adapter contract and algorithm tests that still add evidence.
 7. **Enforce the new ownership.** Use `structure-codebase` for exports, imports, package roles, and physical moves. Block new bypass imports before removing the last legacy path.
 8. **Record a durable decision when warranted.** Use the project's ADR mechanism for a long-lived seam, compatibility constraint, or rejected alternative—not for an ephemeral cleanup preference.
 

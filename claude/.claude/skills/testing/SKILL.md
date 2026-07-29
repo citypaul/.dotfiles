@@ -5,7 +5,7 @@ description: Testing patterns for behavior-driven tests. Use when writing tests,
 
 # Testing Patterns
 
-For verifying test effectiveness through mutation analysis, load the `mutation-testing` skill. Use its mutator rules while planning and writing tests, not only after tests exist. For evaluating test quality against Dave Farley's properties, load the `test-design-reviewer` skill.
+For verifying test effectiveness through mutation analysis, load the `mutation-testing` skill. Use its mutator rules while planning and writing tests, but defer the automated mutation harness until the end-of-phase PR-readiness gate. For evaluating test quality against Dave Farley's properties, load the `test-design-reviewer` skill.
 
 ## Core Principle
 

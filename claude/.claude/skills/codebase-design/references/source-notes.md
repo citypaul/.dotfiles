@@ -53,6 +53,6 @@ This version deliberately changes several upstream rules to remain consistent wi
 - Make effects explicit instead of applying “return results, never side effects” to effectful application orchestration.
 - Require cohesion, ownership, and failure-boundary checks so apparent depth cannot excuse a god module.
 - Treat thin adapters, endpoints, framework entrypoints, generated clients, and composition roots as intentionally thin roles.
-- Retire old tests only after equivalent behavior coverage and mutation evidence exist; do not delete them categorically.
+- Retire old tests only after equivalent behavior coverage exists; verify the accumulated suite with mutation testing at the end-of-phase PR-readiness gate rather than before each move.
 - Split dependency analysis into runtime, ownership, trust, consistency, volatility, state, and test-fidelity questions.
 - Use the repository's own project instructions, ADR convention, and optional per-context glossary instead of hard-coded `CONTEXT.md` and `docs/adr/` paths.

@@ -17,7 +17,7 @@ This directory contains specifications for specialized Claude Code agents that w
 - Behavior-changing code has been written (verify TDD was followed)
 - Tests are green (assess refactoring opportunities)
 
-**Core responsibility**: Enforce RED-GREEN with mutation or reviewed alternate evidence, conditional mutant handling, and refactoring when applicable for behavior change. Pure behavior-preserving refactors/reductions route to `refactor-scan` or `reduce-system-complexity` with passing proportionate evidence instead of fabricated RED.
+**Core responsibility**: Enforce fast RED-GREEN-REFACTOR increments for behavior change and defer the automated mutation harness to the end-of-phase PR-readiness gate. Pure behavior-preserving refactors/reductions route to `refactor-scan` or `reduce-system-complexity` with passing proportionate evidence instead of fabricated RED.
 
 ---
 
@@ -38,10 +38,10 @@ This directory contains specifications for specialized Claude Code agents that w
 ---
 
 #### `refactor-scan`
-**Purpose**: Assesses refactoring opportunities after mutation testing or reviewed proportionate alternate evidence establishes preservation confidence.
+**Purpose**: Assesses refactoring opportunities after GREEN or another passing proportionate preservation baseline.
 
 **Use proactively when**:
-- Mutation testing is complete and surviving mutants addressed
+- Behavior tests are green
 - Considering creating abstractions
 - Planning code improvements
 
@@ -218,10 +218,13 @@ progress-guardian (orchestrates)
     │
     ├─► Creates: plans/<name>.md
     │
-    ├─► For each step:
-    │   ├─→ tdd-guardian (RED-GREEN + mutation or reviewed alternate evidence)
+    ├─► For each implementation increment:
+    │   ├─→ tdd-guardian (RED-GREEN-REFACTOR)
     │   ├─→ ts-enforcer (before commits)
-    │   └─→ refactor-scan (after mutation or reviewed alternate evidence, when applicable)
+    │   └─→ refactor-scan (after GREEN or another passing baseline, when applicable)
+    │
+    ├─► At end-of-phase PR readiness:
+    │   └─→ mutation-testing (once for the accumulated scope, then survivor handling)
     │
     ├─► When decisions arise:
     │   └─→ adr (architectural decisions)
@@ -251,11 +254,10 @@ progress-guardian (orchestrates)
 
 3. **For each step in plan**
    - CLASSIFY: Behavior change, pure behavior-preserving refactor/reduction, or mixed
-   - LOAD: For behavior change, `tdd`, `testing`, `mutation-testing`, and `refactoring`; for pure preservation, the applicable testing/refactoring/reduction skills
+   - LOAD: For behavior change, `tdd`, `testing`, and `refactoring`; for pure preservation, the applicable testing/refactoring/reduction skills
    - RED/GREEN: Required for changed behavior; pure preservation starts from passing evidence and stays behaviorally green
-   - MUTATE/ALTERNATE EVIDENCE: Run mutation testing where meaningful; otherwise record proportionate reachability, configuration, contract, integration, or operational evidence and `N/A`
-   - KILL MUTANTS: Address valuable survivors when mutation testing applies
    - REFACTOR: Run `refactoring` skill and invoke `refactor-scan` to assess improvements
+   - REPEAT: Continue without running the automated mutation harness after every increment, refactor, or commit
    - **WAIT FOR COMMIT APPROVAL**
 
 4. **When plan needs changing**
@@ -271,8 +273,9 @@ progress-guardian (orchestrates)
 
 7. **Pre-PR quality gate**
    - Verify each implemented slice loaded the skills for its behavior-changing or preservation-only path
-   - Run mutation testing where meaningful, or review the documented alternate evidence and `N/A`
-   - Run `refactoring` skill and invoke `refactor-scan`: Assess improvements (only if adds value)
+   - Confirm implementation and applicable refactoring/reduction assessment are complete
+   - Run mutation testing once for the accumulated PR scope where meaningful, or review the documented alternate evidence and `N/A`
+   - Address valuable survivors and re-run focused/diff mutation checks within that same gate
    - Invoke `pr-reviewer`: Self-review changes
    - Fix any issues found
    - Run `/pr` to create PR with quality gates (TDD evidence + mutation testing + refactoring assessment + typecheck + lint; project-generated `/pr` commands also run tests and build)
@@ -297,7 +300,7 @@ Quick decision table for all agents:
 | "Why did we choose X?" | `adr` | When making/documenting architecture decisions |
 | "Is this type-safe?" | `ts-enforcer` | During development (proactive) |
 | "Is this PR ready?" | `pr-reviewer` | At review time (reactive) |
-| "Should I refactor this?" | `refactor-scan` | After MUTATE + KILL MUTANTS |
+| "Should I refactor this?" | `refactor-scan` | After GREEN or another passing baseline |
 | "Was TDD followed?" | `tdd-guardian` | During TDD cycle |
 | "Is this documented?" | `docs-guardian` | At feature completion |
 | "What data patterns exist?" | `use-case-data-patterns` | Before implementing features |
@@ -407,7 +410,7 @@ These agents work together to create a comprehensive development workflow:
 - **Analysis**: use-case-data-patterns maps use cases to implementation patterns
 - **Compliance**: twelve-factor-audit assesses 12-factor methodology adherence
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
-- **Improvement**: refactor-scan assesses code after mutation testing or reviewed proportionate alternate evidence establishes preservation confidence
+- **Improvement**: refactor-scan assesses code after GREEN or another passing proportionate preservation baseline; mutation testing verifies the accumulated result later at PR readiness
 - **Review**: pr-reviewer validates PRs before merge
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
 - **Progress**: progress-guardian tracks work through plan files in `plans/`

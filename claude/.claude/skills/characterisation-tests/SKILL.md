@@ -5,7 +5,7 @@ description: Use when modifying existing code that lacks tests and you need to d
 
 # Characterisation Tests
 
-For making untestable code testable first, load the `finding-seams` skill. For test-driving new behavior, load the `tdd` skill. For general test patterns, load the `testing` skill. For verifying test effectiveness after characterising, load the `mutation-testing` skill.
+For making untestable code testable first, load the `finding-seams` skill. For test-driving new behavior, load the `tdd` skill. For general test patterns, load the `testing` skill. Use mutation-aware test-design rules while characterising, then load `mutation-testing` for the accumulated change at the end-of-phase PR-readiness gate.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
@@ -126,7 +126,7 @@ it('characterises formatPrice', () => {
 3. **Focus on the change area** -- you don't need to characterise the entire codebase, only the code you're about to modify
 4. **Mark suspicious behavior** -- when you find something that looks like a bug, document it in the test but mark it as suspicious; don't silently "fix" it
 5. **Look at the code** -- these aren't black-box tests; read the code to guide which paths to characterise
-6. **Validate with mutation testing** -- after characterising, run the `mutation-testing` skill against the change area to verify your tests would catch real bugs. Coverage tells you which paths are *exercised*; mutation testing tells you which are *protected*.
+6. **Plan the mutation scope** -- use the mutator rules to strengthen obvious gaps cheaply while characterising, but defer the automated harness until the completed change is otherwise ready for its PR. Coverage tells you which paths are *exercised*; the later mutation gate verifies which are *protected*.
 
 ## When to Stop
 
@@ -134,7 +134,7 @@ You don't need 100% coverage of the entire codebase. Stop when:
 
 - **Every branch your upcoming change touches** has a characterisation test exercising it
 - **One layer out** from the change point is also covered (the branches that call into or are called by the code you're changing)
-- **Mutation testing** on the change area shows no surviving mutants in paths you'll modify
+- **Likely mutant risks** in the paths you'll modify are represented in the characterisation examples; the automated mutation result is an end-of-phase PR gate, not a prerequisite for each implementation increment
 
 If you can't feel confident that your tests would detect a mistake in the specific code you're about to change, add more tests. If you can, stop.
 
@@ -202,7 +202,7 @@ it('characterises order processor events', async () => {
 | "Fixing" bugs in characterisation tests | Document the actual behavior, mark as suspicious, escalate |
 | Trying to characterise the entire codebase | Focus on the area you're about to change + one layer out |
 | Writing characterisation tests based on what code *should* do | Let the code tell you what it does -- use the algorithm above |
-| Skipping mutation testing after characterising | Coverage says paths ran; mutation testing says tests would catch changes |
+| Skipping the end-of-phase mutation gate | Coverage says paths ran; the accumulated-scope mutation result says tests would catch changes |
 | Using characterisation tests for new code | New code should be test-driven (see `tdd` skill) |
 | Using `vi.mock()` for sensing instead of parameter injection | Pass a sensing function as a parameter (see `finding-seams` skill) |
 | Not awaiting async results | Use `async`/`await` in characterisation tests -- a synchronous assertion on a promise always passes |

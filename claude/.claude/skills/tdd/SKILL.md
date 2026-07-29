@@ -1,19 +1,21 @@
 ---
 name: tdd
-description: RED-GREEN with mutation or alternate evidence, conditional mutant handling, and refactor assessment for production behavior changes. Use before implementing new features, bug fixes, or any changed observable behavior, and as the governing workflow for mixed implementation work. Do not use for pure behavior-preserving refactoring or mechanism reduction; those start from passing proportionate evidence via refactoring or reduce-system-complexity, never fabricated RED or structural mutants. Not for plan-only requests; use planning first for significant multi-slice work.
+description: RED-GREEN-REFACTOR for production behavior changes, followed by mutation testing or alternate evidence once at the end-of-phase PR-readiness gate. Use before implementing new features, bug fixes, or any changed observable behavior, and as the governing workflow for mixed implementation work. Do not use for pure behavior-preserving refactoring or mechanism reduction; those start from passing proportionate evidence via refactoring or reduce-system-complexity, never fabricated RED or structural mutants. Not for plan-only requests; use planning first for significant multi-slice work.
 ---
 
 # Test-Driven Development
 
 TDD is the fundamental practice for new or changed observable behavior: every such production change must be written in response to a failing behavior test.
 
-Pure behavior-preserving work is different. `refactoring` and `reduce-system-complexity` begin from passing proportionate preservation evidence and stay behaviorally green while internal structure changes. Use mutation testing where meaningful; otherwise record reachability, configuration, contract, integration, or operational evidence and mark mutation `N/A`. Do not manufacture a failing test or structural mutant merely to make a REFACTOR slice look RED. If the work changes behavior or fixes a disputed bug, return to RED.
+Pure behavior-preserving work is different. `refactoring` and `reduce-system-complexity` begin from passing proportionate preservation evidence and stay behaviorally green while internal structure changes. At the end-of-phase PR-readiness gate, use mutation testing where meaningful; otherwise record reachability, configuration, contract, integration, or operational evidence and mark mutation `N/A`. Do not manufacture a failing test or structural mutant merely to make a REFACTOR slice look RED. If the work changes behavior or fixes a disputed bug, return to RED.
+
+In this skill, a **phase** means one PR-sized, independently mergeable slice: the accumulated scope of one branch and PR. It does not mean a multi-PR feature or the numbered lifecycle phases in `README.md`.
 
 **For how to write good tests**, load the `testing` skill. This skill focuses on the TDD workflow/process. For mutation-aware test planning, load the `mutation-testing` skill and use its `resources/mutator-rules.md` resource as the source of truth.
 
 ---
 
-## RED-GREEN-(MUTATE OR ALTERNATE EVIDENCE)-REFACTOR Cycle
+## RED-GREEN-REFACTOR Development Cycle
 
 ### RED: Write Failing Test First
 - For new or changed behavior, NO production code until you have a failing behavior test
@@ -27,22 +29,22 @@ Pure behavior-preserving work is different. `refactoring` and `reduce-system-com
 - Resist adding functionality not demanded by a test
 - Faking it is legitimate: hardcode the return value if that passes, then triangulate — add a second test case that forces the real implementation. Generalize only when a test demands it
 
-### MUTATE OR ALTERNATE EVIDENCE: Verify Preservation Strength
-- Run `mutation-testing` against changed code where meaningful and produce a killed/survived/score report
-- Otherwise record an explicit `N/A` rationale plus proportionate reachability, configuration, contract, integration, or operational evidence
-- Never invent structural mutants merely to fill the workflow
-
-### KILL MUTANTS WHEN APPLICABLE: Address Surviving Mutants
-- Add or strengthen tests to kill surviving mutants
-- Fix obvious gaps directly
-- Ask the human with the harness's ask-question facility when a surviving mutant's value is ambiguous
-- All tests pass after fixes
-
 ### REFACTOR: Assess Improvements
-- Assess only after mutation or reviewed alternate evidence establishes enough preservation strength for the proposed restructuring
+- Assess after GREEN using the passing behavior tests as the working safety net
 - Load the `refactoring` skill only when restructuring is applicable; record `N/A` otherwise
 - Obtain approval for the working-baseline commit before refactoring when the workflow uses commits as safety checkpoints
 - All tests must pass after refactoring
+
+Repeat RED-GREEN-REFACTOR as needed until the phase's PR scope is complete. Do not run the automated mutation harness after each increment, refactor, or commit.
+
+## End-of-Phase PR-Readiness Gate
+
+Run this gate once the implementation and refactoring phase is complete and the work is otherwise ready to become a PR:
+
+1. **MUTATE OR ALTERNATE EVIDENCE**: Run `mutation-testing` against the accumulated branch/PR scope where meaningful and produce a killed/survived/score report. Otherwise record an explicit `N/A` rationale plus proportionate reachability, configuration, contract, integration, or operational evidence.
+2. **KILL MUTANTS WHEN APPLICABLE**: Add or strengthen behavior tests for valuable survivors, fix obvious gaps directly, and ask the human when a survivor's value is ambiguous.
+3. **RE-RUN WITHIN THE GATE**: Use focused mutation runs while addressing survivors, then re-run the branch diff command. These reruns belong to the same PR gate; they do not put mutation testing back into every TDD increment.
+4. **VERIFY**: Finish the remaining PR checks with all tests passing. Never invent structural mutants merely to fill the workflow.
 
 ---
 
@@ -50,14 +52,17 @@ Pure behavior-preserving work is different. `refactoring` and `reduce-system-com
 
 ### Default Expectation
 
-Commit history should show clear RED → GREEN → MUTATE/KILL MUTANTS when meaningful (or reviewed alternate evidence) → REFACTOR when applicable.
+Commit history should show clear RED → GREEN → REFACTOR when applicable. Mutation testing is PR-readiness evidence for the completed phase, not a required commit after every TDD increment.
 
 **Ideal progression:**
 ```
 commit abc123: test: add failing test for user authentication
 commit def456: feat: implement user authentication to pass test
-commit ghi789: test: strengthen boundary tests (mutation testing)
-commit jkl012: refactor: extract validation logic for clarity
+commit ghi789: refactor: extract validation logic for clarity
+
+Pre-PR gate: run mutation testing for the accumulated branch scope. If valuable
+survivors require stronger tests, add those tests and include their commit before
+creating the PR.
 ```
 
 ### Rare Exceptions
@@ -77,7 +82,7 @@ TDD evidence may not be linearly visible in commits in these cases:
 - **Evidence**: Reference to RED commit in PR description
 
 **3. Refactoring Commits**
-- Large refactors after GREEN plus sufficient mutation or reviewed alternate evidence
+- Large refactors after GREEN with a passing behavior-test baseline
 - Multiple small refactors combined into single commit
 - All tests remained green throughout
 - **Evidence**: Commit message notes "refactor only, no behavior change"
@@ -91,8 +96,8 @@ When exception applies, document in PR description:
 
 RED phase: commit c925187 (added failing tests for shopping cart)
 GREEN phase: commits 5e0055b, 9a246d0 (implementation + bug fixes)
-MUTATE + KILL MUTANTS: commit 7b8c9d0 (strengthened boundary tests)
 REFACTOR: commit 11dbd1a (test isolation improvements)
+PRE-PR MUTATION GATE: 96% mutation score; commit 7b8c9d0 strengthened boundary tests
 
 Test Evidence:
 ✅ 4/4 tests passing (7.7s with 4 workers)
@@ -233,11 +238,11 @@ The burden of proof is on the requester. 100% is the default expectation.
 2. **Run test** - confirm it fails (`pnpm test:watch`)
 3. **Implement minimum** - just enough to pass
 4. **Run test** - confirm it passes
-5. **Verify preservation strength** - run mutation testing where meaningful, or record explicit `N/A` plus proportionate alternate evidence
-6. **Kill surviving mutants when applicable** - strengthen tests (ask human when ambiguous)
-7. **Refactor if applicable and valuable** - improve code structure only when evidence supports it
-8. **STOP and wait for commit approval** - present the work and mutation report or reviewed alternate-evidence record; never commit without explicit user approval
-9. **Commit** - with conventional commit message, once approved
+5. **Refactor if applicable and valuable** - improve code structure while the behavior tests stay green
+6. **STOP and wait for commit approval** - present the increment and ordinary verification; never commit without explicit user approval
+7. **Commit** - with conventional commit message, once approved
+8. **Repeat RED-GREEN-REFACTOR** - continue with further increments and commits without running the mutation harness until the planned PR scope is complete
+9. **At PR readiness, run the mutation gate once** - run mutation testing where meaningful (or record explicit `N/A` plus proportionate alternate evidence), address valuable survivors, and complete PR verification
 
 ### Workflow Example
 
@@ -253,17 +258,18 @@ if (user.name === '') {
   return { success: false, error: 'Name required' };
 } # ✅ Test passes
 
-# 3. Run mutation testing where meaningful, or record reviewed alternate evidence
+# 3. Refactor if needed (extract validation, improve naming)
 
-# 4. Kill surviving mutants when mutation testing applies (ask human when ambiguous)
+# 4. STOP — present the increment + ordinary verification, wait for commit approval
 
-# 5. Refactor if needed (extract validation, improve naming)
-
-# 6. STOP — present work + mutation report or alternate-evidence record, wait for commit approval
-
-# 7. Commit (after approval)
+# 5. Commit (after approval)
 git add .
 git commit -m "feat: reject empty user names"
+
+# 6. Repeat RED-GREEN-REFACTOR increments without running the mutation harness
+
+# 7. When the accumulated work is ready to create the PR, run the mutation gate once
+#    and address valuable survivors before submitting
 ```
 
 ---
@@ -296,6 +302,7 @@ Before submitting PR:
 - [ ] All tests must pass
 - [ ] All linting and type checks must pass
 - [ ] **Coverage verification REQUIRED** - claims must be verified before review/approval
+- [ ] **End-of-phase mutation gate REQUIRED where meaningful** - run once for the accumulated PR scope, address valuable survivors, or document explicit `N/A` plus proportionate alternate evidence
 - [ ] PRs focused on single feature or fix
 - [ ] Include behavior description (not implementation details)
 
@@ -328,7 +335,7 @@ REFACTOR: commit 6e5f4a3 (extract permission resolution logic)
 
 ## Refactoring Priority
 
-After mutation or reviewed alternate evidence establishes sufficient preservation strength, assess and classify improvement opportunities when restructuring is applicable. For the priority classification table and detailed methodology, load the `refactoring` skill — it owns that guidance.
+After GREEN establishes a passing behavior-test baseline, assess and classify improvement opportunities when restructuring is applicable. For the priority classification table and detailed methodology, load the `refactoring` skill — it owns that guidance. Mutation testing verifies the accumulated result later at the end-of-phase PR-readiness gate.
 
 ---
 
@@ -357,7 +364,7 @@ Before marking work complete:
 - [ ] Commit history shows TDD evidence (or documented exception)
 - [ ] All tests pass
 - [ ] Coverage verified at 100% (or exception documented)
-- [ ] Mutation testing run and valuable survivors addressed where meaningful, or explicit `N/A` plus proportionate alternate evidence reviewed
+- [ ] If the work is ready for a PR, the end-of-phase mutation gate ran once for the accumulated scope and valuable survivors were addressed where meaningful, or explicit `N/A` plus proportionate alternate evidence was reviewed
 - [ ] Test factories used (no `let`/`beforeEach`)
 - [ ] Tests verify behavior (not implementation details)
 - [ ] Refactoring assessed when applicable and applied if valuable, or explicitly `N/A`

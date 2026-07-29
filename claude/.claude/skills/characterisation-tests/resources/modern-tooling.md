@@ -143,12 +143,12 @@ The `approvals` npm package (`npm install approvals`) provides this workflow wit
 
 ## Coverage-Guided Characterisation
 
-Use coverage and mutation testing as a feedback loop to know when you've characterised enough:
+Use coverage and mutation-aware test design to know when you've characterised enough:
 
 1. **Run tests with coverage**: `vitest --coverage`
 2. **Identify untested branches**: look for red/uncovered lines in the area you're changing
 3. **Add characterisation tests** targeting those paths
 4. **Repeat** until the change area + one layer out has adequate branch coverage
-5. **Validate with mutation testing**: run the `mutation-testing` skill against the change area
+5. **Plan the later mutation gate**: record the changed production scope and likely mutant risks; run the automated `mutation-testing` harness once the completed phase is otherwise ready for its PR
 
-Coverage tells you which paths are *exercised*. Mutation testing tells you which are *protected*. A test that executes a branch but doesn't assert on its effect is a false sense of security. Use both before starting your actual changes.
+Coverage tells you which paths are *exercised*. Mutation testing tells you which are *protected*. A test that executes a branch but doesn't assert on its effect is a false sense of security. Use mutator rules before changing the code, then use the automated harness at the end-of-phase PR-readiness gate so it does not slow every inner increment.

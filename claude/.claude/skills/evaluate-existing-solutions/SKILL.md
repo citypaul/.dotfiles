@@ -152,7 +152,7 @@ Route the selected implementation:
 - source/package placement and enforcement: `structure-codebase`;
 - replacing selected custom machinery with net subtraction: `reduce-system-complexity`;
 - delivery sequencing: `planning`;
-- new or changed behavior: `tdd`, `testing`, `mutation-testing`, and `refactoring`;
+- new or changed behavior: `tdd`, `testing`, and `refactoring` during implementation, then `mutation-testing` once for the accumulated change at PR readiness;
 - final high-stakes decision review: `double-check`.
 
 ## Re-evaluation Triggers
