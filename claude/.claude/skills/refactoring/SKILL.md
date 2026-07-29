@@ -28,8 +28,8 @@ Having a working baseline before refactoring:
 **Workflow:**
 1. BASELINE: Applicable tests pass and/or the conserved behavior and guarantees have proportionate evidence
 2. COMMIT: Save the working baseline with its preservation evidence
-3. REFACTOR: Improve structure
-4. VERIFY: Keep the applicable behavior tests and other proportionate evidence green
+3. REFACTOR: Improve structure in small steps under the `tdd` skill's canonical fast-feedback policy. From a clean baseline, prefer a proven repository-owned graph-complete watcher; use diff-selected Vitest watch only when the installed version/configuration has passed the canonical clean-start live proof, otherwise repeat the affected one-shot. In monorepos use the root graph so transitive consumers remain eligible
+4. VERIFY: Keep focused and affected tests plus other proportionate evidence green after each step; do not rerun the full suite after every edit
 5. COMMIT: Save refactored code
 6. PRE-PR GATE: When the phase is otherwise ready for a PR, run mutation testing once for the accumulated scope where meaningful, or record explicit `N/A` plus proportionate alternate evidence; address valuable survivors within that gate
 
@@ -129,6 +129,7 @@ refactor: rename ambiguous parameter names
 ## Refactoring Checklist
 
 - [ ] Existing behavior tests pass; test edits are not hiding a behavior change
+- [ ] Focused/affected tests stayed green during refactoring, and the repository-defined complete non-watch PR test gate passes before PR
 - [ ] If the refactored phase is ready for a PR, mutation results were reviewed once for the accumulated scope where meaningful, or explicit `N/A` plus proportionate alternate evidence was recorded
 - [ ] No unplanned consumer-facing API was added; internal or temporary contracts follow the selected design and compatibility plan
 - [ ] Code more readable than before

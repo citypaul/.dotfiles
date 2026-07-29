@@ -65,8 +65,13 @@ require_text \
 
 require_text \
   "$CLAUDE_ROOT/commands/pr.md" \
-  "If a current result already exists, do not rerun it" \
-  "pr command: reuses current mutation evidence"
+  "The target repository's stricter mutation-evidence invalidation rule takes precedence" \
+  "pr command: target repository mutation invalidation takes precedence"
+
+require_text \
+  "$CLAUDE_ROOT/commands/pr.md" \
+  "If a result is current under the applicable target-repository rule, do not rerun it" \
+  "pr command: reuses only mutation evidence current under the applicable rule"
 
 require_text \
   "$CLAUDE_ROOT/commands/pr.md" \

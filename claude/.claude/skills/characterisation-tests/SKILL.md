@@ -106,6 +106,8 @@ it('characterises negative quantity handling -- SUSPICIOUS: returns negative dis
 4. **Change the test** so it expects the behavior the code actually produces
 5. **Repeat** -- let curiosity guide you; the code itself suggests what to test next
 
+Keep oracle discovery focused with the characterisation file/name or its targeted one-shot. Any reusable watcher follows the `tdd` skill's canonical seed, lifecycle, cleanup, and proof policy; do not assume a clean-baseline `--changed` watcher has loaded the implementation graph. Once the oracle is stable, use the repository-owned or runner-derived affected scope from the monorepo root so transitive consumers remain eligible. At PR readiness, stop watchers and apply the target repository's mutation policy plus complete non-watch gate across all configured projects.
+
 ```typescript
 // Step 2: write assertion you know will fail
 it('characterises formatPrice', () => {
@@ -121,7 +123,7 @@ it('characterises formatPrice', () => {
 
 ## Heuristics
 
-1. **Use coverage as your guide** -- run `vitest --coverage` to find untested paths, then write tests to exercise them
+1. **Use focused coverage as your guide** -- target the change area first (for example Vitest's changed/related coverage or the owning test project), then run the full required coverage gate and complete any fixes before the final repository-wide pre-PR test run
 2. **Production behavior IS the specification** -- if deployed code does something, assume someone depends on it, even if it looks wrong
 3. **Focus on the change area** -- you don't need to characterise the entire codebase, only the code you're about to modify
 4. **Mark suspicious behavior** -- when you find something that looks like a bug, document it in the test but mark it as suspicious; don't silently "fix" it
