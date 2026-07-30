@@ -112,22 +112,42 @@ assert_forbidden_claim_rejected() {
   fi
 }
 
-is_potential_vitest_watch_command() {
-  local command="$1"
+is_vitest_watch_segment() {
+  local segment="$1"
+  local arguments
 
-  if ! printf '%s\n' "$command" | grep -Eq -- '(^|[[:space:]])vitest([[:space:]]|$)'; then
+  if ! printf '%s\n' "$segment" | grep -Eq -- '(^|[[:space:]])vitest([[:space:]]|$)'; then
     return 1
   fi
 
-  if printf '%s\n' "$command" | grep -Eq -- '(^|[[:space:]])vitest[[:space:]]+watch([[:space:]]|$)|(^|[[:space:]])--watch(=true)?([[:space:]]|$)|(^|[[:space:]])-w(=true)?([[:space:]]|$)'; then
+  arguments="${segment#*vitest}"
+
+  if printf '%s\n' "$arguments" | grep -Eq -- '(^|[[:space:]])watch([[:space:]]|$)|(^|[[:space:]])--watch(=true)?([[:space:]]|$)|(^|[[:space:]])-w(=true)?([[:space:]]|$)'; then
     return 0
   fi
 
-  if printf '%s\n' "$command" | grep -Eq -- '(^|[[:space:]])vitest[[:space:]]+run([[:space:]]|$)|(^|[[:space:]])--run([[:space:]]|$)|--watch=false([[:space:]]|$)'; then
+  if printf '%s\n' "$arguments" | grep -Eq -- '(^|[[:space:]])(run|list|--run|--merge-reports|--help|-h|--version)([[:space:]]|$)|(^|[[:space:]])(--watch=false|-w=false)([[:space:]]|$)'; then
     return 1
   fi
 
   return 0
+}
+
+is_potential_vitest_watch_command() {
+  local command="$1"
+  local normalized segment
+
+  normalized="${command//&&/$'\n'}"
+  normalized="${normalized//||/$'\n'}"
+  normalized="${normalized//;/$'\n'}"
+
+  while IFS= read -r segment; do
+    if is_vitest_watch_segment "$segment"; then
+      return 0
+    fi
+  done <<< "$normalized"
+
+  return 1
 }
 
 require_watch_form_detected() {
@@ -235,8 +255,33 @@ require_text \
 
 require_text \
   "$VITEST_REFERENCE" \
-  "Normal completion and forced timeout leave no watcher process or temporary directory behind" \
+  "Normal completion, spawn failure, early child exit, and forced timeout leave no watcher process or temporary directory behind" \
   "vitest reference: live proof checks all cleanup paths"
+
+require_text \
+  "$VITEST_REFERENCE" \
+  "exact repository-owned command and real test configuration" \
+  "vitest reference: proof exercises the real repository command and config"
+
+require_text \
+  "$VITEST_REFERENCE" \
+  "while a graph-independent control test does not rerun" \
+  "vitest reference: proof checks an unrelated negative control"
+
+require_text \
+  "$VITEST_REFERENCE" \
+  "imports an implementation, and reruns when that implementation changes" \
+  "vitest reference: newly discovered tests retain implementation edges"
+
+require_text \
+  "$VITEST_REFERENCE" \
+  "including a headless agent filesystem" \
+  "vitest reference: exact-command evidence may justify bounded polling"
+
+require_text \
+  "$TDD_SKILL" \
+  "if it requires a proven watcher before the first edit, start it once now" \
+  "tdd: repository start timing overrides the generic after-RED example"
 
 require_regex \
   "$VITEST_REFERENCE" \
@@ -330,6 +375,9 @@ for command in \
   "vitest run --watch" \
   "vitest run -w" \
   "vitest watch --watch=false" \
+  "vitest --config vitest.config.ts --watch" \
+  "vitest run && vitest" \
+  "echo ready; vitest --config vitest.config.ts --watch" \
   "pnpm exec vitest --changed origin/main --watch"; do
   require_watch_form_detected "$command"
 done
@@ -338,7 +386,12 @@ for command in \
   "vitest run" \
   "vitest --run" \
   "vitest --watch=false" \
+  "vitest -w=false" \
   "vitest run --watch=false" \
+  "vitest --config vitest.config.ts run" \
+  "vitest --config vitest.config.ts list" \
+  "vitest --merge-reports .vitest-reports --coverage" \
+  "vitest run && vitest list" \
   "pnpm exec vitest run --coverage"; do
   require_finite_form_allowed "$command"
 done

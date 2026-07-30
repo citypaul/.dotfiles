@@ -39,7 +39,9 @@ Static graphs still miss filesystem reads, subprocess targets, templates, genera
 
 ## Prove a Reusable Watch Command
 
-When a repository introduces or changes a reusable watch command, exercise a live process. Prove the setup that command claims:
+When a repository introduces or changes a reusable watch command, exercise a live process through the exact repository-owned command and real test configuration. Do not replace it with raw Vitest or reconstruct a smaller configuration: that can prove a different watcher while broken package-script wiring, plugins, includes, or exclusions remain hidden. A proof may use a tightly validated test-only scope to keep the run bounded, but the production command and watch machinery must stay unchanged.
+
+Prove the setup that command claims:
 
 - **Graph-complete repository watch:** the complete intended development tier executes initially.
 - **Diff-selected strict TDD:** the changed/new RED test executes initially.
@@ -47,14 +49,16 @@ When a repository introduces or changes a reusable watch command, exercise a liv
 
 For every strategy, also prove:
 
-1. A matching test created after startup is discovered and executed.
-2. Changing an imported implementation reruns every affected test.
+1. A matching test created after startup is discovered and executed, imports an implementation, and reruns when that implementation changes.
+2. Changing an imported implementation reruns every affected test, while a graph-independent control test does not rerun.
 3. Tests excluded from the development tier remain excluded.
 4. A test that changes execution tier is not incorrectly retained.
 5. At least one expected test executes after the relevant change; zero tests and `--passWithNoTests` are rejected as test evidence.
 6. Assertions inspect output emitted after the implementation rerun, not a stale waiting marker.
-7. Normal completion and forced timeout leave no watcher process or temporary directory behind.
+7. Normal completion, spawn failure, early child exit, and forced timeout leave no watcher process or temporary directory behind.
 
-For deterministic automated fixtures on macOS, polling may be enabled inside the ephemeral fixture when native events for a newly created temporary root are unreliable. Do not enable polling in the real development command without evidence that it is needed.
+For deterministic automated fixtures on macOS, polling may be enabled inside the ephemeral fixture when native events for a newly created temporary root are unreliable. Do not enable polling in the real development command merely to make a reconstructed fixture pass. If the exact-command proof shows that an intended development environment—including a headless agent filesystem—misses real saves, that is evidence for bounded polling in the real watch configuration. Record the interval and CPU/latency trade-off, then rerun the exact-command proof.
 
 The proof harness is the only finite automation allowed to spawn watch mode. Bound it with a hard timeout, kill the entire watcher process group on every exit path, and remove its ephemeral fixture. Ordinary CI, hook, lint, test, build, and verification commands must remain finite; for Vitest they must use `vitest run`, `--run`, or `--watch=false`. Bare `vitest` can auto-watch in a TTY when neither CI nor Vitest's agent detection disables it, so never rely on environment detection for termination.
+
+Automation guards must inspect each shell command segment and accept watch or finite arguments in any position. A detector that only recognizes `watch`, `run`, or `--watch` immediately after `vitest` will miss commands such as `vitest --config vitest.config.ts --watch` or misclassify `vitest --config vitest.config.ts run`.
