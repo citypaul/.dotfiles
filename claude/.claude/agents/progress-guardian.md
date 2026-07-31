@@ -1,7 +1,7 @@
 ---
 name: progress-guardian
 description: >
-  Tracks progress through significant work using vertical-slice or explicitly selected reduction-program plan files in plans/ directory. Use at the start of planned work, to update progress, and at the end to merge learnings.
+  Tracks progress through significant work using vertical-slice or explicitly selected reduction-program plan files in plans/ directory, including optional stacked-PR delivery maps. Use at the start of planned work, to update progress, and at the end to merge learnings.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 color: green
@@ -68,7 +68,7 @@ For a behavior-change delivery plan, describe observable behavior. For a reducti
 
 ## Slices
 
-Classify every slice as **behavior change**, **pure refactor**, **reduction transition**, or **terminal reduction**. Delivery slices should be the thinnest useful end-to-end behavior. Every reduction transition and terminal reduction loads `reduce-system-complexity` and references the plan-level reduction program. A transition may add a bounded bridge but keeps `mechanism gate: pending — no net-reduction claim`; only the terminal slice may claim net removal after both gates pass.
+Classify every slice as **behavior change**, **pure refactor**, **reduction transition**, or **terminal reduction**. Delivery slices should be the thinnest useful end-to-end behavior. Default each slice to one PR; if one slice needs dependent review layers, nest the map from `stack-pull-requests` beneath it without expanding scope or terminal obligations. Every reduction transition and terminal reduction loads `reduce-system-complexity` and references the plan-level reduction program. A transition may add a bounded bridge but keeps `mechanism gate: pending — no net-reduction claim`; only the terminal slice may claim net removal after both gates pass.
 
 ## Reduction Program (include only when applicable)
 
@@ -82,14 +82,15 @@ Classify every slice as **behavior change**, **pure refactor**, **reduction tran
 - **Value**: Behavior change — actor/outcome; pure refactor — preserved surface/maintenance value; transition — why this increment is necessary for the terminal state; terminal — conserved contract plus retired mechanism/ownership
 - **Path**: Behavior change — entry-to-observable path; pure refactor — preserved surface; either reduction class — affected path, program/terminal link, and mechanism scope
 - **Class**: Behavior change / pure refactor / reduction transition / terminal reduction
-- **Required implementation skills**: Behavior change — `tdd`, `testing`, plus applicable refactoring; pure refactor — applicable evidence/refactoring; either reduction class — `reduce-system-complexity` plus applicable evidence skills; at PR readiness — `mutation-testing` for the accumulated slice where meaningful
+- **Delivery**: Single PR (default), or nested `#### Delivery Shape` map from `stack-pull-requests`
+- **Required implementation skills**: Behavior change — `tdd`, `testing`, plus applicable refactoring; pure refactor — applicable evidence/refactoring; either reduction class — `reduce-system-complexity` plus applicable evidence skills; at each PR boundary's readiness — `mutation-testing` for the focused scope where meaningful
 - **Reduction program**: For either reduction class, reference the plan-level program and terminal slice; otherwise `N/A`
 - **Transition/terminal evidence**: Transition — `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any bridge (`N/A` otherwise), `mechanism gate: pending — no net-reduction claim`; terminal — both gates pass and superseded machinery/expired bridges are gone; otherwise `N/A`
 - **Acceptance criteria**: Behavior change — observable outcome; pure refactor — conserved surface/evidence; transition — passing behavior gate, independent verification, optional bridge metadata or `N/A`, pending mechanism gate/no net claim; terminal — both gates and retired old machinery/expired bridges
 - **RED or preservation baseline**: Behavior change — failing behavior test; pure refactor — passing consumer-surface baseline; either reduction class — conserved-contract baseline from the reducer ledger
 - **GREEN or preservation change**: Minimum behavior implementation, or smallest mechanism-only change
 - **REFACTOR or REDUCE**: Run the applicable `refactoring` and/or `reduce-system-complexity` skill; record `N/A` when neither applies
-- **PRE-PR MUTATION or alternate evidence**: Once the slice is otherwise ready for its PR, run mutation testing once for the accumulated scope and address valuable survivors within that gate; otherwise record explicit `N/A` plus reachability/configuration/contract/integration/operational evidence
+- **PRE-PR MUTATION or alternate evidence**: Once the current review boundary is otherwise PR-ready, run mutation testing once for the focused scope and address valuable survivors within that gate; otherwise record explicit `N/A` plus reachability/configuration/contract/integration/operational evidence
 - **Done when**: Include the end-of-phase mutation or alternate evidence. A transition requires its behavior gate and independent checks to pass while its mechanism gate remains pending with no net claim; a terminal reduction requires both gates and retired old machinery/expired bridges.
 
 ### Slice 2: [One sentence observable behaviour]
@@ -103,6 +104,8 @@ Before each PR:
 2. Mutation or alternate evidence — run `mutation-testing` once for the accumulated PR scope where meaningful, address valuable survivors within the same gate, or review the explicit `N/A` rationale and proportionate evidence
 3. Typecheck and lint pass
 4. DDD glossary check (if applicable)
+
+For a stacked slice, also require the nested whole-stack gate from `stack-pull-requests`. Several slices are sequential independent PRs, not a stack.
 
 ---
 *Delete this file when the plan is complete. If `plans/` is empty, delete the directory.*

@@ -28,7 +28,7 @@ Set up this project for Claude Code using the global framework. Analyze the proj
 
 1. **Detect tech stack**: language, framework, package manager, test runner, linter, formatter, build tool
 2. **Detect TypeScript strict config**: check for `strict`, `noUncheckedIndexedAccess`, `noImplicitAny` etc.
-3. **Detect CI pipeline**: what CI system, what steps run, what commands
+3. **Detect CI pipeline**: what CI system, what steps run, what commands, whether PR branch filters allow dependent feature bases, and whether required merge-queue checks handle `merge_group`
 4. **Detect existing config**: check for existing CLAUDE.md, .claude/ directory, hooks, commands
 5. **Check for DDD**: look for glossary files, domain directories, bounded context structure
 6. **Check for hexagonal architecture**: look for ports/, adapters/, domain/ directory structure
@@ -82,6 +82,8 @@ Generate a project-specific PR command that runs the detected quality gates befo
 - Lint command
 - Test command
 - Build command (if applicable)
+- Preserve the global `/pr` topology rules: use the current slice's delivery mode when a plan exists; otherwise default to one PR against the detected default branch unless stack intent or metadata is explicit; target and verify the immediate parent for a stacked layer
+- Confirm required CI runs for dependent feature-branch bases and `merge_group` when the repository uses a merge queue
 
 ### 4. Project pr-reviewer agent (`.claude/agents/pr-reviewer.md`)
 

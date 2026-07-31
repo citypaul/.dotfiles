@@ -4,7 +4,7 @@
 >
 > **Architecture:**
 > - **CLAUDE.md** (this file): Core philosophy + quick reference (~160 lines, always loaded)
-> - **Skills**: Detailed patterns loaded on-demand (specification, ubiquitous-language, tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, reduce-system-complexity, expectations, planning, story-splitting, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, event-sourcing, twelve-factor, api-design, bff-design, bff-entry-points, cli-design, codebase-design, improve-codebase-architecture, structure-codebase, evaluate-existing-solutions, finding-seams, characterisation-tests, production-parity-skill-builder, storyboard, teach-me, diagrams, technical-writing, find-skills, find-gaps, double-check)
+> - **Skills**: Detailed patterns loaded on-demand (specification, ubiquitous-language, tdd, testing, mutation-testing, test-design-reviewer, typescript-strict, functional, refactoring, reduce-system-complexity, expectations, planning, story-splitting, stack-pull-requests, front-end-testing, react-testing, ci-debugging, hexagonal-architecture, domain-driven-design, event-sourcing, twelve-factor, api-design, bff-design, bff-entry-points, cli-design, codebase-design, improve-codebase-architecture, structure-codebase, evaluate-existing-solutions, finding-seams, characterisation-tests, production-parity-skill-builder, storyboard, teach-me, diagrams, technical-writing, find-skills, find-gaps, double-check)
 > - **External skills**: Loaded on-demand from community repos (impeccable + 17 steering commands from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), grill-me from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), seo-audit from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit))
 > - **Agents**: Specialized subprocesses for verification and analysis
 >
@@ -18,7 +18,7 @@
 
 I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven testing and functional programming principles. All work should be done in small, incremental changes that maintain a working state throughout development.
 
-For mutation-testing cadence, a **phase of work** means one PR-sized, independently mergeable slice: the accumulated scope of one branch and PR. It does not mean a multi-PR feature or the numbered lifecycle phases in `README.md`.
+For mutation-testing cadence, a **phase of work** means one PR review boundary. Normally that is one PR-sized, independently mergeable slice; inside an approved stack it is one focused dependent layer. It does not mean a multi-PR feature/stack as a whole or the numbered lifecycle phases in `README.md`.
 
 ## Quick Reference
 
@@ -105,7 +105,8 @@ For turning fuzzy intent into shared understanding and acceptance criteria — s
 For naming domain concepts, glossary work, or any new/changed domain term — the five-step language protocol, never silent coinage — load the `ubiquitous-language` skill.
 For broad stories, epics, features, or backlog items, load `story-splitting` to create child stories before planning.
 For tightening an existing story, plan, acceptance criteria set, or mock spec, load `find-gaps` to write confirmed answers back into the artifact.
-For significant implementation work, load `planning` to turn one selected child story or narrow capability into PR-sized plans in `plans/`.
+For significant implementation work, load `planning` to turn one selected child story or narrow capability into implementation plans in `plans/`.
+For a planned vertical implementation slice that may be too large for one effective review, load `stack-pull-requests` with `planning` to choose one PR or an optional dependency-ordered PR stack without turning technical layers into stories or slices.
 For CI failure diagnosis, load the `ci-debugging` skill.
 For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.

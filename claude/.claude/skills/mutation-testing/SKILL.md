@@ -1,6 +1,6 @@
 ---
 name: mutation-testing
-description: Set up and run mutation testing with Stryker, including full-project and diff-against-main runs, then use surviving mutants to strengthen weak or missing tests. Use as the end-of-phase PR-readiness gate after implementation and refactoring are complete, not inside each RED-GREEN increment. Also use when the user explicitly asks for mutation testing, Stryker, mutation score, or surviving-mutant analysis. For writing the tests themselves, see testing.
+description: Set up and run mutation testing with Stryker, including full-project and focused diff runs against the current review base, then use surviving mutants to strengthen weak or missing tests. Use as the end-of-phase PR-readiness gate after implementation and refactoring are complete, not inside each RED-GREEN increment. Also use when the user explicitly asks for mutation testing, Stryker, mutation score, or surviving-mutant analysis. For writing the tests themselves, see testing.
 ---
 
 # Mutation Testing
@@ -75,11 +75,12 @@ At the end-of-phase PR-readiness gate, prove test effectiveness with Stryker whe
 
 ```bash
 rg --files | rg '(^|/)(package.json|stryker\.config\.(mjs|cjs|js|json)|stryker\.conf\.(js|json))$'
-git diff main...HEAD --name-only
+git diff <review-base>...HEAD --name-only
 ```
 
 - Identify the package manager, test runner, affected package(s), and existing Stryker config.
-- If the repo uses a base branch other than `main`, substitute that branch in all diff commands.
+- Use the actual review boundary: the detected default branch for a single PR, or the immediately lower branch for a stacked PR layer.
+- For a stacked slice, mutate the focused layer against its parent. The top also runs the cumulative acceptance and repository gates required by `stack-pull-requests`.
 - In monorepos, start in the smallest affected package, then widen to the repo-level command when the targeted run is healthy.
 - If no Stryker setup exists in a JS/TS project, recommend adding it before doing manual mutation analysis.
 
@@ -107,14 +108,14 @@ Suggest project scripts for full-project, cached, and branch-diff mutation runs:
   "scripts": {
     "mutation": "stryker run",
     "mutation:incremental": "stryker run --incremental",
-    "mutation:diff": "node scripts/stryker-diff.mjs main"
+    "mutation:diff": "node scripts/stryker-diff.mjs <review-base>"
   }
 }
 ```
 
 The `mutation:diff` helper should:
 
-- Read the base branch argument, defaulting to `main`.
+- Read the base branch argument, defaulting to the repository's detected default branch.
 - Collect changed files with `git diff --name-only --diff-filter=ACMRTUXB <base>...HEAD`.
 - Keep changed production files matching the project's source extensions.
 - Exclude test/spec files, fixtures, snapshots, generated files, declaration files, and build output.
@@ -124,7 +125,7 @@ The `mutation:diff` helper should:
 Prefer a small Node helper over dense shell inside `package.json`; quoting `*`, `!`, and command substitution is fragile across shells. For quick local use, this POSIX one-liner is acceptable:
 
 ```bash
-CHANGED=$(git diff --name-only --diff-filter=ACMRTUXB main...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep -Ev '(^|/)(__tests__|test|tests|fixtures|generated)/|\.(test|spec|d)\.' | paste -sd, -)
+CHANGED=$(git diff --name-only --diff-filter=ACMRTUXB <review-base>...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep -Ev '(^|/)(__tests__|test|tests|fixtures|generated)/|\.(test|spec|d)\.' | paste -sd, -)
 test -n "$CHANGED" && npx stryker run --incremental --force --mutate "$CHANGED"
 ```
 

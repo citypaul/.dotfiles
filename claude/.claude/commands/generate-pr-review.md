@@ -331,19 +331,23 @@ Create `.claude/commands/pr.md` that runs quality checks before creating the PR:
 ```markdown
 ---
 description: Create a pull request with pre-flight quality checks
-allowed-tools: Bash(git:*), Bash(gh:*), Bash([PACKAGE_MANAGER]:*)
+allowed-tools: Read, Glob, Bash(git:*), Bash(gh:*), Bash([PACKAGE_MANAGER]:*)
 ---
-
-Current branch state:
-!`git log [DETECTED_DEFAULT_BRANCH]..HEAD --oneline`
 
 Current branch:
 !`git branch --show-current`
 
-Changes summary:
-!`git diff [DETECTED_DEFAULT_BRANCH]...HEAD --stat`
+Recent commits:
+!`git log --oneline -5`
 
 If the current branch is `[DETECTED_DEFAULT_BRANCH]`, STOP. Do not create a PR until the work is moved to a feature branch with user approval.
+
+If an active plan exists, read the current slice's `Delivery` field. With no plan, default to one PR against `[DETECTED_DEFAULT_BRANCH]` unless the user explicitly requests a stack or reliable stack metadata identifies the current branch as a layer.
+
+- Single PR: review and verify against `[DETECTED_DEFAULT_BRANCH]`.
+- Stacked layer: load `stack-pull-requests`, target the immediate parent, and review and verify only `git diff <parent>...HEAD`.
+- Confirm required CI runs for the actual base and for `merge_group` when the repository uses a merge queue.
+- Create only the current stacked boundary with `gh pr create --base <parent>` by default. Use `gh stack submit` only after the exact full-stack branches, PRs, bases, and draft states are confirmed and the user intends those effects.
 
 Before creating the PR, run these checks in order:
 
@@ -353,7 +357,7 @@ Before creating the PR, run these checks in order:
    - Pure refactor: verify the passing baseline and complete the refactoring assessment
    - Reduction transition: reference the program/terminal slice and record the conserved contract, `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), and `mechanism gate: pending — no net-reduction claim`
    - Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge transition obligations, run both `reduce-system-complexity` gates, and confirm old machinery and expired bridges are gone
-3. Run the end-of-phase mutation gate once for the accumulated PR scope where meaningful, address valuable survivors and scoped reruns inside that gate, or record explicit mutation `N/A` with proportionate alternate evidence. Do not run the automated mutation harness once per prior increment or commit.
+3. Run the end-of-phase mutation gate once for the actual PR boundary where meaningful—default branch for one PR, immediate parent for a stacked layer—address valuable survivors and scoped reruns inside that gate, or record explicit mutation `N/A` with proportionate alternate evidence. Do not run the automated mutation harness once per prior increment or commit.
 4. [DETECTED_TYPE_CHECK_COMMAND]
 5. [DETECTED_LINT_COMMAND]
 6. [DETECTED_TEST_COMMAND]
@@ -373,7 +377,7 @@ Create a PR with:
 - Reduction transition: link the program and terminal slice; name the conserved contract, passing behavior gate, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), pending mechanism gate without a net claim, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
 - Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), show discharged transition obligations, passing behavior/mechanism gates, removal of superseded machinery and expired bridges, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
 
-Use `gh pr create` (or project-specific CLI) with appropriate title and body.
+Use `gh pr create` (or project-specific CLI) with the appropriate base, title, and body. Create only the current boundary unless whole-stack submission was explicitly confirmed.
 ```
 
 Replace `[DETECTED_DEFAULT_BRANCH]` with the repository's detected default branch. Replace every command placeholder with the actual project command; when a check is unavailable, record it as `N/A` with a reason instead of emitting a broken command.
