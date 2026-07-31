@@ -18,7 +18,7 @@
 
 I follow Test-Driven Development (TDD) with a strong emphasis on behavior-driven testing and functional programming principles. All work should be done in small, incremental changes that maintain a working state throughout development.
 
-For mutation-testing cadence, a **phase of work** means one PR review boundary. Normally that is one PR-sized, independently mergeable slice; inside an approved stack it is one focused dependent layer. It does not mean a multi-PR feature/stack as a whole or the numbered lifecycle phases in `README.md`.
+For mutation-testing cadence, a **phase of work** means one PR review boundary. Normally that is one PR-sized, independently mergeable slice; in a cross-slice stack it is one whole-slice member, and in an intra-slice stack it is one focused dependent layer. It does not mean a multi-PR feature/stack as a whole or the numbered lifecycle phases in `README.md`.
 
 ## Quick Reference
 
@@ -106,7 +106,7 @@ For naming domain concepts, glossary work, or any new/changed domain term — th
 For broad stories, epics, features, or backlog items, load `story-splitting` to create child stories before planning.
 For tightening an existing story, plan, acceptance criteria set, or mock spec, load `find-gaps` to write confirmed answers back into the artifact.
 For significant implementation work, load `planning` to turn one selected child story or narrow capability into implementation plans in `plans/`.
-For a planned vertical implementation slice that may be too large for one effective review, load `stack-pull-requests` with `planning` to choose one PR or an optional dependency-ordered PR stack without turning technical layers into stories or slices.
+When one planned vertical slice may be too large for review, or later slices should start on the same evolving baseline before lower PRs merge, load `stack-pull-requests` with `planning` to choose independent PRs or an explicit hard-/flow-lineage stack without turning technical layers into stories or slices.
 For CI failure diagnosis, load the `ci-debugging` skill.
 For hexagonal architecture projects, load the `hexagonal-architecture` skill.
 For Domain-Driven Design projects, load the `domain-driven-design` skill.

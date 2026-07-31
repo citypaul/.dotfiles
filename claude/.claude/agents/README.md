@@ -218,7 +218,7 @@ progress-guardian (orchestrates)
     │
     ├─► Creates: plans/<name>.md
     │
-    ├─► For each implementation increment in the current slice or PR layer:
+    ├─► For each implementation increment in the current slice or PR boundary:
     │   ├─→ tdd-guardian (RED-GREEN-REFACTOR)
     │   ├─→ ts-enforcer (before commits)
     │   └─→ refactor-scan (after GREEN or another passing baseline, when applicable)
@@ -250,7 +250,7 @@ progress-guardian (orchestrates)
 
 2. **Plan the work** (before writing any code)
    - Run `/plan` to create a plan in `plans/` on a branch with a PR
-   - Default every implementation slice to one PR; use `stack-pull-requests` only when one fixed slice needs dependent review layers
+   - Default every implementation slice to one trunk-based PR; use `stack-pull-requests` when one slice needs review layers or later slices should start on the same evolving baseline before lower PRs merge
    - Get approval for the plan before writing any code
 
 3. **For each step in plan**
@@ -275,18 +275,18 @@ progress-guardian (orchestrates)
 7. **Pre-PR quality gate**
    - Verify each implemented slice loaded the skills for its behavior-changing or preservation-only path
    - Confirm implementation and applicable refactoring/reduction assessment are complete
-   - Run mutation testing once for the actual review boundary where meaningful—trunk for one PR, the immediate parent for a stacked layer—or review the documented alternate evidence and `N/A`
+   - Run mutation testing once for the actual review boundary where meaningful—trunk for one PR, the immediate parent for a stacked boundary—or review the documented alternate evidence and `N/A`
    - Address valuable survivors and re-run focused/diff mutation checks within that same gate
    - Invoke `pr-reviewer`: Self-review changes
    - Fix any issues found
    - Run `/pr` to create PR with quality gates (TDD evidence + mutation testing + refactoring assessment + typecheck + lint; project-generated `/pr` commands also run tests and build)
 
 8. **Continue to next step**
-   - Sequential slice: after its PR merges, run `/continue` to update trunk and branch the next independent slice
-   - Stacked slice: run `/continue` from the committed, known-good current top to add the next layer; after lower merges, use it to sync the remaining stack
+   - Independent slice: after its PR merges, run `/continue` to update trunk and branch the next independent slice
+   - Stack: run `/continue` from the committed, known-good current top to add the next intra-slice layer or dependent slice; after lower merges, use it to sync the remaining stack
 
 9. **Feature complete**
-   - Verify all acceptance criteria met
+   - Verify every owning PR landed and all acceptance criteria are met
    - Invoke `learn`: Merge gotchas/patterns → CLAUDE.md
    - Invoke `adr`: Create ADRs for architectural decisions
    - Invoke `docs-guardian`: Update permanent docs

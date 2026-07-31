@@ -150,7 +150,7 @@ This reviewer enforces:
 - New or changed observable behavior needs corresponding tests written before implementation
 - Pure behavior-preserving refactors or reductions need a passing pre/post baseline plus proportionate alternate evidence where tests cannot observe the mechanism
 - Run only the applicable refactoring/reduction assessment during implementation and record `N/A` when neither applies
-- Once the completed phase is otherwise PR-ready, run mutation testing once for the accumulated scope where meaningful; otherwise record an explicit `N/A` rationale and proportionate reachability, configuration, contract, integration, or operational evidence
+- Once the current review boundary is otherwise PR-ready, run mutation testing once for the accumulated scope where meaningful; otherwise record an explicit `N/A` rationale and proportionate reachability, configuration, contract, integration, or operational evidence
 - A reduction transition must reference its program, terminal slice, and conserved contract; pass the behavior gate and independent verification; record owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none); and state `mechanism gate: pending — no net-reduction claim`
 - A terminal reduction must link its reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge prior transition obligations, and pass both gates before claiming net reduction
 - Any tests verify behavior, not implementation
@@ -342,12 +342,16 @@ Recent commits:
 
 If the current branch is `[DETECTED_DEFAULT_BRANCH]`, STOP. Do not create a PR until the work is moved to a feature branch with user approval.
 
-If an active plan exists, read the current slice's `Delivery` field. With no plan, default to one PR against `[DETECTED_DEFAULT_BRANCH]` unless the user explicitly requests a stack or reliable stack metadata identifies the current branch as a layer.
+If an active plan exists, read the current slice's `Delivery` field. With no plan, default to one PR against `[DETECTED_DEFAULT_BRANCH]` unless the user explicitly requests a stack or reliable stack metadata identifies the current branch as a stacked boundary.
 
 - Single PR: review and verify against `[DETECTED_DEFAULT_BRANCH]`.
-- Stacked layer: load `stack-pull-requests`, target the immediate parent, and review and verify only `git diff <parent>...HEAD`.
-- Confirm required CI runs for the actual base and for `merge_group` when the repository uses a merge queue.
-- Create only the current stacked boundary with `gh pr create --base <parent>` by default. Use `gh stack submit` only after the exact full-stack branches, PRs, bases, and draft states are confirmed and the user intends those effects.
+- Stacked boundary: load `stack-pull-requests`, target the immediate parent, and review and verify only `git diff <parent>...HEAD`.
+- Identify whether the approved topology is a GitHub-native linked stack or an unlinked dependent chain. Native stacks evaluate CI and rules against the stack trunk; unlinked dependent PRs retain ordinary immediate-base semantics. Confirm `merge_group` handling when the repository uses a merge queue.
+- Create only the current stacked boundary with `gh pr create --base <parent>` by default.
+- For an intended native stack, link the boundary with current `gh stack link` or `gh stack submit` behavior only after confirming the exact affected branches, PRs, bases, and draft states. Until linked, do not assume native stack-trunk CI or rule evaluation.
+- Use `gh stack submit` only when the user intends to create or update the full stack and its whole-stack effects have been confirmed.
+
+If the plan or explicit intent says GitHub-native stack but the boundary remains unlinked, STOP and repair the topology before presenting or updating it as a native stacked PR.
 
 Before creating the PR, run these checks in order:
 
@@ -357,7 +361,7 @@ Before creating the PR, run these checks in order:
    - Pure refactor: verify the passing baseline and complete the refactoring assessment
    - Reduction transition: reference the program/terminal slice and record the conserved contract, `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), and `mechanism gate: pending — no net-reduction claim`
    - Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge transition obligations, run both `reduce-system-complexity` gates, and confirm old machinery and expired bridges are gone
-3. Run the end-of-phase mutation gate once for the actual PR boundary where meaningful—default branch for one PR, immediate parent for a stacked layer—address valuable survivors and scoped reruns inside that gate, or record explicit mutation `N/A` with proportionate alternate evidence. Do not run the automated mutation harness once per prior increment or commit.
+3. Run the end-of-phase mutation gate once for the actual PR boundary where meaningful—default branch for one PR, immediate parent for a stacked boundary—address valuable survivors and scoped reruns inside that gate, or record explicit mutation `N/A` with proportionate alternate evidence. Do not run the automated mutation harness once per prior increment or commit.
 4. [DETECTED_TYPE_CHECK_COMMAND]
 5. [DETECTED_LINT_COMMAND]
 6. [DETECTED_TEST_COMMAND]

@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Planning work as vertical slices or an explicitly selected mechanism-reduction program in small, known-good increments, with a single PR or optional stacked-PR delivery shape for each slice. Use when starting significant work, turning already-split stories into implementation plans, planning PRs, or sequencing complex tasks. For a mechanism-reduction program, use reduce-system-complexity first to define the conserved contract, terminal mechanism-removal state, and behavior/mechanism gates; planning then sequences it. If the input is a broad story, epic, feature idea, or backlog item that still needs product slicing, use story-splitting first; if one planned slice may need dependent review layers, also use stack-pull-requests.
+description: Planning work as vertical slices or an explicitly selected mechanism-reduction program in small, known-good increments, with independent pull requests or an optional stacked-PR topology across one or more ordered slices. Use when starting significant work, turning already-split stories into implementation plans, planning PRs, or sequencing complex tasks. For a mechanism-reduction program, use reduce-system-complexity first to define the conserved contract, terminal mechanism-removal state, and behavior/mechanism gates; planning then sequences it. If the input is a broad story, epic, feature idea, or backlog item that still needs product slicing, use story-splitting first; if a slice needs review layers or later slices should start on an evolving baseline before lower PRs merge, also use stack-pull-requests.
 ---
 
 # Planning in Vertical Slices
@@ -22,10 +22,10 @@ Keep three units distinct:
 | Unit | Meaning | Default relationship |
 |---|---|---|
 | Backlog story | Fixed product capability and acceptance scope from `story-splitting` | A plan may advance one selected story |
-| Implementation slice | Smallest independently mergeable and releasable vertical increment, or one explicit reduction transition/terminal state | One PR |
-| PR layer | Dependent review package inside one slice | Exists only when `stack-pull-requests` justifies a stack |
+| Implementation slice | Smallest vertical increment or explicit reduction transition/terminal state that can merge and release safely once declared prerequisites land | One PR by default |
+| PR boundary | Review package that owns a whole slice or, exceptionally, a dependent layer inside one slice | Exists independently or inside a deliberate stack |
 
-Several implementation slices produce sequential independent PRs, not a stack. After one merges, start the next from trunk. If one slice is difficult to review as a single PR, load `stack-pull-requests`; its layers must not expand the slice's acceptance scope, conserved contract, or reduction obligations.
+A sequence is work order; a stack is branch topology. Default each slice to a trunk-based PR. Keep slice PRs independent when they can merge in any order without blocking or duplicating work, or when the next branch starts only after its predecessor lands. Load `stack-pull-requests` when one slice needs review layers or when later slices should start on the same evolving baseline before earlier PRs merge. Hard dependency is sufficient but not required; deliberate flow lineage may justify a stack. Speculative backtracking alone does not.
 
 If a plan starts producing database-only, API-only, UI-only, or "do all plumbing first" slices, pause and return to `story-splitting` unless the horizontal work explicitly unlocks the next vertical slice with independent verification or advances an explicitly selected reduction program toward its named terminal mechanism-removal state.
 
@@ -39,7 +39,7 @@ Before freezing slices that introduce a material generic mechanism or durable ne
 | Broad requirement with multiple outcomes | `story-splitting` | Child stories |
 | Existing story/plan/AC/mocks with holes | `find-gaps` | Confirmed artifact updates |
 | Selected child story ready for delivery sequencing | `planning` | Implementation slices with a delivery shape |
-| One planned slice may need dependent review PRs | `stack-pull-requests` + `planning` | Per-slice single PR or ordered PR stack |
+| One slice may need review layers, or later slices may start before lower PRs merge | `stack-pull-requests` + `planning` | Independent PRs or an explicit hard-/flow-lineage stack |
 
 ## Plans Directory
 
@@ -53,13 +53,13 @@ Multiple plans can coexist — each is independent and won't conflict across bra
 
 ## Prefer Small Reviewable PRs
 
-Default to the smallest independently mergeable vertical units, with one PR per slice. Use a stack only as the exception defined by `stack-pull-requests`: dependent layers may package one fixed slice for focused review, while the full stack remains that slice's delivery unit.
+Default to the smallest known-good vertical units, with one trunk-based PR per slice. Use a cross-slice stack when upper slices have hard dependency or deliberate flow lineage, will be in flight before lower merge, and review, lead-time, or correction-routing benefits earn the cascade cost. Use an intra-slice stack when one fixed slice still needs focused dependent review layers.
 
 **Why this matters:** Small PRs are easier to review, easier to revert, and easier to reason about. When something breaks, the cause is obvious. When a PR sits in review, it doesn't block unrelated work. The goal is to stay as close to main as possible at all times.
 
 **A PR is too big when** the reviewer needs to hold multiple unrelated concepts in their head to understand it, or when you'd struggle to write a clear 1-3 sentence summary of what it does.
 
-There will be exceptions — some changes are inherently coupled and splitting them would create broken intermediate states. Use judgement. First ask whether the work is really several independent slices; only then ask whether one remaining slice needs dependent review layers.
+There will be exceptions. Use judgement: first define honest vertical slices, then decide whether they stay independent, share a cross-slice hard/flow stack, or one slice needs intra-slice review layers.
 
 ## What Makes a Vertical Slice
 
@@ -113,7 +113,7 @@ Each slice MUST:
 - Be describable in one sentence
 - Deliver or directly unblock observable behavior, or safely advance an explicitly selected reduction program toward its terminal behavior/mechanism gates
 
-A slice is the unit of planning and independently mergeable value. By default it is also one review PR. With an approved stack, dependent PR layers become focused review boundaries and the top remains the slice's completion boundary. Within each behavior-changing PR boundary, fast RED-GREEN-REFACTOR increments may produce multiple commits; mutation testing or alternate evidence runs once when that boundary is otherwise PR-ready, not after each increment.
+A slice is the unit of planning and known-good value. By default it is also one review PR against trunk. In a cross-slice stack, each PR may own a complete slice and that slice completes when its PR lands bottom-up. In an intra-slice stack, dependent PR layers are focused review boundaries and the slice completes when its top lands. Within each behavior-changing PR boundary, fast RED-GREEN-REFACTOR increments may produce multiple commits; mutation testing or alternate evidence runs once when that boundary is otherwise PR-ready, not after each increment.
 
 **If you can't describe a slice in one sentence, break it down further.**
 
@@ -138,10 +138,10 @@ A slice is the unit of planning and independently mergeable value. By default it
 
 **Every behavior-changing slice uses fast RED-GREEN-REFACTOR increments, followed by one end-of-phase mutation or alternate-evidence gate when the slice is otherwise ready for its PR.** Before implementation, load `tdd`, `testing`, and applicable `refactoring` guidance. Use the `mutation-testing` mutator rules for cheap test-design guidance, but defer the automated harness until PR readiness. A true behavior-preserving refactor or `reduce-system-complexity` slice starts from passing proportionate preservation evidence and uses the same end-of-phase gate. Never fabricate a failing mechanism-count test or structural mutant. This section is a routing contract, not a replacement for those skills.
 
-For a stacked slice, apply that cadence to every PR layer against its parent review boundary. Put tests in the earliest layer that owns the behavior, run the mutation-or-alternate-evidence gate once when each layer is PR-ready, and require the top layer to prove the slice's complete acceptance criteria or reduction gates. Do not defer all tests or evidence to the top.
+For any stack, apply that cadence to every PR against its parent review boundary. Put tests in the PR that first owns the behavior, run the mutation-or-alternate-evidence gate once when each boundary is PR-ready, and require the top to prove every included slice's cumulative acceptance criteria or reduction gates. Do not defer tests or evidence upstack.
 
 ```
-FOR EACH BEHAVIOR-CHANGING SLICE OR PR LAYER:
+FOR EACH BEHAVIOR-CHANGING SLICE OR PR BOUNDARY:
     │
     ├─► LOAD: Required implementation skills
     │   - `tdd` for RED-GREEN-REFACTOR
@@ -206,7 +206,7 @@ After completing an implementation increment:
 2. Verify static analysis passes
 3. Present class-specific evidence: RED/GREEN for behavior change; preserved contract for pure refactor; passing behavior gate plus independent verification and pending mechanism gate/no net claim for a transition; or linked program/ledger, discharged obligations, both passing gates, and retired machinery for a terminal reduction
 
-Do not require a mutation report for every commit. When the complete slice is otherwise ready for its PR, run the end-of-phase mutation gate once and present its final report (or the reviewed alternate-evidence record and `N/A` rationale).
+4. Do not require a mutation report for every commit. When the current PR boundary is otherwise ready, run the end-of-phase mutation gate once and present its final report (or the reviewed alternate-evidence record and `N/A` rationale).
 5. **STOP and ask**: "Ready to commit [description]. Approve?"
 
 Only proceed with commit after explicit approval.
@@ -262,7 +262,7 @@ Read the project's CLAUDE.md and testing rules before writing slices.
 **Value**: [Behavior change: actor and observable outcome. Pure refactor: preserved consumer surface and maintenance value. Reduction transition: why this independently verifiable increment is necessary to reach the terminal state. Terminal reduction: conserved contract plus the ownership/mechanism retired.]
 **Path**: [Behavior change: entry point -> business path -> state/output -> observability. Pure refactor: preserved public surface. Either reduction class: affected trigger-to-outcome path, program/terminal link, and mechanism scope.]
 **Class**: Behavior change / pure refactor / reduction transition / terminal reduction.
-**Delivery**: [Single PR (default), or a `#### Delivery Shape` map from `stack-pull-requests` nested under this slice.]
+**Delivery**: [Independent PR against trunk (default); cross-slice stack member referencing the shared `#### Delivery Shape`; or an intra-slice `#### Delivery Shape` map.]
 **Required implementation skills**: For changed behavior, load `tdd`, `testing`, and applicable refactoring guidance. For a pure refactor, load only applicable testing and refactoring skills. Every reduction transition and terminal reduction loads `reduce-system-complexity` plus applicable evidence skills. At each PR boundary's readiness, load `mutation-testing` for the focused scope where meaningful or record the alternate-evidence `N/A`. Add UI/domain/architecture skills only when relevant.
 **Reduction program**: [For either reduction class: reference the plan-level program and terminal slice; otherwise `N/A`.]
 **Transition/terminal evidence**: [Transition: `behavior gate: pass`, independent verification, bridge owner/removal/bounded-lifetime metadata when a bridge exists (`N/A` otherwise), and `mechanism gate: pending — no net-reduction claim`. Terminal: passing behavior gate, like-for-like mechanism gate, and removal of the superseded mechanism/expired bridges. Otherwise `N/A`.]
@@ -270,8 +270,9 @@ Read the project's CLAUDE.md and testing rules before writing slices.
 **RED or preservation baseline**: For behavior change, what failing behavior test will we write? For a pure refactor/reduction, which passing oracles and proportionate non-test evidence conserve the affected behavior and guarantees? Never assert implementation shape merely to create RED.
 **GREEN or preservation change**: What minimum code makes the new behavior pass, or what smallest mechanism-only change preserves the baseline?
 **REFACTOR**: Assess improvements (only if they add value).
-**PRE-PR MUTATION or alternate evidence**: Once the slice is otherwise ready for its PR, run mutation testing once for the accumulated scope. Address valuable survivors and re-run focused/diff checks inside the same gate. Otherwise mark `N/A` and name reachability, configuration, contract, integration, or operational evidence; never invent structural mutants.
-**Done when**: All acceptance criteria and end-of-phase mutation/alternate-evidence obligations are met. A transition is done when its behavior gate and independent checks pass while the mechanism gate remains truthfully pending with no net claim; a terminal reduction is done only when both gates pass and old machinery/expired bridges are gone. The human approves the commit.
+**PRE-PR MUTATION or alternate evidence**: Once the current review boundary is otherwise PR-ready, run mutation testing once for its accumulated scope. Address valuable survivors and re-run focused/diff checks inside the same gate. Otherwise mark `N/A` and name reachability, configuration, contract, integration, or operational evidence; never invent structural mutants.
+**PR-ready when**: All acceptance criteria owned by the current boundary and its end-of-phase mutation/alternate-evidence obligations are met. A transition's behavior gate and independent checks pass while its mechanism gate remains truthfully pending with no net claim; a terminal reduction passes both gates and removes old machinery/expired bridges. The human approves the commit.
+**Slice complete when**: Its independent or cross-slice owning PR lands, or the top PR lands for an intra-slice stack.
 
 ### Slice 2: [One sentence observable behaviour]
 
@@ -287,7 +288,7 @@ Before each PR:
 5. Complete tests — stop watchers and run the repository-defined complete non-watch PR test gate; in a monorepo include every configured project and required integration/E2E suite, not only the affected development subset
 6. Evidence freshness — apply the target repository's mutation-evidence rule after later fixes. Use this distribution's `commands/pr.md` model only when the repository has no stricter invalidation policy, and keep project verification current after resulting fixes
 
-For a stacked slice, nest the exact `#### Delivery Shape` and whole-stack gate from `stack-pull-requests` under that slice. Do not set one delivery mode for the whole plan.
+For an intra-slice stack, nest the exact `#### Delivery Shape` and whole-stack gate under that slice. For a cross-slice stack, place one shared map before the first included slice and reference it from each included slice. Never stack an entire plan by default.
 
 ---
 *Delete this file when the plan is complete. If `plans/` is empty, delete the directory.*
@@ -305,9 +306,9 @@ Plans are not immutable, but changes must be explicit and approved.
 
 ## End of Feature
 
-When all slices are complete:
+When every slice's owning PR has landed (or the top PR has landed for each intra-slice stack):
 
-1. **Verify completion** — all acceptance criteria met; applicable tests and mutation/alternate evidence pass; any reduction program reaches a terminal slice with both gates passed and old machinery/expired bridges gone
+1. **Verify completion** — all owning PRs landed; all acceptance criteria met; applicable tests and mutation/alternate evidence pass; any reduction program reaches a terminal slice with both gates passed and old machinery/expired bridges gone
 2. **Merge learnings** — if significant insights were gained, use the `learn` agent for CLAUDE.md updates or `adr` agent for architectural decisions
 3. **Delete plan file** — remove from `plans/`, delete `plans/` if empty
 
@@ -329,7 +330,7 @@ When all slices are complete:
 - Prefer a walking skeleton that proves the real path, then widen it behavior by behavior
 
 ❌ **Slices that span multiple PRs without a delivery decision**
-- Default to one PR. If dependent review layers genuinely help, load `stack-pull-requests`, justify the exception, and keep the slice scope and terminal obligations fixed.
+- Default each slice to one trunk-based PR. If a cross-slice flow/hard stack or intra-slice review layers materially help, load `stack-pull-requests`, justify the exact topology, and preserve every slice's scope and terminal obligations.
 
 ❌ **Writing changed behavior before its test**
 - RED comes first for behavior change; a true REFACTOR slice records passing preservation evidence instead
@@ -349,7 +350,7 @@ START FEATURE
 │
 │   FOR EACH IMPLEMENTATION SLICE:
 │   │
-│   ├─► DELIVERY: Single PR by default; otherwise nest an approved stack map
+│   ├─► DELIVERY: Independent trunk-based PR by default; otherwise reference an approved intra- or cross-slice stack map
 │   ├─► BEHAVIOR CHANGE: LOAD → CONFIRM → RED → GREEN → REFACTOR → REPEAT WITHOUT MUTATION HARNESS
 │   ├─► OR PURE REFACTOR/REDUCTION: PASSING BASELINE → REFACTOR/REDUCE → VERIFY GATES
 │   ├─► **PRESENT WORK, WAIT FOR COMMIT APPROVAL**
@@ -358,7 +359,7 @@ START FEATURE
 │
 END FEATURE
 │
-├─► Verify all criteria met
+├─► Verify all owning PRs landed and all criteria met
 ├─► Merge learnings if significant (learn agent, adr agent)
 └─► Delete plan file from plans/
 ```

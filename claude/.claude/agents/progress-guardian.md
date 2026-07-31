@@ -68,7 +68,7 @@ For a behavior-change delivery plan, describe observable behavior. For a reducti
 
 ## Slices
 
-Classify every slice as **behavior change**, **pure refactor**, **reduction transition**, or **terminal reduction**. Delivery slices should be the thinnest useful end-to-end behavior. Default each slice to one PR; if one slice needs dependent review layers, nest the map from `stack-pull-requests` beneath it without expanding scope or terminal obligations. Every reduction transition and terminal reduction loads `reduce-system-complexity` and references the plan-level reduction program. A transition may add a bounded bridge but keeps `mechanism gate: pending — no net-reduction claim`; only the terminal slice may claim net removal after both gates pass.
+Classify every slice as **behavior change**, **pure refactor**, **reduction transition**, or **terminal reduction**. Delivery slices should be the thinnest useful end-to-end behavior. Default each slice to one trunk-based PR. If one slice needs review layers, nest the map from `stack-pull-requests` beneath it; if later slices should start on the same evolving baseline before lower PRs merge, use one shared cross-slice map. Every reduction transition and terminal reduction loads `reduce-system-complexity` and references the plan-level reduction program. A transition may add a bounded bridge but keeps `mechanism gate: pending — no net-reduction claim`; only the terminal slice may claim net removal after both gates pass.
 
 ## Reduction Program (include only when applicable)
 
@@ -82,7 +82,7 @@ Classify every slice as **behavior change**, **pure refactor**, **reduction tran
 - **Value**: Behavior change — actor/outcome; pure refactor — preserved surface/maintenance value; transition — why this increment is necessary for the terminal state; terminal — conserved contract plus retired mechanism/ownership
 - **Path**: Behavior change — entry-to-observable path; pure refactor — preserved surface; either reduction class — affected path, program/terminal link, and mechanism scope
 - **Class**: Behavior change / pure refactor / reduction transition / terminal reduction
-- **Delivery**: Single PR (default), or nested `#### Delivery Shape` map from `stack-pull-requests`
+- **Delivery**: Independent PR against trunk (default); cross-slice stack member referencing the shared `#### Delivery Shape`; or an intra-slice `#### Delivery Shape` map
 - **Required implementation skills**: Behavior change — `tdd`, `testing`, plus applicable refactoring; pure refactor — applicable evidence/refactoring; either reduction class — `reduce-system-complexity` plus applicable evidence skills; at each PR boundary's readiness — `mutation-testing` for the focused scope where meaningful
 - **Reduction program**: For either reduction class, reference the plan-level program and terminal slice; otherwise `N/A`
 - **Transition/terminal evidence**: Transition — `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any bridge (`N/A` otherwise), `mechanism gate: pending — no net-reduction claim`; terminal — both gates pass and superseded machinery/expired bridges are gone; otherwise `N/A`
@@ -91,7 +91,8 @@ Classify every slice as **behavior change**, **pure refactor**, **reduction tran
 - **GREEN or preservation change**: Minimum behavior implementation, or smallest mechanism-only change
 - **REFACTOR or REDUCE**: Run the applicable `refactoring` and/or `reduce-system-complexity` skill; record `N/A` when neither applies
 - **PRE-PR MUTATION or alternate evidence**: Once the current review boundary is otherwise PR-ready, run mutation testing once for the focused scope and address valuable survivors within that gate; otherwise record explicit `N/A` plus reachability/configuration/contract/integration/operational evidence
-- **Done when**: Include the end-of-phase mutation or alternate evidence. A transition requires its behavior gate and independent checks to pass while its mechanism gate remains pending with no net claim; a terminal reduction requires both gates and retired old machinery/expired bridges.
+- **PR-ready when**: The current boundary's acceptance criteria and end-of-phase mutation or alternate evidence are complete. A transition requires its behavior gate and independent checks to pass while its mechanism gate remains pending with no net claim; a terminal reduction requires both gates and retired old machinery/expired bridges.
+- **Slice complete when**: Its independent or cross-slice owning PR lands, or the top PR lands for an intra-slice stack.
 
 ### Slice 2: [One sentence observable behaviour]
 
@@ -105,7 +106,7 @@ Before each PR:
 3. Typecheck and lint pass
 4. DDD glossary check (if applicable)
 
-For a stacked slice, also require the nested whole-stack gate from `stack-pull-requests`. Several slices are sequential independent PRs, not a stack.
+For any stack, also require the shared whole-stack gate from `stack-pull-requests`. Do not infer topology from slice count: independent PRs target trunk; a stack has explicit parent-branch dependencies.
 
 ---
 *Delete this file when the plan is complete. If `plans/` is empty, delete the directory.*
@@ -130,10 +131,10 @@ Do you approve this plan change?"
 
 ### 2. Commit Approval Required
 
-After an implementation increment, present its applicable passing baseline and class-specific state before asking for commit approval. Do not require mutation evidence for every commit. A transition must show `behavior gate: pass`, independent verification, optional bridge metadata or `N/A`, and `mechanism gate: pending — no net-reduction claim`; a terminal reduction must link its program/ledger (or authorized single-slice `N/A`), discharge transition obligations, pass both gates, and retire old machinery/expired bridges. When the completed slice is otherwise ready for its PR, run the single end-of-phase mutation gate and present that report separately.
+After an implementation increment, present its applicable passing baseline and class-specific state before asking for commit approval. Do not require mutation evidence for every commit. A transition must show `behavior gate: pass`, independent verification, optional bridge metadata or `N/A`, and `mechanism gate: pending — no net-reduction claim`; a terminal reduction must link its program/ledger (or authorized single-slice `N/A`), discharge transition obligations, pass both gates, and retire old machinery/expired bridges. When the current review boundary is otherwise PR-ready, run the single end-of-phase mutation gate and present that report separately.
 
 ```markdown
-"Slice 3 complete. Applicable tests/evidence pass.
+"Current implementation increment is known-good. Applicable tests/evidence pass.
 
 Change path: [behavior change / pure refactor / reduction transition / terminal reduction]
 Class-specific evidence: [RED/GREEN, preserved contract, transition gate state, or terminal gate/removal result]
@@ -147,12 +148,12 @@ Do you approve this commit?"
 
 ### 3. End-of-Feature Process
 
-When all slices are complete:
+When every slice's owning PR has landed (or the top PR has landed for each intra-slice stack):
 
 1. **Verify completion**
    - All acceptance criteria met?
-   - Applicable tests passing and every PR-ready slice's end-of-phase mutation/alternate evidence complete?
-   - All slices complete?
+   - Applicable tests passing and every PR-ready boundary's end-of-phase mutation/alternate evidence complete?
+   - All owning PRs landed, including every intra-slice stack top?
    - For a reduction program, did the terminal slice pass both gates, discharge transitions, and remove old machinery/expired bridges?
 
 2. **Merge learnings**
@@ -164,7 +165,7 @@ When all slices are complete:
    - `adr` agent for architectural decisions?"
    ```
 
-3. **Delete plan file**
+3. **Delete plan file only after every owning PR has landed**
    ```bash
    rm plans/feature-name.md
    # Delete plans/ directory if empty
@@ -233,7 +234,7 @@ User: "Test passes now"
 progress-guardian: "Slice 1 status: GREEN.
 Next: assess any valuable refactoring, then commit or continue the next RED-GREEN increment. Mutation testing waits until this slice is otherwise ready for its PR."
 
-User: "The slice is complete and ready for a PR"
+User: "The implementation is ready for its PR"
 
 progress-guardian: "Implementation and refactoring are complete.
 Now run mutation testing once for the accumulated slice where meaningful, or record explicit mutation `N/A` plus proportionate alternate evidence. Handle valuable survivors and scoped reruns inside this same gate."
