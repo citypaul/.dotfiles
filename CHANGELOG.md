@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.7.0
+
+### Minor Changes
+
+- edf5519: Add a stack-pull-requests skill that keeps story splitting vertical while making dependency-ordered PR stacks an optional, tested delivery tactic.
+
 ## 4.6.1
 
 ### Patch Changes
