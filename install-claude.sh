@@ -47,8 +47,10 @@ NEXT_SKILLS_REPO="vercel-labs/next-skills"
 IMPECCABLE_SKILLS_REPO="pbakaus/impeccable"
 MATTPOCOCK_SKILLS_REPO="https://github.com/mattpocock/skills"
 MARKETING_SKILLS_REPO="coreyhaines31/marketingskills"
+HERDR_SKILLS_REPO="herdrdev/herdr"
 GRILL_ME_SKILL="grill-me"
 SEO_AUDIT_SKILL="seo-audit"
+HERDR_SKILL="herdr"
 
 # Agents to target when installing skills via `npx skills add`.
 # Built up from --agent/--with-opencode flags; default is claude-code only.
@@ -150,7 +152,7 @@ Options:
                        (use with --agent to target other agents only)
   --with-opencode      Shorthand for --agent opencode + install OpenCode config
   --opencode-only      Install only OpenCode configuration (no skills/agents/commands)
-  --no-external        Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit)
+  --no-external        Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit + herdr)
   --no-impeccable      Skip impeccable design skills only
   --no-ponytail        Skip the ponytail plugin (Claude Code + Codex)
   --version VERSION    Version for CLAUDE.md/commands/agents (default: main). Skills always latest.
@@ -162,6 +164,7 @@ Default external skill sources:
   pbakaus/impeccable
   mattpocock/skills --skill grill-me
   coreyhaines31/marketingskills --skill seo-audit
+  herdrdev/herdr --skill herdr
 
 Examples:
   # Install everything (recommended)
@@ -460,6 +463,11 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel-labs/next-skills)"
     install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "$GRILL_ME_SKILL"
     install_optional_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "$SEO_AUDIT_SKILL"
+    # Lets an agent drive the terminal multiplexer it is running inside —
+    # split a pane, run a command in it, read the output back, and wait on a
+    # sibling agent without stealing focus. Installed for every target agent
+    # because each one benefits from it independently.
+    install_optional_skills_from "$HERDR_SKILLS_REPO" "herdr skill (herdrdev/herdr)" "$HERDR_SKILL"
   fi
 
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then

@@ -1,0 +1,14 @@
+# Herdr — terminal workspace manager for coding agents (https://herdr.dev)
+#
+# Only settings that differ from the shipped defaults belong here. Print the
+# full annotated default set with `herdr --default-config`, and apply edits to
+# a running server with `herdr server reload-config` (no restart, so the panes
+# your agents are working in survive the change).
+#
+# The agent state shown in the sidebar comes from the per-agent integrations
+# installed by mac-dev-machine-setup (`make herdr`), not from this file.
+
+[ui]
+# Order the sidebar as an attention queue rather than grouping by space, so
+# whichever agent is blocked on input sorts to the top. Default is "spaces".
+agent_panel_sort = "priority"
