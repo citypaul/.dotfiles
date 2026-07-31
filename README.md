@@ -1581,7 +1581,7 @@ chmod +x install-claude.sh
 ./install-claude.sh --claude-only                        # Install only CLAUDE.md
 ./install-claude.sh --skills-only                        # Install only skills (via skills.sh)
 ./install-claude.sh --no-agents                          # Install without agents
-./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit)
+./install-claude.sh --no-external                        # Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit + herdr)
 ./install-claude.sh --no-impeccable                      # Skip impeccable design skills only
 ./install-claude.sh --no-ponytail                        # Skip the ponytail plugin (https://ponytail.dev, Claude Code + Codex)
 ./install-claude.sh --with-opencode                      # Also target OpenCode for skills + install OpenCode config
@@ -1616,6 +1616,7 @@ All three layouts expose the same complete bundle. Include `--agent codex` when 
   - [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) — Next.js best practices, Cache Components, and upgrade workflow
   - [mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) — one-question-at-a-time plan and design interrogation
   - [coreyhaines31/marketingskills/seo-audit](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — technical, on-page, content, and authority SEO audit workflow
+  - [herdrdev/herdr](https://skills.sh/herdrdev/herdr) — drive the [Herdr](https://herdr.dev) terminal workspace from inside an agent: split panes, run commands, read output, wait on a sibling agent
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
 
@@ -1886,7 +1887,7 @@ The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~160 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), and `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and `herdr` from [herdrdev/herdr](https://skills.sh/herdrdev/herdr) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
