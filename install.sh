@@ -26,5 +26,6 @@ move_with_backup ~/.zshrc
 
 move_with_backup "$HOME/Library/Application Support/com.mitchellh.ghostty/config"
 move_with_backup "$HOME/.config/opencode/opencode.json"
+move_with_backup "$HOME/.config/herdr/config.toml"
 
-stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner ghostty claude opencode
+stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner ghostty claude opencode herdr
