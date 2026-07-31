@@ -135,7 +135,7 @@ require_text \
 
 require_text \
   "$CLAUDE_ROOT/commands/generate-pr-review.md" \
-  "Once the completed phase is otherwise PR-ready" \
+  "Once the current review boundary is otherwise PR-ready" \
   "review generation: defers mutation until PR readiness"
 
 require_text \

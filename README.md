@@ -88,8 +88,9 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Evaluate Existing Solutions** | Local-first, current evidence for adopt/adapt/combine/build decisions across primitives, libraries, tools, applications, frameworks, and services | [→ skills/evaluate-existing-solutions](claude/.claude/skills/evaluate-existing-solutions/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
 | **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
-| **Planning** | Turn a selected child story into vertical delivery slices, or sequence a reducer-defined program through explicit transition and terminal slices | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
+| **Planning** | Turn a selected child story into vertical implementation slices, or sequence a reducer-defined program, with a delivery shape for each slice | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
 | **Story Splitting** | Turn broad stories, epics, features, and backlog items into independently valuable child stories; based on Tim Ottinger's story-splitting resource list and linked articles | [→ skills/story-splitting](claude/.claude/skills/story-splitting/SKILL.md) |
+| **Stack Pull Requests** | Decide whether vertical implementation work should use independent PRs or an optional hard-/flow-lineage stack across one or more slices, then deliver it safely | [→ skills/stack-pull-requests](claude/.claude/skills/stack-pull-requests/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Production Parity Skill Builder** | Creates app-specific skills that inspect docs, code, tests, CI, deployment, infrastructure, config, auth, and environment setup to catch drift between production and non-production environments | [→ skills/production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) |
 | **Structure Codebase** | Selects the lightest honest source-tree shape: first-class frontend structures, visible hexagonal boundaries when earned, and feature-, context-, endpoint-, workflow-, framework-, or shallow forms elsewhere; package/import enforcement and safe migrations | [→ skills/structure-codebase](claude/.claude/skills/structure-codebase/SKILL.md) |
@@ -149,7 +150,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
 | Requirement is still fuzzy or decision-heavy | [grill-me](https://skills.sh/mattpocock/skills/grill-me) | Pressure-test the decision tree one question at a time before writing stories or plans |
 | Turning a broad requirement into stories | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Produce independently valuable child stories with scope, deferrals, and acceptance examples |
-| Planning significant implementation work | [planning](claude/.claude/skills/planning/SKILL.md) | Sequence a selected child story vertically, or a reducer-defined program through truthful transition/terminal slices |
+| Planning significant implementation work | [planning](claude/.claude/skills/planning/SKILL.md) | Sequence a selected child story vertically, or a reducer-defined program, and choose each slice's delivery shape |
+| One slice is too large, or later slices should start before lower PRs merge | [stack-pull-requests](claude/.claude/skills/stack-pull-requests/SKILL.md) | Choose independent PRs or a justified hard-/flow-lineage stack without turning technical layers into stories |
 | Tightening a story, plan, AC set, or mock | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Find missing decisions and write confirmed answers back into the artifact |
 | Backlog items keep turning into frontend/backend tickets | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Reject component stories; split by capability, path, interface, data, rules, quality, or learning |
 | CI pipeline keeps failing | [ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) | Every failure is real until proven otherwise, hypothesis-first diagnosis |
@@ -205,6 +207,7 @@ Skills are **auto-discovered** by Claude when relevant:
 - Designing API endpoints? → `api-design` skill provides contract-first patterns
 - Building or reviewing OAuth/OIDC? → `secure-oauth-oidc` applies RFC 9700 plus the relevant identity and extension profiles
 - Splitting epics, large stories, or backlog items? → `story-splitting` preserves vertical user-value slices
+- One slice is hard to review, or later slices should start before lower PRs merge? → `stack-pull-requests` decides whether a hard-/flow-lineage stack earns its coordination cost
 - Investigating local/prod drift? → `production-parity-skill-builder` creates an app-specific parity skill from docs, source, tests, config, auth, and infra
 - Code with hard-to-test dependencies? → `finding-seams` skill identifies substitution points
 - Changing code with no tests? → `characterisation-tests` skill documents existing behavior
@@ -223,7 +226,7 @@ For product work, the skills form a requirements-to-code pipeline. Each skill ow
 | 2. Split | What independently valuable child stories exist? | `story-splitting` | Child stories with value, scope, deferrals, acceptance examples, and release constraints |
 | 3. Tighten | What is missing, ambiguous, unverifiable, or unsafe? | `find-gaps` | Confirmed artifact updates: AC, plan paragraphs, mock-state specs, or a return to `story-splitting` |
 | 4. Select technology when needed | Should we reuse, adopt, adapt, combine, build, defer, or do nothing? | `evaluate-existing-solutions` | Current evidence, hard gates, qualitative trade-offs, ownership, and exit strategy |
-| 5. Plan | How do we implement the selected child story safely? | `planning` | PR-sized implementation slices in `plans/` |
+| 5. Plan | How do we implement the selected child story safely? | `planning` | Vertical slices with independent-PR or explicit dependency-stack delivery in `plans/` |
 | 6. Build | How do we change code without outrunning tests? | `tdd` + `testing` + applicable `refactoring`, then `mutation-testing` at PR readiness | RED-GREEN-REFACTOR for behavior change; verified preservation path for pure restructuring; one accumulated-scope mutation gate before PR |
 
 Use the earliest stage that matches the uncertainty. Skip `grill-me` when the decision is already clear. Skip `story-splitting` for tiny or already-narrow work. Use `find-gaps` only once there is an artifact to inspect. Use technology selection proportionately for a material generic mechanism or durable new dependency—not domain logic, small glue, routine use of an already-adopted tool, or ordinary fixes. Use `planning` only after one child story or narrow capability and any consequential technology choice have been selected.
@@ -275,7 +278,7 @@ it("should reject payments with negative amounts", () => {
 **Problem it solves:** 100% code coverage but bugs still slip through; tests that don't actually verify behavior; weak assertions that pass regardless of code correctness
 
 **What's inside:**
-- Stryker-first workflow for full-project, incremental, and diff-against-main mutation runs
+- Stryker-first workflow for full-project, incremental, and focused mutation runs against the current review base
 - A single end-of-phase PR-readiness gate instead of mutation runs after every TDD increment
 - Setup guidance for projects that do not already have a mutation testing harness
 - Survivor triage: fix obvious gaps immediately, ask for human judgment on subtle domain questions
@@ -1429,7 +1432,7 @@ Five slash commands that encode common workflows into single invocations:
 | **`/setup`** | One-shot project onboarding — detect tech stack, create CLAUDE.md, hooks, commands, and PR reviewer | Starting work on a new project (replaces `/init`) |
 | **`/pr`** | Create a pull request following standards | When ready to submit work |
 | **`/plan`** | Create a plan document on a branch with a PR — no code changes | When planning work before implementation |
-| **`/continue`** | Pull merged PR, create new branch, update plan | After a PR is merged and you want to continue |
+| **`/continue`** | Continue after a merged independent PR or advance/sync a stack | Moving to the next slice or dependent layer |
 | **`/generate-pr-review`** | Generate project-specific PR review automation | One-time setup per project |
 
 ### Recommended Flow
@@ -1454,9 +1457,9 @@ This is the full lifecycle for working on a feature, from project setup through 
 /plan  →  Creates a plan in plans/ on a branch with a PR — no code, just the plan
 ```
 
-**Why before code:** Planning in a separate phase prevents the most common friction point — Claude jumping straight to implementation before the approach is agreed. The plan becomes a PR you can review and approve before any code is written. Each behavior-changing slice specifies its failing test; a true behavior-preserving refactor or reduction instead specifies passing proportionate preservation evidence and applicable gates.
+**Why before code:** Planning in a separate phase prevents the most common friction point — Claude jumping straight to implementation before the approach is agreed. The plan becomes a PR you can review and approve before any code is written. Each slice defaults to one trunk-based PR; `stack-pull-requests` may add review layers inside one slice or link hard-/flow-lineage vertical slices when work should proceed before lower reviews merge.
 
-#### Phase 3: Implement (repeat fast increments within each slice)
+#### Phase 3: Implement (repeat fast increments within each slice or PR boundary)
 
 ```
 LOAD         →  Behavior change: tdd + testing + refactoring; preservation: applicable testing/refactoring/reduction skills
@@ -1466,7 +1469,7 @@ REFACTOR / REDUCE →  Run only the applicable assessment and any claimed reduct
 COMMIT       →  Wait for approval, then commit
 ```
 
-**Why this order:** RED-GREEN-REFACTOR keeps implementation feedback fast. The mutation harness does not run after each test, increment, refactor, or commit; its runtime grows with the codebase. Pure refactors or reductions enter at a passing proportionate-evidence path rather than inventing RED or structural mutants. `tdd-guardian` catches behavior written before tests, `ts-enforcer` catches type safety violations, and `refactor-scan` can run as soon as GREEN provides a passing behavior-test baseline. Each increment remains small and reviewable.
+**Why this order:** RED-GREEN-REFACTOR keeps implementation feedback fast. The mutation harness does not run after each test, increment, refactor, or commit; it runs once when the current review boundary is otherwise PR-ready. Pure refactors or reductions enter at a passing proportionate-evidence path rather than inventing RED or structural mutants. Tests stay with the earliest PR boundary that owns their behavior.
 
 #### Phase 4: Pre-PR Quality Gate
 
@@ -1475,20 +1478,21 @@ Before creating any PR, run these checks in order:
 ```
 /pr →
   1. phase complete    →  Verify implementation and applicable refactoring/reduction work are finished
-  2. mutation gate     →  Run mutation testing once for the accumulated PR scope, or record explicit `N/A` plus proportionate alternate evidence
+  2. mutation gate     →  Run mutation testing once against trunk or the immediate stack parent, or record explicit `N/A` plus proportionate alternate evidence
   3. survivor handling →  Address valuable survivors; re-run focused/diff mutation checks inside the same gate
   4. remaining checks  →  Run typecheck + lint + test + build, then create the PR
 ```
 
-**Why evidence at PR readiness:** One accumulated-scope run verifies that the completed implementation and refactoring would catch behavioral faults without taxing every inner TDD loop. Once the gate starts, surviving mutants are handled normally and scoped mutation checks are rerun until the report is ready. When the affected mechanism is unreachable, declarative, contractual, integrational, or operational, an explicit `N/A` plus proportionate alternate evidence is more honest.
+**Why evidence at PR readiness:** One focused run per review boundary verifies that the completed implementation and refactoring would catch behavioral faults without taxing every inner TDD loop. A stacked boundary uses its immediate parent as the review base; the top proves the cumulative criteria for every included slice. When the affected mechanism is unreachable, declarative, contractual, integrational, or operational, an explicit `N/A` plus proportionate alternate evidence is more honest.
 
-#### Phase 5: Continue to the Next Slice
+#### Phase 5: Continue
 
 ```
-/continue  →  Pulls merged PR, creates new branch, updates plan, shows next slice
+Independent slice →  /continue updates trunk and creates the next independent branch
+Stack              →  /continue adds a dependent layer or slice from the current top, or syncs after lower merges
 ```
 
-**Why a command for this:** After a PR is merged, you need to pull main, create a new branch, and figure out where you left off. `/continue` does all of this and updates the plan document so you have immediate context for the next slice. This eliminates the repetitive "pull, branch, update plan" sequence between PRs.
+**Why a command for this:** Independent slices return to trunk. Stacked PRs keep an explicit parent branch until bottom-up merge and sync, whether a PR owns a whole dependent slice or an intra-slice layer. `/continue` reads the delivery map before choosing either topology.
 
 #### Phase 6: Capture Knowledge (throughout and at the end)
 
@@ -1525,7 +1529,7 @@ docs-guardian     →  Updates user-facing documentation
 
 ### How the Workflow Works (Regardless of Installation Method)
 
-Once installed, the full development lifecycle is: `/setup` → `/plan` → fast RED-GREEN-REFACTOR increments → end-of-phase mutation gate in `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each phase.
+Once installed, the full development lifecycle is: `/setup` → `/plan` → single-PR or stack delivery → fast RED-GREEN-REFACTOR or preservation increments → end-of-boundary evidence gate in `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each phase.
 
 **Agent invocation examples:**
 
@@ -1606,7 +1610,7 @@ All three layouts expose the same complete bundle. Include `--agent codex` when 
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~160 lines - lean core principles)
 - ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) (`npx skills add`):
-  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — auto-discovered first-party patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, front-end-testing, react-testing, event-sourcing, and more)
+  - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — auto-discovered first-party patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, stack-pull-requests, front-end-testing, react-testing, event-sourcing, and more)
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
   - [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) — Next.js best practices, Cache Components, and upgrade workflow

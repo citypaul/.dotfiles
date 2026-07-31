@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stack Pull Requests"
+  short_description: "Plan and deliver optional stacked pull requests"
+  default_prompt: "Use $stack-pull-requests to decide whether this planned vertical work needs independent PRs or a reviewable hard- or flow-lineage stack."
