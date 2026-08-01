@@ -43,6 +43,14 @@ GitHub labels stacked pull requests and `gh stack` as public preview. Treat the 
 
 Do not hardcode a minimum GitHub CLI version in the main skill. The tutorial and command reference currently state different minimum versions. Verify the installed extension and current official prerequisites when execution matters.
 
+## Native Creation And Proof
+
+- Use `gh stack submit` for a locally tracked stack.
+- Use `gh stack link <bottom> ... <top>` to create or update the remote stack when branches or pull requests already exist. Arguments are ordered from bottom to top; the command creates the native stack and corrects the PR base chain.
+- Verify GitHub's remote object before calling the result a native stack. Query `PullRequest.stack` and confirm it is non-null with the intended trunk and bottom-to-top entries. PR base refs alone prove only a dependent branch chain.
+- Treat GitHub's **Create stack** prompt as evidence that the pull requests are not linked yet.
+- If a command wrapper does not expose `gh stack`, use its raw pass-through mode rather than silently falling back to ordinary PR creation. In RTK environments, use `rtk proxy gh stack ...`.
+
 ## Updating The Skill
 
 When GitHub changes the preview:

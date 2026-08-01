@@ -1,6 +1,6 @@
 ---
 name: stack-pull-requests
-description: Decide whether planned vertical implementation work should ship as independent pull requests or as a stack of small ordered pull requests, then plan, build, review, update, and merge the stack safely. Use when one slice is too large for effective review, when later slices should proceed on the same evolving baseline before earlier pull requests merge, when AI-generated code volume needs deliberate review boundaries, or when the user mentions stacked PRs, PR stacks, dependent PRs, gh-stack, bottom-up review, or splitting an implementation across branches. Do not use this skill to split epics or invent horizontal backlog stories; use story-splitting first.
+description: Decide whether planned vertical implementation work should ship as independent pull requests or as a stack of small ordered pull requests, then plan, build, review, update, and merge the stack safely. Use when one slice is too large for effective review, when later slices should proceed on the same evolving baseline before earlier pull requests merge, when AI-generated code volume needs deliberate review boundaries, when a plan already defines dependent pull request boundaries or non-trunk bases, or when the user mentions stacked PRs, PR stacks, dependent PRs, gh-stack, bottom-up review, or splitting an implementation across branches. Do not use this skill to split epics or invent horizontal backlog stories; use story-splitting first.
 ---
 
 # Stack Pull Requests
@@ -156,7 +156,7 @@ The top boundary must prove the cumulative acceptance examples or terminal gates
 
 ### 4. Verify CI Topology Before Stacking
 
-Identify whether the PRs will be linked as a GitHub-native stack or merely form an unlinked dependent branch chain, then inspect workflows, rulesets, required status contexts, and the merge queue:
+Before creating any PR, record whether the PRs will be linked as a GitHub-native stack or merely form an unlinked dependent branch chain. When the requested outcome is a stack, default to the native mechanism if GitHub and repository policy support it; use an unlinked chain only when the user or repository chooses it explicitly or native support is unavailable. Then inspect workflows, rulesets, required status contexts, and the merge queue:
 
 - For a GitHub-native linked stack, GitHub evaluates Actions, branch protection, required checks, reviews, CODEOWNERS, and code scanning against the stack trunk. A `pull_request` workflow filtered to that trunk runs for every stack PR; do not require a workflow change merely because an upper PR directly targets a feature branch.
 - For unlinked dependent PRs or tooling without equivalent stack metadata, ordinary immediate-base semantics apply. Confirm feature-base PRs trigger the required workflows before relying on them.
@@ -164,6 +164,8 @@ Identify whether the PRs will be linked as a GitHub-native stack or merely form 
 - If the repository uses a merge queue, confirm required workflows handle `merge_group`.
 - Decide which focused checks run per boundary and which cumulative or end-to-end checks run at the top; do not weaken required merge checks to make stacking convenient.
 - Account for rebase-triggered reruns and existing affected-test or cache behavior.
+
+Dependent branches and feature-branch PR bases are necessary for either mechanism, but they do not prove that GitHub's remote stack object exists. Do not describe an unlinked chain as a GitHub-native stack.
 
 Prefer one PR when the chosen stack mechanism cannot give every boundary trustworthy required checks without risky CI changes.
 
@@ -208,6 +210,7 @@ For an intra-slice stack, add this section under the selected implementation sli
 - [ ] Intermediate merge and release states are explicit and safe
 - [ ] Reduction ledger, bridge, and mechanism-gate obligations remain accurate when applicable
 - [ ] Native stack-trunk or unlinked immediate-base CI semantics are identified; required statuses and `merge_group` run where applicable
+- [ ] When native stacking was selected, GitHub's remote stack object exists and its trunk and bottom-to-top entries match this plan; PR base refs alone are not proof
 - [ ] Review sequence is bottom-up for lineage-sensitive boundaries; independent specialist reviews may run in parallel
 - [ ] Merge includes every required lower PR: native all-or-nothing prefix/group, or manual bottom-up order
 ```
@@ -236,7 +239,9 @@ For each PR boundary:
 8. Wait for commit approval.
 9. Create the next branch only after the current boundary is committed and known-good; review approval is not required to extend the stack.
 
-Prefer the official `gh stack` command when it is available and matches current repository policy. Use current help rather than memorized preview syntax. If it is unavailable, either manage dependent branches and PR bases with existing Git/GitHub tooling or ask before installing anything.
+Prefer the official `gh stack` command when it is available and matches current repository policy. Use current help rather than memorized preview syntax. Submit locally tracked native stacks with `gh stack submit`. If the branches or PRs were created with other tooling, link them immediately with `gh stack link <bottom> ... <top>`. If native tooling is unavailable, either manage an explicitly unlinked dependent chain with existing Git/GitHub tooling or ask before installing anything.
+
+Before reporting that a native stack was created or is PR-ready, verify the remote object: `PullRequest.stack` must be non-null and its trunk and ordered entries must match the delivery plan. A correct chain of PR base refs is not sufficient. If remote verification is unavailable, report the PRs as an unverified dependent chain rather than a native stack.
 
 Open unfinished upper boundaries as drafts. Give each PR a focused title and concise description containing:
 
