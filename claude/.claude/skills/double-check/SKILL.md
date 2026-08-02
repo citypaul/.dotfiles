@@ -21,6 +21,8 @@ Skip it for trivial edits and unfinished drafts unless the draft itself is the r
 
 ## Review Modes
 
+This skill verifies *finished* work. It is not a substitute for `tdd` (drive the work with tests first), `find-gaps` (tighten an artifact before building), or `pr-review` (multi-lens review of the boundary). Use it *after* those, as the final second-opinion check.
+
 | Mode | Use when | Required label |
 |------|----------|----------------|
 | Cross-provider independent review | A read-only reviewer from a different model provider is available | `cross-provider independent review` |

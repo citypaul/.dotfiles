@@ -56,34 +56,6 @@ repository's type-system policy.
 
 ---
 
-### Code Review Agents
-
-#### `pr-reviewer`
-**Purpose**: Reviews pull requests for TDD compliance, TypeScript strictness, testing quality, and functional patterns.
-
-**Use proactively when**:
-- About to review a PR
-- Creating a PR (self-review)
-- Want guided review process
-
-**Use reactively when**:
-- PR submitted for review
-- Need to analyze specific code changes
-- Evaluating merge readiness
-
-**Core responsibility**: Ensure PRs meet quality standards before merge.
-
-**Review categories**:
-1. Change-path compliance - Is every path classified by all applicable types (behavior, refactor, reduction, docs, dependency, generated, configuration, CI, operations) with the evidence and gate state that type owns?
-2. Testing Quality - Are tests behavior-focused?
-3. TypeScript Strictness - Repository policy, contained unsafe types, and boundary validation?
-4. Functional Patterns - Clear ownership of values, mutation, and effects?
-5. General Quality - Clean code, security, scope?
-
-**Project-specific extensions**: Use `/generate-pr-review` command to create project-specific review automation that combines global rules with project conventions.
-
----
-
 ### Documentation & Knowledge Agents
 
 #### `docs-guardian`
@@ -246,7 +218,7 @@ progress-guardian (orchestrates)
     │   └─→ adr (architectural decisions)
     │
     ├─► Before merge:
-    │   └─→ pr-reviewer (comprehensive PR review)
+    │   └─→ /pr-review skill (multi-lens skill-composed review)
     │
     ├─► At end:
     │   ├─→ learn (route durable learnings to their owners)
@@ -258,11 +230,10 @@ progress-guardian (orchestrates)
 
 ### Typical Workflow
 
-**Recommended delivery flow:** `/plan` → chosen single-PR or stack delivery → applicable evidence path → `/pr` → `/continue` → repeat
+**Recommended delivery flow:** `/plan` → chosen single-PR or stack delivery → applicable evidence path → agent-led PR creation (PR-readiness gate) + `/pr-review` → `/continue` → repeat
 
 1. **Onboard project when explicitly requested** (once)
    - Run `/setup` only with authorization to inspect and generate project-level configuration
-   - Run `/generate-pr-review` if custom PR review rules needed
 
 2. **Plan the work** (before writing any code)
    - Run `/plan` to use the repository's planning workflow; absent one, it may create a fallback `plans/` file on a branch with a PR
@@ -293,9 +264,9 @@ progress-guardian (orchestrates)
    - Confirm implementation and applicable refactoring/reduction assessment are complete
    - Run mutation testing once for the actual review boundary where meaningful—trunk for one PR, the immediate parent for a stacked boundary—or review the documented alternate evidence and `N/A`
    - Address valuable survivors and re-run focused/diff mutation checks within that same gate
-   - Invoke `pr-reviewer`: Self-review changes
+   - Run `/pr-review`: multi-lens self-review of the boundary
    - Fix any issues found
-   - Run `/pr` to create PR with quality gates (TDD evidence + mutation testing + refactoring assessment + typecheck + lint; project-generated `/pr` commands also run tests and build)
+   - Create the PR as ordinary agent-led work — the quality gates (TDD evidence + mutation testing + refactoring assessment + typecheck + lint + tests + build) live in the `pr-review` skill's PR-readiness reference
 
 8. **Continue to next step**
    - Independent slice: after its PR merges, run `/continue` to update trunk and branch the next independent slice
@@ -317,7 +288,7 @@ Quick decision table for all agents:
 | "How do I work with X?" | `learn` | After discovering patterns/gotchas |
 | "Why did we choose X?" | `adr` | When making/documenting architecture decisions |
 | "Is this type-safe?" | `ts-enforcer` | During development (proactive) |
-| "Is this PR ready?" | `pr-reviewer` | At review time (reactive) |
+| "Is this PR ready?" | `/pr-review` skill (a skill, not an agent) | At review time (reactive) |
 | "Should I refactor this?" | `refactor-scan` | After GREEN or another passing baseline |
 | "Was TDD followed?" | `tdd-guardian` | During TDD cycle |
 | "Is this documented?" | `docs-guardian` | At feature completion |
@@ -381,11 +352,11 @@ Commands complement agents by encoding common workflows into single invocations.
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
-| `/setup` | Authorized project onboarding — detect tech stack, create project guidance, hooks, commands, PR reviewer | Only when the user explicitly requests onboarding/config generation |
-| `/pr` | Create a pull request following standards | When ready to submit work |
+| `/setup` | Authorized project onboarding — detect tech stack, create project guidance, hooks, commands | Only when the user explicitly requests onboarding/config generation |
 | `/plan` | Create a plan document on a branch with a PR — no code | When planning work before implementation |
 | `/continue` | Pull merged PR, create new branch, update plan | After a PR is merged and you want to continue |
-| `/generate-pr-review` | Generate project-specific PR review automation | One-time setup per project |
+
+PR review comes from the `pr-review` skill (`/pr-review`), not a command; PR creation is agent-led work gated by that skill's PR-readiness reference.
 
 ## Using These Agents
 
@@ -431,7 +402,7 @@ These agents work together to create a comprehensive development workflow:
 - **Compliance**: twelve-factor-audit assesses 12-factor methodology adherence
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
 - **Improvement**: refactor-scan assesses code after GREEN or another passing proportionate preservation baseline; mutation testing verifies the accumulated result later at PR readiness
-- **Review**: pr-reviewer validates PRs before merge
+- **Review**: the `/pr-review` skill fans skill-lens sub-agents out over the boundary before merge
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
 - **Progress**: progress-guardian tracks work through the repository's declared plan owner
 

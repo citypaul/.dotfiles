@@ -292,7 +292,7 @@ Before each PR:
 3. Typecheck and lint pass
 4. DDD glossary check — if the project uses DDD, verify all domain terms match the canonical glossary
 5. Complete tests — stop watchers and run the repository-defined complete non-watch PR test gate; in a monorepo include every configured project and required integration/E2E suite, not only the affected development subset
-6. Evidence freshness — apply the target repository's mutation-evidence rule after later fixes. Use this distribution's `commands/pr.md` model only when the repository has no stricter invalidation policy, and keep project verification current after resulting fixes
+6. Evidence freshness — apply the target repository's mutation-evidence rule after later fixes. Use this distribution's model (the `pr-review` skill's `references/pr-readiness.md`) only when the repository has no stricter invalidation policy, and keep project verification current after resulting fixes
 
 For an intra-slice stack, nest the exact `#### Delivery Shape` and whole-stack gate under that slice. For a cross-slice stack, place one shared map before the first included slice and reference it from each included slice. Never stack an entire plan by default.
 

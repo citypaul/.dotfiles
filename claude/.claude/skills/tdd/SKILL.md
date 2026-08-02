@@ -93,7 +93,7 @@ Watch mode is an inner-loop accelerator, not PR evidence. The pre-PR record must
 
 ### Repository Authority
 
-Repository-specific test, coverage, mutation, and evidence-freshness rules take precedence. This global guidance must never weaken a repository rule that invalidates evidence after later production or applicable test changes.
+Repository-specific test, coverage, mutation, and evidence-freshness rules take precedence. Use this distribution's freshness model (the `pr-review` skill's `references/pr-readiness.md`) only when the target repository has not defined a stricter invalidation rule. This global guidance must never weaken a repository rule that invalidates evidence after later production or applicable test changes.
 
 ---
 
@@ -151,7 +151,7 @@ Coverage is a diagnostic, not a universal target. Run the repository's coverage 
 5. **Run focused/affected tests** - confirm the behavior and its related tests pass
 6. **Refactor if applicable and valuable** - improve code structure while focused and affected tests stay green
 7. **Repeat RED-GREEN-REFACTOR** - continue without running the mutation harness until the planned PR scope is complete
-8. **At PR readiness, run the mutation gate once** - stop watchers, run mutation testing where meaningful (or record explicit `N/A` plus proportionate alternate evidence), address valuable survivors within that gate, and complete the repository-defined non-watch PR checks
+8. **At PR readiness, run the mutation gate once** - stop watchers, run mutation testing where meaningful (or record explicit `N/A` plus proportionate alternate evidence), address valuable survivors within that gate, and complete the repository-defined non-watch PR checks. Apply the target repository's evidence-invalidation rule; use this distribution's freshness model (`pr-review` skill, `references/pr-readiness.md`) only when no stricter repository rule exists
 
 ### Workflow Example
 
@@ -193,7 +193,9 @@ if (user.name === '') {
 
 #     If later verification changes mutation-relevant production or applicable
 #     tests/evidence, apply the target repository's invalidation rule and rerun
-#     the evidence it invalidates. Keep final-tree verification current.
+#     the evidence it invalidates; use this distribution's pr-review
+#     pr-readiness freshness model only when no stricter rule exists. Keep
+#     final-tree verification current.
 ```
 
 ---

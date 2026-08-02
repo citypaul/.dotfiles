@@ -329,14 +329,14 @@ require_text \
   "tdd: stricter repository mutation policy wins"
 
 require_text \
-  "$REPO_ROOT/claude/.claude/commands/pr.md" \
+  "$REPO_ROOT/claude/.claude/skills/pr-review/references/pr-readiness.md" \
   "The target repository's stricter mutation-evidence invalidation rule takes precedence" \
-  "pr command: stricter repository mutation policy wins at the decision point"
+  "pr-readiness: stricter repository mutation policy wins at the decision point"
 
 require_text \
-  "$REPO_ROOT/claude/.claude/commands/pr.md" \
+  "$REPO_ROOT/claude/.claude/skills/pr-review/references/pr-readiness.md" \
   "Run the repository-defined complete non-watch test gate against the final tree" \
-  "pr command: complete non-watch final-tree gate is mandatory"
+  "pr-readiness: complete non-watch final-tree gate is mandatory"
 
 require_before \
   "$TDD_SKILL" \
