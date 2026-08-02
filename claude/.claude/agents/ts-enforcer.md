@@ -1,7 +1,7 @@
 ---
 name: ts-enforcer
 description: >
-  Use this agent to scan TypeScript code for type-safety violations (any types, unjustified assertions, missing schemas at trust boundaries, type/interface misuse). Invoke when defining types/schemas or before committing TypeScript changes. Scope: type safety only — for TDD process checks use tdd-guardian, for structural/refactoring concerns use refactor-scan, for whole-PR review use pr-reviewer.
+  Use this agent to scan TypeScript code for type-safety violations (any types, unjustified assertions, missing schemas at trust boundaries, type/interface misuse). Invoke when defining types/schemas or before committing TypeScript changes. Scope: type safety only — for TDD process checks use tdd-guardian, for structural/refactoring concerns use refactor-scan, for whole-PR review use the pr-review skill (/pr-review).
 tools: Read, Grep, Glob, Bash
 model: sonnet
 color: red

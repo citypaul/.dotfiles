@@ -502,10 +502,8 @@ if [[ "$INSTALL_COMMANDS" == true ]]; then
 
   commands=(
     "setup.md"
-    "pr.md"
     "plan.md"
     "continue.md"
-    "generate-pr-review.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -529,7 +527,6 @@ if [[ "$INSTALL_AGENTS" == true ]]; then
     "docs-guardian.md"
     "adr.md"
     "learn.md"
-    "pr-reviewer.md"
     "use-case-data-patterns.md"
     "progress-guardian.md"
     "twelve-factor-audit.md"
@@ -622,11 +619,11 @@ if [[ "$INSTALL_PONYTAIL" == true ]]; then
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} commands/ (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)"
+  echo -e "  ${GREEN}✓${NC} commands/ (3 slash commands: /setup, /plan, /continue)"
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} agents/ (10 Claude Code agents + README)"
+  echo -e "  ${GREEN}✓${NC} agents/ (9 Claude Code agents + README)"
 fi
 
 if [[ "$INSTALL_OPENCODE" == true ]]; then
@@ -663,8 +660,8 @@ echo ""
 echo -e "  2. Test with Claude Code:"
 echo -e "     Open any project and use: ${YELLOW}/memory${NC}"
 echo ""
-echo -e "  3. Try the /pr command:"
-echo -e "     ${YELLOW}/pr${NC}"
+echo -e "  3. Try a multi-lens PR review:"
+echo -e "     ${YELLOW}/pr-review${NC}"
 echo ""
 
 if [[ "$INSTALL_AGENTS" == true ]]; then

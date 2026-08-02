@@ -25,7 +25,7 @@ Use it when the work is finished (or at a meaningful checkpoint) and the cost of
 
 **When NOT to use it.** Skip it for trivial or low-stakes changes (typo fixes, formatting, a one-line config tweak), for work that isn't finished yet (verify checkpoints, not half-thoughts), and when no genuinely separate reviewer context can be launched at all (see Fallbacks). Verifier calls cost real tokens and wall-clock time — spend them where a second opinion changes the decision.
 
-This skill verifies *finished* work. It is not a substitute for `tdd` (drive the work with tests first), `find-gaps` (tighten an artifact before building), or `code-review`/`pr-reviewer` (same-context review). Use it *after* those, as the final second-opinion check.
+This skill verifies *finished* work. It is not a substitute for `tdd` (drive the work with tests first), `find-gaps` (tighten an artifact before building), or `code-review`/`pr-review` (multi-lens review of the boundary). Use it *after* those, as the final second-opinion check.
 
 ## How It Works — The Shape
 
