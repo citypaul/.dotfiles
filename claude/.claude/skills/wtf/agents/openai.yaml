@@ -1,0 +1,6 @@
+interface:
+  display_name: "WTF"
+  short_description: "Re-explain the previous response in plain English"
+  default_prompt: "Use $wtf to re-explain the immediately previous response in plain UK English."
+policy:
+  allow_implicit_invocation: false
