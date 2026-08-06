@@ -93,7 +93,7 @@ Watch mode is an inner-loop accelerator, not PR evidence. The pre-PR record must
 
 ### Repository Authority
 
-Repository-specific test and mutation rules override this global guidance when stricter. Use this distribution's `commands/pr.md` freshness model only when the target repository has not defined a stricter invalidation rule. A global instruction to reuse current mutation evidence must never weaken a repository rule that invalidates it after later production or applicable test changes.
+Repository-specific test and mutation rules override this global guidance when stricter. Use this distribution's freshness model (the `pr-review` skill's `references/pr-readiness.md`) only when the target repository has not defined a stricter invalidation rule. A global instruction to reuse current mutation evidence must never weaken a repository rule that invalidates it after later production or applicable test changes.
 
 ---
 
@@ -327,7 +327,7 @@ The burden of proof is on the requester. 100% is the default expectation.
 7. **STOP and wait for commit approval** - present the increment and ordinary verification; never commit without explicit user approval
 8. **Commit** - with conventional commit message, once approved
 9. **Repeat RED-GREEN-REFACTOR** - continue with further increments and commits without running the mutation harness until the planned PR scope is complete
-10. **At PR readiness, run the mutation gate once** - stop watchers, run mutation testing where meaningful (or record explicit `N/A` plus proportionate alternate evidence), address valuable survivors within that gate, and complete the repository-defined non-watch PR checks. Apply the target repository's evidence-invalidation rule; use this distribution's `commands/pr.md` freshness model only when no stricter repository rule exists
+10. **At PR readiness, run the mutation gate once** - stop watchers, run mutation testing where meaningful (or record explicit `N/A` plus proportionate alternate evidence), address valuable survivors within that gate, and complete the repository-defined non-watch PR checks. Apply the target repository's evidence-invalidation rule; use this distribution's freshness model (`pr-review` skill, `references/pr-readiness.md`) only when no stricter repository rule exists
 
 ### Workflow Example
 
@@ -375,7 +375,7 @@ git commit -m "feat: reject empty user names"
 
 #     If later verification changes mutation-relevant production or applicable
 #     tests/evidence, apply the target repository's invalidation rule. Use this
-#     distribution's commands/pr.md freshness model only when no stricter rule exists.
+#     distribution's pr-review pr-readiness freshness model only when no stricter rule exists.
 #     Keep the complete non-watch project verification current for the final tree.
 ```
 

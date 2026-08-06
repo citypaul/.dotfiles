@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Review"
+  short_description: "Multi-agent PR review with installed skills as composable lenses"
+  default_prompt: "Use $pr-review to review this diff — compose the lens roster (defaults plus auto-detected plus any skills I name), fan out one sub-agent per lens, verify every finding, and give me one ranked report."

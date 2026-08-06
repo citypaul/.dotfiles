@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, auto-discovered first-party skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Nine specialized agents](claude/.claude/agents/)** + **[Three slash commands](claude/.claude/commands/)** - Development guidelines, auto-discovered first-party skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -91,6 +91,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Planning** | Turn a selected child story into vertical implementation slices, or sequence a reducer-defined program, with a delivery shape for each slice | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
 | **Story Splitting** | Turn broad stories, epics, features, and backlog items into independently valuable child stories; based on Tim Ottinger's story-splitting resource list and linked articles | [→ skills/story-splitting](claude/.claude/skills/story-splitting/SKILL.md) |
 | **Stack Pull Requests** | Decide whether vertical implementation work should use independent PRs or an optional hard-/flow-lineage stack across one or more slices, then deliver it safely | [→ skills/stack-pull-requests](claude/.claude/skills/stack-pull-requests/SKILL.md) |
+| **Graph Engineering** | Compose installed skills into orchestrated multi-agent graphs — one sub-agent per skill, stages that fan out, adversarially verify, and synthesize | [→ skills/graph-engineering](claude/.claude/skills/graph-engineering/SKILL.md) |
+| **PR Review** | Multi-agent PR review with installed skills as composable lenses (`/pr-review`), plus the PR-readiness evidence gate for creating PRs | [→ skills/pr-review](claude/.claude/skills/pr-review/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Production Parity Skill Builder** | Creates app-specific skills that inspect docs, code, tests, CI, deployment, infrastructure, config, auth, and environment setup to catch drift between production and non-production environments | [→ skills/production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) |
 | **Structure Codebase** | Selects the lightest honest source-tree shape: first-class frontend structures, visible hexagonal boundaries when earned, and feature-, context-, endpoint-, workflow-, framework-, or shallow forms elsewhere; package/import enforcement and safe migrations | [→ skills/structure-codebase](claude/.claude/skills/structure-codebase/SKILL.md) |
@@ -153,6 +155,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | Turning a broad requirement into stories | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Produce independently valuable child stories with scope, deferrals, and acceptance examples |
 | Planning significant implementation work | [planning](claude/.claude/skills/planning/SKILL.md) | Sequence a selected child story vertically, or a reducer-defined program, and choose each slice's delivery shape |
 | One slice is too large, or later slices should start before lower PRs merge | [stack-pull-requests](claude/.claude/skills/stack-pull-requests/SKILL.md) | Choose independent PRs or a justified hard-/flow-lineage stack without turning technical layers into stories |
+| Need several skills applied to one task at once | [graph-engineering](claude/.claude/skills/graph-engineering/SKILL.md) | One orchestrator, one sub-agent per skill — fan out, adversarially verify, synthesize one deliverable |
+| Want a PR reviewed through your architecture skills | [pr-review](claude/.claude/skills/pr-review/SKILL.md) | `/pr-review [#PR] [lens skills...]` — every lens is an installed skill; findings are verified into one ranked report |
 | Tightening a story, plan, AC set, or mock | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Find missing decisions and write confirmed answers back into the artifact |
 | Backlog items keep turning into frontend/backend tickets | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Reject component stories; split by capability, path, interface, data, rules, quality, or learning |
 | CI pipeline keeps failing | [ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) | Every failure is real until proven otherwise, hypothesis-first diagnosis |
@@ -200,6 +204,8 @@ Skills are **auto-discovered** by Claude when relevant:
 - Running tests? → `testing` skill provides factory patterns
 - After GREEN? → `refactoring` skill assesses opportunities while behavior tests stay green
 - Ready to create a PR? → `mutation-testing` runs once for the accumulated change and drives survivor handling
+- Reviewing a PR, branch, or diff? → `pr-review` fans out one sub-agent per skill lens and synthesizes one adversarially verified, ranked report (`/pr-review`)
+- Task needs several skills at once? → `graph-engineering` composes installed skills into an orchestrated multi-agent graph, one skill per node
 - Removing whole-path mechanism without changing agreed behavior? → `reduce-system-complexity` keeps conservation and reduction as separate evidence gates
 - Designing one module's lasting responsibility and contract? → `codebase-design` applies deep-module, locality, and Design It Twice lenses
 - Looking for the highest-value architecture improvement? → `improve-codebase-architecture` creates an evidence-backed visual HTML report
@@ -875,6 +881,39 @@ it('characterises formatPrice', () => {
 
 ---
 
+### 🕸️ Graph Engineering → [skills/graph-engineering](claude/.claude/skills/graph-engineering/SKILL.md)
+
+**Problem it solves:** Tasks that need several installed skills applied at once — multi-lens reviews, multi-angle audits, migration sweeps — collapsing into one overloaded context where every lens goes blunt
+
+**What's inside (main skill + 3 references):**
+
+- **Skills-as-nodes** — one orchestrator designs an agent graph (Claude Code's "dynamic workflows"); each node is a sub-agent that loads exactly one skill and works a bounded slice through only that lens
+- **Design protocol** — fix the deliverable, scout inline first, choose 3–6 relevant nodes, pick a topology, define structured output contracts
+- **Topology catalog** ([`topologies.md`](claude/.claude/skills/graph-engineering/references/topologies.md)) — fan-out/fan-in, pipeline, adversarial verify, dedup barrier, judge panel, loop-until-dry
+- **Node design** ([`node-design.md`](claude/.claude/skills/graph-engineering/references/node-design.md)) — node brief template, skill-resolution rules, evidence bar, severity taxonomy
+- **Runtime ladder** ([`execution.md`](claude/.claude/skills/graph-engineering/references/execution.md)) — Workflow tool, Agent-tool fan-out, or labelled sequential degraded mode
+- **Honest scope** — explicit anti-triggers: no graphs of one node, no fan-outs the user didn't opt into
+
+`pr-review` is the flagship instance of this skill; `double-check` remains the tool for a single independent second opinion.
+
+---
+
+### 🔍 PR Review → [skills/pr-review](claude/.claude/skills/pr-review/SKILL.md)
+
+**Problem it solves:** PR reviews that hardcode one generic checklist instead of composing the architecture skills your project actually uses — and readiness evidence checked nowhere in particular
+
+**What's inside (main skill + 3 references):**
+
+- **Skills as review lenses** — `/pr-review [#PR] [lens skills...]`: every lens is an installed skill (`hexagonal-architecture`, `domain-driven-design`, `structure-codebase`, ...), each running as its own sub-agent with an isolated context
+- **Composable roster** ([`lenses.md`](claude/.claude/skills/pr-review/references/lenses.md)) — defaults (`typescript-strict`, `functional`, `testing` + built-in readiness and quality lenses) plus project-trait auto-detection; add or remove lenses, `only`, `thorough`, and `post` tokens
+- **PR-readiness evidence gate** ([`pr-readiness.md`](claude/.claude/skills/pr-review/references/pr-readiness.md)) — change-path classification and the mutation-evidence freshness model that gate agent-led PR creation
+- **Adversarial verification** — an independent node tries to refute every finding against the actual code before it reaches the report
+- **One ranked report** ([`workflow-template.md`](claude/.claude/skills/pr-review/references/workflow-template.md)) — per-lens verdicts, confirmed findings with `file:line` evidence, surfaced cross-lens conflicts, one recommendation
+
+Built on `graph-engineering` for the generic node/topology/runtime machinery. There is deliberately no `/pr` command anymore: PR creation is ordinary agent-led work gated by the readiness reference above.
+
+---
+
 ### 🎨 Impeccable Design → [impeccable.style](https://impeccable.style/skills/)
 
 **Problem it solves:** UI that looks generic or "AI-generated", inconsistent design quality, lack of systematic design methodology
@@ -1094,7 +1133,7 @@ Ask yourself:
 
 [**→ Read the agents documentation**](claude/.claude/agents/README.md)
 
-Ten specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
+Nine specialized sub-agents that run in isolated context windows to enforce CLAUDE.md principles and manage development workflow:
 
 ### 1. `tdd-guardian` - TDD Compliance Enforcer
 
@@ -1316,52 +1355,7 @@ Claude Code: [Launches adr agent to document the rationale]
 
 ---
 
-### 8. `pr-reviewer` - Pull Request Quality Reviewer
-
-**Use proactively** when reviewing a PR, or **reactively** to analyze an existing PR and post feedback.
-
-> **Why Manual Invocation?** This agent is designed for manual invocation during Claude Code sessions rather than automated CI/CD pipelines. This approach saves significant API costs while still providing comprehensive PR reviews when needed.
-
-**What it checks (5 categories):**
-
-| Category | What It Validates |
-|----------|------------------|
-| **Change-Path Compliance** | Exactly one of behavior change, pure refactor, reduction transition, or terminal reduction, with mutation-or-`N/A` evidence and truthful gates |
-| **Testing Quality** | Behavior-focused tests, factory patterns, no `let`/`beforeEach` |
-| **TypeScript Strictness** | No `any` types, proper type usage, schema-first at boundaries |
-| **Functional Patterns** | No mutation, pure functions, early returns, no comments |
-| **General Quality** | Clean code, no debug statements, security, appropriate scope |
-
-**Example invocation:**
-```
-You: "Review PR #123 and post feedback"
-Claude Code: [Launches pr-reviewer agent, analyzes diff, posts structured review to GitHub]
-```
-
-**Output:**
-- Summary table with status per category
-- Critical issues (must fix before merge)
-- High priority issues (should fix)
-- Suggestions (nice to have)
-- What's good about the PR
-- Posts review directly to GitHub as a comment
-
-**Direct GitHub Integration:**
-The agent can post reviews directly to PRs using GitHub MCP tools:
-- General feedback via `add_issue_comment`
-- Formal reviews via `pull_request_review_write`
-- Line-specific comments via `add_comment_to_pending_review`
-
-**Project-Specific Customization:**
-Use the `/generate-pr-review` command to create a project-specific PR reviewer that combines global rules with your project's conventions. The generator analyzes:
-- Existing AI/LLM configs (`.cursorrules`, `CLAUDE.md`, `.github/copilot-instructions.md`)
-- Architecture Decision Records (ADRs)
-- Project documentation (`CONTRIBUTING.md`, `DEVELOPMENT.md`)
-- Tech stack and existing code patterns
-
----
-
-### 9. `use-case-data-patterns` - Use Case to Data Pattern Analyzer
+### 8. `use-case-data-patterns` - Use Case to Data Pattern Analyzer
 
 **Use proactively** when implementing features, or **reactively** to understand how features work end-to-end.
 
@@ -1385,7 +1379,7 @@ Claude Code: [Launches use-case-data-patterns agent]
 
 ---
 
-### 10. `twelve-factor-audit` - Twelve-Factor Compliance Auditor
+### 9. `twelve-factor-audit` - Twelve-Factor Compliance Auditor
 
 **Use when** onboarding to a service project, assessing deployment readiness, or reviewing infrastructure patterns.
 
@@ -1426,15 +1420,15 @@ Claude Code: [Launches twelve-factor-audit agent, produces compliance report]
 
 [**→ Browse the commands directory**](claude/.claude/commands/)
 
-Five slash commands that encode common workflows into single invocations:
+Three slash commands that encode common workflows into single invocations:
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
-| **`/setup`** | One-shot project onboarding — detect tech stack, create CLAUDE.md, hooks, commands, and PR reviewer | Starting work on a new project (replaces `/init`) |
-| **`/pr`** | Create a pull request following standards | When ready to submit work |
+| **`/setup`** | One-shot project onboarding — detect tech stack, create CLAUDE.md, hooks, and commands | Starting work on a new project (replaces `/init`) |
 | **`/plan`** | Create a plan document on a branch with a PR — no code changes | When planning work before implementation |
 | **`/continue`** | Continue after a merged independent PR or advance/sync a stack | Moving to the next slice or dependent layer |
-| **`/generate-pr-review`** | Generate project-specific PR review automation | One-time setup per project |
+
+PR review is not a command: the [`pr-review` skill](claude/.claude/skills/pr-review/SKILL.md) provides `/pr-review`, and PR creation is ordinary agent-led work gated by that skill's PR-readiness reference.
 
 ### Recommended Flow
 
@@ -1443,14 +1437,14 @@ This is the full lifecycle for working on a feature, from project setup through 
 #### Phase 1: Project Setup (once per project)
 
 ```
-/setup  →  Detects tech stack, creates .claude/CLAUDE.md, hooks, commands, PR reviewer
+/setup  →  Detects tech stack, creates .claude/CLAUDE.md, hooks, and commands
 ```
 
 **Why first:** `/setup` replaces Claude Code's built-in `/init`. It analyses your project (TypeScript config, CI pipeline, DDD patterns, test runner) and generates project-level configuration so that every subsequent command and agent has the right context. Run this once when you start working on a new project — it creates:
 - `.claude/CLAUDE.md` with exact build/test/lint/typecheck commands
 - `.claude/settings.json` with PostToolUse hooks (auto-typecheck after file edits)
-- `.claude/commands/pr.md` with project-specific quality gates
-- `.claude/agents/pr-reviewer.md` with project-specific review rules
+
+PR reviews need no project-generated automation: `/setup` points reviews at the global [`pr-review` skill](claude/.claude/skills/pr-review/SKILL.md), which auto-detects project traits (hexagonal, DDD, React, ...) and composes matching skill lenses at review time.
 
 #### Phase 2: Plan the Work (before writing any code)
 
@@ -1474,17 +1468,19 @@ COMMIT       →  Wait for approval, then commit
 
 #### Phase 4: Pre-PR Quality Gate
 
-Before creating any PR, run these checks in order:
+Before creating any PR, work through the readiness gate (owned by the `pr-review` skill's [PR-readiness reference](claude/.claude/skills/pr-review/references/pr-readiness.md)), then review:
 
 ```
-/pr →
+PR readiness gate →
   1. phase complete    →  Verify implementation and applicable refactoring/reduction work are finished
   2. mutation gate     →  Run mutation testing once against trunk or the immediate stack parent, or record explicit `N/A` plus proportionate alternate evidence
   3. survivor handling →  Address valuable survivors; re-run focused/diff mutation checks inside the same gate
-  4. remaining checks  →  Run typecheck + lint + test + build, then create the PR
+  4. remaining checks  →  Run typecheck + lint + test + build, then create the PR (ordinary agent-led work — no dedicated command)
+
+/pr-review →  Multi-agent review of the boundary — every lens is an installed skill, findings adversarially verified into one ranked report
 ```
 
-**Why evidence at PR readiness:** One focused run per review boundary verifies that the completed implementation and refactoring would catch behavioral faults without taxing every inner TDD loop. A stacked boundary uses its immediate parent as the review base; the top proves the cumulative criteria for every included slice. When the affected mechanism is unreachable, declarative, contractual, integrational, or operational, an explicit `N/A` plus proportionate alternate evidence is more honest.
+**Why evidence at PR readiness:** One focused run per review boundary verifies that the completed implementation and refactoring would catch behavioral faults without taxing every inner TDD loop. A stacked boundary uses its immediate parent as the review base; the top proves the cumulative criteria for every included slice. When the affected mechanism is unreachable, declarative, contractual, integrational, or operational, an explicit `N/A` plus proportionate alternate evidence is more honest. The `/pr-review` readiness lens re-checks this same gate adversarially during review.
 
 #### Phase 5: Continue
 
@@ -1505,14 +1501,6 @@ docs-guardian     →  Updates user-facing documentation
 
 **Why at the end:** Learnings are best captured when you have full context on what mattered and what didn't. Use the `learn` agent for CLAUDE.md updates and the `adr` agent for architectural decisions.
 
-#### One-Time Setup (optional)
-
-```
-/generate-pr-review  →  Creates project-specific PR review automation
-```
-
-**When to use:** If you need more control over the generated PR reviewer than `/setup` provides, or want to regenerate it after your project conventions evolve.
-
 ---
 
 ## 🚀 How to Use This in Your Projects
@@ -1530,7 +1518,7 @@ docs-guardian     →  Updates user-facing documentation
 
 ### How the Workflow Works (Regardless of Installation Method)
 
-Once installed, the full development lifecycle is: `/setup` → `/plan` → single-PR or stack delivery → fast RED-GREEN-REFACTOR or preservation increments → end-of-boundary evidence gate in `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each phase.
+Once installed, the full development lifecycle is: `/setup` → `/plan` → single-PR or stack delivery → fast RED-GREEN-REFACTOR or preservation increments → end-of-boundary evidence gate from the `pr-review` skill's PR-readiness reference → agent-led PR creation and `/pr-review` for review → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each phase.
 
 **Agent invocation examples:**
 
@@ -1618,8 +1606,8 @@ All three layouts expose the same complete bundle. Include `--agent codex` when 
   - [mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) — one-question-at-a-time plan and design interrogation
   - [coreyhaines31/marketingskills/seo-audit](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — technical, on-page, content, and authority SEO audit workflow
   - [herdrdev/herdr](https://skills.sh/herdrdev/herdr) — drive the [Herdr](https://herdr.dev) terminal workspace from inside an agent: split panes, run commands, read output, wait on a sibling agent
-- ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
-- ✅ `~/.claude/agents/` (10 specialized workflow agents)
+- ✅ `~/.claude/commands/` (3 slash commands: /setup, /plan, /continue)
+- ✅ `~/.claude/agents/` (9 specialized workflow agents)
 
 **Managing skills after install:**
 ```bash
@@ -1799,7 +1787,6 @@ curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypa
 curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
 curl -o .claude/agents/progress-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/progress-guardian.md
 curl -o .claude/agents/adr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/adr.md
-curl -o .claude/agents/pr-reviewer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/pr-reviewer.md
 curl -o .claude/agents/use-case-data-patterns.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/use-case-data-patterns.md
 curl -o .claude/agents/twelve-factor-audit.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/twelve-factor-audit.md
 
@@ -1809,10 +1796,8 @@ curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dot
 # Download commands
 mkdir -p .claude/commands
 curl -o .claude/commands/setup.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/setup.md
-curl -o .claude/commands/pr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/pr.md
 curl -o .claude/commands/plan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/plan.md
 curl -o .claude/commands/continue.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/continue.md
-curl -o .claude/commands/generate-pr-review.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/generate-pr-review.md
 ```
 
 ---
@@ -1865,7 +1850,7 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + auto-discovered skills + 5 slash commands + planning workflow
+**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + auto-discovered skills + 3 slash commands + planning workflow
 
 **Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
 
@@ -1889,9 +1874,9 @@ The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~160 lines)
 - **[Skills](claude/.claude/skills/)** - Auto-discovered patterns from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and `herdr` from [herdrdev/herdr](https://skills.sh/herdrdev/herdr) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
-- **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
+- **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /plan, /continue)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
-- **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
+- **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (9 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, use-case-data-patterns, twelve-factor-audit)
 
 ---
 
@@ -2065,8 +2050,8 @@ cd ~/.dotfiles
 ```
 
 This will install:
-- ✅ CLAUDE.md + first-party skills plus external skill bundles + 10 agents (development guidelines)
-- ✅ Commands (/setup, /pr, /plan, /continue, /generate-pr-review slash commands)
+- ✅ CLAUDE.md + first-party skills plus external skill bundles + 9 agents (development guidelines)
+- ✅ Commands (/setup, /plan, /continue slash commands)
 - ✅ Claude Code settings.json (plugins, hooks, statusline)
 - ✅ OpenCode configuration (guidelines plus built-in LSP servers, including TypeScript)
 - ✅ Git aliases and configuration
