@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.9.0
+
+### Minor Changes
+
+- ad9f60c: Add the `wtf` skill for explicitly re-explaining the previous model response in plain UK English.
+
 ## 4.8.2
 
 ### Patch Changes
