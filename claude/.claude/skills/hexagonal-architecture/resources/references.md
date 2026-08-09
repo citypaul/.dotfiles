@@ -27,12 +27,19 @@ Load this when checking the rationale behind hexagonal architecture guidance, es
   - Cockburn describes two schools for driving port interfaces (declare-and-use the interface, or use the class directly), but his named examples use explicit interfaces such as `ForCalculatingTaxes` and `ForGettingTaxRates` (Ch 1.1, updated-edition discussion).
   - For this skill, prefer explicit driving interfaces because they make the application boundary reviewable and consistent.
 - Herberto Graca, "DDD, Hexagonal, Onion, Clean, CQRS..." (2017): https://herbertograca.com/2017/11/16/explicit-architecture-01-ddd-hexagonal-onion-clean-cqrs-how-i-put-it-all-together/
-  - Ports belong inside the application/business logic; adapters belong outside.
+  - Application use cases orchestrate domain policy; ports belong to the inside consumer that needs them; adapters belong outside.
   - Ports should fit the application core needs, not mimic tool APIs.
 - Robert C. Martin, "The Clean Architecture Dependency Rule" excerpt: https://www.informit.com/articles/article.aspx?p=2832399
   - Source dependencies point inward.
   - Inner code must not mention names or data formats from outer layers.
   - Boundary data should be in the form most convenient for the inner layer.
+- Thomas Pierrain, "Hexagonal Architecture" and Outside-In Diamond TDD talks: https://tpierrain.blogspot.com/
+  - Driving adapters invoke use cases; driven adapters implement application-required ports.
+  - Adapters stay translation-focused while business rules remain inside.
+- Mark Seemann, "Dependency rejection": https://blog.ploeh.dk/2017/02/02/dependency-rejection/
+  - Pure domain functions should take values rather than injected infrastructure abstractions; application orchestration owns effectful dependencies.
+- Gary Bernhardt, "Boundaries": https://www.destroyallsoftware.com/talks/boundaries
+  - A functional core and imperative shell keep business decisions testable without relocating orchestration into domain code.
 
 ## Naming Ports and Interfaces
 

@@ -110,17 +110,17 @@ require_text \
 
 require_text \
   "$CLAUDE_ROOT/skills/characterisation-tests/SKILL.md" \
-  "end-of-phase PR-readiness gate" \
+  "defer the harness until the accumulated change reaches its chosen verification point" \
   "characterisation: defers automated mutation validation"
 
 require_text \
   "$CLAUDE_ROOT/skills/characterisation-tests/resources/writing-process.md" \
-  "run it once for the accumulated change when the phase is otherwise ready for its PR" \
+  "run it once for the accumulated change at the repository's chosen verification point" \
   "characterisation writing process: defers the automated harness"
 
 require_text \
   "$CLAUDE_ROOT/skills/characterisation-tests/resources/modern-tooling.md" \
-  "run the automated \`mutation-testing\` harness once the completed phase is otherwise ready for its PR" \
+  "run it once for the accumulated change at the chosen verification point" \
   "characterisation tooling: defers the automated harness"
 
 require_text \
@@ -135,8 +135,8 @@ require_text \
 
 require_text \
   "$CLAUDE_ROOT/commands/generate-pr-review.md" \
-  "Once the current review boundary is otherwise PR-ready" \
-  "review generation: defers mutation until PR readiness"
+  "For production-code paths, once the current review boundary is otherwise PR-ready" \
+  "review generation: scopes the PR-readiness mutation gate to production code"
 
 require_text \
   "$CLAUDE_ROOT/skills/codebase-design/references/deepening.md" \

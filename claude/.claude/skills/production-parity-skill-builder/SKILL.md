@@ -103,9 +103,9 @@ The generated skill must include:
 
 Start from `resources/generated-skill-template.md`, but remove irrelevant sections and replace placeholders with app-specific evidence.
 
-### 5. Add Safeguards Where The Repo Supports Them
+### 5. Specify Safeguards; Add Them Only When Authorized
 
-If the user asked for fixes, or if the generated skill would be weak without a guard, add narrowly scoped checks in the target app:
+The generated skill should name narrowly scoped checks the target app needs:
 
 - config parity: schema validation for required env vars and production-only restrictions
 - auth parity: tests for required IdP groups, roles, claims, redirect URIs, cookies, and session policies
@@ -115,7 +115,15 @@ If the user asked for fixes, or if the generated skill would be weak without a g
 - runtime parity: pinned versions for language runtime, database, extensions, image tags, and build commands
 - smoke parity: a preview/staging smoke test that proves the app starts with production-equivalent restrictions before merge
 
-When a difference is intentional, require a named reason and compensating guard. "Local is easier" is not enough.
+When a difference is intentional, require a named reason and compensating
+guard. "Local is easier" is not enough.
+
+Implement those checks in app code, tests, configuration, fixtures, or
+infrastructure only when the user explicitly asked for parity fixes or
+authorizes the additional mutation after seeing the gap. A request to create
+the reusable skill alone authorizes the skill artifact, not unrelated app or
+infrastructure changes. Otherwise put the exact guard contract and recommended
+location in the generated skill/output and leave the target app untouched.
 
 ### 6. Validate The Generated Skill
 

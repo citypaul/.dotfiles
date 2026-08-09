@@ -24,11 +24,11 @@ This skill applies only to projects — or the specific bounded contexts within 
 | `event-store.md` | Designing the EventStore port, the Postgres schema, optimistic concurrency, the event envelope, the TS/Node tooling landscape |
 | `projections-and-read-models.md` | Building read models, inline vs async projections, rebuilds, checkpoints, eventual consistency |
 | `event-versioning.md` | Evolving event schemas — upcasting, tolerant readers, weak schema, stream copy-transform |
-| `testing-event-sourced-systems.md` | Testing deciders, projections, and upcasters as behaviour, not with a given-when-then DSL |
+| `testing-event-sourced-systems.md` | Testing deciders, projections, and upcasters as behaviour, directly or through an existing test DSL |
 | `production-concerns.md` | Snapshots, GDPR/crypto-shredding, idempotent delivery, operability, the anti-patterns catalog |
 | `references.md` | Checking the rationale and primary sources behind this guidance |
 
-For authoritative sources, see `claude/.claude/skills/REFERENCES.md` in the source repo (https://github.com/citypaul/.dotfiles) — that file is not bundled when this skill is installed standalone.
+For the authoritative sources bundled with this skill, see `resources/references.md`.
 
 ---
 
@@ -96,19 +96,23 @@ You do not write new domain logic for event sourcing — you **persist the Decid
 
 type AccountState =
   | { readonly status: 'unopened' }
-  | { readonly status: 'open'; readonly balance: number; readonly currency: Currency };
+  | { readonly status: 'open'; readonly balance: Money };
+
+type Money = { readonly minorUnits: number; readonly currency: Currency };
 
 type AccountCommand =
   | { readonly type: 'Open'; readonly currency: Currency }
-  | { readonly type: 'Deposit'; readonly amount: number }
-  | { readonly type: 'Withdraw'; readonly amount: number };
+  | { readonly type: 'Deposit'; readonly amount: Money }
+  | { readonly type: 'Withdraw'; readonly amount: Money };
 
 type AccountEvent =
   | { readonly type: 'AccountOpened'; readonly currency: Currency }
-  | { readonly type: 'MoneyDeposited'; readonly amount: number }
-  | { readonly type: 'MoneyWithdrawn'; readonly amount: number };
+  | { readonly type: 'MoneyDeposited'; readonly amount: Money }
+  | { readonly type: 'MoneyWithdrawn'; readonly amount: Money };
 
 const initialState: AccountState = { status: 'unopened' };
+const isPositiveMoney = (money: Money): boolean =>
+  Number.isSafeInteger(money.minorUnits) && money.minorUnits > 0;
 
 // decide: what SHOULD happen? Returns events (or a rejection). Enforces invariants.
 const decide = (command: AccountCommand, state: AccountState): Decision<AccountEvent> => {
@@ -118,34 +122,72 @@ const decide = (command: AccountCommand, state: AccountState): Decision<AccountE
       return accept([{ type: 'AccountOpened', currency: command.currency }]);
     case 'Deposit':
       if (state.status !== 'open') return reject('not-open');
-      if (command.amount <= 0) return reject('non-positive-amount');
+      if (!isPositiveMoney(command.amount)) return reject('invalid-amount');
+      if (command.amount.currency !== state.balance.currency) return reject('currency-mismatch');
+      if (!Number.isSafeInteger(state.balance.minorUnits + command.amount.minorUnits)) {
+        return reject('balance-overflow');
+      }
       return accept([{ type: 'MoneyDeposited', amount: command.amount }]);
     case 'Withdraw':
       if (state.status !== 'open') return reject('not-open');
-      if (command.amount <= 0) return reject('non-positive-amount');
-      if (command.amount > state.balance) return reject('insufficient-funds');
+      if (!isPositiveMoney(command.amount)) return reject('invalid-amount');
+      if (command.amount.currency !== state.balance.currency) return reject('currency-mismatch');
+      if (command.amount.minorUnits > state.balance.minorUnits) return reject('insufficient-funds');
       return accept([{ type: 'MoneyWithdrawn', amount: command.amount }]);
     default: { const _: never = command; return _; }
   }
 };
 
-// evolve: what does an event MEAN for state? Pure fold step. Never rejects, never validates.
+const corruptHistory = (state: AccountState, event: AccountEvent): never => {
+  throw new Error(`Corrupt account stream: ${event.type} cannot follow ${state.status}`);
+};
+
+const addMinorUnits = (left: number, right: number): number => {
+  if (!Number.isSafeInteger(left) || !Number.isSafeInteger(right)) {
+    throw new Error('Corrupt account stream: unsafe minor-unit operand');
+  }
+  const minorUnits = left + right;
+  if (!Number.isSafeInteger(minorUnits) || minorUnits < 0) {
+    throw new Error('Corrupt account stream: invalid resulting balance');
+  }
+  return minorUnits;
+};
+
+const applyDelta = (balance: Money, deltaMinorUnits: number): Money =>
+  ({ ...balance, minorUnits: addMinorUnits(balance.minorUnits, deltaMinorUnits) });
+
+// evolve applies facts; an impossible known transition is corrupt history, not a no-op.
 const evolve = (state: AccountState, event: AccountEvent): AccountState => {
   switch (event.type) {
-    case 'AccountOpened':
-      return { status: 'open', balance: 0, currency: event.currency };
+    case 'AccountOpened': {
+      if (state.status !== 'unopened') return corruptHistory(state, event);
+      return { status: 'open', balance: { minorUnits: 0, currency: event.currency } };
+    }
     case 'MoneyDeposited':
-      return state.status === 'open' ? { ...state, balance: state.balance + event.amount } : state;
+      if (
+        state.status !== 'open' ||
+        !isPositiveMoney(event.amount) ||
+        event.amount.currency !== state.balance.currency
+      ) return corruptHistory(state, event);
+      return { ...state, balance: applyDelta(state.balance, event.amount.minorUnits) };
     case 'MoneyWithdrawn':
-      return state.status === 'open' ? { ...state, balance: state.balance - event.amount } : state;
+      if (
+        state.status !== 'open' ||
+        !isPositiveMoney(event.amount) ||
+        event.amount.currency !== state.balance.currency ||
+        event.amount.minorUnits > state.balance.minorUnits
+      ) return corruptHistory(state, event);
+      return { ...state, balance: applyDelta(state.balance, -event.amount.minorUnits) };
     default: { const _: never = event; return _; }
   }
 };
 ```
 
+Financial events carry integer minor units and currency. The command boundary rejects non-safe integers (`NaN`, infinities, fractions, and overflow), and any conversion from decimal major units must name a currency exponent and rounding policy before the command is built; never persist a binary floating-point amount.
+
 **The division of labour is strict** (get this wrong and the whole model rots):
 - `decide` holds **all the business rules**. It reads current state, validates the command, and either **accepts** (returning events) or **rejects** (returning a business reason). It has no side effects and does not touch storage.
-- `evolve` holds **no rules**. It is a total function that applies an already-decided fact to state. Events are things that *already happened*, so `evolve` must never reject one — replaying history must always succeed, even for events written years ago by an older `decide`.
+- `evolve` holds **no command rules**. It exhaustively applies every valid stored event. A known event that cannot follow the current state is corrupt history, so replay must surface a corruption error rather than silently retain state. Tolerant readers and upcasters keep older valid events readable; they do not make impossible transitions valid.
 
 Modelling `decide`'s outcome as an explicit `Decision` result (accept-with-events or reject-with-reason) follows the DDD skill's error-modelling rule: expected business outcomes are result types, not exceptions. See `decider-and-rehydration.md` for `Decision`, `isTerminal`, and how deciders compose.
 
@@ -186,10 +228,10 @@ Everything pure (`evolve`, `decide`) is trivially testable with no mocks. Everyt
 
 ## The Event Store Port
 
-The event store is a **driven port** (hexagonal skill). Define the interface in the domain in application language; implement it in an adapter. The minimal contract is small:
+The event store is a **driven port** (hexagonal skill). The application command handler consumes it, so define the interface in the application layer in application language; implement it in an adapter. Keep domain event types and the pure decider in the domain. The minimal contract is small:
 
 ```typescript
-// port (domain layer) — interface because it is a behaviour contract.
+// port (application layer) — owned by the command handler that consumes it.
 // Typed to one aggregate's event family, like a repository (the underlying
 // adapter can hold many streams; it parses stored JSON into E on read).
 interface EventStore<E> {
@@ -202,7 +244,7 @@ interface EventStore<E> {
 }
 ```
 
-A production store adds subscriptions (for async projections) and reading the global event order, but every event store must provide: **append-only writes, ordering within a stream, and optimistic concurrency via expected version.** The canonical Postgres implementation is a single `events` table with a `UNIQUE (stream_id, version)` constraint — that constraint *is* the optimistic-concurrency check. See `event-store.md` for the full schema, the event envelope (with correlation/causation IDs), and where Emmett, KurrentDB (EventStoreDB), and message-db fit.
+A production store adds subscriptions (for async projections) and reading the global event order, but every event store must provide: **append-only writes, ordering within a stream, and optimistic concurrency via expected version.** The canonical Postgres implementation atomically compares and advances a stream-head row in the same transaction that appends events; `UNIQUE (stream_id, version)` remains a defence-in-depth constraint. See `event-store.md` for the full schema, the event envelope (with correlation/causation IDs), and where Emmett, KurrentDB (EventStoreDB), and message-db fit.
 
 **Events are stored as data across a trust boundary,** so on the way out they are validated with a schema (a **tolerant reader**) before `evolve` ever sees them. This is where event sourcing meets `typescript-strict`: the stored JSON is untrusted input, parsed into branded domain events on read. It is also where **versioning** lives — see below.
 
@@ -222,19 +264,68 @@ Events are the most permanent thing you will ever write. A row in a table can be
 
 ## Projections and Read Models (CQRS)
 
-You almost never query the event store to answer a user's question — folding a stream per read does not scale, and cross-aggregate queries need data the streams deliberately keep apart. Instead, **project** events into read models: a projection is just another fold, `events.reduce(apply, emptyReadModel)`, whose result is a query-shaped table.
+You almost never query the event store to answer a user's question — folding a stream per read does not scale, and cross-aggregate queries need data the streams deliberately keep apart. Instead, **project** event envelopes into read models: a projection is just another fold, `envelopes.reduce(applyToBalanceView, emptyBalanceView)`, whose result is a query-shaped table.
 
 ```typescript
 // A projection is a fold from events → a read-optimised row
-const applyToBalanceView = (view: BalanceView, event: AccountEvent): BalanceView => {
+type BalanceView =
+  | { readonly status: 'unopened' }
+  | {
+      readonly status: 'open';
+      readonly accountId: StreamId;
+      readonly balanceMinorUnits: number;
+      readonly currency: Currency;
+    };
+
+type AccountProjectionEnvelope = {
+  readonly streamId: StreamId;
+  readonly globalPosition: bigint;
+  readonly data: AccountEvent;
+};
+
+const emptyBalanceView: BalanceView = { status: 'unopened' };
+
+const corruptBalanceProjection = (view: BalanceView, event: AccountEvent): never => {
+  throw new Error(`Corrupt balance projection: ${event.type} cannot follow ${view.status}`);
+};
+
+const applyToBalanceView = (
+  view: BalanceView,
+  envelope: AccountProjectionEnvelope,
+): BalanceView => {
+  const event = envelope.data;
   switch (event.type) {
-    case 'AccountOpened':   return { ...view, currency: event.currency, balance: 0 };
-    case 'MoneyDeposited':  return { ...view, balance: view.balance + event.amount };
-    case 'MoneyWithdrawn':  return { ...view, balance: view.balance - event.amount };
+    case 'AccountOpened':
+      if (view.status !== 'unopened') return corruptBalanceProjection(view, event);
+      return {
+        status: 'open',
+        accountId: envelope.streamId,
+        currency: event.currency,
+        balanceMinorUnits: 0,
+      };
+    case 'MoneyDeposited':
+      if (
+        view.status !== 'open' ||
+        view.accountId !== envelope.streamId ||
+        !isPositiveMoney(event.amount) ||
+        event.amount.currency !== view.currency
+      ) return corruptBalanceProjection(view, event);
+      return { ...view, balanceMinorUnits: addMinorUnits(view.balanceMinorUnits, event.amount.minorUnits) };
+    case 'MoneyWithdrawn':
+      if (
+        view.status !== 'open' ||
+        view.accountId !== envelope.streamId ||
+        !isPositiveMoney(event.amount) ||
+        event.amount.currency !== view.currency ||
+        event.amount.minorUnits > view.balanceMinorUnits
+      ) return corruptBalanceProjection(view, event);
+      return { ...view, balanceMinorUnits: addMinorUnits(view.balanceMinorUnits, -event.amount.minorUnits) };
     default: { const _: never = event; return _; }
   }
 };
 ```
+
+The creation event is the only transition from `unopened` to `open`, and the read-model ID comes from the validated envelope's `streamId`, not duplicated payload data or a caller-supplied seed. The consumer skips an exact redelivery by event ID or checkpoint before this fold; an admitted later `AccountOpened`, a money event before opening, or an envelope from another stream is therefore impossible known history and must stop the projection for investigation. Tolerant reading and upcasting also happen before this typed fold; they preserve compatible old events, not impossible transitions.
 
 - **Inline (synchronous) projections** update in the same transaction as the append — no lag, but they couple write throughput to projection work. **Async projections** subscribe to the event stream and update separately — they scale and isolate failures, at the cost of **eventual consistency** (a read model may lag the write by milliseconds).
 - **Eventual consistency is the headline trade-off.** A user who just issued a command may not immediately see it reflected in an async read model. Design the UI for it (return the just-written state from the command, show optimistic UI) rather than pretending the lag does not exist.
@@ -251,24 +342,25 @@ Event sourcing is one of the most testable patterns there is, because the write 
 
 The event-sourcing literature almost universally reaches for a **given-when-then** shape here — *given* these past events, *when* this command is handled, *then* expect these new events — often as a fluent `given(...).when(...).then(...)` DSL or Gherkin scenarios. It reaches for it for a good reason: **that shape is the decider's algebra.** Past events fold to state, a command is applied, and the assertion is on the resulting events. It is worth understanding *why* the pattern fits so well.
 
-**But in this repo we do not write given-when-then, and we do not use that DSL.** We do behaviour-driven testing (see the `testing` skill): call the public function, assert on the observed output, name the test after the business behaviour, build data with factories. The decider's shape maps onto that cleanly — no new machinery required:
+Express that algebra using the repository's established test style. A direct behaviour-driven test (see the `testing` skill) calls the public function, asserts on the observed output, names the test after the business behaviour, and builds data with factories. An existing given/when/then helper may express the same behavior; do not introduce a new DSL merely because event-sourcing literature uses one. The direct form maps cleanly with no new machinery:
 
 - **"given past events"** → build the starting state with a factory, or fold event factories with `evolve`. (Past events are just data.)
 - **"when a command"** → call the public function directly (`decide`, or the command handler).
 - **"then expect events"** → `expect(...)` on the returned events — the events *are* the observable output of `decide`.
 
 ```typescript
-// ✅ Ordinary behaviour-driven test — no given/when/then DSL, no Gherkin.
+// ✅ Ordinary behaviour-driven test through the public decider API.
 // The returned events are the observable behaviour of the public `decide` function.
 
 const openAccount = (currency: Currency = 'GBP'): AccountEvent =>
   ({ type: 'AccountOpened', currency });
-const deposited = (amount: number): AccountEvent => ({ type: 'MoneyDeposited', amount });
+const money = (minorUnits: number, currency: Currency = 'GBP'): Money => ({ minorUnits, currency });
+const deposited = (minorUnits: number): AccountEvent => ({ type: 'MoneyDeposited', amount: money(minorUnits) });
 
 it('should reject a withdrawal that exceeds the balance', () => {
-  const state = [openAccount(), deposited(50)].reduce(evolve, initialState);
+  const state = [openAccount(), deposited(5_000)].reduce(evolve, initialState);
 
-  const decision = decide({ type: 'Withdraw', amount: 100 }, state);
+  const decision = decide({ type: 'Withdraw', amount: money(10_000) }, state);
 
   expect(decision).toEqual({ accepted: false, reason: 'insufficient-funds' });
 });
@@ -276,13 +368,13 @@ it('should reject a withdrawal that exceeds the balance', () => {
 it('should record a deposit as a MoneyDeposited event on an open account', () => {
   const state = [openAccount()].reduce(evolve, initialState);
 
-  const decision = decide({ type: 'Deposit', amount: 50 }, state);
+  const decision = decide({ type: 'Deposit', amount: money(5_000) }, state);
 
-  expect(decision).toEqual({ accepted: true, events: [{ type: 'MoneyDeposited', amount: 50 }] });
+  expect(decision).toEqual({ accepted: true, events: [{ type: 'MoneyDeposited', amount: money(5_000) }] });
 });
 ```
 
-The starting state comes from folding factory-built events, the "action" is a direct call, and the assertion is on the returned data — behaviour through the public API, per the `testing` skill. No event bus, no mocks, no DSL. Use a factory for *every* event in the fold, not inline literals — an inline event literal in the array widens its `type` discriminant to `string`, the array stops being `AccountEvent[]`, and `reduce(evolve, …)` no longer type-checks. Test **projections** and **upcasters** the same way (they are folds and pure functions): feed events, assert on the read model or the upcast event. Full patterns — including testing the command handler against an in-memory `EventStore` fake and property-testing the fold — are in `testing-event-sourced-systems.md`.
+The starting state comes from folding factory-built events, the "action" is a direct call, and the assertion is on the returned data — behaviour through the public API, per the `testing` skill. No event bus or mocks are required. Factories keep repeated histories readable, but explicitly typed one-off inline events are equally valid. An *uncontextualized* array literal may widen its `type` discriminant to `string`; prevent that with an `AccountEvent[]` annotation or `satisfies readonly AccountEvent[]`. Test **projections** and **upcasters** the same way (they are folds and pure functions): feed events, assert on the read model or the upcast event. Full patterns — including testing the command handler against an in-memory `EventStore` fake and property-testing the fold — are in `testing-event-sourced-systems.md`.
 
 ---
 
@@ -297,7 +389,7 @@ A snapshot is a stored fold result — `{ version: 240, state: {…} }` — so y
 - **Event sourcing everywhere.** Applying it to the whole system instead of the one or two contexts whose history is part of the domain. Most contexts are CRUD; leave them CRUD.
 - **CRUD events.** `Created`/`Updated`/`Deleted` events that mirror table writes. They capture that data changed, not what happened. Model intent.
 - **No versioning strategy.** Shipping v1 events with no plan for evolving them. Because events are immutable and permanent, you *will* need to read old shapes with new code — decide the tolerant-reader / upcasting strategy on day one (`event-versioning.md`).
-- **Rejecting in `evolve`.** Putting validation or business rules in `evolve`, so replaying old history can fail. `evolve` must total over every event the store could ever hand it. Rules live in `decide`.
+- **Re-deciding in `evolve`.** Putting command policy in replay. `evolve` applies valid facts without business rejection, but it must surface a known event in an impossible state as corrupt history rather than silently no-op.
 - **Mutable events.** "Fixing" a bug by editing or deleting past events. The fix is a new compensating event. The moment you edit history, replay is no longer trustworthy and the pattern's core promise is broken.
 - **Snapshot as source of truth.** Treating snapshots as authoritative rather than a rebuildable cache. If you cannot delete all snapshots and rebuild, you have lost the event log's guarantee.
 - **The event store as an integration bus.** Letting other services subscribe directly to your internal domain events couples them to your write model's shape. Publish deliberate, versioned integration events instead (the distinction is in the DDD `domain-events.md`).
@@ -315,7 +407,7 @@ A snapshot is a stored fold result — `{ version: 240, state: {…} }` — so y
 - [ ] Events are self-contained data (values captured, not mutable references), modelled as discriminated unions
 - [ ] Every event has an envelope (id, type, stream id, version, timestamp, correlation/causation metadata)
 - [ ] `decide` holds all business rules and returns accept-with-events or reject-with-reason
-- [ ] `evolve` is total — it never rejects or validates, so replay of old events always succeeds
+- [ ] `evolve` applies every valid stored event exhaustively; impossible known transitions surface corruption rather than silently no-op
 - [ ] State is rebuilt by folding `evolve`; nothing stores current state as the source of truth
 - [ ] Appends use optimistic concurrency (expected version); conflicts are handled by reload-and-retry
 - [ ] The event store is a driven port; the domain has zero infrastructure imports
@@ -324,5 +416,5 @@ A snapshot is a stored fold result — `{ version: 240, state: {…} }` — so y
 - [ ] Read models are projections (folds) that can be rebuilt from event zero via a checkpoint
 - [ ] Projections are idempotent and the UI accounts for eventual consistency
 - [ ] Snapshots (if any) are a rebuildable cache, never authoritative
-- [ ] Tests are behaviour-driven — public API, observed events/state/result, factories — not a given-when-then DSL
+- [ ] Tests exercise public behavior through observed events/state/results; any DSL follows the repository's established test style rather than adding event-sourcing-only machinery
 - [ ] PII strategy decided if events hold personal data (see crypto-shredding in `production-concerns.md`)

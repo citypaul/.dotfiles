@@ -55,30 +55,59 @@ const registerScenario = (input: unknown) =>
 ## Composing Immutable Transformations
 
 ```typescript
-// Small transformation functions
-const addDiscount = (order: Order, percent: number): Order => ({
+type Currency = 'GBP' | 'USD' | 'EUR';
+type Money = { readonly minorUnits: number; readonly currency: Currency };
+
+const createMoney = (minorUnits: number, currency: Currency): Money => {
+  if (!Number.isSafeInteger(minorUnits) || minorUnits < 0) throw new Error('Invalid money');
+  return { minorUnits, currency };
+};
+
+const addMoney = (left: Money, right: Money): Money => {
+  if (left.currency !== right.currency) throw new Error('Currency mismatch');
+  if (!Number.isSafeInteger(left.minorUnits) || !Number.isSafeInteger(right.minorUnits)) {
+    throw new Error('Invalid money');
+  }
+  const minorUnits = left.minorUnits + right.minorUnits;
+  if (!Number.isSafeInteger(minorUnits)) throw new Error('Money addition overflowed');
+  return createMoney(minorUnits, left.currency);
+};
+
+const percentageHalfUp = (money: Money, basisPoints: number): Money => {
+  if (!Number.isSafeInteger(money.minorUnits)) throw new Error('Invalid money');
+  if (!Number.isSafeInteger(basisPoints) || basisPoints < 0) throw new Error('Invalid rate');
+  const rounded = Number(
+    (BigInt(money.minorUnits) * BigInt(basisPoints) + 5_000n) / 10_000n,
+  );
+  return createMoney(rounded, money.currency);
+};
+
+const addDiscount = (order: Order, basisPoints: number): Order => ({
   ...order,
-  total: order.total * (1 - percent / 100),
+  total: createMoney(
+    order.total.minorUnits - percentageHalfUp(order.total, basisPoints).minorUnits,
+    order.total.currency,
+  ),
 });
 
-const addShipping = (order: Order, cost: number): Order => ({
+const addShipping = (order: Order, cost: Money): Order => ({
   ...order,
-  total: order.total + cost,
+  total: addMoney(order.total, cost),
 });
 
-const addTax = (order: Order, rate: number): Order => ({
+const addTax = (order: Order, basisPoints: number): Order => ({
   ...order,
-  total: order.total * (1 + rate),
+  total: addMoney(order.total, percentageHalfUp(order.total, basisPoints)),
 });
 
 // Compose them
 const finalizeOrder = (order: Order): Order => {
   return addTax(
     addShipping(
-      addDiscount(order, 10),
-      5.99
+      addDiscount(order, 1_000),
+      createMoney(599, order.total.currency),
     ),
-    0.2
+    2_000,
   );
 };
 
@@ -86,17 +115,19 @@ const finalizeOrder = (order: Order): Order => {
 const finalizeOrder = (order: Order): Order =>
   pipe(
     order,
-    o => addDiscount(o, 10),
-    o => addShipping(o, 5.99),
-    o => addTax(o, 0.2),
+    o => addDiscount(o, 1_000),
+    o => addShipping(o, createMoney(599, o.total.currency)),
+    o => addTax(o, 2_000),
   );
 ```
+
+Amounts stay in integer minor units; rates use integer basis points and `percentageHalfUp` makes the rounding rule explicit. The `Money` currency check prevents composing values from different currencies.
 
 ---
 
 ## Flattening Deep Nesting
 
-**Max 2 levels of function nesting** (the rule is in `../SKILL.md`). Beyond that, extract functions or use early returns.
+Deep nesting is a readability signal, not a fixed numeric failure. When nesting hides the main path or makes branches hard to reason about, extract functions or use early returns.
 
 ### Why Limit Nesting?
 

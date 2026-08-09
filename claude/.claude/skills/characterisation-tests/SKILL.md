@@ -5,7 +5,7 @@ description: Use when modifying existing code that lacks tests and you need to d
 
 # Characterisation Tests
 
-For making untestable code testable first, load the `finding-seams` skill. For test-driving new behavior, load the `tdd` skill. For general test patterns, load the `testing` skill. Use mutation-aware test-design rules while characterising, then load `mutation-testing` for the accumulated change at the end-of-phase PR-readiness gate.
+For making untestable code testable first, load the `finding-seams` skill. For test-driving new behavior, load the `tdd` skill. For general test patterns, load the `testing` skill. Use mutation-aware test-design rules while characterising. If the repository requires mutation testing, or the change risk justifies adding it, load `mutation-testing` for the accumulated change at the repository's chosen verification point.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
@@ -47,14 +47,14 @@ Use `characterises` in the test name to distinguish from behavior-driven tests:
 
 ```typescript
 // ✅ Clearly identified as characterisation tests
-describe('calculateDiscount characterisation', () => {
-  it('characterises premium customer discount for < 5 years', () => { ... });
-  it('characterises business customer loyalty bonus threshold', () => { ... });
+describe('calculateBonus characterisation', () => {
+  it('characterises premium-member bonus for < 5 years', () => { ... });
+  it('characterises business-member loyalty threshold', () => { ... });
 });
 
 // ❌ Indistinguishable from behavior-driven tests
-describe('calculateDiscount', () => {
-  it('should apply 15% discount for premium customers', () => { ... });
+describe('calculateBonus', () => {
+  it('should apply a premium-member bonus', () => { ... });
 });
 ```
 
@@ -63,8 +63,8 @@ describe('calculateDiscount', () => {
 Use a distinct file suffix so characterisation tests are visually separable in the file tree:
 
 ```
-pricing.characterisation.test.ts    ← characterisation tests (temporary)
-discount-calculation.test.ts        ← behavior-driven tests (permanent)
+scoring.characterisation.test.ts    ← characterisation tests (temporary)
+member-bonus.test.ts                ← behavior-driven tests (permanent)
 ```
 
 The temporary characterisation file may mirror the implementation file 1:1 — it is pinning that file's current behaviour and will be deleted. The permanent tests follow behaviour, not file boundaries (the `testing` skill's "no 1:1 mapping" rule).
@@ -77,13 +77,13 @@ Add a block comment at the top of each characterisation test file explaining the
 /**
  * CHARACTERISATION TESTS -- documenting actual behavior, NOT asserting correctness.
  *
- * These tests pin down the current behavior of calculateDiscount so we can
+ * These tests pin down the current behavior of calculateBonus so we can
  * safely refactor it. They should be replaced with behavior-driven tests
  * as the code is understood and restructured.
  *
  * See: characterisation-tests skill for the methodology.
  */
-describe('calculateDiscount characterisation', () => { ... });
+describe('calculateBonus characterisation', () => { ... });
 ```
 
 ### Suspicious Behavior
@@ -91,10 +91,10 @@ describe('calculateDiscount characterisation', () => { ... });
 When a characterisation test captures behavior that looks like a bug, mark it explicitly:
 
 ```typescript
-it('characterises negative quantity handling -- SUSPICIOUS: returns negative discount', () => {
-  // This may be a bug -- negative quantities produce negative discounts.
+it('characterises negative activity handling -- SUSPICIOUS: returns negative bonus', () => {
+  // This may be a bug -- negative activity produces a negative bonus.
   // Documented as-is; escalate before changing.
-  expect(calculateDiscount(-5, 'premium', 3)).toBe(-0.75);
+  expect(calculateBonus(-5, 'premium', 3)).toBe(-0.75);
 });
 ```
 
@@ -124,11 +124,14 @@ it('characterises formatPrice', () => {
 ## Heuristics
 
 1. **Use focused coverage as your guide** -- target the change area first (for example Vitest's changed/related coverage or the owning test project), then run the full required coverage gate and complete any fixes before the final repository-wide pre-PR test run
-2. **Production behavior IS the specification** -- if deployed code does something, assume someone depends on it, even if it looks wrong
+2. **Production behavior is compatibility evidence, not correctness authority**
+   -- treat deployed observations as compatibility-sensitive until consumer,
+   reachability, security, and accepted-requirement evidence resolves whether
+   they must be preserved
 3. **Focus on the change area** -- you don't need to characterise the entire codebase, only the code you're about to modify
 4. **Mark suspicious behavior** -- when you find something that looks like a bug, document it in the test but mark it as suspicious; don't silently "fix" it
 5. **Look at the code** -- these aren't black-box tests; read the code to guide which paths to characterise
-6. **Plan the mutation scope** -- use the mutator rules to strengthen obvious gaps cheaply while characterising, but defer the automated harness until the completed change is otherwise ready for its PR. Coverage tells you which paths are *exercised*; the later mutation gate verifies which are *protected*.
+6. **Plan proportionate test-strength evidence** -- use mutator rules to strengthen obvious gaps cheaply while characterising. If the repository selects an automated mutation run, defer the harness until the accumulated change reaches its chosen verification point. Coverage tells you which paths are *exercised*; mutation testing can show which are *protected*.
 
 ## When to Stop
 
@@ -136,7 +139,7 @@ You don't need 100% coverage of the entire codebase. Stop when:
 
 - **Every branch your upcoming change touches** has a characterisation test exercising it
 - **One layer out** from the change point is also covered (the branches that call into or are called by the code you're changing)
-- **Likely mutant risks** in the paths you'll modify are represented in the characterisation examples; the automated mutation result is an end-of-phase PR gate, not a prerequisite for each implementation increment
+- **Likely mutant risks** in the paths you'll modify are represented in the characterisation examples; run an automated mutation check only when repository policy or the change's risk calls for it
 
 If you can't feel confident that your tests would detect a mistake in the specific code you're about to change, add more tests. If you can, stop.
 
@@ -144,9 +147,13 @@ If you can't feel confident that your tests would detect a mistake in the specif
 
 All legacy code has bugs. When you find one during characterisation:
 
-- **If the system is deployed**: someone may depend on the "buggy" behavior. Document it, mark the test as suspicious, escalate before changing it.
-- **If the system is not yet deployed**: fix it.
-- **Always**: include the characterisation test in your suite. Even if it captures a bug, it's documenting *reality*.
+- **If the system is deployed**: someone may depend on the "buggy" behavior. Document it, mark the test as suspicious, preserve it until the compatibility decision is made, and escalate before changing it.
+- **If the system is not yet deployed**: compatibility risk is lower, but
+  non-deployment does not establish correctness. Resolve the intended behavior
+  from an authoritative requirement or user decision first; then record the
+  observed failure, fix it, and replace the old-behavior characterisation with
+  an intended-behavior regression test.
+- **Preserve evidence, not a permanently red assertion**: a test for old behavior remains only while that behavior is intentionally conserved.
 
 ## Characterisation Tests Are Temporary
 
@@ -204,7 +211,7 @@ it('characterises order processor events', async () => {
 | "Fixing" bugs in characterisation tests | Document the actual behavior, mark as suspicious, escalate |
 | Trying to characterise the entire codebase | Focus on the area you're about to change + one layer out |
 | Writing characterisation tests based on what code *should* do | Let the code tell you what it does -- use the algorithm above |
-| Skipping the end-of-phase mutation gate | Coverage says paths ran; the accumulated-scope mutation result says tests would catch changes |
+| Treating coverage as proof of test strength | Add assertions for likely mutant risks; use an accumulated-scope mutation run when repository policy or change risk calls for it |
 | Using characterisation tests for new code | New code should be test-driven (see `tdd` skill) |
 | Using `vi.mock()` for sensing instead of parameter injection | Pass a sensing function as a parameter (see `finding-seams` skill) |
 | Not awaiting async results | Use `async`/`await` in characterisation tests -- a synchronous assertion on a promise always passes |

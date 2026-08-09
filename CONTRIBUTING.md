@@ -270,4 +270,6 @@ const goodExample = () => { ... };
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the
+MIT License unless a nested license governing the files you change requires a
+different compatible license.

@@ -325,7 +325,7 @@ require_text \
 
 require_text \
   "$TDD_SKILL" \
-  "A global instruction to reuse current mutation evidence must never weaken a repository rule" \
+  "This global guidance must never weaken a repository rule that invalidates evidence" \
   "tdd: stricter repository mutation policy wins"
 
 require_text \

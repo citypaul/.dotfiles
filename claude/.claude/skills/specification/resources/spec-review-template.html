@@ -1,21 +1,23 @@
 <!doctype html>
 <!--
-  Specification review template (the three-amigos handoff page).
+  Specification review template (the accountable-review handoff page).
 
   How to use (any agent, any provider):
   1. Build the review data as JSON matching the shape below — sections share
      one card engine: Rules (rule/examples/questions), Parked questions
-     (question/owner), Candidate vocabulary (term/gloss).
+     (question/owner/decision-or-review-date/context), Candidate vocabulary
+     (term/gloss).
   2. Replace the REVIEW_DATA placeholder token (the double-underscore-wrapped
      one inside the review-data script tag at the bottom — replace ALL
      occurrences) with that JSON, escaping every "<" in string values as
      backslash-u003c so the JSON can never terminate the script tag.
   3. Write the result to a session temp directory and open it in the
      reviewers' local browser. Never commit the generated page.
-  4. This is a conversation artifact for the three-amigos round, not an
-     approval record: reviewers annotate any card, disagreements become new
-     questions, and the page is regenerated every round until the map is
-     stable.
+  4. This is a conversation artifact, not an approval record. Match reviewers
+     to ownership and risk; three-amigos perspectives are a strong default for
+     shared product behavior, not a universal ceremony. Reviewers annotate any
+     card, disagreements become new questions, and the page is regenerated
+     every round until the map is stable.
   5. Feedback: reviewers type into the card boxes and click "Copy feedback" —
      route the pasted markdown back into the next specification round as
      answers and new questions, never as silent edits.
@@ -39,7 +41,7 @@
       "digest": "<optional: content digest, when a round wants byte-accountability>",
       "specs": [{
         "name": "<rule — a policy in domain language>",
-        "plain": "the rule's concrete examples, one per line: real values, real outcomes",
+        "plain": "section detail: rule examples; parked-question owner + decision/review date + context; or vocabulary gloss",
         "red": "open questions attached to this card (empty string when none)",
         "code": "<the rule's map entry verbatim — rule, examples, questions>"
       }]

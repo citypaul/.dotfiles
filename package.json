@@ -15,7 +15,7 @@
     "development-guidelines"
   ],
   "author": "Paul Hammond",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "test": "./test/run.sh",
     "changeset": "changeset",

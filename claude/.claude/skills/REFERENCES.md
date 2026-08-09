@@ -227,9 +227,10 @@ Sources behind the `event-sourcing` skill. Several foundational names (Chassaing
 
 ## API and Interface Design
 
-### Addy Osmani — [agent-skills/api-and-interface-design](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md)
+### Addy Osmani — [agent-skills/api-and-interface-design](https://github.com/addyosmani/agent-skills/blob/7676817c12a1317454ae3898a0c5c1eacf5dd3d5/skills/api-and-interface-design/SKILL.md)
 - **Original skill** adapted and extended for this codebase → API design skill: foundation for contract-first, error semantics, REST conventions, naming patterns
 - Modified: `interface` → `type` with `readonly`, TypeScript patterns deferred to `typescript-strict` skill
+- Local history does not record the original upstream import revision. Commit `7676817c12a1317454ae3898a0c5c1eacf5dd3d5` is an immutable audit baseline, not an import-revision claim; see [`api-design/resources/source-notes.md`](api-design/resources/source-notes.md) and the adjacent `LICENSE` for the complete provenance and notice.
 
 ### Hyrum Wright — [Hyrum's Law](https://www.hyrumslaw.com/)
 - **"All observable behaviors will be depended on by somebody"** → API design skill: "Core Principles" section, design implications for what to expose
@@ -356,7 +357,7 @@ These primary sources support `secure-oauth-oidc/SKILL.md` and its five files un
 
 ## CLI Design
 
-### Aanand Prasad, Ben Firshman, Carl Tashian, Eva Parish — [Command Line Interface Guidelines](https://clig.dev/) ([source](https://github.com/cli-guidelines/cli-guidelines))
+### Aanand Prasad, Ben Firshman, Carl Tashian, Eva Parish — [Command Line Interface Guidelines](https://clig.dev/) ([pinned source](https://github.com/cli-guidelines/cli-guidelines/blob/697d6a29fc8c93d3981a755c0c7683507ad39c3e/content/_index.md))
 - **The canonical modern CLI design guide** — philosophy, output design, composability, TTY detection, error handling, subcommands, flag naming, config precedence → CLI design skill: foundation for every section
 - **stdout for data, stderr for messaging** → CLI design skill: "The Unix Stream Contract"
 - **Three-tier output hierarchy** (default/`--plain`/`--json`) → CLI design skill: "Format Flag Contract"
@@ -370,6 +371,13 @@ These primary sources support `secure-oauth-oidc/SKILL.md` and its five files un
 - **Robustness** (validate early, 100ms responsiveness, configurable network timeouts, recover by re-run, expect misuse) → CLI design skill: "Robustness"
 - **General-purpose env vars** (`DEBUG`, `EDITOR`, `PAGER`, proxies, `LINES`/`COLUMNS`; single-line values) → CLI design skill: "Config Precedence"
 - **Naming, distribution, telemetry consent** → CLI design skill: "Naming, Distribution, Telemetry"
+- Local history identifies the adaptation commits but not their upstream revision. Commit `697d6a29fc8c93d3981a755c0c7683507ad39c3e` is an immutable audit baseline, not an import-revision claim; see [`cli-design/resources/source-notes.md`](cli-design/resources/source-notes.md) and the adjacent CC BY-SA 4.0 `LICENSE` for exact provenance, modifications, attribution, and license scope.
+
+### Node.js — [Command-line API: `FORCE_COLOR`](https://nodejs.org/api/cli.html#force_color1-2-3)
+
+- Accepted `FORCE_COLOR` values and its precedence over `NO_COLOR` and
+  `NODE_DISABLE_COLORS` → CLI design skill: "TTY Detection",
+  `resources/output-architecture.md`
 
 ### Jeff Dickey (oclif creator) — ["12 Factor CLI Apps"](https://medium.com/@jdxcode/12-factor-cli-apps-dd3c227a0e46) (2018)
 - **12 principles for CLI excellence** → CLI design skill: informed multiple sections
@@ -414,9 +422,8 @@ These primary sources support `secure-oauth-oidc/SKILL.md` and its five files un
 - **Graceful degradation** (detect TTY, skip prompts/colors when piped) → CLI design skill: "TTY Detection"
 
 ### Orhun Parmaksız — ["Why stdout is faster than stderr?"](https://blog.orhun.dev/stdout-vs-stderr/) (2023)
-- **stdout ~2x faster than stderr** due to buffering: stdout is line-buffered (TTY) or block-buffered (pipe), stderr is unbuffered → `resources/stream-contracts.md`: "Buffering Behavior"
-- **Performance difference is entirely userspace buffering** — raw write() syscalls perform identically → `resources/stream-contracts.md`
-- **isatty() determines buffering strategy at program startup** → CLI design skill: "The Unix Stream Contract"
+- **Measured one C/runtime configuration where stdout was ~2x faster than stderr** because their buffering differed; this is evidence to measure the actual runtime and destination, not a portable CLI contract → `resources/stream-contracts.md`: "Process Stream Behavior"
+- **Raw write() syscall cost was not the differentiator in that experiment** → `resources/stream-contracts.md`
 
 ---
 
@@ -574,5 +581,5 @@ These primary sources support `secure-oauth-oidc/SKILL.md` and its five files un
 - Stripe's Markdoc post + DX teardowns (reference-generated-from-spec, runnable examples, errors first-class).
 - llms.txt (Howard) with measured adoption reality (Burridge, OtterlyAI); Kapa.ai RAG-chunkability; Netlify's Agent Experience.
 - John Carroll's minimalism (The Nurnberg Funnel; "Ten Misconceptions") — task-first, error recovery inline, every word earns its place.
-- Adam Bradley (mintuz), "Developer Writing Playbook" — the seed this skill adapted.
+- Adam Bulmer (mintuz), pinned "Developer Writing Playbook" and formatting guide at `280c015271cbf539f7950469df6f515cc41be6ec` — the seed this skill adapted; its MIT notice is preserved with the bundle.
 - Full URLs: the skill's resources/references.md.

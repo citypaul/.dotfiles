@@ -8,33 +8,44 @@ Cross-cutting *infrastructure* concerns live in adapters, never in domain. The d
 
 ## Authentication & Authorization
 
-**Auth lives in driving adapters** (middleware, route handlers). The domain receives already-validated identity as a domain type.
+**Authentication lives in driving adapters** (middleware, route handlers). The
+application receives a provider-free authenticated principal; business
+authorization remains application/domain policy.
 
 ```typescript
 // Driving adapter: extract and validate auth
 export async function POST(request: Request) {
-  const userId = await authenticateRequest(request);  // middleware / adapter concern
-  if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const pledging: ForPledgingToOccasions = createPledgingToOccasions(occasionRepo, contributorRepo);
+  const principal = await authenticateRequest(request); // sole production constructor
+  if (!principal) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const pledging: ForPledgingToOccasions = createPledgingToOccasions(pledgePersistence);
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'malformed-json' }, { status: 400 });
+  }
+  const parsedBody = PledgeBodySchema.strict().safeParse(rawBody);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: 'invalid-body' }, { status: 422 });
+  }
 
-  // Pass validated identity to use case as a domain type
+  // Strict body has no actor/tenant fields; the principal owns attribution.
   const result = await pledging.pledgeToOccasion({
-    ...body,
-    contributorId: userId,  // already a branded ContributorId
+    ...parsedBody.data,
+    principal,
   });
   ...
 }
 ```
 
 ```typescript
-// Domain: receives identity, applies business rules
+// Application/use case: receives identity and coordinates domain behaviour
 const createPledgingToOccasions = (
-  occasionRepo: OccasionRepository,
-  contributorRepo: ContributorRepository,
+  persistence: PledgePersistence,
 ): ForPledgingToOccasions => ({
-  pledgeToOccasion: async (dto: { readonly contributorId: ContributorId; ... }) => {
-    // The domain doesn't check JWT tokens or session cookies.
-    // It receives a ContributorId and applies business rules.
+  pledgeToOccasion: async (dto: { readonly principal: AuthenticatedPledger; ... }) => {
+    // Application code doesn't check JWT tokens or session cookies.
+    // It authorizes a provider-free principal and invokes domain rules.
   },
 });
 ```
@@ -66,8 +77,18 @@ Request/response cycles, SQL timings, retries, connection errors. Lives in drivi
 ```typescript
 // Driving adapter: log the request/response cycle
 export async function POST(request: Request) {
-  const body = PledgeSchema.parse(await request.json());
-  const pledging: ForPledgingToOccasions = createPledgingToOccasions(occasionRepo, contributorRepo);
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'malformed-json' }, { status: 400 });
+  }
+  const parsedBody = PledgeSchema.safeParse(rawBody);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: 'invalid-body' }, { status: 422 });
+  }
+  const body = parsedBody.data;
+  const pledging: ForPledgingToOccasions = createPledgingToOccasions(pledgePersistence);
   const result = await pledging.pledgeToOccasion(body);
 
   if (!result.success) {
@@ -92,7 +113,7 @@ const createDrizzleOccasionRepository = (db: Database, logger: Logger): Occasion
 The result-inspection default breaks down when the interesting fact is *intermediate* (which pricing rule fired, cache-hit vs. remote lookup, retry count) — smuggling it into the return type pollutes the domain contract with observability freight — or when the observation is a *requirement in its own right* (support logging, business metrics, product analytics). Then model the observability backend as what it is: a driven **recipient** actor, behind a per-capability, intention-named, severity-free, fire-and-forget port (Hodgson's Domain Probe, martinfowler.com):
 
 ```typescript
-// Driven port — owned inside beside the policy, business vocabulary only
+// Driven port — application-owned because the use case consumes it
 interface PledgeInstrumentation {
   readonly pledgeRejected: (reason: PledgeRejectionReason, occasionId: OccasionId) => void;
   readonly pledgeAccepted: (amount: Money, occasionId: OccasionId) => void;
@@ -100,15 +121,18 @@ interface PledgeInstrumentation {
 
 // Use case announces domain facts; no log levels, no metric names, no framework types
 const createPledgingToOccasions = (
-  occasionRepo: OccasionRepository,
-  contributorRepo: ContributorRepository,
+  persistence: PledgePersistence,
   instrumentation: PledgeInstrumentation,
 ): ForPledgingToOccasions => ({ ... });
 
 // Adapter decides severity, metric names, span attributes — swappable without touching a use case
 const createTelemetryPledgeInstrumentation = (logger: Logger): PledgeInstrumentation => ({
   pledgeRejected: (reason, occasionId) => logger.warn('Pledge rejected', { reason, occasionId }),
-  pledgeAccepted: (amount, occasionId) => logger.info('Pledge accepted', { amount: amount.value, occasionId }),
+  pledgeAccepted: (amount, occasionId) => logger.info('Pledge accepted', {
+    minorUnits: amount.minorUnits,
+    currency: amount.currency,
+    occasionId,
+  }),
 });
 ```
 
@@ -122,7 +146,7 @@ Probe methods take domain types only, return `void`, and never influence control
 
 Trace/request IDs, span lifecycle, context propagation, and canonical/wide-event assembly live in driving adapters (middleware) and driven adapters. **The domain never sees a trace ID.** Where the wide event needs domain dimensions, they arrive via Tier 2 — the probe's adapter attaches them to the current span or canonical line.
 
-The decorator option slots in here: an instrumented wrapper around a driving or driven port (same shape as the transactional wrapper below) is the preferred home for timing and tracing whole use cases. The honest limit of decorators is the criterion for Tier 2: **a decorator sees only what crosses the port** — inputs, outputs, duration, errors — never intermediate domain facts.
+The decorator option slots in here: an instrumented wrapper around a driving or driven port is the preferred home for timing and tracing whole use cases. The honest limit of decorators is the criterion for Tier 2: **a decorator sees only what crosses the port** — inputs, outputs, duration, errors — never intermediate domain facts.
 
 ### Tier 4 — Instrumentation is tested behavior
 
@@ -130,28 +154,54 @@ A probe is a driven port, and every driven port gets a fake. Use-case tests asse
 
 ## Transactions
 
-**Transactions are an adapter concern.** The use case doesn't know whether saves are transactional. The adapter layer decides.
+**Transaction mechanics are an adapter concern; the atomic application operation is an application concern.** The application-owned port says what must persist together. Its adapter decides how to provide that guarantee.
 
 ```typescript
-// Driving adapter wraps the use case in a transaction
-const createTransactionalPledgingToOccasions = (db: Database): ForPledgingToOccasions => ({
-  pledgeToOccasion: async (dto) =>
+// Application-owned driven port: one semantic operation must save both or neither.
+type StoredOccasion = { readonly value: Occasion; readonly version: number };
+
+interface PledgePersistence {
+  readonly findOccasionById: (id: OccasionId) => Promise<StoredOccasion | undefined>;
+  readonly saveWithOutbox: (
+    occasion: Occasion,
+    events: readonly PledgeRecorded[],
+    expectedVersion: number,
+  ) => Promise<'saved' | 'conflict'>;
+}
+
+// Driven adapter owns the database transaction mechanics.
+const createDrizzlePledgePersistence = (db: Database): PledgePersistence => ({
+  findOccasionById: async (id) => {
+    const row = await db.select().from(occasions).where(eq(occasions.id, id)).get();
+    return row ? { value: toOccasion(row), version: row.version } : undefined;
+  },
+  saveWithOutbox: async (occasion, events, expectedVersion) =>
     db.transaction(async (tx) => {
-      const occasionRepo = createDrizzleOccasionRepository(tx);
-      const contributorRepo = createDrizzleContributorRepository(tx);
-      const pledging = createPledgingToOccasions(occasionRepo, contributorRepo);
-      return pledging.pledgeToOccasion(dto);
+      const updated = await tx.update(occasions)
+        .set({ ...toRow(occasion), version: expectedVersion + 1 })
+        .where(and(
+          eq(occasions.id, occasion.id),
+          eq(occasions.version, expectedVersion),
+        ))
+        .returning({ id: occasions.id });
+      if (updated.length !== 1) return 'conflict';
+      await tx.insert(outbox).values(events.map(toOutboxRow));
+      return 'saved';
     }),
 });
 ```
 
-The driving port (`ForPledgingToOccasions`) is unchanged — the transactional implementation still satisfies the same interface. The domain doesn't know or care.
+The use case calls `saveWithOutbox` with the loaded version and handles a
+`conflict` outcome without importing a transaction API. The domain remains
+unaware of both the port and its adapter.
 
-**When transactions aren't needed:** For single-aggregate saves, no transaction wrapper is necessary. Only add transactions when multiple aggregates must be saved atomically. See the `domain-driven-design` skill's `resources/aggregate-design.md` for guidance on one-aggregate-per-transaction.
+**Scope the transaction to the selected consistency boundary.** A single-statement aggregate save needs no explicit wrapper. Use a transaction when one application-owned operation spans rows or tables that must commit together, such as an aggregate with its children or an aggregate with its outbox records. In a DDD design, follow `resources/aggregate-design.md` in the `domain-driven-design` skill: keep one aggregate per transaction, then coordinate another aggregate through the outbox and an idempotent handler. Hexagonal architecture alone does not impose that DDD policy; when a project selects a different consistency model, make its atomic boundary explicit in the application-owned port rather than hiding it in composition code.
 
 ## Error Formatting
 
 **The driving adapter translates domain results to protocol-specific responses.** The domain returns business-language results; the adapter maps them to HTTP, gRPC, or whatever protocol the client speaks.
+
+For the HTTP examples in this skill, keep three failure layers distinct. Authenticate first where the route is protected. Then catch only `request.json()` to map malformed JSON syntax to `400`. Parse the resulting `unknown` body and any path parameters with non-throwing schemas; a syntactically valid request that fails either schema maps to `422`. Only after those boundary checks should the adapter invoke the use case and translate its business-language result.
 
 ```typescript
 // Domain returns: { success: false, reason: 'funding-closed' }
@@ -162,7 +212,10 @@ const toHttpResponse = (result: PledgeResult): NextResponse => {
   }
   const statusMap: Record<Extract<PledgeResult, { success: false }>['reason'], number> = {
     'not-found': 404,
-    'insufficient-balance': 422,
+    'concurrent-change': 409,
+    'non-positive-amount': 422,
+    'currency-mismatch': 422,
+    'exceeds-budget': 422,
     'funding-closed': 422,
   };
   return NextResponse.json({ error: result.reason }, { status: statusMap[result.reason] });
@@ -179,7 +232,7 @@ const toHttpResponse = (result: PledgeResult): NextResponse => {
 | Authorization (are you allowed?) | Domain | Business rule about permissions |
 | Technical telemetry & correlation | Adapters (both driving and driven) | Infrastructure side effect |
 | Domain observations (support logs, business metrics) | Driven port (probe) or domain events | Business-significant facts; tested with fakes like any port |
-| Transactions | Adapter / composition root | Infrastructure concern, domain unaware |
+| Transactions | Application-owned atomic operation; driven adapter mechanics | Application defines what must persist together; infrastructure provides the guarantee; domain remains unaware |
 | Error formatting | Driving adapter | Protocol-specific translation |
 | Input validation (schema) | Driving adapter boundary | Parse at the edge, trust inside |
 | Business validation | Domain | Business rules are domain logic |

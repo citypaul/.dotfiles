@@ -120,11 +120,11 @@ await waitFor(() => {
 
 ### Multiple assertions in waitFor
 
-❌ **WRONG - Multiple assertions**
+⚠️ **LESS CLEAR - Multiple assertions**
 ```typescript
 await waitFor(() => {
   expect(screen.getByText(/name/i)).toBeInTheDocument();
-  expect(screen.getByText(/email/i)).toBeInTheDocument(); // Might not retry both
+  expect(screen.getByText(/email/i)).toBeInTheDocument();
 });
 ```
 
@@ -135,6 +135,8 @@ await waitFor(() => {
 });
 expect(screen.getByText(/email/i)).toBeInTheDocument();
 ```
+
+`waitFor` retries the entire callback. Prefer one assertion per callback because it makes timeouts and failure messages easier to diagnose, not because later assertions are skipped on retry.
 
 ### Wrapping findBy in waitFor
 

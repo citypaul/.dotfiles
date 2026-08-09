@@ -173,7 +173,7 @@
 
 - 9f84fd9: Add a `technical-writing` skill: developer-facing prose that can be skimmed first and trusted enough to finish.
 
-  Adapted from Adam Bradley's Developer Writing Playbook (credited) and extended with deep-researched, fully-cited resources: one-mode-per-page as the leading rule (Diátaxis's four modes with the tutorial/how-to distinction most docs miss, plus the model's honest limits), the README cognitive funnel with the short-vs-long tension resolved and README-driven development's failure mode named, a docs-quality enforcement ladder (Vale prose lint, executable examples, link checking, reference generated from spec, friction logs, Google's timeless-docs rule, Every Page is Page One), and an honest 2026 guide to documentation for AI agents (the llms.txt adoption reality, markdown endpoints, RAG-chunkable structure as good-writing-restated). House principles throughout: claims need receipts, docs are verified behavior, idle states must speak, enumerable facts in tables with exact copy-pasteable strings.
+  Adapted from Adam Bulmer's MIT-licensed Developer Writing Playbook and formatting guide at pinned upstream snapshot `280c0152`, with the complete notice now preserved, and extended with deep-researched, fully-cited resources: one-mode-per-page as the leading rule (Diátaxis's four modes with the tutorial/how-to distinction most docs miss, plus the model's honest limits), the README cognitive funnel with the short-vs-long tension resolved and README-driven development's failure mode named, a docs-quality enforcement ladder (Vale prose lint, executable examples, link checking, reference generated from spec, friction logs, Google's timeless-docs rule, Every Page is Page One), and an honest 2026 guide to documentation for AI agents (the llms.txt adoption reality, markdown endpoints, RAG-chunkable structure as good-writing-restated). House principles throughout: claims need receipts, docs are verified behavior, idle states must speak, enumerable facts in tables with exact copy-pasteable strings.
 
 ## 3.42.0
 
@@ -528,7 +528,7 @@
   - Presents options with install commands and links; offers to install with `npx skills add <owner/repo@skill> -g -y`
   - Falls back to direct help or suggesting `npx skills init` when no skill matches
 
-  **Licensing:** Vendored under MIT. The upstream repository declares MIT in its `package.json` and README but does not ship a root `LICENSE` file, so a reproduced MIT notice is included at `claude/.claude/skills/find-skills/LICENSE` to preserve attribution. The install script downloads both `SKILL.md` and `LICENSE`.
+  **Licensing:** At imported revision `0b8fb22`, upstream declared MIT in its `package.json` and README but supplied no root `LICENSE` or complete copyright notice. The local bundle now preserves the exact `Copyright (c) 2026 Vercel, Inc.` MIT notice later added upstream in `e173b8c`; source notes keep the two evidence points distinct.
 
 ### Patch Changes
 
@@ -639,7 +639,10 @@
   - Consolidates 15 upstream skills into 1 directory with 8 reference files
   - PlantUML reference covers UML, cloud (AWS/Azure/GCP), network, security, ArchiMate, BPMN, data analytics, and IoT
   - Includes examples file with 15 rendered diagram samples
-  - Adapted from markdown-viewer/skills (MIT license) with proper attribution
+  - Consolidated from `markdown-viewer/skills` snapshot `2da9334`. Historical
+    correction: its README declared MIT, but no full copyright/permission
+    notice existed; the unsupported locally constructed notice was removed
+    and upstream confirmation remains required.
 
 ## 3.19.3
 
@@ -1145,7 +1148,7 @@
   - Manual invocation: `/test-design-reviewer path/to/tests`
   - Contextual analysis: "Are these tests maintainable?"
 
-  **Attribution:** This skill is adapted from [Andrea Laforgia's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md). Special thanks to Andrea for creating and sharing this comprehensive test design review framework.
+  **Historical provenance correction (2026-08-08):** this version copied [Andrea Laforgia's `test-design-reviewer.md` at `278e367`](https://github.com/andrealaforgia/claude-code-agents/blob/278e367057bbe4a57255870e0a30b9d0a6eabc59/test-design-reviewer.md). No public redistribution license was found for that revision. The current skill is a clean rewrite; pinned evidence and the unresolved older-release permission gap live in its source notes.
 
   **Documentation updates:**
 
@@ -1724,7 +1727,11 @@
 
   Added a new agent that analyzes how user-facing use cases map to underlying data access patterns and architectural implementation in the codebase. This agent helps developers understand existing patterns before implementing new features.
 
-  This agent is adapted from [Kieran O'Hara's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you to Kieran O'Hara for creating and sharing this excellent agent specification.
+  Historical note corrected in 2026: this revision copied
+  [Kieran O'Hara's agent at `f735349`](https://github.com/kieran-ohara/dotfiles/blob/f7353498be9a2a846faae10dbdb771dfd2af6c7e/config/claude/agents/analyse-use-case-to-data-patterns.md),
+  but no public redistribution licence was found. The current agent has since
+  been independently rewritten; its source notes preserve the exact evidence
+  and unresolved historical permission issue.
 
   Key features:
 

@@ -60,25 +60,50 @@ An entity must satisfy its invariants at all times — after construction, after
 
 ```typescript
 // ✅ Factory function enforces invariants on creation
-const createOccasion = (params: CreateOccasionParams): Occasion => {
+const createOccasion = (params: CreateOccasionParams & { readonly id: OccasionId }): Occasion => {
   if (!params.name.trim()) throw new Error('Occasion name is required');
-  if (params.budget.amount < 0) throw new Error('Budget cannot be negative');
+  if (!Number.isSafeInteger(params.budget.minorUnits) || params.budget.minorUnits < 0) {
+    throw new Error('Budget minor units must be a non-negative safe integer');
+  }
   return OccasionSchema.parse({
     ...params,
-    id: createOccasionId(crypto.randomUUID()),
     name: params.name.trim(),
     giftIdeas: [],
   });
 };
 
+// The application or driving edge creates the ID and passes the typed value in.
+// Domain creation validates business invariants without a UUID dependency.
+
 // ✅ State transition enforces invariants — returns result type for business outcomes
 type AddGiftIdeaResult =
   | { readonly success: true; readonly occasion: Occasion }
-  | { readonly success: false; readonly reason: 'exceeds-budget' };
+  | { readonly success: false; readonly reason: 'currency-mismatch' | 'exceeds-budget' };
 
 const addGiftIdea = (occasion: Occasion, idea: NewGiftIdea): AddGiftIdeaResult => {
-  const totalCost = occasion.giftIdeas.reduce((sum, i) => sum + i.estimatedCost.amount, 0);
-  if (totalCost + idea.estimatedCost.amount > occasion.budget.amount) {
+  if (
+    idea.estimatedCost.currency !== occasion.budget.currency ||
+    occasion.giftIdeas.some(item => item.estimatedCost.currency !== occasion.budget.currency)
+  ) {
+    return { success: false, reason: 'currency-mismatch' };
+  }
+  const totalCost = occasion.giftIdeas.reduce((sum, item) => {
+    if (
+      !Number.isSafeInteger(sum) ||
+      !Number.isSafeInteger(item.estimatedCost.minorUnits) ||
+      item.estimatedCost.minorUnits < 0
+    ) {
+      throw new Error('Invalid Money invariant');
+    }
+    const next = sum + item.estimatedCost.minorUnits;
+    if (!Number.isSafeInteger(next)) throw new Error('Money addition overflowed');
+    return next;
+  }, 0);
+  if (!Number.isSafeInteger(idea.estimatedCost.minorUnits) || idea.estimatedCost.minorUnits < 0) {
+    throw new Error('Invalid Money invariant');
+  }
+  if (totalCost > occasion.budget.minorUnits) throw new Error('Invalid Occasion budget invariant');
+  if (idea.estimatedCost.minorUnits > occasion.budget.minorUnits - totalCost) {
     return { success: false, reason: 'exceeds-budget' };
   }
   return { success: true, occasion: { ...occasion, giftIdeas: [...occasion.giftIdeas, idea] } };
@@ -115,20 +140,36 @@ type Occasion = {
 
 Don't modify multiple aggregates in a single write operation. If a business process spans aggregates, use:
 
-1. **Domain service** to compute changes across aggregates (pure function)
-2. **Use case** to save each aggregate in sequence
-3. **Eventual consistency** (domain events) if strong consistency isn't required
+1. **One aggregate boundary** when the rule must hold atomically
+2. **One aggregate write plus an outbox event** when temporary inconsistency is acceptable
+3. **A process manager/saga** when cross-message state, ordering, correlation, timeouts, or deduplication are business-significant; add compensation only when that workflow needs an undo path
 
 ```typescript
-// Use case saves each aggregate separately
+// One transaction saves one aggregate and its outbox event.
 const handlePledge = async (repos, dto) => {
-  const result = pledgeContribution(occasion, contributor, amount); // Domain service
-  if (result.success) {
-    await repos.occasion.save(result.occasion);       // Transaction 1
-    await repos.contributor.save(result.contributor);  // Transaction 2
-  }
+  const stored = await repos.occasion.findById(dto.occasionId);
+  if (!stored) return { success: false, reason: 'not-found' };
+
+  const result = recordPledge(stored.value, dto);
+  if (!result.success) return result;
+
+  const saved = await repos.occasion.saveWithOutbox(
+    result.occasion,
+    result.events,
+    stored.version,
+  );
+  if (!saved.success) return { success: false, reason: 'concurrent-change' };
+
+  return result;
+};
+
+// A separate idempotent handler converges the other aggregate.
+const handlePledgeRecorded = async (event) => {
+  await repos.contributor.applyPledgeOnce(event.id, event.contributorId, event.amount);
 };
 ```
+
+Never model one business operation as sequential saves to two aggregates and call it eventual consistency: failure of the second save leaves a partial result with no durable instruction to finish or compensate. If contribution recording and balance deduction must succeed or fail together, redraw the aggregate/transaction boundary instead of splitting the writes.
 
 **Data locality:** The flip side of "one aggregate per transaction" is that all of an aggregate's internals must be co-located in the same data store. Splitting an aggregate's child entities across separate databases or services forces distributed transactions to maintain consistency — defeating the purpose of the boundary. Store an aggregate's data together so it can be read, changed, and persisted atomically.
 
@@ -173,12 +214,16 @@ Child entities should be created by aggregate root operations, not constructed e
 const addExercise = (workout: Workout, exercise: Exercise): Workout => ...;
 
 // ✅ Root creates the child — enforces max-exercises invariant
-const addExercise = (workout: Workout, params: NewExerciseParams): AddExerciseResult => {
+const addExercise = (
+  workout: Workout,
+  exerciseId: ExerciseId,
+  params: NewExerciseParams,
+): AddExerciseResult => {
   if (workout.exercises.length >= workout.maxExercises) {
     return { success: false, reason: 'max-exercises-reached' };
   }
   const exercise: Exercise = {
-    id: createExerciseId(),
+    id: exerciseId,
     workoutId: workout.id,
     ...params,
   };
@@ -270,15 +315,21 @@ type Occasion = {
 The repository checks the version on save:
 
 ```typescript
-save: async (occasion) => {
+save: async (occasion): Promise<'saved' | 'conflict'> => {
   const updated = await db.update(occasions)
     .set({ ...toRow(occasion), version: occasion.version + 1 })
     .where(and(eq(occasions.id, occasion.id), eq(occasions.version, occasion.version)));
-  if (updated.rowsAffected === 0) throw new ConcurrentModificationError(occasion.id);
+  return updated.rowsAffected === 1 ? 'saved' : 'conflict';
 },
 ```
 
-If two users load version 3 and both try to save, the first succeeds (version becomes 4) and the second fails (version 3 no longer matches). Per `error-modeling.md`, the use case does not catch this — it propagates like any infrastructure exception, and the delivery/integration boundary translates it (a driving adapter in hexagonal architecture; for example, HTTP 409 with a "please retry" message). If retrying on conflict is itself a domain flow, model it explicitly in the use case (reload, re-run the domain logic, retry the save a bounded number of times) rather than catching-and-hoping — the event-sourcing skill's command handler shows this shape.
+If two users load version 3 and both try to save, the first succeeds (version
+becomes 4) and the second receives `conflict`. The application maps that
+expected compare-and-save outcome to its explicit `concurrent-change` result;
+the driving adapter may render it as HTTP 409. Connection loss, timeouts, and
+other unexpected infrastructure failures still throw. If retrying is part of
+the use case, reload, re-run the domain decision, and retry the save a bounded
+number of times rather than catching an exception and blindly repeating it.
 
 **When to add optimistic locking:**
 - Multiple users can edit the same aggregate
@@ -286,6 +337,9 @@ If two users load version 3 and both try to save, the first succeeds (version be
 - Concurrent modifications would violate invariants
 
 **When it's unnecessary:**
-- Single-user aggregates (e.g., user preferences)
-- Append-only aggregates (e.g., event logs)
-- Short-lived aggregates created and consumed in one request
+- The storage operation already provides an equivalent atomic compare-and-set
+  or serialization guarantee
+- Fresh aggregate creation has no competing writer and handles duplicate keys
+  as an explicit application outcome
+- Appended facts are demonstrably commutative and unconstrained, with no stream
+  head or invariant contract; this does **not** include event-sourced aggregates

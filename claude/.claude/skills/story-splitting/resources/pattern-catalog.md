@@ -80,7 +80,7 @@ Meta-pattern: find the core complexity, identify what has many variations, reduc
 When several splits are plausible, prefer the one that can produce feedback fastest:
 
 - Which child can a real user try?
-- Which child can support decide with?
+- Which child can support a decision?
 - Which child can a stakeholder accept or reject in a demo?
 - Which child proves the riskiest assumption?
 - Which child makes the next product decision easier?

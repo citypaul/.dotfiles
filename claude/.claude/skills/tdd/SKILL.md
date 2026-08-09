@@ -93,7 +93,7 @@ Watch mode is an inner-loop accelerator, not PR evidence. The pre-PR record must
 
 ### Repository Authority
 
-Repository-specific test and mutation rules override this global guidance when stricter. Use this distribution's `commands/pr.md` freshness model only when the target repository has not defined a stricter invalidation rule. A global instruction to reuse current mutation evidence must never weaken a repository rule that invalidates it after later production or applicable test changes.
+Repository-specific test, coverage, mutation, and evidence-freshness rules take precedence. This global guidance must never weaken a repository rule that invalidates evidence after later production or applicable test changes.
 
 ---
 
@@ -132,185 +132,11 @@ Run this gate once the implementation and refactoring phase is complete and the 
 
 ---
 
-## TDD Evidence in Commit History
+## Evidence, History, And Coverage
 
-### Default Expectation
+Capture the expected RED failure, the GREEN pass, and the final non-watch verification. Existing commit history may corroborate the sequence, but do not reshape commits merely to perform TDD theatre; follow the repository's delivery policy.
 
-Commit history should show clear RED → GREEN → REFACTOR when applicable. Mutation testing is PR-readiness evidence for the completed phase, not a required commit after every TDD increment.
-
-**Ideal progression:**
-```
-commit abc123: test: add failing test for user authentication
-commit def456: feat: implement user authentication to pass test
-commit ghi789: refactor: extract validation logic for clarity
-
-Pre-PR gate: run mutation testing for the accumulated branch scope. If valuable
-survivors require stronger tests, add those tests and include their commit before
-creating the PR.
-```
-
-### Rare Exceptions
-
-TDD evidence may not be linearly visible in commits in these cases:
-
-**1. Multi-Session Work**
-- Feature spans multiple development sessions
-- Work done with TDD in each session
-- Commits organized for PR clarity rather than strict TDD phases
-- **Evidence**: Tests exist, all passing, implementation matches test requirements
-
-**2. Context Continuation**
-- Resuming from previous work
-- Original RED phase done in previous session/commit
-- Current work continues from that point
-- **Evidence**: Reference to RED commit in PR description
-
-**3. Refactoring Commits**
-- Large refactors after GREEN with a passing behavior-test baseline
-- Multiple small refactors combined into single commit
-- All tests remained green throughout
-- **Evidence**: Commit message notes "refactor only, no behavior change"
-
-### Documenting Exceptions in PRs
-
-When exception applies, document in PR description:
-
-```markdown
-## TDD Evidence
-
-RED phase: commit c925187 (added failing tests for shopping cart)
-GREEN phase: commits 5e0055b, 9a246d0 (implementation + bug fixes)
-REFACTOR: commit 11dbd1a (test isolation improvements)
-PRE-PR MUTATION GATE: 96% mutation score; commit 7b8c9d0 strengthened boundary tests
-
-Test Evidence:
-✅ 4/4 tests passing (7.7s with 4 workers)
-```
-
-**Important**: These exceptions concern evidence presentation. New or changed behavior still follows RED. A true behavior-preserving refactor follows the explicit REFACTOR path above and should document its passing pre-change oracles rather than inventing a RED phase.
-
----
-
-## Coverage Verification - CRITICAL
-
-### NEVER Trust Coverage Claims Without Verification
-
-**Always run coverage yourself before approving PRs.**
-
-### Verification Process
-
-**Before approving any PR claiming "100% coverage":**
-
-1. Check out the branch
-   ```bash
-   git checkout feature-branch
-   ```
-
-2. Run coverage verification (adapt to the project's package manager and layout):
-   ```bash
-   pnpm test:coverage
-   # OR
-   pnpm exec vitest run --coverage
-   ```
-
-3. Verify ALL metrics hit 100%:
-   - Lines: 100% ✅
-   - Statements: 100% ✅
-   - Branches: 100% ✅
-   - Functions: 100% ✅
-
-4. Check that tests are behavior-driven (not testing implementation details)
-
-**For anti-patterns that create fake coverage (coverage theater)**, see the `testing` skill.
-
-### Reading Coverage Output
-
-Look for the "All files" line in coverage summary:
-
-```
-File           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
----------------|---------|----------|---------|---------|-------------------
-All files      |     100 |      100 |     100 |     100 |
-setup.ts       |     100 |      100 |     100 |     100 |
-context.ts     |     100 |      100 |     100 |     100 |
-endpoints.ts   |     100 |      100 |     100 |     100 |
-```
-
-✅ This is 100% coverage - all four metrics at 100%.
-
-### Red Flags
-
-Watch for these signs of incomplete coverage:
-
-❌ **PR claims "100% coverage" but you haven't verified**
-- Never trust claims without running coverage yourself
-
-❌ **Coverage summary shows <100% on any metric**
-```
-All files      |   97.11 |    93.97 |   81.81 |   97.11 |
-```
-- This is NOT 100% coverage (Functions: 81.81%, Lines: 97.11%)
-
-❌ **"Uncovered Line #s" column shows line numbers**
-```
-setup.ts       |   95.23 |      100 |      60 |   95.23 | 45-48, 52-55
-```
-- Lines 45-48 and 52-55 are not covered
-
-❌ **Coverage gaps without explicit exception documentation**
-- If coverage <100%, exception should be documented (see Exception Process below)
-
-### When Coverage Drops, Ask
-
-**"What business behavior am I not testing?"**
-
-NOT "What line am I missing?"
-
-Add tests for behavior, and coverage follows naturally.
-
----
-
-## 100% Coverage Exception Process
-
-### Default Rule: 100% Coverage Required
-
-No exceptions without explicit approval and documentation.
-
-This applies to code developed with TDD. When working in legacy code, the scope is the change area, not the whole codebase — see the `characterisation-tests` skill for that workflow.
-
-### Requesting an Exception
-
-If 100% coverage cannot be achieved:
-
-**Step 1: Document in package README**
-
-Explain:
-- Current coverage metrics
-- WHY 100% cannot be achieved in this package
-- WHERE the missing coverage will come from (integration tests, E2E, etc.)
-
-**Step 2: Get explicit approval**
-
-From project maintainer or team lead
-
-**Step 3: Document in CLAUDE.md**
-
-Under "Test Coverage: 100% Required" section, list the exception
-
-**Example Exception:**
-
-```markdown
-## Current Exceptions
-
-- **Next.js Adapter**: 86% function coverage
-  - Documented in `/packages/nextjs-adapter/README.md`
-  - Missing coverage from SSR functions (tested in E2E layer)
-  - Approved: 2024-11-15
-```
-
-### Remember
-
-The burden of proof is on the requester. 100% is the default expectation.
+Coverage is a diagnostic, not a universal target. Run the repository's coverage command when policy requires it or when making a coverage claim. Verify the exact lines, branches, statements, and functions claimed, then ask whether any gap represents untested behavior. A high percentage does not prove test quality; use the `testing` skill's coverage-theatre checks and mutation or alternate evidence where proportionate.
 
 ---
 
@@ -324,10 +150,8 @@ The burden of proof is on the requester. 100% is the default expectation.
 4. **Implement minimum** - just enough to pass
 5. **Run focused/affected tests** - confirm the behavior and its related tests pass
 6. **Refactor if applicable and valuable** - improve code structure while focused and affected tests stay green
-7. **STOP and wait for commit approval** - present the increment and ordinary verification; never commit without explicit user approval
-8. **Commit** - with conventional commit message, once approved
-9. **Repeat RED-GREEN-REFACTOR** - continue with further increments and commits without running the mutation harness until the planned PR scope is complete
-10. **At PR readiness, run the mutation gate once** - stop watchers, run mutation testing where meaningful (or record explicit `N/A` plus proportionate alternate evidence), address valuable survivors within that gate, and complete the repository-defined non-watch PR checks. Apply the target repository's evidence-invalidation rule; use this distribution's `commands/pr.md` freshness model only when no stricter repository rule exists
+7. **Repeat RED-GREEN-REFACTOR** - continue without running the mutation harness until the planned PR scope is complete
+8. **At PR readiness, run the mutation gate once** - stop watchers, run mutation testing where meaningful (or record explicit `N/A` plus proportionate alternate evidence), address valuable survivors within that gate, and complete the repository-defined non-watch PR checks
 
 ### Workflow Example
 
@@ -358,47 +182,19 @@ if (user.name === '') {
 
 # 5. Refactor if needed (extract validation, improve naming)
 
-# 6. STOP — present the increment + ordinary verification, wait for commit approval
+# 6. Repeat RED-GREEN-REFACTOR increments without running the mutation harness
 
-# 7. Commit (after approval)
-git add .
-git commit -m "feat: reject empty user names"
-
-# 8. Repeat RED-GREEN-REFACTOR increments without running the mutation harness
-
-# 9. After the final edit, stop the watcher with Ctrl+C. When the accumulated work
+# 7. After the final edit, stop the watcher with Ctrl+C. When the accumulated work
 #    is otherwise ready to create the PR, run the
 #    end-of-phase mutation gate once and address valuable survivors within it.
 
-# 10. Exit watch mode and finish the remaining PR verification, including the
+# 8. Exit watch mode and finish the remaining PR verification, including the
 #    inspected repository-defined complete non-watch test gate.
 
 #     If later verification changes mutation-relevant production or applicable
-#     tests/evidence, apply the target repository's invalidation rule. Use this
-#     distribution's commands/pr.md freshness model only when no stricter rule exists.
-#     Keep the complete non-watch project verification current for the final tree.
+#     tests/evidence, apply the target repository's invalidation rule and rerun
+#     the evidence it invalidates. Keep final-tree verification current.
 ```
-
----
-
-## Commit Messages
-
-Use conventional commits format:
-
-```
-feat: add user role-based permissions
-fix: correct email validation regex
-refactor: extract user validation logic
-test: add edge cases for permission checks
-docs: update architecture documentation
-```
-
-**Format:**
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `refactor:` - Code change that neither fixes bug nor adds feature
-- `test:` - Adding or updating tests
-- `docs:` - Documentation changes
 
 ---
 
@@ -406,13 +202,13 @@ docs: update architecture documentation
 
 Before submitting PR:
 
-- [ ] All tests must pass
-- [ ] All linting and type checks must pass
-- [ ] **Coverage verification REQUIRED** - claims must be verified before review/approval
-- [ ] **End-of-phase mutation gate REQUIRED where meaningful** - run once for the accumulated PR scope, address valuable survivors, or document explicit `N/A` plus proportionate alternate evidence
+- [ ] All repository-required tests pass
+- [ ] All repository-required linting and type checks pass
+- [ ] Coverage claims and repository thresholds are verified with the repository's own command
+- [ ] Where meaningful, run the end-of-phase mutation gate once for the accumulated PR scope and address valuable survivors; otherwise document explicit `N/A` plus proportionate alternate evidence
 - [ ] Mutation or alternate evidence satisfies the target repository's invalidation rule; global reuse guidance did not weaken a stricter repository policy
 - [ ] Watchers are stopped and the repository-defined complete non-watch PR test gate passes; in monorepos it includes all configured projects and required integration/E2E suites
-- [ ] PRs focused on single feature or fix
+- [ ] The PR scope is cohesive and follows repository delivery policy
 - [ ] Include behavior description (not implementation details)
 
 **Example PR Description:**
@@ -431,13 +227,13 @@ Adds support for user role-based permissions with configurable access levels.
 ## Test Evidence
 
 ✅ 42/42 tests passing
-✅ 100% coverage verified (see coverage report)
+✅ Repository coverage gate passed (see attached report)
 
 ## TDD Evidence
 
-RED: commit 4a3b2c1 (failing tests for permission system)
-GREEN: commit 5d4e3f2 (implementation)
-REFACTOR: commit 6e5f4a3 (extract permission resolution logic)
+RED: expected permission test failed before production changes
+GREEN: focused permission tests passed after the minimum implementation
+REFACTOR: affected tests remained green after permission resolution was simplified
 ```
 
 ---
@@ -453,12 +249,12 @@ After GREEN establishes a passing behavior-test baseline, assess and classify im
 - ❌ Writing new or changed production behavior without a failing behavior test
 - ❌ Fabricating failing tests for implementation shape to justify a behavior-preserving refactor
 - ❌ Testing implementation details (spies on internal methods)
-- ❌ 1:1 mapping between test files and implementation files
-- ❌ Using `let`/`beforeEach` for test data
+- ❌ Mirroring every implementation file with a test file by reflex
+- ❌ Shared mutable test state or lifecycle hooks without reliable isolation and cleanup
 - ❌ Trusting coverage claims without verification
 - ❌ Mocking the function being tested
-- ❌ Redefining schemas in test files
-- ❌ Factories returning partial/incomplete objects
+- ❌ Duplicating a production-owned contract schema in test files
+- ❌ Factories silently returning objects incomplete for the scenario; intentional invalid fixtures must be explicit in their name and type
 - ❌ Speculative code ("just in case" logic without tests)
 - ❌ Re-running the full suite after every edit instead of using focused watch or related/affected test selection
 - ❌ Hand-picking one test file for GREEN/REFACTOR when the runner can derive all affected tests from the complete change set
@@ -478,14 +274,13 @@ After GREEN establishes a passing behavior-test baseline, assess and classify im
 Before marking work complete:
 
 - [ ] Every new or changed behavior has a failing behavior test that demanded it, or the change is explicitly evidenced as a behavior-preserving REFACTOR slice
-- [ ] Commit history shows TDD evidence (or documented exception)
+- [ ] RED, GREEN, and final verification evidence is recorded; commit history is supporting evidence only when the repository uses it that way
 - [ ] Focused and affected tests stayed green during the inner loop
 - [ ] Every claimed RED/GREEN result names an expected test that was actually collected and executed
 - [ ] The watcher was stopped and no watcher process or temporary fixture was left behind
 - [ ] A completed non-watch full-suite run passes before PR
-- [ ] Coverage verified at 100% (or exception documented)
+- [ ] Any coverage claim or repository threshold was verified with the repository-owned command
 - [ ] If the work is ready for a PR, the end-of-phase mutation gate ran once for the accumulated scope and valuable survivors were addressed where meaningful, or explicit `N/A` plus proportionate alternate evidence was reviewed
-- [ ] Test factories used (no `let`/`beforeEach`)
+- [ ] Test state is isolated; fixtures or factories are used where they improve clarity
 - [ ] Tests verify behavior (not implementation details)
 - [ ] Refactoring assessed when applicable and applied if valuable, or explicitly `N/A`
-- [ ] Conventional commit messages used

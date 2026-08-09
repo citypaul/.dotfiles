@@ -9,7 +9,7 @@ This skill applies only to projects that have opted in to hexagonal architecture
 
 For domain modeling (entities, value objects, aggregates, ubiquitous language), load the `domain-driven-design` skill. Hex arch and DDD are complementary but independent — hex arch provides structural isolation (how the outside connects), DDD provides the domain model (what lives in the center). A project may use one without the other.
 
-Use the `structure-codebase` skill when designing or changing the physical source tree. For an opted-in hexagonal backend it makes the entire provider-free inside visible under `hexagon/`, keeps concrete driving/driven technology and reusable test interactors outside, and defines proportional package/import enforcement. If physical restructuring is not requested, preserve the repo's existing layout while enforcing the dependency direction described here.
+Use the `structure-codebase` skill when designing or changing the physical source tree. For an opted-in hexagonal backend it groups by business capability or bounded context first, then makes the provider-free inside visible under that owner's `hexagon/`, with concrete driving/driven technology and reusable test interactors outside. If physical restructuring is not requested, preserve the repo's existing layout while enforcing the dependency direction described here.
 
 Use `codebase-design` for the coherent responsibility and full caller burden behind a port or in-process module. Not every module interface or test seam is a hexagonal port, and intentionally thin driving/driven adapters should remain thin. Use `finding-seams` for the minimum enabling point needed to characterize hard-coupled legacy behavior before deciding whether a durable port is warranted.
 
@@ -31,7 +31,12 @@ For authoritative sources and naming rationale, see `resources/references.md`.
 
 ## Core Concept
 
-Business logic lives in the center. External systems connect through ports (interfaces) and adapters (implementations). Dependencies point inward — the domain never knows about the outside world.
+Business logic lives in domain policy; use cases and orchestration live in application policy. External systems connect through ports (interfaces) and adapters (implementations). Dependencies point inward: domain remains pure, application knows external capabilities only through owned abstractions, and neither imports concrete adapters.
+
+- Domain code depends on no framework, transport protocol, persistence implementation, clock, UUID generator, vendor SDK, or UI concern. Supply time, identifiers, and external facts as typed inputs.
+- Driving/input adapters parse and translate untrusted external input into typed application commands, then invoke application use cases.
+- Application services coordinate use cases, invoke domain behavior, and call any required ports.
+- Driven/output adapters implement the ports owned by their inner consumers and translate technology-specific results at the boundary.
 
 ```
          Driving (left)                    Driven (right)
@@ -42,9 +47,9 @@ Business logic lives in the center. External systems connect through ports (inte
     └──────────────────┘      ││    └──────────────────┘
          call into ──────►  ┌────┐  ◄────── implement
                             │    │
-                            │ DO │
-                            │ MA │
                             │ IN │
+                            │ SI │
+                            │ DE │
                             │    │
          call into ──────►  └────┘  ◄────── implement
     ┌──────────────────┐      ││    ┌──────────────────┐
@@ -66,7 +71,9 @@ The pattern defines exactly two zones — inside and outside — and says nothin
 
 ## Ports = Public Contracts
 
-A port is a named, purposeful conversation at the application boundary. In TypeScript, represent ports as explicit `interface` types when the boundary is public or architectural: driving adapters call driving port interfaces, and driven adapters/fakes implement driven port interfaces.
+A port is a named, purposeful conversation at the inside/outside boundary. In TypeScript, represent ports as explicit `interface` types when the boundary is public or architectural: driving adapters call driving port interfaces, and driven adapters/fakes implement driven port interfaces.
+
+A port is owned by the innermost consumer that needs the abstraction. Driving ports are application-owned because they expose application use cases. Infrastructure-facing repository and gateway ports are also normally application-owned because use cases consume them. A port belongs in domain only when the domain model itself genuinely owns and consumes that conversation. Preserve dependency inversion without conflating **inside-owned** with **domain-owned**.
 
 Use case implementations satisfy the driving port. The driving adapter should depend on the port's role-shaped interface, not a framework-specific controller, handler class, or concrete adapter.
 
@@ -77,7 +84,7 @@ Name every port from the application's point of view, using the domain language 
 | Boundary | Good names | Avoid | Why |
 |----------|------------|-------|-----|
 | Driving/public API | `ForPlacingOrders`, `ForPledgingToOccasions` | `PlaceOrderUseCase`, `PlaceOrderHandler`, `OrderInputPort` | Names the actor capability, not the pattern |
-| Aggregate persistence | `OrderRepository`, `ContributorRepository` (or `ForStoringOrders`) | `OrderDatabase`, `OrderDao`, `SqlOrderPort` | Repository is a domain collection abstraction |
+| Aggregate persistence | `OrderRepository`, `ContributorRepository` (or `ForStoringOrders`) | `OrderDatabase`, `OrderDao`, `SqlOrderPort` | Names aggregate access needed by the use case |
 | External service | `PaymentGateway`, `ExchangeRateProvider` (or `ForPaying`, `ForObtainingRates`) | `StripeClient`, `HttpPaymentPort` | Names the capability the app needs, not the vendor/protocol |
 | Notifications/events | `OrderEventPublisher`, `ReceiptSender` (or `ForNotifyingContributors`) | `SnsAdapter`, `MessageBusPort` | Names the business-side interaction |
 
@@ -95,15 +102,32 @@ interface ForPlacingOrders {
   readonly placeOrder: (command: PlaceOrderCommand) => Promise<PlaceOrderResult>;
 }
 
-// Driven port — owned inside beside application policy, implemented by adapters
+// Driven port — application-owned because the use case consumes it
 interface UserRepository {
   readonly findById: (id: UserId) => Promise<User | undefined>;
   readonly save: (user: User) => Promise<void>;
 }
 
-// Driven port — owned inside beside application policy, implemented by adapters
+type PreparePaymentResult =
+  | { readonly success: true; readonly paymentId: PaymentId }
+  | { readonly success: false; readonly reason: PaymentFailure };
+
+type PaymentOutcome =
+  | { readonly outcome: 'paid'; readonly chargeId: ChargeId }
+  | { readonly outcome: 'declined'; readonly reason: PaymentFailure }
+  | { readonly outcome: 'pending' };
+
+// Driven port — application-owned because the use case consumes it
 interface PaymentGateway {
-  readonly charge: (amount: Money, paymentInfo: PaymentInfo) => Promise<ChargeResult>;
+  readonly preparePayment: (request: {
+    readonly amount: Money;
+    readonly reference: OrderId;
+    readonly idempotencyKey: OrderId;
+  }) => Promise<PreparePaymentResult>;
+  readonly completePayment: (request: {
+    readonly paymentId: PaymentId;
+    readonly paymentInfo: PaymentInfo;
+  }) => Promise<PaymentOutcome>;
 }
 
 // Driven port — event publishing (outbound to message brokers)
@@ -146,23 +170,35 @@ const createFakeUserRepository = (initial: readonly User[] = []): UserRepository
 };
 ```
 
-**Adapter error handling:** Infrastructure errors (connection lost, timeout, constraint violation) should either propagate as exceptions to a top-level handler or be translated into domain-appropriate results at the adapter boundary. The domain never catches infrastructure errors — it doesn't know infrastructure exists.
+**Adapter error handling:** Translate expected compare-and-save or uniqueness
+outcomes into explicit application-port results. Unexpected infrastructure
+failures (connection loss, timeout, disk failure) propagate to a top-level
+handler. The domain never catches infrastructure errors because it does not
+know infrastructure exists.
 
 ```typescript
-// Driven adapter: translate expected infrastructure errors into domain-specific errors
-const createDrizzleUserRepository = (db: Database): UserRepository => ({
-  save: async (user) => {
+type CreateUserResult =
+  | { readonly success: true }
+  | { readonly success: false; readonly reason: 'already-exists' };
+
+// Driven adapter: translate an expected storage condition into port vocabulary
+const createDrizzleUserCreator = (db: Database) => ({
+  create: async (user: User): Promise<CreateUserResult> => {
     try {
-      await db.insert(users).values(toRow(user)).onConflictDoUpdate({ ... });
+      await db.insert(users).values(toRow(user));
+      return { success: true };
     } catch (e) {
-      if (isUniqueConstraintError(e)) throw new UserAlreadyExistsError(user.id);
+      if (isUniqueConstraintError(e)) {
+        return { success: false, reason: 'already-exists' };
+      }
       throw e; // unexpected errors (connection lost, disk full) propagate
     }
   },
 });
 ```
 
-Expected constraint violations become domain-specific errors (caught by the use case or driving adapter). Unexpected infrastructure errors propagate to the top-level handler.
+The use case handles `already-exists` exhaustively. Unexpected infrastructure
+errors propagate to the top-level handler.
 
 **Key principle:** If swapping an adapter requires changing domain code, the boundary is wrong.
 
@@ -178,11 +214,11 @@ Not all reads need to go through repositories. The repository pattern enforces a
 | Read (single aggregate) | Repository | `userRepo.findById(id)` |
 | Read (cross-aggregate, display) | Query function (JOINs freely) | `getEventDetail(db, eventId)` |
 
-Query functions are driven adapters too — in the visible layout they live under the relevant provider edge (for example, `adapters/driven/postgres/queries/`) and return read-optimized DTOs. They bypass the repository pattern intentionally.
+Query functions are driven adapters too — in a capability-first layout they live under the owner's provider edge (for example, `packages/reporting/adapters/driven/postgres/queries/`) and return read-optimized DTOs. They bypass the repository pattern intentionally.
 
 ```typescript
 // Query function — JOINs across aggregates for display
-// Lives at adapters/driven/postgres/queries/, outside the hexagon
+// Lives at packages/reporting/adapters/driven/postgres/queries/, outside the hexagon
 const getParticipantEventView = async (db: Database, eventId: string) => {
   return db.select({ ... })
     .from(events)
@@ -212,8 +248,33 @@ const createOrder = async (order: NewOrder) => {
 };
 
 // RIGHT — dependencies injected into a use case implementation
+type RecordPaymentResult =
+  | { readonly outcome: 'recorded'; readonly order: Order }
+  | { readonly outcome: 'conflict' };
+
+type RecordChargeResult =
+  | { readonly outcome: 'recorded'; readonly order: Order }
+  | { readonly outcome: 'conflict' };
+
+interface OrderRepository {
+  readonly findById: (id: OrderId) => Promise<Order | undefined>;
+  readonly findOrCreatePending: (
+    order: NewOrder & { readonly id: OrderId },
+  ) => Promise<Order>;
+  readonly recordPayment: (
+    id: OrderId,
+    paymentId: PaymentId,
+    options: { readonly expectedVersion: number },
+  ) => Promise<RecordPaymentResult>;
+  readonly recordCharge: (
+    id: OrderId,
+    chargeId: ChargeId,
+    options: { readonly expectedVersion: number },
+  ) => Promise<RecordChargeResult>;
+}
+
 interface ForPlacingOrders {
-  readonly placeOrder: (order: NewOrder) => Promise<OrderResult>;
+  readonly placeOrder: (order: NewOrder & { readonly id: OrderId }) => Promise<OrderResult>;
 }
 
 const createOrderPlacement = (
@@ -221,13 +282,58 @@ const createOrderPlacement = (
   gateway: PaymentGateway,
 ): ForPlacingOrders => ({
   placeOrder: async (order) => {
-    const charge = await gateway.charge(order.total, order.payment);
-    if (!charge.success) return { success: false, reason: charge.error };
-    const saved = await repo.save({ ...order, chargeId: charge.id });
-    return { success: true, order: saved };
+    const pending = await repo.findOrCreatePending(order);
+    if (pending.status === 'paid') return { success: true, order: pending };
+
+    let payable = pending;
+    if (payable.paymentId === undefined) {
+      const prepared = await gateway.preparePayment({
+        amount: payable.total,
+        reference: payable.id,
+        idempotencyKey: payable.id,
+      });
+      if (!prepared.success) return { success: false, reason: prepared.reason };
+
+      const paymentRecorded = await repo.recordPayment(payable.id, prepared.paymentId, {
+        expectedVersion: payable.version,
+      });
+      if (paymentRecorded.outcome === 'recorded') {
+        payable = paymentRecorded.order;
+      } else {
+        const current = await repo.findById(payable.id);
+        if (current?.status === 'paid') return { success: true, order: current };
+        if (current?.status !== 'pending' || current.paymentId === undefined) {
+          return { success: false, reason: 'concurrent-change' };
+        }
+        payable = current;
+      }
+    }
+
+    if (payable.paymentId === undefined) return { success: false, reason: 'concurrent-change' };
+    const payment = await gateway.completePayment({
+      paymentId: payable.paymentId,
+      paymentInfo: payable.payment,
+    });
+    if (payment.outcome === 'pending') return { success: false, reason: 'payment-pending' };
+    if (payment.outcome === 'declined') return { success: false, reason: payment.reason };
+
+    const recorded = await repo.recordCharge(payable.id, payment.chargeId, {
+      expectedVersion: payable.version,
+    });
+    if (recorded.outcome === 'recorded') return { success: true, order: recorded.order };
+
+    const current = await repo.findById(payable.id);
+    if (current?.status === 'paid' && current.chargeId === payment.chargeId) {
+      return { success: true, order: current };
+    }
+    return { success: false, reason: 'concurrent-change' };
   },
 });
 ```
+
+`findOrCreatePending` commits the order before external work and rejects reuse of its client-supplied ID with different data. `preparePayment` creates a provider payment object without charging it; the application records that durable `paymentId` before `completePayment` can move money. A crash or concurrent preparation can leave an uncharged orphan to reconcile or cancel by order reference, but only the payment ID that wins `recordPayment` is completed. A Stripe adapter, for example, creates one PaymentIntent for the order and later retrieves/confirms that same object.
+
+The preparation idempotency key is a short-retry optimisation, not indefinite crash recovery: [Stripe can prune request keys once they are at least 24 hours old](https://docs.stripe.com/api/idempotent_requests). A late retry therefore never creates a replacement for an already-recorded payment ID. `completePayment` inspects the durable provider object, confirms it only when appropriate, and reports non-terminal or ambiguous provider state as `payment-pending` for webhook/reconciler follow-up. If the process stops after payment but before `recordCharge`, recovery inspects the same provider object and records the same charge; the optimistic-conflict loser succeeds only when that exact charge is already stored. A gateway that cannot provide a durable payment object/reference needs an explicitly bounded retry plus reconciliation/compensation workflow, not raw charge-then-save.
 
 **Composition root:** Wiring happens at the application entry point — where adapters are created from environment/config and injected into use cases. This is the only place that knows about concrete implementations.
 
@@ -243,14 +349,25 @@ export async function POST(request: Request) {
   const gateway = createStripeGateway(env.STRIPE_KEY);
   const orderPlacement: ForPlacingOrders = createOrderPlacement(repo, gateway);
 
+  // Translate transport syntax separately from request-schema validation.
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'malformed-json' }, { status: 400 });
+  }
+  const parsedBody = CreateOrderSchema.safeParse(rawBody);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: 'invalid-body' }, { status: 422 });
+  }
+
   // Call use case
-  const body = CreateOrderSchema.parse(await request.json());
-  const result = await orderPlacement.placeOrder(body);
+  const result = await orderPlacement.placeOrder(parsedBody.data);
   return NextResponse.json(result);
 }
 ```
 
-This handler may combine two roles only because the framework makes it the executable deployment entrypoint and the graph is trivial. Keep the inline wiring visually distinct from request translation. In a shared or nontrivial host, construct the graph once in `main.ts` or `composition/` and give the route a prepared `ForPlacingOrders`; an ordinary route module never selects implementations. No business logic belongs in either role.
+This handler may combine two roles only because the framework makes it the executable deployment entrypoint and the graph is trivial. Keep the inline wiring visually distinct from request translation. At an HTTP boundary, malformed JSON is a transport-syntax failure (`400`); syntactically valid input that fails the body or path schema is an unprocessable request (`422`). Keep the JSON `try`/`catch` narrow so it cannot turn application or infrastructure failures into client errors. In a shared or nontrivial host, construct the graph once in `main.ts` or `composition/` and give the route a prepared `ForPlacingOrders`; an ordinary route module never selects implementations. No business logic belongs in either role.
 
 **The configurator:** whatever code knows all the players and introduces them — the composition root here — is the pattern's fifth element. Constructor injection (this skill's default) is one of three sanctioned shapes: a setter or `ForConfiguring...` function allows driven adapters to be swapped while the system runs (hazard: an app constructed but never configured), and dependency lookup hands the application a broker it asks at call time. In tests, the test case itself plays configurator and driving actor at once; in production, the composition root does.
 
@@ -265,11 +382,14 @@ const handlePledgeMessage = async (message: SQSMessage, env: Env) => {
   const pledging: ForPledgingToOccasions = createPledgingToOccasions(occasionRepo, contributorRepo);
 
   const dto = PledgeSchema.parse(JSON.parse(message.body));
-  await pledging.pledgeToOccasion(dto);
+  await pledging.pledgeToOccasion({
+    ...dto,
+    pledgeId: createPledgeId(message.messageId),
+  });
 };
 ```
 
-The use case doesn't know or care whether it was triggered by an HTTP request, a queue message, a cron job, or a CLI command. Every driving adapter remains thin translation glue; only an executable-entrypoint exception may also select a trivial concrete graph.
+The use case doesn't know or care whether it was triggered by an HTTP request, a queue message, a cron job, or a CLI command. `messageId` is stable across an SQS redelivery, and pledge persistence must enforce `pledgeId` uniqueness atomically with the pledge; use a producer event ID from the body instead if logically identical publishes can have different SQS IDs. Every driving adapter remains thin translation glue; only an executable-entrypoint exception may also select a trivial concrete graph.
 
 **Naming:** Use case interfaces and implementations are named after the business capability — `ForPlacingOrders`, `createOrderPlacement`, `pledgeToOccasion`. Never `CreateOrderUseCase` or `PlaceOrderHandler`. Pattern suffixes are technical jargon, not domain language. You can tell a use case implementation from a domain function by its dependencies — use case implementations take driven ports (repositories, gateways) as parameters; domain functions take only domain types.
 
@@ -285,7 +405,7 @@ These are logical roles, not mandatory folder names. The `structure-codebase` sk
 |------|------|----------|-------|
 | Domain policy | Inside | Pure business rules, types, state transitions | Focused behavior/property tests |
 | Application policy | Inside | Provider-free orchestration, driving-port implementations, driven-port use | Use-case tests with test interactors |
-| Port contracts | Inside | Purposeful provided/required application conversations | Exercised from both sides of each port |
+| Port contracts | Inside, normally application-owned | Purposeful provided/required conversations owned by their innermost consumer | Exercised from both sides of each port |
 | Driven adapters | Outside | Repository implementations, API clients, query functions | Integration/contract tests |
 | Driving adapters | Outside | Route handlers, event listeners, CLI/queue entrypoints | Transport/E2E tests |
 | Test interactors | Outside | Test drivers, fakes, reusable behavioral contract suites | Test support only |
@@ -294,7 +414,7 @@ These are logical roles, not mandatory folder names. The `structure-codebase` sk
 **Key rules:**
 - Domain policy has zero framework/infrastructure dependencies and remains genuinely pure.
 - Application policy may call injected ports but performs no concrete I/O and remains runnable in-process.
-- Driving and driven port contracts live inside, preferably beside the policy that owns the conversation.
+- Driving and driven port contracts live inside beside their innermost consumer; application owns the usual use-case, repository, and gateway ports, while domain owns only ports it genuinely consumes.
 - Trust-boundary/wire schemas live with the adapter that parses them; domain-owned validation may live inside when it expresses business invariants without leaking a provider representation.
 - Adapters import inside public contracts, never the reverse.
 - Driving adapters are thin — parse, authenticate, translate, delegate, respond.
@@ -348,7 +468,7 @@ The most common hex arch violation. Domain code imports from frameworks, databas
 import { eq } from 'drizzle-orm';
 export const findActiveUsers = async (db) => db.select()...
 
-// ✅ Domain defines the contract; adapter implements it
+// ✅ Application defines the contract it consumes; adapter implements it
 interface UserRepository {
   readonly findActive: () => Promise<readonly User[]>;
 }
@@ -362,13 +482,13 @@ Route handlers or repositories contain business rules instead of delegating to d
 // ❌ Business rule in route handler
 export async function POST(request: Request) {
   const order = await orderRepo.findById(id);
-  if (order.total > 1000) { await requireManagerApproval(order); } // business rule!
+  if (order.itemCount > 100) { await requireManagerApproval(order); } // business rule!
   ...
 }
 
 // ✅ Business rule in domain
 const placeOrder = (order: Order): PlaceOrderResult => {
-  if (order.total > 1000) return { success: false, reason: 'requires-approval' };
+  if (order.itemCount > 100) return { success: false, reason: 'requires-approval' };
   ...
 };
 ```
@@ -446,6 +566,7 @@ const placeOrder = async (...) => ...
 
 - [ ] All external boundaries use ports/public contracts — nothing outside reaches past a port
 - [ ] Domain logic has zero framework/infrastructure dependencies (no source dependencies on any actor or adapter)
+- [ ] Domain logic receives time, generated identifiers, and external facts as values rather than reading clocks, UUID libraries, or SDKs
 - [ ] Driven actors are configurable at run time — the application never constructs them internally (the pattern leaves the configurator's shape open; parameter injection is this skill's house default)
 - [ ] Ports use business language only; port methods never expose technology types
 - [ ] Swapping any adapter requires zero domain code changes
@@ -455,8 +576,9 @@ const placeOrder = async (...) => ...
 
 - [ ] If `structure-codebase` has been applied, the visible inside/outside package or import rules are present and passing
 - [ ] Driving adapters are thin — parse, authenticate, translate, delegate, respond; only a trivial executable-entrypoint exception also composes
+- [ ] Driving adapters translate external input into typed application commands before invoking use cases
 - [ ] Driven adapters (repos) implement ports, contain no business logic
-- [ ] Driven port interfaces live inside beside their owning policy, named by business purpose
+- [ ] Ports live with their innermost consumer; use-case, repository, and gateway ports are normally application-owned, while domain owns only ports it genuinely consumes
 - [ ] Public interfaces avoid `I` prefixes, `Interface` suffixes, `Port` suffixes, and `Impl` implementations
 - [ ] Driving port and use case names use business capability language, not `UseCase`/`Handler` pattern names
 - [ ] Wire schemas stay at trust boundaries; business-invariant validation stays inside without provider leakage

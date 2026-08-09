@@ -1,6 +1,6 @@
 # The Event Store and Storage
 
-The event store is the append-only, ordered, optimistic-concurrency-aware persistence for streams. In hexagonal terms it is a **driven port** with an adapter — the domain depends on the interface, not the technology. This resource covers the port, a concrete Postgres implementation, the event envelope, serialization, and the TS/Node tooling landscape.
+The event store is the append-only, ordered, optimistic-concurrency-aware persistence for streams. In hexagonal terms it is a **driven port** with an adapter — the application command handler depends on the interface, not the technology. This resource covers the port, a concrete Postgres implementation, the event envelope, serialization, and the TS/Node tooling landscape.
 
 ## What an Event Store Must Provide
 
@@ -15,10 +15,10 @@ Production stores add **global ordering** (a store-wide monotonic position for p
 
 ## The Port
 
-Define the port in the domain in application language. Keep it small; this repo models the concurrency failure as a **returned value**, not a thrown exception (per the error-modelling rule):
+Define the port beside the application command handler that consumes it, using application language. Keep it small; model expected concurrency failure as a **returned value**, not a thrown exception (per the error-modelling rule):
 
 ```typescript
-// port (domain layer) — interface because it is a behaviour contract.
+// port (application layer) — owned by the command handler that consumes it.
 // Typed to one aggregate's event family E (like a repository). One physical
 // store holds many stream types; the adapter parses stored JSON into E on read,
 // so each typed EventStore<E> is a view over the streams of that family.
@@ -35,41 +35,72 @@ interface EventStore<E> {
 }
 ```
 
-Typing the port to `E` (rather than a per-call `readStream<E>`) keeps call sites cast-free and matches the repo's typed-repository convention. `version` is the stream's current version — the number of events it holds. A brand-new stream is version `0`; append with `expectedVersion: 0` to require it not yet exist. Some libraries (Emmett, KurrentDB) **throw** a `ConcurrencyError`/`WrongExpectedVersionException` instead of returning a status; if you adopt one of those, translate the throw into a result at the adapter boundary so the domain stays exception-free for expected outcomes.
+Typing the port to `E` (rather than a per-call `readStream<E>`) keeps call sites cast-free and gives each command handler a view over one aggregate's event family. `version` is the stream's current version — the number of events it holds. A brand-new stream is version `0`; append with `expectedVersion: 0` to require it not yet exist. Some libraries (Emmett, KurrentDB) **throw** a `ConcurrencyError`/`WrongExpectedVersionException` instead of returning a status; if you adopt one of those, translate the throw into a result at the adapter boundary so the domain stays exception-free for expected outcomes.
 
 A fuller port adds `subscribe`/`readAll` for async projections — keep those on a separate port so a use case that only writes does not depend on subscription machinery.
 
 ## A Postgres Event Store
 
-Postgres is the pragmatic default: one table, a concurrency constraint, transactional appends. The canonical single-table schema (after Kasey Speakman, with a first-class event `id`):
+Postgres is the pragmatic default: a stream-head row for compare-and-swap, an append-only event table, and transactional appends. This version also uses a transactional global counter so a projection's scalar checkpoint follows commit order:
 
 ```sql
+CREATE TABLE event_stream (
+    stream_id  uuid PRIMARY KEY,
+    version    int NOT NULL CHECK (version >= 0)
+);
+
+CREATE TABLE event_store_position (
+    singleton  boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    position   bigint NOT NULL CHECK (position >= 0)
+);
+INSERT INTO event_store_position (singleton, position) VALUES (true, 0);
+
 CREATE TABLE event (
-    global_position  bigserial   NOT NULL,          -- store-wide order (projections)
+    global_position  bigint      NOT NULL,           -- commit-ordered projection cursor
     id               uuid        NOT NULL,           -- unique event id (idempotency + causation target)
-    stream_id        uuid        NOT NULL,           -- the aggregate instance
-    version          int         NOT NULL,           -- per-stream position (1, 2, 3, …)
+    stream_id        uuid        NOT NULL REFERENCES event_stream (stream_id),
+    version          int         NOT NULL CHECK (version > 0),
     type             text        NOT NULL,           -- event type name, e.g. 'MoneyDeposited'
     data             jsonb       NOT NULL,           -- domain payload
     metadata         jsonb       NOT NULL,           -- envelope: correlation/causation/etc.
     logged_at        timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (global_position),
-    UNIQUE (stream_id, version),                      -- ← this IS optimistic concurrency
+    UNIQUE (stream_id, version),                      -- defence in depth for gapless stream order
     UNIQUE (id)                                       -- event id unique store-wide (dedupe + causation)
 );
 ```
 
-**The `UNIQUE (stream_id, version)` constraint is the concurrency-control mechanism.** To append with expected version `N`, insert rows at versions `N+1, N+2, …` inside a transaction. If a concurrent writer already took version `N+1`, the unique constraint raises a violation, the transaction rolls back, and your adapter returns `'version-conflict'`. No explicit locks required.
+**`expectedVersion` must compare the actual stream head and append atomically.** Merely inserting at `N+1` behind a unique constraint rejects a stale-low expectation, but a stale-high expectation could create a gap. The adapter rejects empty batches, then performs this compare-and-swap and the inserts in one transaction:
 
 ```sql
 BEGIN;
--- expectedVersion = N; insert the new events at N+1, N+2, …
-INSERT INTO event (id, stream_id, version, type, data, metadata)
-VALUES ($1, $2, $3, $4, $5, $6);  -- a (stream_id, version) violation here means version-conflict → rollback
+
+INSERT INTO event_stream (stream_id, version)
+VALUES ($stream_id, 0)
+ON CONFLICT DO NOTHING;
+
+UPDATE event_stream
+SET version = version + $event_count
+WHERE stream_id = $stream_id AND version = $expected_version
+RETURNING version;
+-- Require exactly one returned row. Otherwise ROLLBACK and return 'version-conflict'.
+
+UPDATE event_store_position
+SET position = position + $event_count
+WHERE singleton = true
+RETURNING position;
+-- The returned value is this batch's final global position. This row remains
+-- locked until COMMIT, so a later position cannot commit first.
+
+-- Insert every row at stream versions expectedVersion+1..newVersion and at
+-- global positions endPosition-eventCount+1..endPosition.
+INSERT INTO event (global_position, id, stream_id, version, type, data, metadata)
+VALUES ($global_position, $id, $stream_id, $version, $type, $data, $metadata);
+
 COMMIT;
 ```
 
-Two caveats worth knowing: a bare `bigserial` can commit out of order under concurrency (gaps/reordering as seen by a reader), so if a projection needs a strictly gapless global order, use a dedicated transactional counter or a store that guarantees it. And the alternative to the constraint approach is a `write_message`-style stored function (message-db, Marten) that centralises the version check server-side — equivalent guarantee, different place.
+The counter makes a monotonic projection checkpoint commit-safe and gapless, but it serializes global-position allocation. If that becomes a measured bottleneck, use a store with a guaranteed commit cursor or retain sequence-assigned positions only with a gap-aware subscription plus a safe committed watermark; never advance a scalar checkpoint past a missing `bigserial` value, because that earlier transaction may still commit. A `write_message`-style stored function (message-db, Marten) can centralize the same stream-head compare-and-append guarantee server-side.
 
 ## The Event Envelope
 
@@ -82,7 +113,7 @@ type EventEnvelope<T extends string, TData> = {
   readonly streamId: string;       // the aggregate instance
   readonly version: number;        // per-stream position (optimistic concurrency)
   readonly globalPosition: bigint;  // store-wide order (subscriptions/projections)
-  readonly timestamp: string;      // ISO-8601, assigned on commit
+  readonly timestamp: string;      // ISO-8601, assigned by the store
   readonly data: TData;            // the domain payload
   readonly metadata: {
     readonly correlationId: string; // ties one whole business transaction together
@@ -106,10 +137,11 @@ Events are stored as JSON (`jsonb` in Postgres) with the **type name travelling 
 // on read: raw jsonb → validate the stored (possibly old) shape → upcast to current
 const toDomainEvent = (raw: unknown): AccountEvent =>
   upcastAccountEvent(StoredAccountEventSchema.parse(raw));
-// StoredAccountEventSchema is a tolerant union of every persisted version (unknown
-// fields ignored, missing ones defaulted); parse validates what is on disk, then the
-// upcaster maps it to the current shape. parse throws only on genuinely corrupt data
-// (a bug, not a business case). See event-versioning.md for the upcaster.
+// StoredAccountEventSchema is a tolerant union of explicit persisted versions.
+// Unknown fields may be ignored; only fields that were optional or have a proven
+// context-invariant default may be absent. parse validates what is on disk, then
+// the upcaster maps it to the current shape. parse throws on genuinely corrupt
+// data (a bug, not a business case). See event-versioning.md for the upcaster.
 ```
 
 Never let unvalidated stored JSON flow into an upcaster or into `evolve`; a single malformed row would otherwise corrupt every rehydration of that stream.

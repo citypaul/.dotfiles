@@ -6,7 +6,7 @@ Reference card for fixing mutation bugs: `readonly` typing, plus immutable alter
 
 ## Readonly Keyword for Immutability
 
-Use `readonly` on all data structures to signal immutability intent.
+Use `readonly` on data structures whose contract is immutable. Local implementation state may remain mutable when it is encapsulated and clearer.
 
 ### readonly on Properties
 
@@ -18,7 +18,7 @@ type Scenario = {
   readonly description: string;
 };
 
-// ❌ WRONG - Mutable
+// ⚠️ MUTABLE - Appropriate only when this is intentional implementation state
 type Scenario = {
   id: string;
   name: string;
@@ -33,7 +33,7 @@ type Scenario = {
   readonly mocks: ReadonlyArray<Mock>;
 };
 
-// ❌ WRONG - Mutable array
+// ⚠️ MUTABLE - Appropriate only when callers are allowed to mutate the array
 type Scenario = {
   readonly mocks: Mock[];
 };
@@ -63,10 +63,10 @@ type Mock = {
 
 ## Immutable Array Operations
 
-**Complete catalog of array mutations and their immutable alternatives:**
+**Common array mutations and their immutable alternatives:**
 
 ```typescript
-// ❌ WRONG - Mutations
+// ⚠️ MUTATING - Avoid when preserving the original array is part of the contract
 items.push(newItem);        // Add to end
 items.pop();                // Remove last
 items.unshift(newItem);     // Add to start
@@ -114,7 +114,7 @@ const inserted = [
 ## Immutable Object Updates
 
 ```typescript
-// ❌ WRONG
+// ⚠️ MUTATING - Avoid when preserving the original object is part of the contract
 user.name = "New";
 Object.assign(user, { name: "New" });
 

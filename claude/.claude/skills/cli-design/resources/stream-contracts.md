@@ -4,29 +4,21 @@ Deep-dive on stream behavior, NDJSON, signal handling, crash-only design, and pa
 
 ---
 
-## 1. Buffering Behavior
+## 1. Process Stream Behavior
 
-Based on Orhun Parmaksiz's research in "Why stdout is faster than stderr": **stdout is approximately 2x faster than stderr** when output is piped. The performance difference is entirely due to userspace buffering -- specifically the difference in write() syscall count -- not the kernel.
-
-### Three Buffering Modes
-
-| Mode | Buffer size | Flush trigger | Typical use |
-|------|------------|---------------|-------------|
-| Fully buffered (block) | ~4-8 KB | Buffer full | stdout when piped |
-| Line-buffered | ~1 KB | Newline character | stdout when connected to a TTY |
-| Unbuffered | 0 | Every write | stderr always |
-
-### How the Mode Is Chosen
-
-The C runtime calls `isatty()` on each file descriptor at program startup to determine the buffering strategy:
-
-- **stdout on a TTY**: line-buffered. Each `\n` triggers a flush. Interactive output appears immediately line-by-line.
-- **stdout on a pipe**: block-buffered (~4-8 KB). Data accumulates in a userspace buffer and flushes only when the buffer is full. This batches many small writes into fewer, larger `write()` syscalls.
-- **stderr**: always unbuffered, regardless of whether it is connected to a TTY or a pipe. Error messages must appear immediately -- even if the process crashes mid-write, the diagnostic output is already on the wire.
-
-The 2x speed difference comes from this: when stdout is block-buffered, a program producing many small lines (e.g., `echo` in a loop) makes far fewer `write()` syscalls than the same output sent to unbuffered stderr. Each syscall has fixed overhead (context switch to kernel), so fewer syscalls means faster throughput.
+C stdio commonly line-buffers a TTY, block-buffers a pipe, and leaves stderr unbuffered, but that is not a portable contract for every language runtime. Do not assume a fixed buffer size, syscall ratio, or throughput advantage when designing a CLI. Measure the actual runtime and destination when performance matters.
 
 ### Node.js Specifics
+
+Node's process streams deliberately preserve compatibility with the underlying platform. Writes have this sync/async matrix:
+
+| Destination | POSIX | Windows |
+|-------------|-------|---------|
+| Regular file | synchronous | synchronous |
+| TTY | synchronous | asynchronous |
+| Pipe or socket | asynchronous | synchronous |
+
+Synchronous writes can block the event loop. Asynchronous writes can accumulate in memory if the consumer is slow, so high-volume producers must honor backpressure. Do not infer stream behavior from TTY status alone.
 
 `process.stdout` and `process.stderr` are `Writable` streams with platform-dependent behavior:
 
@@ -40,9 +32,10 @@ const stderrIsTTY = process.stderr.isTTY === true;
 // In this case, show spinners on stderr, clean data on stdout.
 ```
 
-When `process.stdout` is connected to a pipe, Node.js uses an internal `highWaterMark` (default 16 KB) that governs backpressure. If `.write()` returns `false`, the internal buffer has exceeded the high-water mark -- the caller should pause and wait for the `'drain'` event before writing more.
-
-When `process.stdout` is connected to a TTY, Node.js writes synchronously in a blocking fashion, so backpressure does not apply in the same way.
+If `.write()` returns `false`, pause before producing more. Do not wait only for
+`'drain'`: a closed consumer can emit an error without ever draining. Use an
+error-aware completion helper and treat the configured high-water mark as
+runtime- and stream-dependent rather than relying on a hard-coded default.
 
 ---
 
@@ -50,34 +43,31 @@ When `process.stdout` is connected to a TTY, Node.js writes synchronously in a b
 
 ### Backpressure for High-Volume Output
 
-For CLI tools that produce large volumes of output (log streaming, data export, test result enumeration), ignoring backpressure causes unbounded memory growth. Always check the return value of `.write()`:
+For CLI tools that produce large volumes of output (log streaming, data export,
+test result enumeration), ignoring backpressure causes unbounded memory growth.
+Use the shared error-aware write helper from `output-architecture.md`; its
+explicit outcome lets each caller apply the correct stream policy:
 
 ```typescript
-type DrainableWrite = (
-  stream: NodeJS.WritableStream,
-  data: string,
-) => Promise<void>;
-
-const drainableWrite: DrainableWrite = (stream, data) => {
-  const canContinue = stream.write(data);
-  if (canContinue) {
-    return Promise.resolve();
-  }
-  return new Promise((resolve) => {
-    stream.once('drain', resolve);
-  });
-};
+import { writeOutput, type WriteOutcome } from './streams.js';
 
 // Usage in a streaming loop
 const streamResults = async (
   results: ReadonlyArray<string>,
   stream: NodeJS.WritableStream,
-): Promise<void> => {
+): Promise<WriteOutcome> => {
   for (const line of results) {
-    await drainableWrite(stream, line + '\n');
+    const outcome = await writeOutput(stream, line + '\n');
+    if (outcome === 'epipe') return outcome;
   }
+  return 'written';
 };
 ```
+
+For stdout, stop producing records and map `epipe` to the command's documented
+pipe exit policy (commonly 141). For stderr, stop that diagnostic producer but
+continue primary stdout work. Never turn a closed diagnostics consumer into a
+process-wide exit, and do not use fire-and-forget write loops.
 
 ### Terminal Dimensions
 
@@ -116,18 +106,27 @@ Use terminal dimensions to:
 
 ---
 
-## 3. NDJSON Specification
+## 3. NDJSON Syntax And An Optional Event Profile
 
-Newline-Delimited JSON (NDJSON) is the streaming format for CLI tools that produce structured output over time. Each line is one complete, valid JSON object. Lines are separated by `\n` (not `\r\n`). Each line is independently parseable -- consumers never need to buffer the entire stream.
+Newline-Delimited JSON (NDJSON) is useful when a CLI produces structured
+values over time. The format itself is deliberately small: each record is one
+complete JSON text followed by `\n`; parsers accept both `\n` and `\r\n`.
+Any JSON value is valid. Ignoring empty lines is an optional parser behavior
+that must be documented.
+
+This skill's examples also use an **optional local event profile**: object
+records carry a `type` discriminator, and a producer may end with a
+`type: "summary"` record. Those are application-contract choices, not NDJSON
+syntax requirements. A caller's decoder owns the accepted record shape.
 
 ### Rules
 
-1. Each line is a self-contained JSON value (typically an object)
-2. Lines are separated by `\n` (U+000A)
-3. Empty lines are ignored by consumers
-4. Include a `type` field per record to multiplex different event types over one stream
-5. The final line can be a summary record with `type: "summary"`
-6. Be conservative in what you send, liberal in what you accept (Postel's Law)
+1. Each non-empty record is one self-contained JSON value
+2. Writers terminate records with `\n`; readers accept `\n` and `\r\n`
+3. State explicitly whether empty lines are ignored or rejected
+4. When using the local multiplexed-event profile, require a `type` field
+5. A summary record is optional and belongs to that local profile
+6. Validate every non-empty line with the caller's decoder and report invalid input with its physical line number
 
 ### TypeScript Types
 
@@ -147,29 +146,32 @@ type NdjsonRecord =
 
 ```typescript
 type NdjsonWriter = {
-  readonly write: (record: NdjsonRecord) => Promise<void>;
-  readonly end: () => void;
+  readonly write: (record: NdjsonRecord) => Promise<WriteOutcome>;
 };
 
 const createNdjsonWriter = (stream: NodeJS.WritableStream): NdjsonWriter => {
-  const write = (record: NdjsonRecord): Promise<void> => {
+  const write = (record: NdjsonRecord): Promise<WriteOutcome> => {
     const line = JSON.stringify(record) + '\n';
-    return drainableWrite(stream, line);
+    return writeOutput(stream, line);
   };
 
-  const end = (): void => {
-    stream.end();
-  };
-
-  return { write, end };
+  return { write };
 };
 
 // Usage
 const writer = createNdjsonWriter(process.stdout);
-await writer.write({ type: 'result', file: 'src/app.ts', status: 'pass' });
-await writer.write({ type: 'result', file: 'src/lib.ts', status: 'fail' });
-await writer.write({ type: 'summary', total: 2, passed: 1, failed: 1 });
-writer.end();
+const records: readonly NdjsonRecord[] = [
+  { type: 'result', file: 'src/app.ts', status: 'pass' },
+  { type: 'result', file: 'src/lib.ts', status: 'fail' },
+  { type: 'summary', total: 2, passed: 1, failed: 1 },
+];
+
+for (const record of records) {
+  if ((await writer.write(record)) === 'epipe') {
+    process.exitCode = 141;
+    break;
+  }
+}
 ```
 
 ### NDJSON Reader
@@ -177,43 +179,52 @@ writer.end();
 ```typescript
 import { createInterface } from 'node:readline';
 
-type NdjsonParseResult<T> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly error: string; readonly line: string };
+type NdjsonDecoder<T> = (value: unknown) => T;
 
-const parseNdjsonLine = <T>(line: string): NdjsonParseResult<T> | undefined => {
-  const trimmed = line.trim();
-  if (trimmed === '') return undefined;
+const parseNdjsonLine = <T>(
+  line: string,
+  lineNumber: number,
+  decode: NdjsonDecoder<T>,
+): T => {
   try {
-    // In production, validate with a Zod schema rather than trusting JSON.parse
-    const value: unknown = JSON.parse(trimmed);
-    return { ok: true, value: value as T };
-  } catch {
-    return { ok: false, error: 'Invalid JSON', line: trimmed };
+    const value: unknown = JSON.parse(line);
+    return decode(value);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Invalid NDJSON at line ${lineNumber}: ${message}`);
   }
 };
 
 const readNdjson = async function* <T>(
   input: NodeJS.ReadableStream,
+  decode: NdjsonDecoder<T>,
 ): AsyncGenerator<T> {
   const rl = createInterface({ input, crlfDelay: Infinity });
+  let lineNumber = 0;
   for await (const line of rl) {
-    const result = parseNdjsonLine<T>(line);
-    if (result === undefined) continue;
-    if (result.ok) {
-      yield result.value;
-    }
+    lineNumber += 1;
+    if (line.trim() === '') continue;
+    yield parseNdjsonLine(line, lineNumber, decode);
   }
 };
 
 // Usage
 // cat results.ndjson | mycli summarize
-for await (const record of readNdjson<NdjsonRecord>(process.stdin)) {
+for await (
+  const record of readNdjson(
+    process.stdin,
+    (value) => ndjsonRecordSchema.parse(value),
+  )
+) {
   if (record.type === 'summary') {
     process.stderr.write(`Total: ${record.total}, Failed: ${record.failed}\n`);
   }
 }
 ```
+
+`ndjsonRecordSchema` is caller-owned and validates the expected record shape.
+Empty lines remain the only ignored input; malformed JSON and schema failures
+stop consumption with the original physical line number.
 
 ---
 
@@ -224,7 +235,7 @@ for await (const record of readNdjson<NdjsonRecord>(process.stdin)) {
 The user pressed Ctrl-C. Acknowledge immediately on stderr, start cleanup with a bounded timeout, and exit with code 130 (128 + 2).
 
 ```typescript
-type CleanupFn = () => Promise<void>;
+type CleanupFn = () => void | Promise<void>;
 
 const createSignalHandler = (
   cleanupFns: ReadonlyArray<CleanupFn>,
@@ -248,17 +259,15 @@ const createSignalHandler = (
       process.exit(130);
     }, CLEANUP_TIMEOUT_MS);
 
-    // Unref so the timer alone doesn't keep the process alive
-    timeout.unref();
-
-    Promise.allSettled(cleanupFns.map((fn) => fn()))
-      .then(() => {
+    void Promise.allSettled(
+      cleanupFns.map((fn) => Promise.resolve().then(fn)),
+    )
+      .then((results) => {
         clearTimeout(timeout);
-        process.exit(130);
-      })
-      .catch(() => {
-        clearTimeout(timeout);
-        process.exit(130);
+        const cleanupFailed = results.some((result) => result.status === 'rejected');
+        if (cleanupFailed) process.stderr.write('One or more cleanup tasks failed.\n');
+        process.removeListener('SIGINT', handleSigint);
+        process.exitCode = 130;
       });
   };
 
@@ -270,8 +279,17 @@ Design decisions:
 
 - **Acknowledge immediately.** The user needs to know their Ctrl-C was received. A program that appears to ignore Ctrl-C will get a `kill -9`.
 - **Bounded cleanup.** Five seconds is a generous upper bound. Cleanup that takes longer than this is likely stuck.
+- **Keep the bound alive.** Do not `unref()` the cleanup timer. It must remain a
+  referenced handle until cleanup settles, including when a pending cleanup
+  promise owns no event-loop handles of its own.
+- **Settle every cleanup.** `Promise.resolve().then(fn)` turns a synchronous throw into a rejected promise inside the `allSettled` boundary.
+- **Inspect every result.** A rejected cleanup is reported and must not receive a
+  successful graceful status.
 - **Second Ctrl-C forces exit.** Tell the user what it does ("Force quit. Cleanup skipped.") so they can make an informed choice.
 - **Exit code 130.** Convention: 128 + signal number. SIGINT is signal 2.
+- **Let settled output drain.** Successful cleanup sets `process.exitCode` and
+  removes the signal listener; only the force and timeout paths call
+  `process.exit()`, so pending stdout/stderr writes are not truncated.
 
 ### SIGTERM
 
@@ -279,30 +297,37 @@ Graceful shutdown -- the same cleanup logic as SIGINT. This is the signal sent b
 
 ```typescript
 const handleSigterm = (): void => {
+  // A handled, graceful SIGTERM may use 0. Choose and document 143 instead if
+  // this CLI intentionally preserves signal-style termination status.
+  const gracefulExitCode = 0;
+  const cleanupTimeoutExitCode = 1;
   process.stderr.write('Received SIGTERM. Shutting down...\n');
 
   const timeout = setTimeout(() => {
     process.stderr.write('Cleanup timed out. Exiting.\n');
-    process.exit(143);
+    process.exit(cleanupTimeoutExitCode);
   }, CLEANUP_TIMEOUT_MS);
 
-  timeout.unref();
-
-  Promise.allSettled(cleanupFns.map((fn) => fn()))
-    .then(() => {
+  void Promise.allSettled(
+    cleanupFns.map((fn) => Promise.resolve().then(fn)),
+  )
+    .then((results) => {
       clearTimeout(timeout);
-      process.exit(143);
-    })
-    .catch(() => {
-      clearTimeout(timeout);
-      process.exit(143);
+      const cleanupFailed = results.some((result) => result.status === 'rejected');
+      if (cleanupFailed) process.stderr.write('One or more cleanup tasks failed.\n');
+      process.removeListener('SIGTERM', handleSigterm);
+      process.exitCode = cleanupFailed ? cleanupTimeoutExitCode : gracefulExitCode;
     });
 };
 
 process.on('SIGTERM', handleSigterm);
 ```
 
-Exit code 143: 128 + 15 (SIGTERM is signal 15). This is critical for Docker and Kubernetes, where the container runtime interprets the exit code to determine whether the shutdown was graceful.
+A handled SIGTERM is an application-controlled graceful shutdown. It may return
+0 after successful cleanup or a documented status such as 143 when preserving
+signal-style termination. Docker and Kubernetes do not require 143; choose one
+contract and test it. The timeout path may use a different documented failure
+status if incomplete cleanup is significant to callers.
 
 ### SIGPIPE
 
@@ -317,23 +342,28 @@ mycli run | head -5
 **Node.js caveat:** Node.js ignores SIGPIPE by default (it does not terminate the process). Instead, the broken pipe surfaces as an `EPIPE` error on the write call. You must handle this explicitly:
 
 ```typescript
-const handleEpipe = (stream: NodeJS.WritableStream): void => {
+const handleEpipe = (
+  stream: NodeJS.WritableStream,
+  onEpipe: () => void,
+): void => {
   stream.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EPIPE') {
-      // Pipe consumer closed -- this is not an error.
-      // Exit silently with the conventional SIGPIPE code.
-      process.exit(141);
+      onEpipe();
+      return;
     }
     // Re-throw non-EPIPE errors
     throw err;
   });
 };
 
-// Apply to stdout early in program startup
-handleEpipe(process.stdout);
+// A closed data consumer ends the command; a closed diagnostics consumer does not.
+handleEpipe(process.stdout, () => process.exit(141));
+handleEpipe(process.stderr, () => {});
 ```
 
 Without this handler, `mycli run | head -5` throws an unhandled error and exits with code 1, which is incorrect -- the operation succeeded from the user's perspective.
+An independently closed stderr must only stop diagnostics; terminating there
+would discard stdout that its consumer may still be reading.
 
 ### Combined Signal Setup
 
@@ -343,16 +373,27 @@ Bringing it all together as a single setup function:
 type GracefulShutdownConfig = {
   readonly cleanupFns: ReadonlyArray<CleanupFn>;
   readonly cleanupTimeoutMs?: number;
+  readonly sigtermExitCode?: number;
+  readonly sigtermTimeoutExitCode?: number;
 };
 
 const setupGracefulShutdown = (config: GracefulShutdownConfig): void => {
-  const { cleanupFns, cleanupTimeoutMs = 5_000 } = config;
+  const {
+    cleanupFns,
+    cleanupTimeoutMs = 5_000,
+    sigtermExitCode = 0,
+    sigtermTimeoutExitCode = 1,
+  } = config;
   let shuttingDown = false;
 
-  const shutdown = (signal: string, exitCode: number): void => {
+  const shutdown = (
+    signal: string,
+    settledExitCode: number,
+    timeoutExitCode: number,
+  ): void => {
     if (shuttingDown) {
       process.stderr.write(`\nForce quit. Cleanup skipped.\n`);
-      process.exit(exitCode);
+      process.exit(timeoutExitCode);
       return;
     }
 
@@ -361,27 +402,32 @@ const setupGracefulShutdown = (config: GracefulShutdownConfig): void => {
 
     const timeout = setTimeout(() => {
       process.stderr.write('Cleanup timed out. Exiting.\n');
-      process.exit(exitCode);
+      process.exit(timeoutExitCode);
     }, cleanupTimeoutMs);
-    timeout.unref();
 
-    Promise.allSettled(cleanupFns.map((fn) => fn()))
-      .then(() => {
+    void Promise.allSettled(
+      cleanupFns.map((fn) => Promise.resolve().then(fn)),
+    )
+      .then((results) => {
         clearTimeout(timeout);
-        process.exit(exitCode);
-      })
-      .catch(() => {
-        clearTimeout(timeout);
-        process.exit(exitCode);
+        const cleanupFailed = results.some((result) => result.status === 'rejected');
+        if (cleanupFailed) process.stderr.write('One or more cleanup tasks failed.\n');
+        process.removeListener('SIGINT', onSigint);
+        process.removeListener('SIGTERM', onSigterm);
+        process.exitCode = cleanupFailed ? timeoutExitCode : settledExitCode;
       });
   };
 
-  process.on('SIGINT', () => shutdown('SIGINT', 130));
-  process.on('SIGTERM', () => shutdown('SIGTERM', 143));
+  const onSigint = (): void => shutdown('SIGINT', 130, 130);
+  const onSigterm = (): void =>
+    shutdown('SIGTERM', sigtermExitCode, sigtermTimeoutExitCode);
 
-  // Handle EPIPE (Node.js ignores SIGPIPE)
-  handleEpipe(process.stdout);
-  handleEpipe(process.stderr);
+  process.on('SIGINT', onSigint);
+  process.on('SIGTERM', onSigterm);
+
+  // Handle EPIPE independently (Node.js ignores SIGPIPE).
+  handleEpipe(process.stdout, () => process.exit(141));
+  handleEpipe(process.stderr, () => {});
 };
 ```
 
@@ -394,20 +440,29 @@ Based on clig.dev's guidance: your program should expect to be started in a stat
 ### Principles
 
 1. **Don't rely on cleanup handlers.** They may not run. Every persistent side effect (temp files, lock files, partial writes) must be recoverable on the next startup.
-2. **Check for stale state on startup.** If a lock file exists, check whether the PID is still alive. If not, remove it and continue. Don't just fail with "another instance is running."
-3. **Use atomic writes.** Write to a temporary file in the same directory, then rename. `rename()` is atomic on POSIX -- the file is either the old version or the new version, never a half-written state.
-4. **Make operations idempotent.** Running the same command twice should produce the same result. If a previous run completed partially, the next run should pick up where it left off.
-5. **Design for "hit up-arrow and enter."** The user's recovery path should be: run the same command again.
+2. **Use ownership-safe locks.** Let a reviewed advisory-lock implementation handle owner death, or recover only leases with atomic ownership and expiry. Never unlink a lock from a PID check alone.
+3. **Choose the required persistence contract.** Same-filesystem rename can make
+   the new name visible atomically, but visibility atomicity is not crash
+   durability. When data must survive power loss, use a reviewed durable writer
+   that handles file and directory sync, metadata, cleanup, and platform policy.
+4. **Make advertised retries idempotent.** A command may invite re-running only
+   when duplicate dispatch is prevented or reconciliation proves the result.
+5. **Separate retry from reconciliation.** "Hit up-arrow and enter" is appropriate
+   only for documented retry-safe operations. If a mutation may have been accepted,
+   direct the user to `status` or an explicit reconciliation command.
 
-### Atomic File Writes
+### Visibility-Atomic File Replacement
 
 ```typescript
 import { writeFile, rename, unlink } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-const atomicWrite = async (filePath: string, content: string): Promise<void> => {
-  // Write to a temp file in the same directory (same filesystem = atomic rename)
+const replaceVisibleAtomically = async (
+  filePath: string,
+  content: string,
+): Promise<void> => {
+  // Same-directory placement permits a same-filesystem rename.
   const tempPath = join(dirname(filePath), `.${randomUUID()}.tmp`);
   try {
     await writeFile(tempPath, content, 'utf-8');
@@ -420,56 +475,29 @@ const atomicWrite = async (filePath: string, content: string): Promise<void> => 
 };
 ```
 
-The temp file must be in the same directory as the target because `rename()` is only atomic within the same filesystem mount.
+The temp file must share the target filesystem for atomic name replacement. This
+example prevents readers from observing a partially written replacement; it does
+**not** prove that content or the directory entry survives a crash or power loss,
+and it does not preserve existing mode, ownership, ACLs, or extended attributes.
 
-### Stale Lock File Recovery
+For crash-durable configuration or state, prefer a reviewed durable-file writer
+with an explicit platform contract. It should write and sync the temporary file,
+apply required metadata, rename it, sync the containing directory where the
+platform supports that guarantee, and define Windows replacement behavior. Do
+not improvise an `fsync` sequence and call it portable durability.
 
-```typescript
-import { readFile, unlink, writeFile } from 'node:fs/promises';
+### Process Locks
 
-type LockResult =
-  | { readonly acquired: true; readonly release: () => Promise<void> }
-  | { readonly acquired: false; readonly reason: string };
+`open(path, 'wx')` makes file creation atomic, but it does not provide an
+ownership-safe lifecycle. A token read followed by `unlink` is a time-of-check /
+time-of-use race: another owner can replace the path between those operations.
+PID liveness checks also face reuse, permissions, and concurrent recovery.
 
-const acquireLock = async (lockPath: string): Promise<LockResult> => {
-  try {
-    const existing = await readFile(lockPath, 'utf-8').catch(() => null);
-
-    if (existing !== null) {
-      const pid = parseInt(existing.trim(), 10);
-      if (isProcessAlive(pid)) {
-        return {
-          acquired: false,
-          reason: `Another instance is running (PID ${pid})`,
-        };
-      }
-      // Stale lock -- previous process did not clean up
-      process.stderr.write(`Removing stale lock file (PID ${pid} is not running)\n`);
-      await unlink(lockPath).catch(() => {});
-    }
-
-    await writeFile(lockPath, String(process.pid), 'utf-8');
-
-    const release = async (): Promise<void> => {
-      await unlink(lockPath).catch(() => {});
-    };
-
-    return { acquired: true, release };
-  } catch {
-    return { acquired: false, reason: 'Failed to acquire lock' };
-  }
-};
-
-const isProcessAlive = (pid: number): boolean => {
-  try {
-    // Signal 0 does not kill -- it checks existence
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-};
-```
+Use an operating-system advisory lock or a reviewed locking library whose
+release is tied to the acquired handle. Use a lease with atomic ownership and
+expiry when crash recovery is required. State whether the mechanism is
+single-host or distributed, and test contention plus owner death. Do not claim
+safe automatic recovery for a hand-rolled PID/token file protocol.
 
 ### Idempotent Operations
 
@@ -523,59 +551,86 @@ Use `less -FIRX` as the default:
 
 ### Respecting User Preferences
 
-Check the `PAGER` environment variable. If the user has set it, they want that pager. Fall back to `less -FIRX` if unset.
+Treat `PAGER` as one executable name or path and always spawn with `shell: false`.
+An empty value disables paging. Do not call a shell or split the value on spaces;
+users can configure `less` flags through `LESS`. If the application promises a
+full command line, parse it with a reviewed shell-word parser and still avoid a
+shell. Fall back to argument-vector form `less -FIRX` when `PAGER` is unset.
 
 ### Node.js Implementation
 
 Spawn the pager as a child process and pipe your output to its stdin:
 
 ```typescript
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 
 type PagerConfig = {
   readonly content: string;
-  readonly fallback?: () => void;
 };
 
-const throughPager = (config: PagerConfig): void => {
+type PagerSpec = {
+  readonly command: string;
+  readonly args: readonly string[];
+};
+
+const resolvePager = (value: string | undefined): PagerSpec | undefined => {
+  if (value === '') return undefined;
+  if (value !== undefined) return { command: value, args: [] };
+  return { command: 'less', args: ['-F', '-I', '-R', '-X'] };
+};
+
+const directWrite = async (content: string): Promise<number> =>
+  (await writeOutput(process.stdout, content)) === 'epipe' ? 141 : 0;
+
+const waitForSpawn = (child: ChildProcess): Promise<boolean> =>
+  new Promise((resolve) => {
+    child.once('spawn', () => resolve(true));
+    child.once('error', () => resolve(false));
+  });
+
+const waitForClose = (child: ChildProcess): Promise<number> =>
+  new Promise((resolve) => {
+    child.once('close', (code) => resolve(code ?? 1));
+    child.once('error', () => resolve(1));
+  });
+
+const throughPager = async (config: PagerConfig): Promise<number> => {
   if (!process.stdout.isTTY) {
-    // Not a TTY -- write directly, no pager
-    process.stdout.write(config.content);
-    return;
+    return directWrite(config.content);
   }
 
   const terminalRows = process.stdout.rows ?? 24;
   const lineCount = config.content.split('\n').length;
 
   if (lineCount <= terminalRows) {
-    // Content fits on one screen -- no pager needed
-    process.stdout.write(config.content);
-    return;
+    return directWrite(config.content);
   }
 
-  const pagerCommand = process.env['PAGER'] ?? 'less -FIRX';
-  const [command, ...args] = pagerCommand.split(' ');
+  const spec = resolvePager(process.env['PAGER']);
+  if (spec === undefined) return directWrite(config.content);
 
-  const pager = spawn(command, args, {
+  const pager = spawn(spec.command, [...spec.args], {
+    shell: false,
     stdio: ['pipe', process.stdout, process.stderr],
   });
+  const closed = waitForClose(pager);
 
-  pager.stdin.write(config.content);
-  pager.stdin.end();
+  if (!(await waitForSpawn(pager))) {
+    // Spawn failed before any content was delivered, so replay is safe.
+    return directWrite(config.content);
+  }
 
-  pager.on('error', () => {
-    // Pager not available -- fall back to direct output
-    process.stdout.write(config.content);
-  });
+  const outcome = await writeOutput(pager.stdin, config.content);
+  if (outcome === 'written') pager.stdin.end();
 
-  pager.on('close', (code) => {
-    // Exit with the pager's exit code if it failed
-    if (code !== null && code !== 0) {
-      process.exit(code);
-    }
-  });
+  // A pager that exits normally before consuming everything is not an error.
+  return closed;
 };
 ```
+
+After delivery starts, never replay the buffer as a fallback: doing so can
+duplicate output. Return the adapter status to the entry point; do not call
+`process.exit()` inside the pager adapter.
 
 ### Streaming Pager
 
@@ -585,37 +640,57 @@ For output that is generated incrementally (not available all at once), pipe dir
 import { spawn } from 'node:child_process';
 
 type StreamingPager = {
-  readonly write: (data: string) => void;
+  readonly write: (data: string) => Promise<WriteOutcome>;
   readonly end: () => Promise<number>;
 };
 
-const createStreamingPager = (): StreamingPager => {
+const createStreamingPager = async (): Promise<StreamingPager> => {
   if (!process.stdout.isTTY) {
-    // Not a TTY -- write directly
     return {
-      write: (data) => process.stdout.write(data),
+      write: (data) => writeOutput(process.stdout, data),
       end: () => Promise.resolve(0),
     };
   }
 
-  const pagerCommand = process.env['PAGER'] ?? 'less -FIRX';
-  const [command, ...args] = pagerCommand.split(' ');
+  const spec = resolvePager(process.env['PAGER']);
+  if (spec === undefined) {
+    return {
+      write: (data) => writeOutput(process.stdout, data),
+      end: () => Promise.resolve(0),
+    };
+  }
 
-  const pager = spawn(command, args, {
+  const pager = spawn(spec.command, [...spec.args], {
+    shell: false,
     stdio: ['pipe', process.stdout, process.stderr],
   });
+  const closed = waitForClose(pager);
+
+  if (!(await waitForSpawn(pager))) {
+    return {
+      write: (data) => writeOutput(process.stdout, data),
+      end: () => Promise.resolve(0),
+    };
+  }
+
+  let inputClosed = false;
 
   return {
-    write: (data) => pager.stdin.write(data),
-    end: () =>
-      new Promise((resolve) => {
-        pager.stdin.end();
-        pager.on('close', (code) => resolve(code ?? 0));
-        pager.on('error', () => resolve(1));
-      }),
+    write: async (data) => {
+      const outcome = await writeOutput(pager.stdin, data);
+      if (outcome === 'epipe') inputClosed = true;
+      return outcome;
+    },
+    end: async () => {
+      if (!inputClosed) pager.stdin.end();
+      return closed;
+    },
   };
 };
 ```
+
+Every streaming caller awaits `write`; on `epipe`, it stops producing and calls
+`end` only to observe the pager's status.
 
 ---
 
@@ -624,15 +699,23 @@ const createStreamingPager = (): StreamingPager => {
 | Signal | Trigger | Correct behavior | Exit code |
 |--------|---------|-----------------|-----------|
 | SIGINT | Ctrl-C | Acknowledge on stderr, bounded cleanup, exit | 130 |
-| SIGTERM | `kill`, Docker stop | Graceful shutdown, same as SIGINT | 143 |
-| SIGPIPE | Pipe consumer closed | Exit silently and immediately | 141 |
+| SIGTERM | `kill`, container stop | Graceful cleanup | 0 or the CLI's documented status (often 143 when preserving signal style) |
+| SIGPIPE / stdout EPIPE | Data consumer closed | Exit silently and immediately | 141 |
+| stderr EPIPE | Diagnostics consumer closed | Stop diagnostics; let stdout work continue | Command's own code |
 | SIGKILL | `kill -9` | Cannot be caught. This is why crash-only design matters. | 137 |
 
 ## Key Takeaways
 
-1. **stdout is 2x faster than stderr when piped** because block buffering reduces write() syscall count. Route high-volume data to stdout, low-volume diagnostics to stderr.
-2. **Always handle backpressure** on stdout for high-volume output. Check `.write()` return value and wait for `'drain'`.
-3. **NDJSON enables streaming structured data** without buffering everything in memory. Include a `type` field for multiplexing.
-4. **Signal handling is not optional.** Acknowledge SIGINT immediately, clean up with a bounded timeout, handle EPIPE for Node.js SIGPIPE.
-5. **Design for crash-only.** Atomic writes, stale lock recovery, idempotent operations. Your cleanup handler is a best-effort optimization, not a guarantee.
-6. **Use a pager for large TTY output.** Respect `PAGER`, fall back to `less -FIRX`, never page when piped.
+1. **Route by contract, not a fixed speed claim.** Send primary data to stdout and diagnostics to stderr; measure the actual runtime and destination before making buffering or throughput claims.
+2. **Always handle backpressure and write errors** on high-volume output. Await
+   the shared error-aware write helper; waiting only for `'drain'` can hang after
+   a closed consumer.
+3. **NDJSON enables streaming structured data** without buffering everything in
+   memory. Any JSON value is valid; `type` and summary records belong only to the
+   optional local event profile.
+4. **Signal handling is not optional.** Acknowledge SIGINT immediately, clean up with a bounded timeout, and handle stdout and stderr EPIPE independently.
+5. **Design for crash-only.** Visibility-atomic replacement, reviewed durable
+   writers where required, handle-owned locks or leases, and idempotent operations
+   make cleanup a best-effort optimization rather than a guarantee.
+6. **Use a pager for large TTY output.** Treat `PAGER` as untrusted configuration,
+   avoid a shell, await writes, handle EPIPE, and never page when piped.

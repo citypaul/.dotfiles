@@ -4,13 +4,13 @@ Implementation examples for the rules in `../SKILL.md`. These are illustrative â
 
 ## Config: Validate at Startup with a Schema (Factor III)
 
-Fail fast if config is invalid:
+Parse configuration in a testable function. Let the process entry point report the validation error and exit non-zero:
 
 ```typescript
 import { z } from 'zod';
 
 const ConfigSchema = z.object({
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   API_URL: z.string().url(),
@@ -23,12 +23,7 @@ const ConfigSchema = z.object({
 type Config = z.infer<typeof ConfigSchema>;
 
 export const createConfig = (env: Record<string, string | undefined> = process.env): Config => {
-  const result = ConfigSchema.safeParse(env);
-  if (!result.success) {
-    console.error(JSON.stringify({ level: 'error', message: 'Invalid config', errors: result.error.flatten() }));
-    process.exit(1);
-  }
-  return result.data;
+  return ConfigSchema.parse(env);
 };
 ```
 
@@ -52,7 +47,7 @@ export const createUserService = ({ config }: { config: Pick<Config, 'API_URL'> 
 
 ## Config: `.env.example` as Documentation (Factor III)
 
-Commit `.env.example` (never `.env` with real values):
+When environment variables are the application's configuration interface, commit `.env.example` (never `.env` with real values):
 
 ```
 PORT=3000
@@ -78,7 +73,7 @@ export const checkSystemDependencies = (required: readonly string[]) => {
 };
 ```
 
-## Backing Services: Attached Resources via Config URLs (Factor IV)
+## Backing Services: URL-Based Attached Resource Example (Factor IV)
 
 ```typescript
 export const createApp = ({ config }: { config: Pick<Config, 'DATABASE_URL' | 'REDIS_URL'> }) => {
@@ -149,55 +144,75 @@ const SHUTDOWN_TIMEOUT_MS = 30_000;
 
 export const startServer = async ({ app, config }: { app: App; config: Pick<Config, 'PORT'> }) => {
   const server = app.listen(config.PORT);
+  let shutdownPromise: Promise<void> | undefined;
 
-  const shutdown = async (signal: 'SIGTERM' | 'SIGINT') => {
-    const forceExit = setTimeout(() => process.exit(1), SHUTDOWN_TIMEOUT_MS);
+  const shutdown = (signal: 'SIGTERM' | 'SIGINT'): Promise<void> => {
+    if (shutdownPromise) return shutdownPromise;
+    shutdownPromise = (async () => {
+      const forceExit = setTimeout(() => process.exit(1), SHUTDOWN_TIMEOUT_MS);
 
-    try {
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-      await app.shutdown();
-      clearTimeout(forceExit);
-      process.exit(0);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      const stack = err instanceof Error ? err.stack : undefined;
-      console.error(JSON.stringify({ level: 'error', message: 'Shutdown error', signal, error: message, stack }));
-      process.exit(1);
-    }
+      try {
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+        await app.shutdown(); // one coordinator: backing services and telemetry
+        clearTimeout(forceExit);
+        process.exitCode = 0;
+      } catch (err: unknown) {
+        const diagnostic = JSON.stringify({
+          level: 'error',
+          message: 'Shutdown failed',
+          signal,
+          error_type: err instanceof Error ? err.name : 'UnknownError',
+        });
+        await new Promise<void>((resolve) => {
+          process.stderr.write(`${diagnostic}\n`, () => resolve());
+        });
+        clearTimeout(forceExit);
+        process.exitCode = 1;
+      }
+    })();
+    return shutdownPromise;
   };
 
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 
   return server;
 };
 ```
 
-## Logs: Structured stdout Logger (Factor XI)
+## Logs: Structured Process-Stream Logger (Factor XI)
 
 Illustrative â€” adapt to project conventions (pino, winston with console transport, OpenTelemetry) as long as the semantic requirements in `../SKILL.md` are met:
 
 ```typescript
 const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 } as const;
+type LogFields = Readonly<Partial<{
+  trace_id: string;
+  operation: string;
+  outcome: string;
+  duration_ms: number;
+}>>;
 
 export const createLogger = ({ config }: { config: Pick<Config, 'LOG_LEVEL'> }) => {
   const shouldLog = (level: keyof typeof LOG_LEVELS) =>
     LOG_LEVELS[level] >= LOG_LEVELS[config.LOG_LEVEL];
 
-  const log = (level: keyof typeof LOG_LEVELS, message: string, data?: Record<string, unknown>) => {
+  const log = (level: keyof typeof LOG_LEVELS, message: string, fields: LogFields = {}) => {
     if (!shouldLog(level)) return;
-    const output = JSON.stringify({ timestamp: new Date().toISOString(), level, message, context: data });
+    const output = JSON.stringify({ timestamp: new Date().toISOString(), level, message, ...fields });
     (level === 'error' ? console.error : console.log)(output);
   };
 
   return {
-    debug: (message: string, data?: Record<string, unknown>) => log('debug', message, data),
-    info: (message: string, data?: Record<string, unknown>) => log('info', message, data),
-    warn: (message: string, data?: Record<string, unknown>) => log('warn', message, data),
-    error: (message: string, data?: Record<string, unknown>) => log('error', message, data),
+    debug: (message: string, fields?: LogFields) => log('debug', message, fields),
+    info: (message: string, fields?: LogFields) => log('info', message, fields),
+    warn: (message: string, fields?: LogFields) => log('warn', message, fields),
+    error: (message: string, fields?: LogFields) => log('error', message, fields),
   };
 };
 ```
+
+Extend `LogFields` through an explicit reviewed allowlist. Do not accept arbitrary objects, raw error messages/stacks, request bodies, headers, tokens, or personal data; redact at source and keep detailed diagnostics behind separately controlled tooling.
 
 ## Admin Processes: One-Off Scripts with Same Config (Factor XII)
 

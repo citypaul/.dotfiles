@@ -1,0 +1,4 @@
+interface:
+  display_name: "Acceptance Review"
+  short_description: "Prove code against an acceptance contract"
+  default_prompt: "Use $acceptance-review to decide whether this branch fulfils the authoritative requirement with a criterion-by-criterion proof."

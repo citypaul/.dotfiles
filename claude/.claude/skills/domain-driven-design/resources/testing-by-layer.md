@@ -2,7 +2,7 @@
 
 DDD does not require ports and adapters, a root `tests/` folder, a use case for every model, or one universal testing pyramid. Keep tests organized by domain behavior under the physical shape selected for the project. If the project also adopts hexagonal architecture, see that skill's `resources/testing-hex-arch.md` for test interactors, adapter contracts, and swappability.
 
-This testing approach follows Valentina Jemuović's Use Case Driven Design (UCDD) — see `../../REFERENCES.md` for sources.
+This testing approach follows Valentina Jemuović's Use Case Driven Design (UCDD) — see `references.md` for the focused sources bundled with this skill.
 
 ## Choose the Primary Behavioral Boundary
 
@@ -19,27 +19,29 @@ Do not manufacture a use case or port solely to satisfy a test template. When a 
 
 ```typescript
 describe('pledge contribution', () => {
-  it('rejects pledge when contributor has insufficient balance', async () => {
-    const occasionRepo = createFakeOccasionRepo([testOccasion]);
-    const contributorRepo = createFakeContributorRepo([
-      getTestContributor({ walletBalance: createMoney(10, 'GBP') }),
+  it('rejects a pledge from an ineligible contributor', async () => {
+    const persistence = createFakePledgePersistence([testOccasion]);
+    const eligibilityGateway = createFakeContributorEligibilityGateway([
+      getTestContributorEligibility({ contributorId: testContributor.id, mayPledge: false }),
     ]);
 
-    const result = await handlePledge(occasionRepo, contributorRepo, {
+    const result = await handlePledge(persistence, eligibilityGateway, {
+      pledgeId: createPledgeId('pledge-1'),
       occasionId: testOccasion.id,
       contributorId: testContributor.id,
-      amount: createMoney(50, 'GBP'),
+      amount: createMoney(5_000, 'GBP'),
     });
 
-    expect(result).toEqual({ success: false, reason: 'insufficient-balance' });
-    expect(occasionRepo.savedEntities).toHaveLength(0);
+    expect(result).toEqual({ success: false, reason: 'contributor-ineligible' });
+    expect(persistence.savedEntities).toHaveLength(0);
+    expect(persistence.outboxEvents).toHaveLength(0);
   });
 });
 ```
 
 For an application that owns these repository contracts, this single test exercises:
 - The use case orchestration (loading, calling domain service, conditional save)
-- The domain service business rule (balance check)
+- The domain service business rule (eligibility check)
 - The entity invariant (budget not exceeded)
 - The repository contract (nothing saved on failure)
 
@@ -81,9 +83,9 @@ Pure domain functions (business rules, calculations, invariants) CAN be tested d
 ```typescript
 // ✅ Behavioral — tests a business rule
 it('event with a past date is considered past', () => {
-  const now = new Date('2026-03-20');
-  expect(isPastEvent('2026-03-19', now)).toBe(true);
-  expect(isPastEvent('2026-03-21', now)).toBe(false);
+  const now = new Date('2026-03-20T12:00:00.000Z');
+  expect(isPastEvent(new Date('2026-03-19T12:00:00.000Z'), now)).toBe(true);
+  expect(isPastEvent(new Date('2026-03-21T12:00:00.000Z'), now)).toBe(false);
 });
 
 // ✅ Behavioral — tests a business calculation
@@ -113,16 +115,22 @@ These are fast, focused, and directly test business rules. They complement use-c
 ```typescript
 import fc from 'fast-check';
 
-it('pledged amount never exceeds contributor balance', () => {
+it('a successful pledge never exceeds the occasion budget', () => {
   fc.assert(fc.property(
     fc.integer({ min: 0, max: 10000 }),
-    fc.integer({ min: 0, max: 10000 }),
-    (balance, pledge) => {
-      const contributor = getTestContributor({ walletBalance: createMoney(balance, 'GBP') });
-      const occasion = getTestOccasion();
-      const result = pledgeContribution(occasion, contributor, createMoney(pledge, 'GBP'));
+    fc.integer({ min: 1, max: 10000 }),
+    (alreadyPledged, pledge) => {
+      const occasion = getTestOccasion({
+        budget: createMoney(10000, 'GBP'),
+        totalPledged: createMoney(alreadyPledged, 'GBP'),
+      });
+      const eligibility = getTestContributorEligibility({ mayPledge: true });
+      const result = pledgeContribution(occasion, eligibility, {
+        id: createPledgeId('pledge-1'),
+        amount: createMoney(pledge, 'GBP'),
+      });
       if (result.success) {
-        return result.contributor.walletBalance.amount >= 0;
+        return result.occasion.totalPledged.minorUnits <= result.occasion.budget.minorUnits;
       }
       return true; // rejected pledges are always valid
     },

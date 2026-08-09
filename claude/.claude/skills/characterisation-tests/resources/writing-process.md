@@ -4,69 +4,69 @@ Detailed walkthrough of the characterisation testing process. See the main `char
 
 ## Worked Example
 
-Given an opaque pricing function we need to modify:
+Given an opaque activity-scoring function we need to modify:
 
 ```typescript
-// legacy-pricing.ts -- no tests, no documentation
-export const calculateDiscount = (
-  amount: number,
-  customerType: string,
+// legacy-scoring.ts -- no tests, no documentation
+export const calculateBonus = (
+  activityPoints: number,
+  memberTier: string,
   years: number,
 ): number => {
-  let discount = 0;
-  if (customerType === 'premium') {
-    discount = amount * 0.15;
-    if (years > 5) discount += amount * 0.05;
-  } else if (customerType === 'business') {
-    discount = amount * 0.1;
-    if (years > 3) discount += amount * 0.03;
+  let bonus = 0;
+  if (memberTier === 'premium') {
+    bonus = activityPoints * 0.15;
+    if (years > 5) bonus += activityPoints * 0.05;
+  } else if (memberTier === 'business') {
+    bonus = activityPoints * 0.1;
+    if (years > 3) bonus += activityPoints * 0.03;
   }
-  if (amount > 10000) discount += 500;
-  return Math.round(discount * 100) / 100;
+  if (activityPoints > 10000) bonus += 500;
+  return Math.round(bonus * 100) / 100;
 };
 ```
 
 ### Step 1: Start with a dummy assertion
 
 ```typescript
-it('characterises calculateDiscount', () => {
-  expect(calculateDiscount(1000, 'premium', 3)).toBe('PLACEHOLDER');
+it('characterises calculateBonus', () => {
+  expect(calculateBonus(1000, 'premium', 3)).toBe('PLACEHOLDER');
 });
 // Output: expected 'PLACEHOLDER' but received 150
 ```
 
 ### Step 2: Record the actual value, expand
 
-Name the file `calculate-discount.characterisation.test.ts` and use `characterises` in test names:
+Name the file `calculate-bonus.characterisation.test.ts` and use `characterises` in test names:
 
 ```typescript
 /**
- * CHARACTERISATION TESTS -- documenting actual behavior of calculateDiscount.
+ * CHARACTERISATION TESTS -- documenting actual behavior of calculateBonus.
  * Replace with behavior-driven tests as the code is refactored.
  */
-describe('calculateDiscount characterisation', () => {
-  it('characterises premium customer discount for < 5 years', () => {
-    expect(calculateDiscount(1000, 'premium', 3)).toBe(150);
+describe('calculateBonus characterisation', () => {
+  it('characterises premium-member bonus for < 5 years', () => {
+    expect(calculateBonus(1000, 'premium', 3)).toBe(150);
   });
 
-  it('characterises premium customer loyalty bonus for > 5 years', () => {
-    expect(calculateDiscount(1000, 'premium', 7)).toBe(200);
+  it('characterises premium-member loyalty bonus for > 5 years', () => {
+    expect(calculateBonus(1000, 'premium', 7)).toBe(200);
   });
 
-  it('characterises business customer discount for < 3 years', () => {
-    expect(calculateDiscount(1000, 'business', 2)).toBe(100);
+  it('characterises business-member bonus for < 3 years', () => {
+    expect(calculateBonus(1000, 'business', 2)).toBe(100);
   });
 
-  it('characterises business customer loyalty bonus for > 3 years', () => {
-    expect(calculateDiscount(1000, 'business', 5)).toBe(130);
+  it('characterises business-member loyalty bonus for > 3 years', () => {
+    expect(calculateBonus(1000, 'business', 5)).toBe(130);
   });
 
-  it('characterises unknown customer type as zero discount', () => {
-    expect(calculateDiscount(1000, 'standard', 10)).toBe(0);
+  it('characterises unknown member tier as zero bonus', () => {
+    expect(calculateBonus(1000, 'standard', 10)).toBe(0);
   });
 
-  it('characterises high-value order flat bonus', () => {
-    expect(calculateDiscount(15000, 'premium', 3)).toBe(2750);
+  it('characterises high-activity flat bonus', () => {
+    expect(calculateBonus(15000, 'premium', 3)).toBe(2750);
   });
 });
 ```
@@ -77,12 +77,12 @@ Run `vitest --coverage` to see if all branches are exercised. Add tests for any 
 
 ```typescript
 it('boundary: premium at exactly 5 years (no loyalty bonus)', () => {
-  expect(calculateDiscount(1000, 'premium', 5)).toBe(150);
+  expect(calculateBonus(1000, 'premium', 5)).toBe(150);
   // > 5, not >= 5 -- 5 years does NOT trigger the bonus
 });
 
-it('boundary: amount exactly 10000 (no flat bonus)', () => {
-  expect(calculateDiscount(10000, 'premium', 3)).toBe(1500);
+it('boundary: activity exactly 10000 (no flat bonus)', () => {
+  expect(calculateBonus(10000, 'premium', 3)).toBe(1500);
   // > 10000, not >= 10000
 });
 ```
@@ -91,20 +91,20 @@ These boundary tests reveal the exact conditions (strict `>`, not `>=`). This is
 
 ### Step 4: Strengthen likely mutation gaps cheaply
 
-Use the `mutation-testing` mutator rules to inspect `calculateDiscount` and add targeted examples for obvious risks. For example, make sure changing `* 0.15` to `* 0.16` would fail a test by choosing inputs with enough variety. Do not run the automated mutation harness here; run it once for the accumulated change when the phase is otherwise ready for its PR.
+Use the `mutation-testing` mutator rules to inspect `calculateBonus` and add targeted examples for obvious risks. For example, make sure changing `* 0.15` to `* 0.16` would fail a test by choosing inputs with enough variety. If repository policy or change risk calls for the automated harness, run it once for the accumulated change at the repository's chosen verification point rather than during each inner increment.
 
 ```typescript
 // Rounding: fractional results exercise the Math.round path
 it('rounding: fractional results are rounded to 2 decimal places', () => {
-  expect(calculateDiscount(333, 'premium', 3)).toBe(49.95);
+  expect(calculateBonus(333, 'premium', 3)).toBe(49.95);
 });
 ```
 
 ## When to Stop Characterising
 
 1. **Cover every branch your change touches.** If you're modifying the premium loyalty bonus, ensure tests exercise both sides of `years > 5`.
-2. **Cover one layer out.** If your change is inside `calculateDiscount`, also characterise its callers -- they may depend on specific return shapes.
-3. **Scan likely mutation risks.** Use the mutator rules to choose examples that would detect realistic changes in the path; the automated harness runs later at the end-of-phase PR-readiness gate.
+2. **Cover one layer out.** If your change is inside `calculateBonus`, also characterise its callers -- they may depend on specific return shapes.
+3. **Scan likely mutation risks.** Use the mutator rules to choose examples that would detect realistic changes in the path; run the automated harness later only when selected by repository policy or change risk.
 4. **Stop when confident.** If you're certain your tests would catch any mistake you could make in the upcoming change, that's enough.
 
 ## Targeted Testing
@@ -121,7 +121,7 @@ After characterising the general behavior, focus on the specific code you're abo
 // If you extract this to a function that changes the return type,
 // would rounding still work? Choose inputs that produce fractional values:
 it('exercises the rounding path', () => {
-  expect(calculateDiscount(333, 'premium', 3)).toBe(49.95);
+  expect(calculateBonus(333, 'premium', 3)).toBe(49.95);
   // 333 * 0.15 = 49.95 -- if Math.round were removed, this would change
 });
 ```

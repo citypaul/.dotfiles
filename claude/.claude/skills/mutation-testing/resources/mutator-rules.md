@@ -17,7 +17,7 @@ For each changed behavior, ask:
 - **Optional chaining**: Are `null` and `undefined` cases covered when safety is promised?
 - **Side effects**: Would deleting the body or skipping a collaborator call fail?
 
-Fix obvious gaps immediately. If the expected behavior is a domain/product judgment, ask the human using the harness's ask-question facility.
+Fix obvious gaps immediately. If the expected behavior is a domain/product judgment, use the active harness's structured ask-question facility when available; otherwise ask the human one concise plain-text question.
 
 ## Mutation Operators
 

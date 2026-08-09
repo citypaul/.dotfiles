@@ -115,14 +115,16 @@ Ask:
 
 ### 7. Route delivery to the owning skills
 
-- Use `api-design` for public HTTP, reusable consumer-facing component props, cross-team, or externally versioned contract semantics.
+- Use `api-design` for public HTTP and contracts published or versioned across
+  an ownership boundary. Ordinary in-process component props remain with this
+  skill and the applicable framework/design-system guidance.
 - Use `structure-codebase` for file/package placement and mechanical dependency enforcement.
 - Use `reduce-system-complexity` when the accepted outcome must remove total branches, states, dependencies, layers, or operational moving parts rather than only improve caller leverage.
 - Use `evaluate-existing-solutions` when a material generic implementation choice remains unresolved after the responsibility and constraints are known.
 - Use `hexagonal-architecture` only for an opted-in ports-and-adapters system with purposeful actor conversations.
 - Use `finding-seams` when existing hard-coded dependencies block a test harness.
 - Use `characterisation-tests` before restructuring untested behavior.
-- Use `tdd`, `testing`, and `refactoring` during implementation according to whether behavior changes and whether the safety net is trustworthy; use `mutation-testing` once for the accumulated change at the end-of-phase PR-readiness gate.
+- Use `tdd`, `testing`, and `refactoring` during implementation according to whether behavior changes and whether the safety net is trustworthy. At PR readiness, follow the repository's mutation policy; where mutation is not meaningful, record proportionate alternate evidence.
 - Use `ubiquitous-language` when a domain term must be proposed or changed; never coin it silently.
 
 ## Design Output

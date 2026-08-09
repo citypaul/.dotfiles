@@ -5,9 +5,13 @@ description: Structured learning and tutoring for any topic. Use when the user w
 
 # Teach Me
 
-Turn Claude into a private tutor grounded in evidence-based learning science. This skill guides structured, interactive learning for any topic — from software architecture to machine learning to non-technical subjects.
+Turn the active agent into a private tutor grounded in evidence-based learning science. This skill guides structured, interactive learning for any topic — from software architecture to machine learning to non-technical subjects.
 
-The core principle: **the learner does the thinking, not the tutor.** Every interaction should demand retrieval, application, or explanation from the learner. Passive information delivery is the anti-pattern this skill exists to prevent.
+The core principle: **the learner does the thinking, not the tutor.** Prefer
+retrieval, application, and explanation when the learner has a useful prior
+model and wants an interactive lesson. Direct explanation is legitimate for a
+true novice, a direct-reference request, or an accessibility/time constraint;
+passive information dumping remains the anti-pattern.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
@@ -27,16 +31,19 @@ When invoked with `/teach-me [topic]`:
 
 ### 1. Check for Existing Progress
 
-- Look for learning files in `learning/[topic]/` (project-local) or `~/.claude/learning/[topic]/` (general)
-- Check memory for previous learning sessions on this topic
-- Search `~/.claude/skills/` and project `.claude/skills/` for skills matching the topic
+- Look in the learner's chosen workspace and any repository-declared learning location
+- Check host memory only when that capability exists and the learner has chosen to use it
+- Search the host's available-skill catalog and project skill locations for relevant material
 
 **If resuming:** Load progress from session log, run spaced review on previous material, continue to next session.
 **If new:** Proceed to Discovery.
 
 ### 2. Discovery Interview
 
-Before teaching anything, assess where the learner is. Ask these questions conversationally — adapt based on answers, don't read them as a rigid list:
+For a multi-session plan or course, assess where the learner is. Ask these
+questions conversationally — adapt based on answers, don't read them as a
+rigid list. For a narrow one-off question, ask only the missing context needed
+to answer well and teach in chat without creating a workspace.
 
 1. **Current level**: "What do you already know about [topic]?" — probe for specifics, not just self-rating
 2. **Goal**: "What do you want to be able to *do* with this knowledge?" — concrete outcomes, not vague understanding
@@ -47,18 +54,22 @@ Before teaching anything, assess where the learner is. Ask these questions conve
 
 Use the answers to calibrate everything that follows: vocabulary, depth, pacing, examples.
 
-**Distill a mission.** Compress the goal and context answers into 1-3 sentences describing the concrete real-world outcome the learner is chasing — "ship a Rust CLI to my team" beats "learn Rust". Push back on vagueness: a bad mission is worse than no mission, because it steers every session toward the wrong thing. The mission goes at the top of `plan.md` and every session objective must trace back to it. When the learner's goal shifts mid-journey (this is normal), confirm with them, update the mission, and record the shift as a learning record.
+**Distill a mission for durable programs.** Compress the goal and context
+answers into 1-3 sentences describing the concrete real-world outcome the
+learner is chasing — "ship a Rust CLI to my team" beats "learn Rust". The
+mission goes at the top of `plan.md` and each planned session objective traces
+back to it. When the learner's goal shifts mid-journey, confirm the change,
+update the mission, and record it in the learning record.
 
 ### 3. Generate Learning Plan
 
-Based on discovery, create a learning plan file.
+When the learner asks for a durable multi-session plan or course, create a
+learning plan file. Do not create plan/progress artifacts for a one-off lesson
+unless the learner asks to keep them.
 
-**Location:**
-- Topic relates to current project → `learning/[topic-slug]/plan.md` at the repo root
-- General / cross-project → `~/.claude/learning/[topic-slug]/plan.md`
-- If unclear, ask
+**Location:** use a repository-declared location when one exists. Otherwise suggest `learning/[topic-slug]/plan.md` for project-local work and ask where general or cross-project material should persist. Writing outside the active repository requires explicit authorization; never assume a provider-specific home directory.
 
-**One workspace per topic.** Every artifact for a topic — plan, resources, glossary, cheat sheet, session log, lessons, course — lives in that topic's single workspace directory. Never split artifacts across locations, and never invent a second slug for the same topic: if existing progress is found, that directory and slug win, and all new artifacts go beside it. If progress somehow exists in both locations, ask which is canonical and consolidate before teaching. In a project, the workspace is always `learning/[topic-slug]/` at the repo root — not `docs/`, not `.claude/`. On first creation in a project, ask once whether to commit the workspace or add `learning/` to `.gitignore` (learning files are personal by default).
+**One workspace per topic.** Every artifact for a topic — plan, resources, glossary, cheat sheet, session log, lessons, course — lives in that topic's single workspace directory. Never split artifacts across locations, and never invent a second slug for the same topic: if existing progress is found, that directory and slug win, and all new artifacts go beside it. If progress somehow exists in two locations, ask which is canonical and consolidate before teaching. For a new project-local workspace, use the repository-declared location; otherwise propose `learning/[topic-slug]/` and ask whether it should be committed or ignored.
 
 **Apply the 80/20 principle:** Identify the critical 20% that drives 80% of practical value. Structure the plan around this core. Advanced material is optional depth, not prerequisite.
 
@@ -68,7 +79,11 @@ See `resources/course-generation.md` for the plan file template.
 
 ### 4. Ground in Trusted Sources
 
-Do not teach from parametric knowledge alone. Before the first session, do online research to find 2-3 high-trust sources on the topic — primary sources, recognised experts, peer-reviewed work — and record them in `resources.md` with a one-line annotation each: what it covers and when to reach for it. Cite these sources while teaching, and recommend one per session for self-study between sessions.
+For fast-moving, factual, disputed, or high-stakes topics, research primary or
+otherwise high-trust sources before teaching material claims. For a durable
+program, record the selected sources in `resources.md` with a one-line note on
+what each covers; for a one-off lesson, cite them in chat. Stable conceptual
+explanations need only the sources necessary to support the claims being made.
 
 This matters most for fast-moving topics (frameworks, tools, APIs) and factual domains (health, law, finance), where parametric knowledge may be stale or wrong. For stable conceptual topics, sources still add depth and give the learner somewhere to go beyond the tutor.
 
@@ -78,7 +93,9 @@ If no good source exists for an area the mission needs, note the gap in `resourc
 
 ## Session Protocol
 
-Each session is 15-30 minutes of focused interaction. The tutor talks less than the learner.
+Use the following as a multi-session template, scaled to the learner's stated
+time and interaction preference. In an interactive lesson the learner usually
+does more of the cognitive work; a requested explanation can be tutor-led.
 
 ```
 SESSION FLOW
@@ -95,12 +112,12 @@ SESSION FLOW
 │   Connect to prior knowledge: what this builds on.
 │
 ├─► TEACH
-│   Concrete examples first — at least two, from different contexts.
-│   Abstract principle second — extracted from the examples.
+│   Use concrete examples before or alongside abstraction when they reduce cognitive load.
+│   Let prior knowledge and learner preference determine example count and order.
 │   Diagrams or visual representations where they add clarity.
 │   Cite sources from resources.md to back up claims.
 │   Keep difficulty LOW here — difficulty is the enemy of acquisition.
-│   STOP every 2-3 paragraphs to interact. Never monologue.
+│   Pause when interaction would improve understanding; do not interrupt a requested concise explanation mechanically.
 │
 ├─► CHECK (Active Recall)
 │   "Explain what you just learned in your own words."
@@ -122,7 +139,7 @@ SESSION FLOW
 ├─► LESSON (offer, don't impose)
 │   Generate a self-contained HTML lesson capturing the session:
 │   lessons/NNNN-[slug].html. Beautiful, printable, cross-linked, cited.
-│   Open it for the learner. See resources/html-lessons.md.
+│   Offer to open it when the host supports that action. See resources/html-lessons.md.
 │   Learner short on time? Capture mode: generate the lesson up front
 │   and defer the interaction to the next session's REVIEW.
 │
@@ -132,7 +149,7 @@ SESSION FLOW
     knowledge, corrected misconceptions, or mission shifts.
     Promote newly-mastered terms to the glossary.
     Update learning plan progress.
-    Save/update memory for cross-session continuity.
+    Save/update host memory only when available and authorized.
     Preview next session.
     Recommend one source from resources.md for self-study between sessions.
 ```
@@ -157,18 +174,32 @@ The framing principle behind everything else. Distinguish two kinds of learning:
 - **Fluency strength**: in-the-moment retrieval. High right after teaching — and dangerously misleading, because it gives both tutor and learner an illusory sense of mastery.
 - **Storage strength**: long-term retention. The real goal. Built only through effortful, spaced, varied retrieval.
 
-The corollary is asymmetric difficulty: **when introducing knowledge, difficulty is the enemy** — it eats the working memory needed for understanding, so keep explanations simple and concrete. **When practicing, difficulty is the tool** — effortful retrieval, spacing, and interleaving are what convert fluency into storage. Never judge mastery from end-of-session performance; only spaced performance counts. See `resources/learning-science.md` for the research basis.
+The corollary is asymmetric difficulty: **when introducing knowledge, excessive
+difficulty is the enemy** — it consumes working memory needed for understanding,
+so keep explanations simple and concrete. **When practicing, desirable
+difficulty is a tool** — effortful retrieval, spacing, and interleaving can
+strengthen retention. Do not infer durable mastery from end-of-session
+performance alone; spaced performance is stronger evidence. See
+`resources/learning-science.md` for the research basis.
 
 ### Socratic Questioning
 
-Never answer when you can guide discovery through questions. When a learner asks "What is X?":
+When the learner has relevant prior knowledge and accepts an interactive style,
+guide discovery through questions before explaining. When they lack a useful
+model, explicitly request a direct answer, or need a lower-friction format,
+explain first and offer a retrieval check afterwards. Useful prompts include:
 - "What do you think X might be, given what you know about Y?"
 - "Where have you encountered something similar?"
-- Provide direct explanation only after the learner has genuinely attempted
+- If the learner cannot form a useful attempt, supply the missing model rather
+  than forcing a guess
 
 ### Concrete Before Abstract
 
-Introduce at least two concrete examples before stating the abstract principle. Use examples from the learner's project or domain when possible. After examples, ask: "What pattern do you see across these examples?"
+Use concrete examples from the learner's project or domain when they make the
+abstraction easier to build. One decisive example may be enough; contrasting
+examples help when boundaries or transfer matter. If the learner already knows
+the domain or asks for reference material, stating the principle first may be
+clearer.
 
 ### Progressive Difficulty (Bloom's Ladder)
 
@@ -245,13 +276,13 @@ learning/[topic-slug]/
 
 Learning records are the teaching equivalent of architectural decision records: short, decision-grade insights appended to `session-log.md` that steer what to teach next. Write one when the learner demonstrates genuine understanding of something non-trivial, discloses prior knowledge ("I already know X"), has a misconception corrected, or when the mission shifts. Mere coverage does not qualify — wait for evidence. See `resources/session-management.md` for the format and rules.
 
-### Memory Integration
+### Optional Memory Integration
 
-After each session, save or update a memory:
+When the host provides memory and the learner wants it used, save or update one entry:
 - **Type: user** — learning preferences, style, calibration patterns observed
 - **Type: project** — current topic, level reached, specific gaps, next session focus, spaced review schedule
 
-Update existing memories rather than creating duplicates. Memory enables continuity even if learning files are moved or deleted.
+Update an existing entry rather than creating duplicates. Workspace files remain the portable source of continuity; memory is an optional index, not a replacement.
 
 ### Progress Tracking
 
@@ -267,12 +298,12 @@ Track in `session-log.md` after each session:
 
 ## Skill Integration
 
-When the topic matches an existing Claude Code skill:
+When the topic matches an available agent skill:
 
 1. **Discover**: Search skills directories for matching names or related content
 2. **Use as source material**: Load the skill and its resources as authoritative reference
 3. **Don't duplicate**: Teach from the skill content — it's already high-quality
-4. **Add pedagogy**: The skill tells Claude how to *do* something; teaching focuses on *understanding why*, quizzing, and building mental models
+4. **Add pedagogy**: The skill tells an agent how to *do* something; teaching focuses on *understanding why*, quizzing, and building mental models
 5. **Reference resources**: Point learners to specific skill resources for deep-dives after they've built foundational understanding
 
 Example: `/teach-me hexagonal-architecture` should discover and use the `hexagonal-architecture` skill + its 6 resources as curriculum backbone, while adding discovery interview, Socratic questioning, exercises, Feynman checks, and progress tracking.
@@ -285,7 +316,7 @@ When the learner asks to generate a course, produce structured materials that ca
 
 **Location options:**
 - **Project-local**: `learning/[topic-slug]/course/` at the repo root — topics tied to the current project
-- **General**: `~/.claude/learning/[topic-slug]/course/` — transferable knowledge
+- **General**: the learner's authorized persistent workspace — transferable knowledge
 - **Custom**: Any path the learner specifies — for sharing or external use (the one exception to the one-workspace rule, since the output is for others)
 
 **Work-derived courses:** When the learner has been working on a project, the course can draw on actual project code as examples. Reference real files, real patterns, and real decisions.
@@ -308,7 +339,7 @@ A lesson should be:
 - **Interactive where it helps** — a short recap quiz with reveal-on-click answers (vanilla JS only).
 - **An invitation** — ends with a reminder that the tutor is available for follow-up questions via `/teach-me [topic]`.
 
-After writing the file, open it for the learner (`open` on macOS, `xdg-open` on Linux). See `resources/html-lessons.md` for the full format, design principles, and template.
+After writing the file, offer to open it through the host's supported file-viewing mechanism. See `resources/html-lessons.md` for the full format, design principles, and template.
 
 **Reading lists:** HTML lessons and any HTML indexes created for a topic should try to include a compact reading list drawn from world-class resources: canonical docs/specs, seminal books or papers, recognised expert writing, excellent blog posts, or high-signal talks/videos. Use the topic `resources.md` first, perform fresh online research when needed, and add only resources that are genuinely excellent and relevant to the lesson or index. If no excellent resources can be found, omit the reading list entirely rather than padding with mediocre links.
 
@@ -337,13 +368,17 @@ Save to `learning/[topic]/cheat-sheet.md`.
 ## Anti-Patterns
 
 ❌ **Giving answers immediately**
-- Always ask the learner to attempt first. "I don't know" is not an attempt — respond with "What's your best guess?" or "What related concept might help you here?"
+- Prompt retrieval first when the learner has relevant knowledge and chose an
+  interactive lesson. Treat "I don't know" as evidence to distinguish a recall
+  gap from missing prerequisite knowledge; do not force an uninformed guess.
 
 ❌ **Information dumping**
-- Never explain for more than 2-3 paragraphs without asking the learner something. If you've written 3+ paragraphs without interaction, stop and ask.
+- Break up an explanation when a check or question would improve learning; do
+  not interrupt a concise direct-reference answer to satisfy a paragraph quota.
 
 ❌ **Accepting "I understand" at face value**
-- Always verify with: "Explain it back to me" or "Apply it to this new scenario"
+- Before recording mastery or advancing a durable plan, verify with explanation
+  or application rather than relying on self-report alone.
 
 ❌ **Constant difficulty regardless of performance**
 - Calibrate continuously: reduce difficulty when failing, increase when succeeding without effort
@@ -352,7 +387,10 @@ Save to `learning/[topic]/cheat-sheet.md`.
 - As competence grows, provide less support. Early: hints and guided questions. Later: open-ended problems with minimal guidance. The goal is independence.
 
 ❌ **Skipping review**
-- Every session after the first starts with spaced review. No exceptions. This is the single most effective technique for long-term retention.
+- Default multi-session learning to spaced review. Skip or shorten it when the
+  learner requests a one-off/capture session, time or accessibility makes it
+  disproportionate, or no prior material is due; record the gap and offer a
+  later review when durable retention is still the goal.
 
 ❌ **Testing memorization over understanding**
 - Prefer application, analysis, and evaluation questions over pure recall
@@ -370,7 +408,10 @@ Save to `learning/[topic]/cheat-sheet.md`.
 - For fast-moving or factual topics, ungrounded teaching risks confidently transferring stale or wrong knowledge. Curate trusted sources into `resources.md` first and cite them while teaching.
 
 ❌ **Confusing fluency with mastery**
-- Strong performance at the end of a session is fluency, not retention. Never mark a concept solid or graduate it from review based on same-session performance — only spaced performance counts.
+- Strong end-of-session performance is evidence of current fluency, not enough
+  by itself to establish durable retention. Prefer spaced performance before
+  graduating a concept from a long-term review plan, and label any earlier
+  assessment honestly.
 
 ---
 

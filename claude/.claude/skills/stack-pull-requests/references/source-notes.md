@@ -39,7 +39,7 @@ This skill therefore makes these synthesis decisions:
 
 ## Preview Caveat
 
-GitHub labels stacked pull requests and `gh stack` as public preview. Treat the current stack reference, management pages, CLI reference, and live help as operational authority; re-check Actions, merge, and queue behavior instead of assuming ordinary dependent-PR semantics.
+GitHub's official `gh-stack` repository currently describes the feature as private preview, while its documentation is evolving. Treat the current stack reference, repository-access state, CLI reference, and live help as operational authority; re-check Actions, merge, and queue behavior instead of assuming ordinary dependent-PR semantics.
 
 Do not hardcode a minimum GitHub CLI version in the main skill. The tutorial and command reference currently state different minimum versions. Verify the installed extension and current official prerequisites when execution matters.
 

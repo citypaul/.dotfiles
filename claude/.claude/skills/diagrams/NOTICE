@@ -1,0 +1,11 @@
+Current-tree rights status
+
+The current `SKILL.md`, this notice, and `references/source-notes.md` are an
+original rewrite covered by this repository's root MIT licence. No imported
+diagram reference or example text remains in the current bundle.
+
+Earlier commits and published releases contained substantial material derived
+from `markdown-viewer/skills` without a complete upstream copyright and
+permission notice. Removing that expression from the current tree does not cure
+historical redistribution. See `references/source-notes.md` for the pinned
+source, import history, evidence gap, and follow-up.

@@ -57,10 +57,10 @@ const createFakeOrderRepo = (): OrderRepository & { readonly savedEntities: read
 **Why fakes over mocks:**
 - Fakes implement the real interface — if the interface changes, the fake breaks at compile time
 - Fakes test behavior ("was the data saved?"), not implementation ("was `.save()` called?")
-- Mocks create untyped stubs that silently drift from the real contract
-- Changing a repository method signature breaks all mocks but is caught by fake type errors
+- Loosely typed mocks can drift from the real contract; typed mocks and interface-constrained stubs also catch signature changes at compile time
+- Prefer stateful fakes for repository behavior. Use mocks when an interaction itself is observable behavior, without coupling tests to incidental call shape
 
-**Note on mutability in fakes:** Fakes use mutable internal state (`Map.set`, `Array.push`) to simulate a data store. This is a deliberate testing-only exception to the immutability rule — fakes are test infrastructure, not domain code. The domain types they store remain immutable.
+**Note on mutability in fakes:** Fakes use encapsulated mutable state (`Map.set`, `Array.push`) to simulate a data store. That state is intentional test infrastructure and does not leak into the domain contract; the domain types they store remain immutable.
 
 ## Fakes for Instrumentation Ports (Domain Probes)
 

@@ -7,8 +7,16 @@
 Install or update the canonical skill:
 
 ```bash
-npx skills add citypaul/.dotfiles -g -s structure-codebase -y
+# From an inspected checkout of this repository. Back up the target first and
+# continue only when the selected global skill directory is empty.
+SOURCE_REF=$(git rev-parse HEAD)
+npx --yes skills@1.5.22 add "citypaul/.dotfiles#$SOURCE_REF" \
+  -g -a claude-code -s structure-codebase --copy -y
 ```
+
+The explicit CLI version, source commit, agent, skill name, and copy mode avoid
+executing a moving tool or silently broadening the install. Re-audit before
+changing either pin.
 
 Update custom prompts, commands, and project documentation from `$folder-structure` to `$structure-codebase`.
 

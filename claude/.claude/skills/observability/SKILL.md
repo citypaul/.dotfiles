@@ -7,7 +7,7 @@ description: Observability as an engineering discipline — wide events / canoni
 
 **Instrument for the questions you haven't asked yet.** Monitoring verifies failure modes you predicted; observability lets you interrogate the system about failures you never anticipated. Effective telemetry answers two questions — *what's broken* (symptom) and *why* (cause) — and the effort split is lopsided: spend far more on catching symptoms than on enumerating causes ([Google SRE, Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/)).
 
-This skill covers what goes *into* telemetry and how it is consumed. The `twelve-factor` skill owns log transport and shape (structured JSON to stdout, levels, timestamps). The `hexagonal-architecture` skill owns where instrumentation code lives in ports-and-adapters codebases.
+This skill covers what goes *into* telemetry and how it is consumed. The `twelve-factor` skill owns log transport and shape (structured records on platform-captured process streams, levels, timestamps). The `hexagonal-architecture` skill owns where instrumentation code lives in ports-and-adapters codebases.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
@@ -46,7 +46,7 @@ This skill covers what goes *into* telemetry and how it is consumed. The `twelve
 
 | Category | Example fields |
 |----------|---------------|
-| Request | method, path, status, duration |
+| Request | method, normalized route template (omit when unavailable), status, duration |
 | Identity | user/principal ID, auth method, API key ID |
 | Rate limiting | allowed, quota, remaining |
 | Performance | DB query count, cache hits, external call timings |
@@ -54,7 +54,7 @@ This skill covers what goes *into* telemetry and how it is consumed. The `twelve
 | Error | error code, error class, retry count |
 | Correlation | trace ID, request ID, build/deploy ID |
 
-**High-cardinality identifiers belong here** — user IDs, request IDs, build IDs, "literally anything interesting" (Majors). Events are where high cardinality is a feature; on metrics it is a cost explosion (see Sampling and Cost Economics below).
+**High-cardinality identifiers belong in events, subject to privacy policy** — request IDs, build IDs, and privacy-approved or pseudonymous subject identifiers can make an event useful. High cardinality is a feature for events and a cost explosion on metrics, but event suitability is never permission to emit personal data (see Sampling and Cost Economics and Telemetry Hygiene below).
 
 Why this beats scattered log lines: the data arrives pre-joined. You query complete rows instead of reconstructing a request from fragments with regex and hope. An OpenTelemetry root span with rich attributes is a valid implementation of the same pattern — instrumenting via spans satisfies both the wide-event and the tracing camps at once.
 
@@ -66,7 +66,9 @@ The industry framing is "three pillars": logs, metrics, traces. The serious crit
 
 **House position:**
 
-- **Wide events are the instrumentation default.** They cost nothing extra to emit and keep every future question answerable.
+- **Wide events are the instrumentation default.** They avoid duplicate
+  instrumentation and preserve more future questions, but export, processing,
+  and storage still need an explicit telemetry cost budget.
 - **Metrics still earn their place** for cheap, long-retention aggregates and alerting math — with strictly bounded label sets.
 - **Traces are wide events with structure** — parent/child causality across services. Instrument via OTel spans and you get both.
 
@@ -84,9 +86,9 @@ OpenTelemetry (OTel) is the vendor-neutral standard for producing telemetry. Ado
 - **Resource attributes** — `service.name` is mandatory; it identifies the emitting service in every backend
 - **Semantic conventions** — standardized attribute names (`http.request.method`, `db.system`) that make telemetry correlatable across teams and tools ([semconv](https://opentelemetry.io/docs/specs/semconv/)). **Never invent an attribute name semconv already defines.**
 - **Context propagation** — the W3C `traceparent` header carries trace ID and parent span ID across every service hop, which is what makes distributed traces exist at all ([context propagation](https://opentelemetry.io/docs/concepts/context-propagation/))
-- **The Collector** — a receive → process → export pipeline that runs beside your services. Direct SDK-to-backend export is fine in development; production traffic goes through a Collector for batching, retry, redaction, and backend swaps without code changes ([Collector](https://opentelemetry.io/docs/collector/))
+- **The Collector** — a receive → process → export pipeline that runs beside your services. It is the recommended production default for batching, retry, redaction, and backend swaps without code changes. A documented direct-export design is acceptable when the deployment is simple and the SDK/backend path demonstrably meets its buffering, retry, backpressure, filtering, and operational requirements ([Collector](https://opentelemetry.io/docs/collector/))
 
-**Minimal TypeScript adoption:** `@opentelemetry/sdk-node` + `@opentelemetry/api` + `@opentelemetry/auto-instrumentations-node`, an instrumentation file loaded *before* application code via `node --import ./instrumentation.mjs` (Node 20+: `npx tsx --import ./instrumentation.ts`), OTLP exporters. Auto-instrumentation gives HTTP/framework/DB spans for free; manual attributes add the business meaning that makes traces queryable. Initialization order matters — instrumentation loaded after the app's modules silently captures nothing. See `resources/node-patterns.md`.
+**Minimal TypeScript adoption:** `@opentelemetry/sdk-node` + `@opentelemetry/api` + `@opentelemetry/auto-instrumentations-node`, an instrumentation file loaded *before* application code via `node --import ./instrumentation.mjs` (or a reviewed, repository-installed TypeScript runner during development), OTLP exporters. Auto-instrumentation gives HTTP/framework/DB spans for free; manual attributes add the business meaning that makes traces queryable. Initialization order matters — instrumentation loaded after the app's modules silently captures nothing. See `resources/node-patterns.md`.
 
 ---
 
@@ -96,7 +98,7 @@ OpenTelemetry (OTel) is the vendor-neutral standard for producing telemetry. Ado
 
 Every unique label combination on a metric is a separate time series. Add `tenant_id` (10,000 values) to a metric with 1,000 existing series and you have 10 million series, not 11,000; each active series costs memory and most vendors bill per series or per custom metric ([Grafana on high cardinality](https://grafana.com/blog/how-to-manage-high-cardinality-metrics-in-prometheus-and-kubernetes/)).
 
-**The rule: bounded, low-cardinality dimensions go on metrics; unbounded, high-cardinality dimensions go on events/spans.** No metric label may derive from user input, IDs, or raw URLs. When someone asks "can we break this metric down by customer?", the answer is "that question belongs to the event store."
+**The rule: bounded, low-cardinality dimensions go on metrics; unbounded, high-cardinality dimensions go on events/spans.** Request-derived labels are safe only after normalization to a fixed allowlist (for example, a known method or result category); map unknown values to `_OTHER` or omit them. Never use raw or unbounded attacker-controlled values such as IDs, paths, query strings, arbitrary headers, or body fields. When someone asks "can we break this metric down by customer?", the answer is "that question belongs to the event store."
 
 ### The sampling ladder
 
@@ -104,11 +106,11 @@ Every unique label combination on a metric is a separate time series. Add `tenan
 |-------|------|-----|
 | No sampling | Low volume | Keep everything — sampling is a cost tool, not a virtue |
 | Head sampling | Volume grows | Decision at trace start (probabilistic on trace ID), propagates consistently, cheap — but cannot guarantee capturing errors |
-| Tail sampling | Error/latency retention must be guaranteed | Decision after the full trace arrives; keeps 100% of errors and outliers, but requires a stateful Collector tier — buffering, scaling, operational cost, possible lock-in |
+| Tail sampling | Decisions need completed-trace attributes | Decision after the full trace arrives; can preferentially retain selected errors and outliers, but requires a stateful Collector tier — buffering, scaling, operational cost, possible lock-in |
 
 ([OTel sampling concepts](https://opentelemetry.io/docs/concepts/sampling/))
 
-**Never silently sample the stream your SLOs are computed from.** If sampling is unavoidable there, account for it in the SLI math and keep error traces at 100% via tail sampling.
+**Never silently sample the stream your SLOs are computed from.** If sampling is unavoidable there, account for it in the SLI math. Configure and verify error-trace retention separately; tail sampling policy and capacity determine what is actually retained.
 
 ---
 
@@ -122,7 +124,7 @@ Definitions from the [Google SRE book](https://sre.google/sre-book/service-level
 - **USE** — Utilization, Saturation, Errors — per hardware resource; infrastructure-focused (Brendan Gregg)
 - **Four Golden Signals** — latency, traffic, errors, saturation — with two nuances everyone drops: track latency of *failed* requests separately (a slow 500 is a different pathology from a fast 500), and use histograms because averages hide the tail — at 1,000 rps averaging 100ms, 1% of requests can easily take 5s ([SRE book](https://sre.google/sre-book/monitoring-distributed-systems/))
 
-**SLO discipline:** few SLOs, defined on percentiles (p99, not mean), simple enough to explain in a sentence. Keep internal targets slightly stricter than published ones. Don't overachieve — users come to depend on the reliability you deliver, not the one you promised.
+**SLO discipline:** keep few SLOs, each simple enough to explain in a sentence. Define availability, correctness, and freshness as good events over valid events. Define latency objectives as the proportion of valid events below an explicit threshold; use percentiles rather than means when diagnosing latency distributions. Keep internal targets slightly stricter than published ones. Don't overachieve — users come to depend on the reliability you deliver, not the one you promised.
 
 ---
 
@@ -130,7 +132,7 @@ Definitions from the [Google SRE book](https://sre.google/sre-book/service-level
 
 **Page on symptoms, not causes.** "Do your users care if your MySQL servers are down? No, they care if their queries are failing" ([Rob Ewaschuk, My Philosophy on Alerting](https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/mobilebasic) — the doc that became SRE book chapter 6). Cause-based data belongs on dashboards and in tickets, not pages. The rare exception: imminent, definite causes (quota exhaustion in 4 hours).
 
-**Every page must be:** urgent, actionable, user-visible, and require human intelligence to handle. If the response to a page could be scripted, script it and delete the page. Pages under ~90% precision get reviewed and fixed or removed — false pages are how on-call trust dies.
+**Every page must be:** urgent, actionable, user-visible, and require human intelligence to handle. If the response to a page could be scripted, script it and delete the page. Measure false pages, then fix or remove alerts that repeatedly waste responders' attention.
 
 **The default alert construction is the multiwindow, multi-burn-rate alert** ([SRE Workbook](https://sre.google/workbook/alerting-on-slos/)). Burn rate = how fast you consume error budget relative to the SLO (burn rate 1 = exactly out of budget at period end). For a 99.9% SLO over 30 days:
 
@@ -148,7 +150,7 @@ The short window (1/12 of the long) confirms the problem is *still happening*, w
 
 ## Structured Logging Craft
 
-The `twelve-factor` skill owns transport and shape (structured JSON to stdout, four levels, ISO timestamps). This section is about *content discipline*.
+The `twelve-factor` skill owns transport and shape (structured records on platform-captured process streams, recognized levels, ISO timestamps). This section is about *content discipline*.
 
 **The levels test** (from [Dave Cheney](https://dave.cheney.net/2015/11/05/lets-talk-about-logging)): "nobody reads warnings, because by definition nothing went wrong," and "if you choose to handle the error by logging it, by definition it's not an error any more." Keep the standard four levels — but apply Cheney's test to every line: every `warn` needs a named reader; every `error` log must correspond to a genuinely unhandled failure, not a handled one being double-reported.
 
@@ -158,7 +160,8 @@ The `twelve-factor` skill owns transport and shape (structured JSON to stdout, f
 
 **PII and secret hygiene:**
 
-- Never emit passwords, tokens, API keys, cookies, session IDs, or personal data into any signal
+- Never emit passwords, tokens, API keys, cookies, or session IDs into any signal
+- Emit personal identifiers only when a stated operational need and the applicable privacy policy permit it; minimize or pseudonymize them and apply appropriate retention, access, and deletion controls
 - **Allowlist named fields** — never serialize whole request/user/config objects; a JSON serializer will happily dump auth headers
 - Redact at source, in the app — the pipeline is a second line of defense, not the first
 - In regulated environments, every log line containing PII becomes a compliance obligation (retention, access control, right-to-erasure)
@@ -233,16 +236,16 @@ Browser observability is RUM (real-user monitoring) with Core Web Vitals as the 
 ## Verification Checklist
 
 - [ ] Every request emits exactly one canonical wide event, including on the exception path
-- [ ] High-cardinality identifiers (user, request, build, tenant) live on events/spans, never on metric labels
-- [ ] Metric labels are bounded sets; no label value derives from user input
+- [ ] Privacy-approved high-cardinality identifiers (subject, request, build, tenant) live on events/spans, never on metric labels
+- [ ] Metric labels use bounded normalized allowlists; unknown request values map to `_OTHER` or are omitted, and raw attacker-controlled values never become labels
 - [ ] `service.name` and resource attributes are set; semantic-convention names used where they exist
 - [ ] Trace context (W3C `traceparent`) propagates across every service hop and into every log record
 - [ ] OTel SDK initializes before application code loads (`--import`), auto-instrumentation enabled
-- [ ] Production telemetry flows through a Collector, not direct from app to vendor
-- [ ] Sampling strategy is explicit and documented; error traces are retained (tail sampling or 100%)
-- [ ] Each user journey has a handful of SLOs at most, defined on percentiles, with an error budget policy
+- [ ] Production telemetry uses the recommended Collector path, or a documented direct-export exception meets buffering, retry, backpressure, filtering, and operational requirements
+- [ ] Sampling and Collector capacity meet a stated error-trace retention objective and loss budget; use unsampled collection when the objective cannot tolerate sampling loss
+- [ ] Each user journey has a handful of ratio-based SLOs at most; latency thresholds and diagnostic percentiles are explicit, with an error budget policy
 - [ ] Paging alerts are symptom-based and burn-rate-driven (multiwindow); each links a runbook
 - [ ] No page fires for a condition with no immediate human action
-- [ ] Telemetry contains no secrets or PII; fields are allowlisted and redacted at source
+- [ ] Telemetry contains no secrets; personal identifiers are necessary, policy-approved, minimized or pseudonymized, and fields are allowlisted and redacted at source
 - [ ] Instrumentation is covered by tests (in-memory exporter or fake-probe assertions)
 - [ ] Adding a metric label or new signal triggers a written cardinality/cost estimate

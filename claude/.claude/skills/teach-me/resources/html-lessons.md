@@ -22,7 +22,7 @@ The interactive session is the teaching; the lesson is the record. Each lesson c
 
 **File naming:** `learning/[topic-slug]/lessons/NNNN-[dash-case-slug].html`, where `NNNN` starts at `0001` and increments. Scan the directory for the highest existing number. Create the `lessons/` directory lazily.
 
-**After writing:** open the file for the learner — `open <path>` on macOS, `xdg-open <path>` on Linux.
+**After writing:** offer to open the file through the host's supported file-viewing mechanism. Do not launch an external application without authorization.
 
 ---
 
@@ -39,6 +39,12 @@ A lesson should be beautiful enough that the learner *wants* to return to it. Th
 - **Semantic HTML** — headings in order, `<figure>` for diagrams, `<blockquote>` for sources, `<code>`/`<pre>` for code.
 
 For diagrams, prefer inline SVG (crisp, prints well) or a styled `<pre>` ASCII diagram. Never reference external images.
+
+## Safe insertion
+
+Treat mission text, lesson content, glossary entries, source titles, and URLs as untrusted data. HTML-escape every inserted text or attribute value (`&`, `<`, `>`, `"`, and `'`); never build learner-supplied markup with `innerHTML`. Runtime code that fills a node uses `textContent`.
+
+Validate every `href` before insertion. Permit only repository-relative lesson links, same-page fragments, and absolute `https:` citations whose source was independently reviewed. Reject `javascript:`, `data:`, `file:`, protocol-relative, credential-bearing, and unknown schemes. Escaping and URL validation are separate requirements: an escaped `javascript:` URL is still executable. When a value fails validation, omit the link and render its title as plain text.
 
 ---
 
@@ -148,7 +154,7 @@ Use this skeleton as the starting point; adapt the content structure to the mate
 <header>
   <h1>[Title]</h1>
   <p class="meta">Lesson NNNN · [Topic] · [Date]</p>
-  <p class="mission">Part of your mission to [mission, verbatim from plan.md].</p>
+  <p class="mission">Part of your mission to [HTML-escaped mission text from plan.md].</p>
 </header>
 
 <div class="objective">
@@ -156,7 +162,7 @@ Use this skeleton as the starting point; adapt the content structure to the mate
 </div>
 
 <h2>[First concrete example heading]</h2>
-<p>[Concrete example one — cite sources inline: <a href="[url]">[source]</a>]</p>
+<p>[HTML-escaped concrete example one — cite sources inline with a validated HTTPS URL: <a href="[validated url]">[escaped source title]</a>]</p>
 
 <h2>[Second concrete example heading]</h2>
 <p>[Concrete example two, from a different context]</p>

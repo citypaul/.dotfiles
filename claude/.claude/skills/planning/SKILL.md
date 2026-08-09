@@ -9,13 +9,13 @@ description: Planning work as vertical slices or an explicitly selected mechanis
 
 Horizontal work is allowed only when it explicitly unblocks the next vertical slice and is independently verifiable, or when it belongs to an explicitly selected reduction program whose terminal state retires one complete mechanism while conserving behavior.
 
-Use the `/plan` command to create plans. Use `/continue` after a merged independent PR or to advance and sync an active stack.
+In Claude Code environments where they exist, use `/plan` to create plans and `/continue` after a merged independent PR or to advance and sync an active stack. Otherwise, create or update the plan artifact directly and resume through the active harness or repository workflow.
 
 ## Relationship To Story Splitting
 
 `story-splitting` decides **what small user-value stories exist**. `planning` decides **how to implement selected stories safely**.
 
-Use `story-splitting` before this skill when the request is still an epic, large story, feature idea, roadmap item, or backlog item with multiple possible customer outcomes. Once a child story or narrow capability has been selected, use this skill to turn it into a `plans/<feature>.md` file with implementation slices, acceptance criteria, evidence routes, and a delivery shape for each slice.
+Use `story-splitting` before this skill when the request is still an epic, large story, feature idea, roadmap item, or backlog item with multiple possible customer outcomes. Once a child story or narrow capability has been selected, use this skill to create or update the repository's planning artifact with implementation slices, acceptance criteria, evidence routes, and a delivery shape for each slice.
 
 Keep three units distinct:
 
@@ -29,13 +29,13 @@ A sequence is work order; a stack is branch topology. Default each slice to a tr
 
 If a plan starts producing database-only, API-only, UI-only, or "do all plumbing first" slices, pause and return to `story-splitting` unless the horizontal work explicitly unlocks the next vertical slice with independent verification or advances an explicitly selected reduction program toward its named terminal mechanism-removal state.
 
-Use `grill-me` before planning when the selected story still contains unresolved product or design decisions. Use `find-gaps` before or after drafting the plan when acceptance criteria, failure modes, roles, states, or release constraints are missing or unverifiable.
+Use `grill-me` where installed before planning when the selected story still contains unresolved product or design decisions. Otherwise, ask one focused question at a time, with a recommended answer and its trade-off. Use `find-gaps` before or after drafting the plan when acceptance criteria, failure modes, roles, states, or release constraints are missing or unverifiable.
 
 Before freezing slices that introduce a material generic mechanism or durable new dependency, run the proportionate `evaluate-existing-solutions` preflight, due diligence, or full comparison. Link a decision-owner-accepted result when a choice was unresolved. Planning sequences the chosen solution; it does not silently turn the first plausible library or a bespoke sketch into the plan.
 
 | Input state | Use | Output |
 |-------------|-----|--------|
-| Fuzzy decision tree | `grill-me` | Resolved decisions or named open questions |
+| Fuzzy decision tree | `grill-me` where installed; otherwise a one-question-at-a-time interview | Resolved decisions or named open questions |
 | Broad requirement with multiple outcomes | `story-splitting` | Child stories |
 | Existing story/plan/AC/mocks with holes | `find-gaps` | Confirmed artifact updates |
 | Selected child story ready for delivery sequencing | `planning` | Implementation slices with a delivery shape |
@@ -43,13 +43,19 @@ Before freezing slices that introduce a material generic mechanism or durable ne
 
 ## Plans Directory
 
-Plans live in `plans/` at the project root. Each plan is a self-contained file named descriptively (e.g., `plans/gift-tracking.md`, `plans/email-validation.md`).
+Use the repository-declared planning workflow and location. A repository may
+own plans in documentation, issues, or another named system. When no owner is
+declared and a file-backed plan is appropriate, use `plans/` at the project
+root with a descriptive filename (for example,
+`plans/gift-tracking.md`).
 
-To discover active plans: `ls plans/`
+Discover active plans through that workflow. For the fallback layout, use
+`ls plans/`.
 
 Multiple plans can coexist — each is independent and won't conflict across branches or worktrees because they have unique filenames.
 
-**When a plan is complete:** delete the plan file. If `plans/` is empty, delete the directory.
+**When a plan is complete:** follow the repository's lifecycle rule. For the
+fallback layout, delete the plan file and remove `plans/` when empty.
 
 ## Prefer Small Reviewable PRs
 
@@ -220,7 +226,7 @@ Only proceed with commit after explicit approval.
 
 ## Plan File Structure
 
-Each plan file in `plans/` follows this structure:
+Each file-backed plan follows this structure:
 
 ```markdown
 # Plan: [Feature Name]
@@ -245,7 +251,7 @@ For a reduction program, define the conserved observable contract, terminal same
 ## Slices
 
 Classify every slice as **behavior change**, **pure refactor**, **reduction transition**, or **terminal reduction**. Behavior-changing slices use RED-GREEN-REFACTOR increments and all classes use one end-of-phase mutation or alternate-evidence gate at PR readiness. Pure refactors start from passing preservation evidence. Every reduction transition and terminal reduction loads `reduce-system-complexity` and references the plan-level reduction program. A transition may add a bounded bridge but never claims net reduction: its mechanism gate remains explicitly pending until the terminal slice removes the old mechanism and expired bridges. Only the terminal reduction may claim net removal after both behavior and mechanism gates pass.
-Read the project's CLAUDE.md and testing rules before writing slices.
+Read the repository's governing instructions and testing rules before writing slices.
 
 ## Reduction Program (include only when applicable)
 
@@ -291,7 +297,9 @@ Before each PR:
 For an intra-slice stack, nest the exact `#### Delivery Shape` and whole-stack gate under that slice. For a cross-slice stack, place one shared map before the first included slice and reference it from each included slice. Never stack an entire plan by default.
 
 ---
-*Delete this file when the plan is complete. If `plans/` is empty, delete the directory.*
+*Complete this plan using the repository's declared lifecycle. For the
+fallback `plans/` layout, delete this file and remove the directory when
+empty.*
 ```
 
 ### Plan Changes Require Approval
@@ -309,8 +317,10 @@ Plans are not immutable, but changes must be explicit and approved.
 When every slice's owning PR has landed (or the top PR has landed for each intra-slice stack):
 
 1. **Verify completion** — all owning PRs landed; all acceptance criteria met; applicable tests and mutation/alternate evidence pass; any reduction program reaches a terminal slice with both gates passed and old machinery/expired bridges gone
-2. **Merge learnings** — if significant insights were gained, use the `learn` agent for CLAUDE.md updates or `adr` agent for architectural decisions
-3. **Delete plan file** — remove from `plans/`, delete `plans/` if empty
+2. **Merge learnings** — if significant insights were gained, use Claude Code's `learn` or `adr` agents where installed; otherwise use the `expectations` skill for project guidance and the repository's established ADR mechanism for architectural decisions
+3. **Close the plan** — follow the repository's declared lifecycle; for the
+   fallback `plans/` layout, delete the file and remove the directory when
+   empty
 
 ## Anti-Patterns
 
@@ -339,14 +349,14 @@ When every slice's owning PR has landed (or the top PR has landed for each intra
 - All plan changes require discussion and approval
 
 ❌ **Keeping plan files after feature complete**
-- Delete them; knowledge lives in CLAUDE.md, ADRs, and git history
+- Follow the repository's documentation lifecycle: delete temporary plans after completion, but promote lasting decisions or guidance to the maintained artifact that owns them
 
 ## Quick Reference
 
 ```
 START FEATURE
 │
-├─► Create plan in plans/ (get approval)
+├─► Create or update the repository-owned plan (get approval)
 │
 │   FOR EACH IMPLEMENTATION SLICE:
 │   │
@@ -360,6 +370,6 @@ START FEATURE
 END FEATURE
 │
 ├─► Verify all owning PRs landed and all criteria met
-├─► Merge learnings if significant (learn agent, adr agent)
-└─► Delete plan file from plans/
+├─► Merge learnings if significant (installed learn/ADR workflow, or `expectations` plus the repository's ADR mechanism)
+└─► Close the plan using the repository's declared lifecycle
 ```

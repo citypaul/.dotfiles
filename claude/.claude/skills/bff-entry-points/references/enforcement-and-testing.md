@@ -69,7 +69,7 @@ Run per classification, through the HTTP surface, asserting both the stable resp
 
 ## Direct Provider-Free Tests (Most Important)
 
-For every protected operation, a test invokes it directly — no HTTP, no cookies, no registrar — with an unauthorized principal from the test factory, and proves refusal happens before any effect (canonical example in `references/hexagonal-auth-boundaries.md`, "Direct Provider-Free Tests"). Assert three things: the refusal result, the fakes showing zero effects, and — for operations taking a deferred body — a spy body thunk that was never invoked, which enrolls every mutation in the authorize-then-parse invariant rather than trusting one registrar test.
+For every protected operation, a test invokes it directly — no HTTP, no cookies, no registrar — with an unauthorized principal from the test factory, and proves refusal happens before any effect (canonical example in `references/hexagonal-auth-boundaries.md`, "Direct Provider-Free Tests"). Assert the refusal result and fakes showing zero effects. When principal/params are sufficient for coarse refusal, a spy body thunk also proves parsing never ran; when authorization depends on body data, prove bounded parse/validation and fine authorization occur before every effect instead.
 
 If this test cannot be written, authorization lives only in HTTP middleware — that is the finding, and it is a defect regardless of how good the middleware is. Gate 9's operation enumeration makes "every" checkable; the enrollment map above makes a missing test a CI failure.
 

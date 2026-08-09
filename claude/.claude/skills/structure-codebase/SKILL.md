@@ -127,13 +127,13 @@ Apply these semantics:
 
 - Put pure business rules in domain modules.
 - Put provider-free application policy and orchestration in the hexagon even when it calls injected ports and is not referentially pure.
-- Put driving and driven port contracts inside; the application owns the conversations.
+- Put each port with the innermost consumer that owns the conversation. Driving ports and infrastructure-facing repository/gateway ports are normally application-owned; domain owns a port only when the domain model itself consumes it.
 - Put every concrete transport, database, filesystem, queue, clock, UUID generator, cloud service, and provider SDK outside.
 - Put reusable fakes, test drivers, and behavioral adapter contracts under `testing/`, never inside the production hexagon. Keep ordinary behavior tests colocated with the code they verify.
 - Put concrete construction, configuration, resource ownership, and shutdown in the executable host's composition root.
 - Organize inside packages by feature, domain concept, or use case. Do not replace one flat god file with a flat layer folder.
 - Keep domain and application as separate packages only when that dependency boundary earns its cost. One cohesive inside package is valid.
-- In a single-package service, `src/hexagon` is acceptable only with path-based import or architecture tests. In a monorepo, prefer manifests and compiler/package boundaries over a cosmetic subfolder inside a provider-dependent package.
+- In a single-package service, keep capability first (for example, `src/ordering/hexagon/` beside `src/ordering/adapters/`) and protect it with path-based import or architecture tests. Do not replace a repository-wide package boundary with root technical buckets such as `src/hexagon/` and `src/adapters/`.
 
 ## DDD Placement
 
@@ -142,7 +142,7 @@ Let bounded contexts define language and model authority; let the hexagon define
 - Use a separate context only when terminology, invariants, lifecycle, ownership, or integration contracts diverge.
 - Keep domain concepts as nouns and use cases/workflows as verbs.
 - Communicate across contexts through explicit contracts, events, or anti-corruption layers.
-- Keep a shared kernel minimal and stable.
+- Keep any shared kernel minimal, stable, and assigned to one explicit owner; never use a repository-root catch-all.
 - Keep a concept as a feature module inside an existing context when the context evidence is weak.
 
 Load `domain-driven-design` instead of duplicating aggregate, entity, value-object, event, or ubiquitous-language guidance here.
@@ -166,7 +166,7 @@ Only executable applications have composition roots. Keep concrete selection nea
 - Expose a small explicit public API from every package or cross-feature module.
 - Prevent sibling features from importing one another's internals.
 - Promote code only when more than one current owner needs it and the promoted capability has a stable, purpose-specific name.
-- Prefer `shared/money`, `platform/clock`, or `contracts/order-events` over `shared/utils`, `common`, `helpers`, or `services`.
+- Give reused concepts purpose-named owners such as `monetary-values`, `runtime-clock`, or `order-event-contracts`; do not hide ownership under root `shared`, `common`, `utils`, `helpers`, or `services` buckets.
 - Split a folder when navigation or change cohesion improves; split a package when a dependency, ownership, release, or trust boundary needs mechanical enforcement.
 
 ## Proportionate Enforcement

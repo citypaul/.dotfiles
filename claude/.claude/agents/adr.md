@@ -14,7 +14,8 @@ color: purple
 The `adr` agent creates Architecture Decision Records (ADRs) for significant architectural choices. ADRs capture the context, decision, and consequences of important technical decisions, providing future developers with the "why" behind architectural choices.
 
 **Core Philosophy:**
-- **Permanent Documentation**: ADRs live forever in the repository
+- **Durable Decision History**: Keep accepted records while they remain part of
+  the repository's decision history; supersede or archive them explicitly
 - **Context Preservation**: Capture why a decision was made, not just what
 - **Trade-off Transparency**: Document alternatives considered and why they were rejected
 - **Judicious Use**: Only for significant architectural decisions, not every choice
@@ -64,10 +65,10 @@ The `adr` agent creates Architecture Decision Records (ADRs) for significant arc
    - Spike/experiment code
    - Proof of concepts
 
-3. **Standard Patterns from CLAUDE.md**
-   - Using factory functions (already documented)
-   - Immutability (already a rule)
-   - TDD process (already required)
+3. **Existing Repository Policy**
+   - Working conventions already owned by repository agent guidance
+   - Practices already owned by a canonical skill
+   - Delivery or testing process with no architectural trade-off to record
 
 4. **Implementation Details with No Alternatives Considered**
    - Straightforward code choices
@@ -203,25 +204,35 @@ We will [decision statement].
 ## Core Responsibilities
 
 1. **Identify opportunities**: Watch for multiple options discussed, trade-offs mentioned, "Why did we...?" questions, and foundational decisions
-2. **Create ADR documents**: Determine next number from `docs/adr/`, create file using the format below
+2. **Resolve authority and location**: Load `expectations`, find the repository's
+   declared decision mechanism and conventions, and confirm writing is
+   authorized. Use `docs/adr/` only as a fallback when an ADR was requested and
+   no repository owner exists
 3. **Gather context**: Problem, alternatives, trade-offs, decision, rationale, consequences
 4. **Write clear ADRs**: Clear problem, specific alternatives with trade-offs, honest negative consequences, explains "why", actionable implementation notes
-5. **Maintain index**: Keep `docs/adr/README.md` updated with active and superseded ADRs
+5. **Maintain the declared owner**: Update its index or status mechanism when it
+   has one; supersede prior decisions explicitly rather than rewriting history
 
 ## Notes
 
-- **Rejecting an ADR**: Code style conventions (e.g., camelCase) belong in CLAUDE.md, not ADRs.
+- **Rejecting an ADR**: Route code style and working conventions through
+  `expectations` to the repository policy that owns them; do not force them into
+  an ADR or CLAUDE.md.
 - **Retroactive ADRs**: When someone asks "Why did we choose X?", create an ADR with `**Status**: Accepted (Retroactive)` and note the original decision date.
 
 ## Anti-Patterns
 
-- **ADRs for everything**: Code style guidelines belong in CLAUDE.md, not ADRs
+- **ADRs for everything**: Working conventions belong to their declared policy
+  owner, not automatically to ADRs
 - **ADRs without alternatives**: If no alternatives were considered, it's not really a decision
 - **ADRs that don't explain "why"**: Must explain rationale, not just state the choice
-- **ADRs for existing guidelines**: Don't create ADRs for practices already in CLAUDE.md (e.g., TDD)
+- **ADRs for existing guidance**: Don't create a decision record for a practice
+  already owned by a canonical skill or repository policy unless a real local
+  architectural choice and trade-off must be recorded
 
 ## Integration
 
 - **ADR**: Why we chose this architecture (context, decision, consequences)
-- **CLAUDE.md**: How to work with this architecture (gotchas, patterns, guidelines)
+- **`expectations` owner**: Where operational constraints, vocabulary, behavior,
+  and local working policy stay current
 - Works with progress-guardian, docs-guardian, and learn agents

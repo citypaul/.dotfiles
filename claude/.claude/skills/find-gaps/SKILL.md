@@ -1,13 +1,13 @@
 ---
 name: find-gaps
-description: Adversarially review an existing written artifact — stories, plans, acceptance criteria, specs, or design mocks — to surface missing states, unhandled edge cases, unstated assumptions, unverifiable criteria, and slices still too broad or horizontal. Works interactively, one question at a time, writing each answer back into the artifact as a new acceptance criterion, plan update, or mock-state spec. Use when an artifact needs tightening before planning or coding ("what's missing?", "poke holes in this", "tighten this up"). Requires an artifact to inspect — for resolving a fuzzy decision tree with no artifact yet, see grill-me; for splitting oversized work, see story-splitting.
+description: Adversarially review an existing written artifact — stories, plans, acceptance criteria, specs, or design mocks — to surface missing states, unhandled edge cases, unstated assumptions, unverifiable criteria, and slices still too broad or horizontal. Works interactively, one question at a time, writing each answer back into the artifact as a new acceptance criterion, plan update, or mock-state spec. Use when an artifact needs tightening before planning or coding ("what's missing?", "poke holes in this", "tighten this up"). Requires an artifact to inspect — for a fuzzy decision tree with no artifact yet, use specification or an installed grill-me skill; for splitting oversized work, see story-splitting.
 ---
 
 # Find Gaps
 
 Most shipped bugs and post-launch firedrills come from things that were never written down — not from things that were specified wrong. This skill systematically surfaces those absences *before* implementation, when fixing them is cheap.
 
-But finding gaps is only half the job. A list of open questions that nobody answers is just a todo list with extra steps. The real output of this skill is an **updated artifact** — a plan, AC set, or mock spec that now contains decisions it didn't contain before, made by the user, captured verbatim, and written back to the source of truth.
+But finding gaps is only half the job. A list of open questions that nobody answers is just a todo list with extra steps. When material gaps exist, the real output is an **updated artifact** — a plan, AC set, or mock spec that now contains decisions it didn't contain before, made by the user, captured verbatim, and written back to the source of truth. A clean review is also valid when it names the sections and hostile cases checked; never invent a gap to make the process look productive.
 
 ## When to Use This Skill
 
@@ -29,12 +29,13 @@ Pair with `characterisation-tests` when the "gap" is behavior of existing code t
 
 | Need | Use | Why |
 |------|-----|-----|
-| Pressure-test unresolved product or design decisions | `grill-me` | It interviews the decision tree and recommends answers |
+| Pressure-test unresolved product or design decisions | `grill-me` when installed; otherwise `specification` or one focused question at a time | Resolve the decision tree before reviewing a written artifact |
 | Break broad work into independently valuable child stories | `story-splitting` | It creates product/backlog stories, not implementation tasks |
 | Tighten a written story, plan, AC set, or mock spec | `find-gaps` | It finds missing states, edge cases, roles, constraints, and unverifiable wording, then writes confirmed decisions back |
+| Decide whether finished implementation satisfies an authoritative artifact | `acceptance-review` | It reviews code read-only, criterion by criterion, without rewriting the requirement |
 | Sequence a selected child story into PR-sized work | `planning` | It owns implementation slices and the TDD execution plan |
 
-If the artifact is not yet written down, first use `grill-me` or `story-splitting`. If this review discovers the artifact is actually multiple stories tangled together, stop and route back to `story-splitting`. If the artifact is clear enough to implement, route forward to `planning`.
+If the artifact is not yet written down, use an installed `grill-me` skill when available. Otherwise ask one focused question at a time or use `specification` to establish the artifact; use `story-splitting` when the problem is oversized work rather than unresolved intent. If this review discovers the artifact is actually multiple stories tangled together, stop and route back to `story-splitting`. If the artifact is clear enough to implement, route forward to `planning`.
 
 ## Core Principles
 
@@ -48,7 +49,7 @@ This is a **conversational loop**, not a one-shot report. The shape is:
 
 1. **Survey** the artifact against the appropriate checklist (plans / AC / mocks)
 2. **Triage** candidate gaps into Blocker / Should-address / Nice-to-have
-3. **Open** the loop by telling the user how many gaps and where
+3. **Open** the loop by telling the user how many gaps and where; if there are none, report the reviewed evidence and stop
 4. **Ask one question at a time** (or a tightly-coupled pair), starting with Blockers
 5. **Capture** each answer as a concrete artifact update — a new AC, a plan paragraph, a named mock state
 6. **Show** the proposed update back to the user and confirm
@@ -74,7 +75,7 @@ Classify each candidate as:
 - **Should-address** — will cause rework or a bug if left open (no empty state, vague success metric)
 - **Nice-to-have** — won't block this iteration, but worth capturing (dark mode on a pilot, analytics events for v2)
 
-If everything is "nice-to-have," push harder — you haven't finished the checklist.
+If everything is "nice-to-have," make one adversarial pass for missed failure paths and unstated assumptions. If that still produces no material gap, say so with the checklist evidence; do not promote taste or fabricate a blocker.
 
 ### Step 3 — Open the loop
 
@@ -92,10 +93,10 @@ Get explicit agreement to proceed ("shall we start with the payment errors?" or 
 For each gap:
 
 1. **State the gap** in one sentence. No preamble, no justification.
-2. **Ask the concrete question.** Never bundle unrelated questions. When the answer space is enumerable — failure strategies, severity classifications, state-variance scoping, parking decisions — ask via the `AskUserQuestion` tool with structured options rather than free text. See **Asking with Structure** below for the heuristic and worked examples.
+2. **Ask the concrete question.** Never bundle unrelated questions. When the answer space is enumerable — failure strategies, severity classifications, state-variance scoping, parking decisions — use the host's structured-input capability when available and follow its current schema. Otherwise ask the same question in concise free text. See **Asking with Structure** below for the heuristic and worked examples.
 3. **If the answer is vague, ask the follow-up that makes it testable.** "The user sees an error" → "What message, and can they retry?" Follow-ups on microcopy stay free-text; follow-ups that narrow between a small set of behaviours become structured.
 4. **Convert the refined answer into an artifact update** using the patterns below.
-5. **Show the proposed update** verbatim, then offer *write as-is / edit inline / discard and redo* via `AskUserQuestion`. If you have two phrasings worth comparing, put them in option `preview` fields for side-by-side review.
+5. **Show the proposed update** verbatim, then offer *write as-is / edit inline / discard and redo* through supported structured input or a single free-text confirmation. If the host supports side-by-side previews, use them only for genuinely comparable phrasings.
 6. **Write it** to the source of truth once confirmed.
 7. **Move on.** Don't linger.
 
@@ -163,16 +164,16 @@ Every resolved gap ends as text in the artifact. These are the three conversion 
 
 ### Answer → Acceptance Criterion
 
-Write each criterion as **precondition → trigger → observable outcome**, with a single observable outcome per criterion. Include actor, state, specific UI/data/event behaviour, and any emitted events. (This is a structural discipline for criteria, not an instruction to write Gherkin scenarios or a given/when/then test DSL — tests stay behaviour-driven per the `testing` skill.)
+Write each criterion as **precondition → trigger → observable outcome**, with a single observable outcome per criterion. Include actor, state, specific UI/data behaviour, and any emitted events the user actually confirmed. (This is a structural discipline for criteria, not an instruction to write Gherkin scenarios or a given/when/then test DSL — tests stay behaviour-driven per the `testing` skill.)
 
-- **Gap:** "No spec for payment decline."
-- **Question:** "What should the user see when the card is declined?"
+- **Gap:** "No spec for a duplicate workspace invitation."
+- **Question:** "What should the owner see when the invite API reports that this email is already invited?"
 - **Vague answer:** "We tell the user."
-- **Follow-up:** "What message, and can they retry the same card or must they re-enter?"
-- **Refined answer:** "'Card declined. Try another payment method.' — card field stays filled so they can edit digits, retry button always enabled."
+- **Follow-up:** "What exact message appears, and where?"
+- **Refined answer:** "Show 'This person already has a pending invitation.' in the email-field error slot."
 - **AC to add:**
 
-> **AC-14:** With an authenticated buyer on the checkout screen, when the card provider returns a decline: (a) the UI shows the message *"Card declined. Try another payment method."* in the card-field error slot, (b) the card field remains populated with the last-entered digits, (c) the retry button is enabled, and (d) a `payment.declined` event is emitted with the provider's decline reason code.
+> **AC-14:** With an authenticated workspace owner on the invite form, when the invite API returns `already-invited`, the UI shows *"This person already has a pending invitation."* in the email-field error slot.
 
 **Test:** a QA engineer should be able to execute this criterion without asking a single follow-up question. If they'd need to ask, the criterion isn't finished — keep refining.
 
@@ -206,7 +207,7 @@ For every missed state, capture **name / trigger / visual / behaviour / exit** s
 
 **Ask only what the user can answer.** "What's the error-handling strategy?" is a design spike. "When the payment declines, what message should the user see?" is a decision.
 
-**One question per turn** — unless two are tightly coupled ("what's the error, and can the user retry from it?"). A structured `AskUserQuestion` call with 2–4 tightly-related sub-questions counts as one turn; batching *unrelated* gaps into a single call reverts to a gap dump. If you find yourself typing "Also," stop and pick the most important one.
+**One question per turn** — unless two are tightly coupled ("what's the error, and can the user retry from it?"). A structured-input request may batch tightly related subquestions only within the host capability's supported limits; batching *unrelated* gaps into one request reverts to a gap dump. If you find yourself typing "Also," stop and pick the most important one.
 
 **Mirror the user's vocabulary.** If they say "buyer," the AC says "buyer." Do not silently promote it to "user" or "customer." Domain language is a feature.
 
@@ -222,23 +223,23 @@ For every missed state, capture **name / trigger / visual / behaviour / exit** s
 
 ## Asking with Structure
 
-Every question you put to the user is either free-text or structured via the `AskUserQuestion` tool. Pick based on where the value lives:
+Every question you put to the user is either free text or structured through a capability the current host actually exposes. Inspect and follow that capability's schema rather than assuming a provider-specific tool name, fields, or limits. Pick based on where the value lives:
 
-- **The options are the value** → `AskUserQuestion`. Picking is faster than generating, the user benefits from seeing the choice space, and the common answers are knowable.
+- **The options are the value** → supported structured input. Picking is faster than generating, the user benefits from seeing the choice space, and the common answers are knowable.
 - **The user's specific words are the value** → free text. Domain vocabulary, microcopy, novel decisions, anything that will be copied verbatim into the artifact.
 
 ### Good fits
 
-Use `AskUserQuestion` when the answer space is genuinely enumerable and recurs across projects:
+Use structured input when the host supports it and the answer space is genuinely enumerable and recurs across projects:
 
 | Situation                  | Why a structured question helps                                                                       |
 | -------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Failure strategy           | Retry / fail fast / queue / fail-over — each has a named trade-off worth surfacing                    |
 | Severity re-triage         | Blocker / Should / Nice — useful when your triage and the user's disagree                             |
-| State-variance scoping     | Which states matter for v1 — `multiSelect: true` fits perfectly                                       |
+| State-variance scoping     | Which states matter for v1 — selecting several named choices can reduce back-and-forth                |
 | Parking decisions          | Park with owner / escalate now / keep working — closes the gap-handling loop                          |
 | Write-back confirmation    | Write as-is / edit inline / discard — classic 3-option close after you've drafted the update          |
-| Variant comparison         | Two G/W/T drafts or two state specs in `preview` fields — side-by-side review beats prose walkthrough |
+| Variant comparison         | Two AC drafts or two state specs in a supported side-by-side representation — comparison beats prose walkthrough |
 
 ### Bad fits
 
@@ -251,39 +252,32 @@ Don't force structure where it doesn't belong:
 
 ### Structural rules
 
-- Batch **tightly-related** sub-questions in one call (up to 4). Batching unrelated gaps is a gap dump wearing a hat.
-- Option labels 1–5 words. Put the trade-off in the `description`.
-- If one option is the recommendation, put it first, add *"(Recommended)"* to the label, and name the reason in the description.
-- *"Other"* is added automatically — trust it. Don't add a synthetic "Custom…" option.
-- Use `preview` only for comparable artifacts (AC drafts, state specs, code snippets). Simple preferences don't need side-by-side layout.
+- Batch only **tightly-related** subquestions and stay within the host's supported question and option limits.
+- Follow the discovered schema for labels, descriptions, recommendation markers, custom-answer behavior, and previews; do not invent unsupported fields.
+- Keep labels short and put the material trade-off in the option description when that field exists.
+- Use side-by-side previews only when the host supports them and the artifacts are genuinely comparable.
 
-### Worked example — payment decline, structured
+### Worked example — duplicate invitation, structured
 
-**Gap:** "No spec for payment decline behaviour."
+**Gap:** "No spec for duplicate invitation behaviour."
 
-Instead of free-text back-and-forth, issue one `AskUserQuestion` call with two tightly-coupled sub-questions:
+If the host supports a structured request containing two questions, ask these tightly coupled decisions together. Otherwise ask them in successive turns:
 
-```
-Q1 — header: "On decline"
-  question: "What should happen when the payment provider returns a decline?"
-  options:
-    - label: "Keep card field populated (Recommended)"
-      description: "User can edit digits and retry without re-entering everything. Matches Stripe / Shopify default."
-    - label: "Clear card field"
-      description: "Forces re-entry; lower risk of accidentally retrying a stolen card but worse UX."
-    - label: "Silent retry once, then error"
-      description: "Can mask transient failures but adds ~1s latency to every decline."
+1. **User outcome:** "What should happen when the invite API returns `already-invited`?"
+   - **Inline field error (Recommended):** Keeps the owner in context and points to the email that needs attention.
+   - **Page banner:** More prominent, but less clearly connected to the field.
+   - **Open pending invite:** Useful only if the owner may view that record.
+2. **Telemetry:** "Should we emit a telemetry event for the duplicate attempt?"
+   - **Emit `invitation.duplicate_rejected` (Recommended):** Supports abuse and funnel analysis without including the invitee email.
+   - **No event:** Reduces data volume; appropriate when existing aggregate rejection metrics already answer the question.
 
-Q2 — header: "Telemetry"
-  question: "Should we emit a telemetry event on decline?"
-  options:
-    - label: "Emit payment.declined (Recommended)"
-      description: "With provider reason code. Supports fraud dashboards and funnel analysis."
-    - label: "No event"
-      description: "Reduces data volume; only fine if decline rate isn't a tracked metric."
-```
-
-After the user picks, draft the AC using the chosen options (plus any "Other" text verbatim for the user's own language). Then issue a second `AskUserQuestion` offering *write as-is / edit inline / discard* on the proposed G/W/T — with two drafts in `preview` fields if the scoping or event shape was worth comparing.
+After the user picks, draft one criterion for the user-visible outcome and a
+separate telemetry criterion when selected. They may share the same
+precondition and trigger, but each keeps one independently decidable outcome.
+Use custom text verbatim. Then request *write as-is / edit inline / discard*
+through supported structured input or one concise free-text question. Offer
+side-by-side drafts only if the host supports that representation and the
+difference matters.
 
 ---
 
@@ -301,7 +295,7 @@ The **secondary output is a resolution log** at the end of the session:
 ## Gaps closed — find-gaps session, YYYY-MM-DD
 
 Resolved (12):
-  [Blocker   → AC-14]        Payment decline handling
+  [Blocker   → AC-14]        Duplicate invitation handling
   [Blocker   → Plan §4.2]    Rollback strategy for migration
   [Should    → AC-15]        Empty contacts list state
   [Should    → states.md]    Search results loading/empty/error states
@@ -324,12 +318,14 @@ The log goes in the PR description, release notes, or wherever the work is being
 - **Silently rewriting the user's language.** If they say "checkpoint," write "checkpoint," not "save state."
 - **Skipping the artifact write-back.** A gap isn't closed until it's in the document. Verbal agreements evaporate between sessions.
 - **Letting one giant gap swallow the session.** If a single gap needs 30 minutes of discussion, it's a design spike. Park it, keep moving, come back.
-- **Stopping at three gaps.** If three surfaced in five minutes, there are probably thirty. Finish the checklist.
+- **Stopping at an arbitrary quota.** Finish the relevant checklist and follow
+  evidence across linked artifacts, but do not invent gaps to make the review
+  look thorough; an evidenced clean result is valid.
 - **Treating taste as a gap.** Stylistic preferences aren't gaps. Absence of decision is.
 - **Reviewing the artifact in isolation.** Cross-check plan ↔ AC ↔ mocks — gaps often appear as contradictions between two of them, not as absences in one.
-- **Inventing options just to use `AskUserQuestion`.** If you don't know the real choice space, ask free-text instead — fabricated options anchor the user to your guesses and hide their actual answer.
-- **Using `AskUserQuestion` for microcopy.** "What error message should appear?" must stay free-text. The user's exact words are the value; structured options destroy them.
-- **Batching unrelated gaps into one `AskUserQuestion` call.** Four sub-questions about the same gap is one turn. Four sub-questions about four different gaps is a gap dump in disguise.
+- **Inventing options just to use structured input.** If you don't know the real choice space, ask free text instead — fabricated options anchor the user to your guesses and hide their actual answer.
+- **Using structured options for microcopy.** "What error message should appear?" must stay free text. The user's exact words are the value; structured options destroy them.
+- **Batching unrelated gaps into one structured request.** Tightly coupled questions about one gap can share a request when the host permits it; questions about different gaps are a gap dump in disguise.
 
 ## Quick reference
 

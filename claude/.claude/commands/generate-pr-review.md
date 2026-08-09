@@ -149,38 +149,36 @@ This reviewer enforces:
 ### Change-Path Compliance
 - New or changed observable behavior needs corresponding tests written before implementation
 - Pure behavior-preserving refactors or reductions need a passing pre/post baseline plus proportionate alternate evidence where tests cannot observe the mechanism
-- Run only the applicable refactoring/reduction assessment during implementation and record `N/A` when neither applies
-- Once the current review boundary is otherwise PR-ready, run mutation testing once for the accumulated scope where meaningful; otherwise record an explicit `N/A` rationale and proportionate reachability, configuration, contract, integration, or operational evidence
+- For production behavior/refactor/reduction paths, run only the applicable refactoring/reduction assessment. Path types outside that responsibility omit the field rather than recording ceremonial `N/A`
+- For production-code paths, once the current review boundary is otherwise PR-ready, run mutation testing once for the accumulated scope where meaningful. Path types outside mutation testing omit the field and use evidence appropriate to their claim
 - A reduction transition must reference its program, terminal slice, and conserved contract; pass the behavior gate and independent verification; record owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none); and state `mechanism gate: pending — no net-reduction claim`
 - A terminal reduction must link its reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge prior transition obligations, and pass both gates before claiming net reduction
 - Any tests verify behavior, not implementation
 
 ### Testing Quality
 - Test through the subject's public interface at the layer the claim names
-- No `let`/`beforeEach` - use factory functions
-- Factory functions validate with real schemas (don't redefine)
+- Keep test state fresh or reliably isolated; use factories where they improve repeated or nested data
+- Reuse an existing production schema in factories when it adds evidence; do not redefine the same contract
 - No spying on internal methods
 - No 1:1 mapping between test files and implementation files
 
 ### TypeScript Strictness
-- No `any` types - ever
+- No unexplained `any`; contain unavoidable interop
 - No type assertions without justification
-- `type` for data structures, `interface` for behavior contracts
+- Follow repository convention and language semantics for `type` versus `interface`
 - Schema-first at trust boundaries (Zod/Standard Schema)
-- `readonly` on immutable data
+- `readonly` where the API promises immutability
 [IF noUncheckedIndexedAccess IS ENABLED: - All indexed access returns `T | undefined` — use optional chaining or explicit guards, never non-null assertions]
 [ADD ANY OTHER STRICT FLAGS DETECTED FROM tsconfig.json]
 
 ### Functional Patterns
-- No data mutation (no `.push()`, `.splice()`, property assignment)
-- Pure functions (no side effects)
-- Early returns (no nested if/else)
-- Array methods over loops
-- Options objects over positional parameters
-- No comments (self-documenting code)
+- Prefer immutable values and pure logic; contain necessary mutation and effects
+- Use control flow that is clear for the path
+- Use options objects where positional arguments are ambiguous
+- Comments explain non-obvious why, constraints, or safety context
 
 ### General Quality
-- No `console.log` or debug statements
+- No leftover unstructured console/debug output outside reviewed presentation, process-stream, logging, or diagnostic adapters
 - No TODO comments without linked issues
 - No hardcoded secrets
 - Small, focused changes
@@ -246,23 +244,23 @@ This reviewer enforces:
 When reviewing PRs for this project:
 
 ### Must Pass (Blocking)
-- [ ] Exactly one path is classified; behavior changes have test-first evidence and pure refactors have a passing baseline
-- [ ] Applicable refactoring/reduction assessment is complete, or explicitly `N/A`
-- [ ] The end-of-phase mutation gate ran once for the accumulated PR scope where meaningful and valuable survivors were addressed, or explicit `N/A` plus proportionate alternate evidence is recorded
+- [ ] Every changed path is classified by every applicable type; mixed PRs may use several. Behavior changes have test-first evidence and pure refactors have a passing baseline
+- [ ] Production behavior/refactor/reduction paths complete their applicable assessment; unrelated path types omit the field
+- [ ] Production-code paths apply the repository's end-of-phase mutation gate where meaningful; docs, dependency, generated, config, CI, and operations paths use evidence appropriate to their claims without fabricated mutation `N/A`
 - [ ] Reduction transitions link their terminal slice, pass the behavior gate and independent verification, record temporary-bridge ownership/removal metadata or `N/A`, and mark the mechanism gate pending without claiming net reduction
 - [ ] Terminal reductions link their program/report/ledger (or authorized single-slice `N/A`), discharge transition obligations, pass both gates, and remove old machinery/expired bridges
 - [ ] Any tests are behavior-focused
-- [ ] No `any` types
-- [ ] No data mutation
+- [ ] No unexplained or leaking `any`
+- [ ] Mutation and effects respect their declared ownership and contracts
 - [ ] No security issues
 - [ ] CI passes
 [PROJECT-SPECIFIC MUST-PASS ITEMS]
 
 ### Should Pass
-- [ ] Factory functions for test data
+- [ ] Test data is clear and isolated; factories are used where they add value
 - [ ] Pure functions where possible
-- [ ] Early returns pattern
-- [ ] Self-documenting code
+- [ ] Control flow is clear for the risk of the path
+- [ ] Comments add non-obvious information
 [PROJECT-SPECIFIC SHOULD-PASS ITEMS]
 
 ---
@@ -355,13 +353,23 @@ If the plan or explicit intent says GitHub-native stack but the boundary remains
 
 Before creating the PR, run these checks in order:
 
-1. Classify exactly one change path: behavior change, pure refactor, reduction transition, or terminal reduction
-2. Confirm the implementation phase and its applicable assessment are complete:
+1. Classify every changed path by all applicable types: behavior change, pure
+   refactor, reduction transition/terminal reduction, docs, dependency,
+   generated output, configuration, CI, or operations. Mixed PRs may have more
+   than one type.
+2. Confirm each path's applicable assessment is complete:
    - Behavior change: verify RED before GREEN and complete any applicable refactoring
    - Pure refactor: verify the passing baseline and complete the refactoring assessment
    - Reduction transition: reference the program/terminal slice and record the conserved contract, `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), and `mechanism gate: pending — no net-reduction claim`
    - Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), discharge transition obligations, run both `reduce-system-complexity` gates, and confirm old machinery and expired bridges are gone
-3. Run the end-of-phase mutation gate once for the actual PR boundary where meaningful—default branch for one PR, immediate parent for a stacked boundary—address valuable survivors and scoped reruns inside that gate, or record explicit mutation `N/A` with proportionate alternate evidence. Do not run the automated mutation harness once per prior increment or commit.
+   - Docs/dependency/generated/configuration/CI/operations: run the relevant
+     source, rendering, lockfile, provenance, compatibility, syntax, dry-run,
+     rollback, or regeneration checks; do not manufacture TDD/refactoring gates
+3. Run the end-of-phase mutation gate once for changed production behavior
+   where repository policy or risk makes it meaningful—default branch for one
+   PR, immediate parent for a stacked boundary. Address valuable survivors and
+   scoped reruns inside that gate. Other path types report only their relevant
+   alternate evidence; do not manufacture mutation `N/A` ceremony.
 4. [DETECTED_TYPE_CHECK_COMMAND]
 5. [DETECTED_LINT_COMMAND]
 6. [DETECTED_TEST_COMMAND]
@@ -380,6 +388,9 @@ Create a PR with:
 - Pure refactor: name the passing baseline plus mutation results or explicit `N/A` and alternate evidence
 - Reduction transition: link the program and terminal slice; name the conserved contract, passing behavior gate, independent verification, owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none), pending mechanism gate without a net claim, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
 - Terminal reduction: link the reducer program/report/ledger (or state `N/A — authorized single terminal slice`), show discharged transition obligations, passing behavior/mechanism gates, removal of superseded machinery and expired bridges, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
+- Docs/dependency/generated/configuration/CI/operations: name the applicable
+  source/render/lock/provenance/compatibility/syntax/dry-run/rollback/regeneration
+  evidence and omit unrelated TDD or mutation claims
 
 Use `gh pr create` (or project-specific CLI) with the appropriate base, title, and body. Create only the current boundary unless whole-stack submission was explicitly confirmed.
 ```

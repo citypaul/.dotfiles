@@ -1,6 +1,6 @@
 # Event Versioning and Schema Evolution
 
-This is the topic that separates event-sourced systems that survive from ones that calcify. Events are immutable and live for the lifetime of the system, so **new code must be able to read old events forever.** You cannot "just run a migration". Decide a strategy before the first event ships. The definitive text is Greg Young's *Versioning in an Event Sourced System* (2017); this resource distils it for functional TypeScript.
+This is the topic that separates event-sourced systems that survive from ones that calcify. Events are immutable, so **new code must read an old event for as long as that event remains in the replayable set.** You cannot "just run a migration". Decide a strategy before the first event ships. The definitive text is Greg Young's *Versioning in an Event Sourced System* (2017); this resource distils it for functional TypeScript.
 
 ## Rule 0: You Cannot Change the Past
 
@@ -24,20 +24,32 @@ Serialize events as JSON and **map** them into the current type rather than hard
 |-------------|--------|
 | In the JSON **and** in the target type | copy the value |
 | In the JSON but **not** in the type | ignore it |
-| In the type but **not** in the JSON | use a default value |
+| In the type but **not** in the JSON | use an optional field or an explicitly derivable, context-invariant default; otherwise reject or introduce a new event |
 
-This makes **additive, backward/forward-compatible change free**: adding an optional field, or a new consumer ignoring a field it does not know, both "just work". What weak schema *alone* cannot do is **rename** a field (it maps by name, so the old value is silently dropped and the new one defaulted) or change a field's **meaning** — a rename needs an explicit upcaster (Strategy B), and a semantic change needs a whole new event (Rule 1). A tolerant reader is the baseline every event-sourced system should adopt from day one — it is what the schema-parse-on-read in `event-store.md` implements.
+This makes some additive change cheap: adding an optional field or letting a new
+consumer ignore an unknown field may need no upcaster. A newly required
+currency, tenant, or meaning-bearing flag is not a safe default merely because
+it is additive; it must be derivable without context, or it needs an explicit
+upcast/new event. Weak schema *alone* also cannot safely **rename** a field (the
+old value is otherwise dropped and the new one defaulted) or change a field's
+**meaning** — a rename needs an explicit upcaster (Strategy B), and a semantic
+change needs a whole new event (Rule 1). A tolerant reader is the baseline every
+event-sourced system should adopt from day one — it is what the
+schema-parse-on-read in `event-store.md` implements.
 
 ## Strategy B: Upcasting
 
 When a shape change is more than additive (a field restructured, a value split), insert an **upcaster** — a pure function that transforms an old-shape event into the next shape — *between deserialization and the domain*. Upcasters chain (`V1→V2→V3`) or jump straight to current, and run on **every read**, so they must be pure and do **no I/O** (Marten's explicit warning — an upcaster that calls the network turns every replay into an N+1 storm).
 
 ```typescript
-type OrderPlacedV1 = { readonly type: 'OrderPlaced'; readonly version: 1; readonly orderId: string; readonly total: number };
+type OrderPlacedV1 = {
+  readonly type: 'OrderPlaced'; readonly version: 1;
+  readonly orderId: string; readonly totalMinorUnits: number; readonly currency: Currency;
+};
 type OrderPlacedV2 = {
   readonly type: 'OrderPlaced'; readonly version: 2;
   readonly orderId: string;
-  readonly totalAmount: { readonly amount: number; readonly currency: Currency }; // structural change
+  readonly totalAmount: { readonly minorUnits: number; readonly currency: Currency }; // structural change
 };
 type OrderPlaced = OrderPlacedV2; // the shape the domain uses today
 
@@ -45,7 +57,7 @@ const upcastOrderPlacedV1toV2 = (e: OrderPlacedV1): OrderPlacedV2 => ({
   type: 'OrderPlaced',
   version: 2,
   orderId: e.orderId,
-  totalAmount: { amount: e.total, currency: 'GBP' }, // default for the newly-required field
+  totalAmount: { minorUnits: e.totalMinorUnits, currency: e.currency },
 });
 
 // On read: dispatch on the stored version and upcast forward to the current shape.
@@ -59,7 +71,7 @@ const upcastOrderPlaced = (raw: OrderPlacedV1 | OrderPlacedV2): OrderPlaced => {
 };
 ```
 
-This encodes the whole discipline: never mutate stored events; upcast on read; default added fields; upcasters are pure and chainable; and a rename or restructure is handled by the upcaster itself (here `total` becomes `totalAmount`) precisely because the new shape is derivable from the old — that is what makes it a *version* rather than a new event. (Weak schema alone, Strategy A, can't do that — it maps by name; an upcaster can.) For many event types, keep a **registry keyed by `type` + version** and apply upcasters until you reach the current shape, validating each raw record against a per-version schema at the boundary (`safeParse`) so the dispatch stays type-safe instead of casting untyped JSON.
+This encodes the whole discipline: never mutate stored events; upcast on read; default only facts that are genuinely derivable or context-invariant; keep upcasters pure and chainable; and handle a rename or restructure in the upcaster itself. Here V1 already recorded both integer minor units and currency, so wrapping them as `totalAmount` is lossless. If V1 had no currency, inventing `GBP` would change history: introduce a new event or use an explicitly audited copy-transform instead. (Weak schema alone, Strategy A, can't rename fields — it maps by name; an upcaster can.) For many event types, keep a **registry keyed by `type` + version** and apply upcasters until you reach the current shape, validating each raw record against a per-version schema at the boundary (`safeParse`) so the dispatch stays type-safe instead of casting untyped JSON.
 
 ## Strategy C: Copy-Transform (the nuclear option)
 

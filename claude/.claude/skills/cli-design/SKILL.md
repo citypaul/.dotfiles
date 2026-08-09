@@ -7,6 +7,10 @@ description: Unix-composable CLI design patterns. Use when building CLI tools, d
 
 This skill covers **language-agnostic** CLI design principles. The rules about stream separation, exit codes, format flags, and composability apply regardless of implementation language.
 
+This bundle adapts the CC BY-SA 4.0 [Command Line Interface Guidelines](https://clig.dev/).
+Pinned provenance, modification notes, and license scope are recorded in
+[`resources/source-notes.md`](resources/source-notes.md) and [`LICENSE`](LICENSE).
+
 For API contract stability and Hyrum's Law, see the `api-design` skill. For config, env vars, and graceful shutdown, see the `twelve-factor` skill.
 
 **TypeScript implementation patterns** are in the `resources/` directory. Load them on demand when building a CLI in TypeScript:
@@ -50,11 +54,11 @@ This separation is what makes `mycli --json | jq ...` work. One spinner characte
 | Warnings, errors, diagnostics | stderr | Visible to user even when stdout is piped |
 | Debug/verbose output | stderr | Diagnostic, never data |
 
-**Buffering behavior:**
+**Stream behavior:**
 
-- **stdout**: line-buffered when connected to a TTY, block-buffered when piped (~2x faster than stderr)
-- **stderr**: unbuffered — every write is a syscall (immediate but expensive)
-- **Check each stream independently** — stdout being piped does not mean stderr is piped
+- Check stdout and stderr independently; stdout being piped does not mean stderr is piped
+- Do not assume C stdio's line/block/unbuffered rules describe every language runtime
+- In Node.js, sync/async process-stream behavior varies by operating system and destination; always respect `.write()` backpressure for high-volume output
 
 When stdout is piped, the user doesn't want your status messages in their data. All non-data output must go to stderr.
 
@@ -91,16 +95,11 @@ For TypeScript implementation patterns (Result types, entry point wiring, format
 
 ---
 
-## Recommended TypeScript Stack
+## Selecting a TypeScript Stack
 
-Chosen because each maps directly onto rules in this skill — pick by the rules, not popularity:
+Prefer the command and prompt libraries the repository already owns when they can satisfy the contracts in this skill. For a new material dependency, inspect current versions and project constraints and use `evaluate-existing-solutions`; do not select from remembered popularity or stale package characteristics.
 
-| Tool | Why it fits |
-|------|-------------|
-| [Stricli](https://bloomberg.github.io/stricli/) (command framework) | Commands are plain typed functions receiving an injected context — "Keep Handlers Pure" is the framework's native shape, so handlers test without subprocess spawning. No decorators or classes; strict flag/arg type inference; introspectable command tree (enables machine-readable self-description); minimal dependencies keep startup inside the 100ms responsiveness budget |
-| [@clack/prompts](https://github.com/bombshell-dev/clack) (interactivity) | Prompts as an optional presentation adapter: gate on TTY + `--no-input`/`--json`/`CI`, so interactivity is additive and every prompt stays bypassable. Cancel handling built in; tiny footprint |
-
-Alternatives and why not: **commander** is ubiquitous but stringly-typed — options arrive untyped, fighting strict mode. **oclif** is mature but class/decorator-based with heavy startup — wrong shape for pure handlers and hook-invoked CLIs. **@effect/cli** is schema-first with a free `--wizard` mode, but drags the entire Effect runtime and paradigm in — too much buy-in for a CLI layer that should stay thin.
+Stricli can fit typed, injected command handlers, and `@clack/prompts` can fit optional TTY-gated interactivity. Treat them as candidates, not defaults. Compare them with the existing stack and alternatives on handler testability, type safety, startup cost measured in the target runtime, maintenance, dependency weight, non-interactive behavior, and migration cost.
 
 ---
 
@@ -126,26 +125,35 @@ Three-tier output hierarchy:
 
 ### `--json`: Structured Data
 
-- stdout contains **ONLY** valid JSON — no spinners, no color, no progress
-- stderr continues normally — human diagnostics still visible
-- Errors are structured JSON too — not just success responses
+- On success, stdout contains **ONLY** valid JSON — no spinners, no color, no progress
+- On failure, stdout stays empty and the final non-empty stderr line is the
+  structured JSON error envelope
+- Other diagnostics may precede that final stderr line and never contaminate stdout;
+  consumers parse the final non-empty line rather than the entire diagnostic stream
 - Schema is versioned — breaking changes to JSON output are breaking changes to the CLI
 - `--json` implies non-interactive regardless of TTY
 
-**Consistent envelope:**
+**Consistent envelopes:**
 
+Success on stdout:
 ```json
 { "ok": true, "data": { ... } }
+```
+
+Failure on stderr:
+```json
 { "ok": false, "error": { "code": "CONFIG_MISSING", "message": "...", "fix": "..." } }
 ```
 
 ### NDJSON for Streaming
 
-For large datasets, use NDJSON (one JSON object per `\n`):
+For large datasets, use NDJSON (one JSON text per record, terminated by `\n`):
 
 - Each line is independently parseable
-- Include a `type` field per record for multiplexing events
-- Final line can be a summary record
+- Any JSON value is valid NDJSON syntax; the application's decoder owns its schema
+- The examples in this skill use an optional local event profile with a `type`
+  discriminator and an optional final summary record; neither is required by NDJSON
+- Document whether readers ignore or reject empty lines
 - Enables: `mycli run --format ndjson | while read -r line; do ...; done`
 
 For NDJSON specification details, see `resources/stream-contracts.md`.
@@ -160,16 +168,21 @@ For NDJSON specification details, see `resources/stream-contracts.md`.
 | 1 | Domain failure | Tool-specific failure (e.g. quality threshold not met) |
 | 2 | Invalid usage | Bad flags, missing required args, validation error |
 | 78 | Configuration error | Invalid config file, missing required config |
-| 75 | Temporary failure | Network timeout, service unavailable — retry may help |
+| 75 | Temporary, retry-safe failure | Failure occurred before dispatch, or the operation is documented and demonstrably safe to retry |
 | 130 | SIGINT | User pressed Ctrl-C (128 + 2) |
-| 143 | SIGTERM | Process terminated (128 + 15) |
+| 143 | SIGTERM-style status | Optional documented status when preserving signal termination (128 + 15); a handled graceful shutdown may instead return 0 |
 
 **Rules:**
 
 - Non-zero exit code **MUST** have a stderr explanation
 - Document exit codes in `--help`
 - Never use codes above 125 for application errors (reserved for signals: 128 + signal number)
-- Exit code 75 (transient) is critical — it tells retry logic the failure may be temporary
+- Use exit 75 only when no mutation was dispatched or retry safety is established
+  through idempotency/reconciliation; a merely transient cause is not enough
+- If a mutating request may have reached its destination, report an ambiguous
+  outcome and direct the user to `status`/reconcile instead of inviting a blind retry
+- A handled SIGTERM may finish with 0 or a documented application status such as
+  143; Docker and Kubernetes do not require 143 for graceful shutdown
 - Map non-zero codes to the most important failure modes for your tool
 
 ---
@@ -182,14 +195,18 @@ Check priority order (first match wins):
 |----------|-----------|--------|
 | 1 | `--format json` or `--json` flag | Non-interactive, no color, no animation |
 | 2 | `--no-color` flag | Disable color (output may still be interactive) |
-| 3 | `NO_COLOR` env (non-empty) | Disable color |
-| 4 | `FORCE_COLOR` env | Enable color even when not a TTY (`NO_COLOR` still wins) |
+| 3 | `FORCE_COLOR` env | Empty, `1`, `2`, `3`, or `true` enables color; every other value (including `0`) disables it. Supported values override `NO_COLOR` and `NODE_DISABLE_COLORS` |
+| 4 | `NO_COLOR` (non-empty) or `NODE_DISABLE_COLORS` (defined), with `FORCE_COLOR` unset | Disable color |
 | 5 | `TERM=dumb` | Disable color and animations |
 | 6 | `CI=true` | No interactive prompts |
 | 7 | stdout is not a TTY (`!isatty(stdout)`) | Plain output, no animations on stdout |
 | 8 | Default | Full interactive with colors |
 
 **Check stdout and stderr independently.** When stdout is piped but stderr is a TTY, you can still show spinners on stderr while keeping stdout clean for the pipe consumer.
+
+**Gate prompts on stdin independently.** Prompt only when stdin and the prompt's
+output stream are TTYs; stdout TTY status controls data formatting, not whether
+input is safe to request.
 
 Optionally support `MYCLI_NO_COLOR` for app-specific color override.
 
@@ -201,7 +218,8 @@ Optionally support `MYCLI_NO_COLOR` for app-specific color override.
 
 - **1 positional arg**: acceptable (the "main thing")
 - **2 positional args**: suspicious — consider flags instead
-- **3+ positional args**: never acceptable
+- **3+ positional args**: prefer named flags unless a familiar command grammar
+  makes the positions obvious
 - **Exception**: variadic args of the same type are fine (`rm a.txt b.txt c.txt`), as are universal idioms (`cp source dest`)
 
 Flags are self-documenting, order-independent, and future-proof.
@@ -316,7 +334,8 @@ Errors are structured too — not just success responses:
 }
 ```
 
-The `transient` boolean tells retry logic whether the failure may be temporary.
+The `transient` boolean says the cause may clear. It does not by itself authorize
+a retry: callers also need exit code 75 or an explicit retry-safe contract.
 
 ---
 
@@ -325,17 +344,29 @@ The `transient` boolean tells retry logic whether the failure may be temporary.
 - **Confirm state changes** — say what changed and show (or point to) the resulting state; traditionally-silent commands look broken to humans
 - **Make current state easy to see** — a `status`-style command for anything with complex state (the `git status` pattern)
 - **Make hidden actions explicit** — if you read/write files not passed as arguments or talk to remote servers, say so (stderr in human mode)
-- **Page long output** through `$PAGER` (e.g. `less -FIRX`) — only when stdout is a TTY, never when piped
+- **Resolve ambiguous mutations** — if transport fails after dispatch, tell the
+  user how to inspect or reconcile state; do not label the result retry-safe
+- **Page long output** through `$PAGER` only when stdout is a TTY, never when
+  piped; do not execute the value through a shell, and document whether it is an
+  executable token or parsed by a reviewed shell-word parser
 
 ---
 
 ## Robustness
 
 - **Validate input early** — fail before any side effects, with a clear message
-- **Responsiveness beats speed** — print something within 100ms; show progress on stderr for anything long-running, with time estimates when progress can stall
-- **Timeouts on all network operations** — configurable, and exit 75 so retry logic knows the failure is transient
-- **Recoverable by re-run** — after a transient failure, re-running the command should resume or be safely idempotent
-- **Crash-only design** — exit fast on failure, defer cleanup to the next run; add timeouts to cleanup so Ctrl-C never hangs (second Ctrl-C skips cleanup) — see `resources/stream-contracts.md`
+- **Responsiveness for ongoing human work** — in interactive human mode, unless
+  `--quiet`, show progress on stderr if an operation is still running after roughly
+  100ms; keep machine modes quiet unless their protocol explicitly defines progress,
+  and include time estimates when interactive progress can stall
+- **Timeouts on all network operations** — configurable; use exit 75 only before
+  dispatch or when retry safety/idempotency is established
+- **Recoverable operations** — re-running may resume only when safe; ambiguous
+  mutation outcomes need an explicit status or reconciliation path
+- **Crash-only design** — exit fast on failure, defer cleanup to the next run;
+  distinguish visibility-atomic replacement from crash-durable persistence, and
+  keep bounded-cleanup timers referenced so Ctrl-C cannot bypass the bound — see
+  `resources/stream-contracts.md`
 - **Expect misuse** — script wrapping, bad connections, concurrent instances, environments you never tested
 
 ---
@@ -428,7 +459,7 @@ When in doubt, add alongside — don't modify. Deprecate with stderr warnings be
 After designing or reviewing a CLI:
 
 - [ ] stdout has ONLY data; stderr has everything else
-- [ ] Every command supports `--json` with consistent envelope
+- [ ] Every command supports `--json` with success data on stdout and structured failures on stderr
 - [ ] Exit codes are semantic and documented in `--help`
 - [ ] Every prompt has a `--yes`/`--force`/`--flag` bypass
 - [ ] Errors include: code, message, fix suggestion
@@ -442,8 +473,10 @@ After designing or reviewing a CLI:
 - [ ] Config follows flags > env > project > user > defaults
 - [ ] Secrets never via flags; keychain/credential-file/stdin preferred, env only when platform-injected (CI)
 - [ ] Severe destructive actions require typed confirmation (resource name), not just y/N
-- [ ] Network operations have configurable timeouts (exit 75 on transient failure)
-- [ ] Startup < 500ms, print something in < 100ms
+- [ ] Network operations have configurable timeouts; exit 75 is reserved for
+      pre-dispatch or demonstrably retry-safe failures
+- [ ] Interactive human operations still running after roughly 100ms show progress
+      on stderr unless `--quiet`; machine-mode protocols stay clean
 - [ ] Ctrl-C exits fast with bounded cleanup
 - [ ] `--help` includes 2-3 realistic examples
 - [ ] Human output is grep-parseable (flat rows, no table borders)

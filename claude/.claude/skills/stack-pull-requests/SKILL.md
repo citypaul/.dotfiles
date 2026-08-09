@@ -9,7 +9,7 @@ Use stacked pull requests as an optional **branch, review, and integration topol
 
 Default each vertical implementation slice to one PR against trunk. Stack only when ordered branches materially improve review quality or let work continue on the same evolving baseline before lower reviews merge, without weakening testing, deployability, or comprehension.
 
-GitHub's stacked PR support is in public preview. Load `references/source-notes.md` when exact GitHub behavior, command provenance, or the rationale behind these rules matters. Verify current official docs and `gh stack --help` before relying on preview-specific commands.
+GitHub's native stacked-PR support and official `gh-stack` extension are limited-preview features and may not be enabled for the repository. Load `references/source-notes.md` when exact GitHub behavior, command provenance, or the rationale behind these rules matters. Verify current official docs, repository access, and `gh stack --help` before relying on preview-specific commands.
 
 ## Keep The Three Units Separate
 
@@ -236,10 +236,10 @@ For each PR boundary:
 5. Self-review the diff against its parent, not against trunk.
 6. Remove work that belongs upstack.
 7. Present the focused diff and verification evidence.
-8. Wait for commit approval.
+8. Commit only when the user and repository workflow authorize it.
 9. Create the next branch only after the current boundary is committed and known-good; review approval is not required to extend the stack.
 
-Prefer the official `gh stack` command when it is available and matches current repository policy. Use current help rather than memorized preview syntax. Submit locally tracked native stacks with `gh stack submit`. If the branches or PRs were created with other tooling, link them immediately with `gh stack link <bottom> ... <top>`. If native tooling is unavailable, either manage an explicitly unlinked dependent chain with existing Git/GitHub tooling or ask before installing anything.
+Prefer the official `gh stack` command only when the repository has preview access, the extension is already installed or installation is authorized, and it matches repository policy. Use current help rather than memorized syntax. Submit locally tracked native stacks with `gh stack submit`. If branches or PRs were created with other tooling, use the currently documented linking command. Otherwise manage an explicitly unlinked dependent chain with existing Git/GitHub tooling.
 
 Before reporting that a native stack was created or is PR-ready, verify the remote object: `PullRequest.stack` must be non-null and its trunk and ordered entries must match the delivery plan. A correct chain of PR base refs is not sufficient. If remote verification is unavailable, report the PRs as an unverified dependent chain rather than a native stack.
 
@@ -286,11 +286,11 @@ Before merge:
 - require linear stack history
 - verify the top branch satisfies the complete declared stack scope and cumulative acceptance criteria or terminal gates
 - verify any partially merged state remains safe
-- resolve documentation conflicts using current GitHub guidance because stacked PR behavior is preview
+- resolve documentation conflicts using current GitHub guidance because native stacked-PR behavior is preview
 
 For a GitHub-native linked stack, merge an approved prefix or the full stack with `gh stack merge`; the selected PR and every PR below it land as one all-or-nothing operation unless a merge queue splits processing into groups. For an unlinked dependent chain or other tooling, merge bottom-up and restack after lower merges. Never merge an upper PR without every dependency below it.
 
-After lower boundaries merge, sync or rebase the remaining stack, rerun affected checks, and verify each PR still shows only its intended focused diff. Mark a cross-slice stack's slice complete when its owning PR lands; mark an intra-slice stack's slice complete only when its top lands. The whole stack completes when its top lands. Delete the plan when every selected implementation slice lands, following `planning`.
+After lower boundaries merge, sync or rebase the remaining stack, rerun affected checks, and verify each PR still shows only its intended focused diff. Mark a cross-slice stack's slice complete when its owning PR lands; mark an intra-slice stack's slice complete only when its top lands. The whole stack completes when its top lands. Then follow the repository plan owner's close/archive/delete lifecycle from `planning`; delete only the fallback temporary plan file with normal authority.
 
 ## Examples
 
