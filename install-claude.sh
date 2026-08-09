@@ -371,8 +371,7 @@ download_filtered_file() {
 
 # Global destination map from the pinned skills@1.5.22 agent registry. This
 # installer passes --copy explicitly, so only the resolved selected destinations
-# can be replaced. The CLI lock records no per-destination ownership, so a
-# matching name never proves a target disposable.
+# can be replaced.
 global_skills_dir_for_agent() {
   local agent="$1"
   local config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -444,17 +443,8 @@ global_skills_dir_for_agent() {
   esac
 }
 
-skill_dir_has_entries() {
-  local dir="$1" entry
-  [[ -d "$dir" ]] || return 1
-  for entry in "$dir"/* "$dir"/.[!.]* "$dir"/..?*; do
-    [[ -e "$entry" || -L "$entry" ]] && return 0
-  done
-  return 1
-}
-
-guard_selected_skill_dirs() {
-  local agent dir entry blocked=false
+backup_selected_skills() {
+  local skills=("$@") agent dir skill backup
   local checked_dirs=()
 
   for agent in "${SKILL_AGENTS[@]}"; do
@@ -466,21 +456,18 @@ guard_selected_skill_dirs() {
   done
 
   for dir in "${checked_dirs[@]}"; do
-    if skill_dir_has_entries "$dir"; then
-      blocked=true
-      echo -e "${RED}✗${NC} Existing skill content found in $dir:"
-      for entry in "$dir"/* "$dir"/.[!.]* "$dir"/..?*; do
-        [[ -e "$entry" || -L "$entry" ]] || continue
-        echo -e "      • $(basename "$entry")"
-      done
-    fi
-  done
+    local existing=()
+    for skill in "${skills[@]}"; do
+      [[ -e "$dir/$skill" || -L "$dir/$skill" ]] && existing+=("$skill")
+    done
+    [[ ${#existing[@]} -gt 0 ]] || continue
 
-  if [[ "$blocked" == true ]]; then
-    echo -e "    Skill installation stopped before skills@$SKILLS_CLI_VERSION could replace a destination."
-    echo -e "    Back up and explicitly clear the listed target, or use a separately reviewed CLI update workflow."
-    return 1
-  fi
+    backup="$(mktemp -d "$dir.before-install.XXXXXXXX")"
+    echo -e "${YELLOW}→${NC} Backing up ${#existing[@]} existing selected skill(s) from $dir to $backup"
+    for skill in "${existing[@]}"; do
+      cp -a "$dir/$skill" "$backup/"
+    done
+  done
 }
 
 # Optional (community) skill sources that failed to install. Collected so a
@@ -608,9 +595,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     exit 1
   fi
 
-  if ! guard_selected_skill_dirs; then
-    exit 1
-  fi
+  backup_selected_skills "${install_manifest[@]}"
 
   install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)" "${FIRST_PARTY_SKILLS[@]}"
 
@@ -637,8 +622,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
       echo -e "      • $src"
     done
     echo -e "    These are third-party community sources; setup continued without them."
-    echo -e "    Review the failed source on skills.sh. Before retrying, back up and explicitly clear the selected targets,"
-    echo -e "    or use a separately reviewed ownership-safe workflow; successful installs make an automatic rerun stop by design."
+    echo -e "    Review the failed source on skills.sh, then rerun; existing selected skills were backed up before replacement."
   fi
   echo ""
 fi
@@ -782,7 +766,7 @@ echo -e "${BLUE}Inspecting skills:${NC}"
 echo ""
 echo -e "  ${YELLOW}npx skills@$SKILLS_CLI_VERSION list -g${NC}              List installed skills"
 echo -e "  ${YELLOW}npx skills@$SKILLS_CLI_VERSION find <query>${NC}         Search skills.sh for more skills"
-echo -e "  Mutating update/remove commands bypass this installer's ownership preflight; back up and verify exact targets first."
+echo -e "  Mutating update/remove commands bypass this installer's automatic backups; back up and verify exact targets first."
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
 echo ""
