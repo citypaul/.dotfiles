@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 #
-# Verify the installer refuses to invoke the pinned installer while any target
-# it may replace already contains skills. The v3 lock has no per-destination
-# ownership, so neither an absent nor a present name proves a target disposable.
-#
-# skills@1.5.22 recursively replaces same-named destinations. The wrapper passes
-# --copy explicitly, so the preflight must cover every selected resolved target
-# and must not block on an unrelated canonical directory.
+# Verify repeat installs back up selected existing skills, then let the pinned
+# CLI replace them without touching unrelated content.
 #
 
 set -e
@@ -38,8 +33,8 @@ AGENTS_DIR="$HOME_DIR/.agents"
 
 mkdir -p "$TMPDIR/bin" "$SKILLS_DIR" "$AGENTS_DIR/skills/linked-skill"
 
-# Stub npx so no real install happens. If invoked, it simulates copy mode
-# replacing the colliding directory; a correct preflight never calls it.
+# Stub npx so no real install happens. If requested, it simulates copy mode
+# replacing one selected skill directory.
 cat > "$TMPDIR/bin/npx" <<'STUB'
 #!/usr/bin/env bash
 touch "$NPX_MARKER"
@@ -48,6 +43,8 @@ if [[ -n "${NPX_ARGS:-}" ]]; then
 fi
 if [[ -d "$SIMULATED_DESTINATION" ]]; then
   mv "$SIMULATED_DESTINATION" "${SIMULATED_DESTINATION}.overwritten"
+  mkdir -p "$SIMULATED_DESTINATION"
+  echo "# installed" > "$SIMULATED_DESTINATION/SKILL.md"
 fi
 exit 0
 STUB
@@ -94,32 +91,33 @@ OUTPUT=$(HOME="$HOME_DIR" PATH="$TMPDIR/bin:$PATH" \
 STATUS=$?
 set -e
 
-if [[ $STATUS -ne 0 ]]; then
-  pass "installer refuses an existing Claude skill target"
+if [[ $STATUS -eq 0 ]]; then
+  pass "repeat install replaces a selected Claude skill"
 else
-  fail "installer must stop before a colliding unmanaged skill can be replaced"
+  fail "existing selected Claude skill should not block installation"
 fi
 
-if [[ ! -e "$TMPDIR/npx-called" ]]; then
-  pass "skills CLI is not invoked before the ownership conflict is resolved"
+if [[ -e "$TMPDIR/npx-called" ]]; then
+  pass "skills CLI is invoked after backup"
 else
-  fail "preflight must run before npx"
+  fail "skills CLI should run after backing up existing selected skills"
 fi
 
-# The custom directory stays untouched.
-if [[ -f "$SKILLS_DIR/tdd/SKILL.md" ]] && grep -q '# custom tdd' "$SKILLS_DIR/tdd/SKILL.md"; then
-  pass "colliding unmanaged skill directory is left untouched"
+# The previous content remains recoverable.
+if compgen -G "$HOME_DIR/.claude/skills.before-install.*/tdd/SKILL.md" > /dev/null &&
+   grep -q '# custom tdd' "$HOME_DIR"/.claude/skills.before-install.*/tdd/SKILL.md; then
+  pass "replaced Claude skill is backed up"
 else
-  fail "installer must preserve the colliding unmanaged skill"
+  fail "installer must back up a selected Claude skill before replacement"
 fi
 
-if printf '%s' "$OUTPUT" | grep -q "tdd"; then
-  pass "installer identifies the Claude collision"
+if grep -q '# installed' "$SKILLS_DIR/tdd/SKILL.md"; then
+  pass "selected Claude skill is refreshed"
 else
-  fail "installer should report the unmanaged directory before stopping"
+  fail "selected Claude skill should be replaced after backup"
 fi
 
-# A lock entry does not bypass the destination preflight.
+# An unrelated lock-managed skill stays put.
 if [[ -d "$SKILLS_DIR/managed-skill" && -f "$SKILLS_DIR/managed-skill/SKILL.md" ]]; then
   pass "stale or ambiguous lock-managed directory is left in place"
 else
@@ -141,14 +139,14 @@ else
   fail "symlinked skill must be left untouched"
 fi
 
-if printf '%s' "$OUTPUT" | grep -q "managed-skill"; then
-  pass "lock name is not treated as destination ownership evidence"
+if ! printf '%s' "$OUTPUT" | grep -q "managed-skill"; then
+  pass "unselected lock-managed skill is ignored"
 else
-  fail "preflight should list every existing destination entry"
+  fail "installer should not inspect unrelated skill names"
 fi
 
 # Universal agents use the canonical ~/.agents/skills target. A Codex-only
-# install must protect it without being blocked by an unrelated Claude target.
+# install refreshes selected names there without being blocked by Claude.
 mkdir -p "$AGENTS_DIR/skills/tdd"
 echo "# custom codex tdd" > "$AGENTS_DIR/skills/tdd/SKILL.md"
 
@@ -159,17 +157,19 @@ CODEX_OUTPUT=$(HOME="$HOME_DIR" PATH="$TMPDIR/bin:$PATH" \
 CODEX_STATUS=$?
 set -e
 
-if [[ $CODEX_STATUS -ne 0 ]] && [[ ! -e "$TMPDIR/npx-called-codex" ]]; then
-  pass "Codex-only install is stopped before the canonical target can be replaced"
+if [[ $CODEX_STATUS -eq 0 ]] && [[ -e "$TMPDIR/npx-called-codex" ]] &&
+   printf '%s' "$CODEX_OUTPUT" | grep -q 'Backing up'; then
+  pass "Codex-only repeat install refreshes the canonical target"
 else
-  fail "Codex canonical preflight must run before npx"
+  fail "existing Codex skill should not block installation"
 fi
 
-if grep -q '# custom codex tdd' "$AGENTS_DIR/skills/tdd/SKILL.md" &&
-   printf '%s' "$CODEX_OUTPUT" | grep -q "tdd"; then
-  pass "Codex collision is reported and preserved"
+if compgen -G "$AGENTS_DIR/skills.before-install.*/tdd/SKILL.md" > /dev/null &&
+   grep -q '# custom codex tdd' "$AGENTS_DIR"/skills.before-install.*/tdd/SKILL.md &&
+   grep -q '# installed' "$AGENTS_DIR/skills/tdd/SKILL.md"; then
+  pass "Codex skill is backed up and refreshed"
 else
-  fail "Codex collision must remain recoverable"
+  fail "Codex replacement must remain recoverable"
 fi
 
 # Two per-agent clients with the same registry layout key still resolve to
@@ -196,7 +196,7 @@ else
   fail "skills CLI invocation must include --copy"
 fi
 
-if grep -q '# custom codex tdd' "$AGENTS_DIR/skills/tdd/SKILL.md" &&
+if grep -q '# installed' "$AGENTS_DIR/skills/tdd/SKILL.md" &&
    printf '%s' "$PAIR_OUTPUT" | grep -q 'installed'; then
   pass "unselected canonical skill content remains untouched"
 else

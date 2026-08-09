@@ -1577,7 +1577,7 @@ Agents are invoked implicitly (Claude detects when to use them) or explicitly:
 - ✅ No per-project configuration needed
 - ✅ Skills install via [skills.sh](https://skills.sh) — works with Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, and 40+ other agents
 - ✅ Modular structure loads details on-demand
-- ✅ Explicit maintenance: inspect with `npx skills@1.5.22 list -g`; back up and verify destination ownership before any reviewed replacement, and use `git pull` for the rest
+- ✅ Explicit maintenance: inspect with `npx skills@1.5.22 list -g`; reviewed installer reruns back up selected skills before replacement, and `git pull` updates the checkout
 
 **Install from an inspected, immutable checkout:**
 
@@ -1628,12 +1628,10 @@ depends on the selected agents:
 
 All three layouts expose the same complete bundle. Include `--agent codex` when Codex should discover and use the skill (the installer targets Claude Code only by default).
 
-**Existing skill directories are preserved.** The CLI lock does not record
-per-destination ownership, so a matching lock name cannot prove that a target
-copy is disposable. Before any skill install, the installer resolves every
-selected agent's pinned global target and stops if any target contains
-content. Back up and explicitly clear the target, or use a separately reviewed
-CLI update workflow.
+**Repeat installs are recoverable.** Before invoking the CLI, the installer
+copies every existing selected skill to an adjacent
+`skills.before-install.<random>/` directory. The pinned CLI can then refresh
+those reviewed names without unrelated skills or files blocking the install.
 
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~160 lines - lean core principles)
@@ -1654,7 +1652,7 @@ npx skills@1.5.22 list -g              # List installed skills
 npx skills@1.5.22 find <query>         # Discover more skills on skills.sh
 ```
 
-The CLI's `update` and `remove` commands mutate destinations without this installer's ownership preflight. Do not run them as routine maintenance: first back up the exact targets, prove they are CLI-owned, and review the resolved source bytes. The conservative path is a clean, reviewed replacement. To update a pinned source, review its diff, change the exact commit in this repository, and run the installer tests before release.
+The CLI's `update` and `remove` commands mutate destinations without this installer's automatic selected-skill backup. Do not run them as routine maintenance: first back up the exact targets, prove they are CLI-owned, and review the resolved source bytes. The conservative path is a reviewed installer rerun. To update a pinned source, review its diff, change the exact commit in this repository, and run the installer tests before release.
 
 > **Requires Node.js** for skills install (so `npx` is available). Use `--claude-only` or `--agents-only` if you don't have Node installed.
 
@@ -1665,7 +1663,7 @@ The installer used to `curl` every `SKILL.md` straight from this repo into `~/.c
 
 1. **Multi-agent portability.** The same skills are now installable against [40+ coding agents](https://github.com/vercel-labs/skills) — Claude Code, Cursor, Codex, GitHub Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, and more — via the `-a <agent>` flag. Using these skills from a non-Claude tool no longer requires a Claude-specific copy step. `--with-opencode` is now just an extra `-a opencode` on the existing install instead of a second duplicated tree.
 
-2. **Inspection and discovery commands.** `npx skills@1.5.22 list -g` records what the shared lock knows, and `find <query>` surfaces skills beyond this repo. Mutating `update`/`remove` commands bypass this installer's destination-ownership preflight, so they require an explicit backup, ownership check, and source review rather than being advertised as safe routine lifecycle operations.
+2. **Inspection and discovery commands.** `npx skills@1.5.22 list -g` records what the shared lock knows, and `find <query>` surfaces skills beyond this repo. Mutating `update`/`remove` commands bypass this installer's automatic backup, so they require an explicit backup, ownership check, and source review rather than being advertised as safe routine lifecycle operations.
 
 3. **Explicit target copies.** The installer passes `--copy`, so installation
    writes only the selected agents' resolved global targets. The shared lock
@@ -1673,10 +1671,9 @@ The installer used to `curl` every `SKILL.md` straight from this repo into `~/.c
 
 4. **Installer doesn't grow with the skill list.** Three `curl` loops with hard-coded file lists (including every `resources/*.md` and `references/*.md`) collapsed to a small set of pinned CLI calls. Adding a new skill to `claude/.claude/skills/` no longer requires a matching installer edit — the CLI discovers it.
 
-5. **Safe destination preflight.** Before invoking the installer, setup checks
-   every selected agent target and refuses to overwrite existing content.
-   Custom, stale-lock, and prior-install directories remain untouched until
-   the user explicitly backs up and resolves them.
+5. **Recoverable repeat installs.** Setup copies existing selected skill names
+   to an adjacent backup before replacement. Unselected content stays untouched,
+   and a failed CLI install leaves the previous copy available for recovery.
 
 **Trade-offs:**
 - Requires Node.js for `npx`. `--claude-only` and `--agents-only` still work without it.
