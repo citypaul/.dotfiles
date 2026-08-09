@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.9.2
+
+### Patch Changes
+
+- 7e77a8b: Make repeat skill installs frictionless by backing up selected destinations
+  before the pinned Skills CLI refreshes them.
+
 ## 4.9.1
 
 ### Patch Changes
