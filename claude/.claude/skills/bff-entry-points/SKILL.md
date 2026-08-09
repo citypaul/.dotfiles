@@ -94,10 +94,19 @@ For a **protected browser mutation**:
 1. reject invalid Origin, unsuitable Fetch Metadata, or unsupported content type — without revealing whether a session exists;
 2. resolve the application session;
 3. validate session-bound CSRF protection;
-4. authorize the product operation;
-5. only then parse or dispatch the body and perform effects.
+4. perform any coarse operation or path-resource authorization available from
+   the principal and validated params;
+5. parse and validate the bounded body;
+6. authorize every body-referenced object, field, target, and operation;
+7. only then perform effects.
 
-Contract paths use OpenAPI `{param}` syntax everywhere (HTTP and upgrade contracts alike); the registrar translates to framework syntax, and the catalog stores the contract form. Put the target's identity in the path so authorization needs only params and principal, and hand the operation a deferred body: the registrar validates params and query up front but parses the body only when the handler's `body()` thunk is awaited — after the operation's authorization step. Where a framework wants to validate declared body schemas before the handler, the registrar disables that for mutations and registers the body schema for documentation separately (the Hono reference shows how); pre-authorization body parsing is a violation of this ordering, not a configurable preference, and a seeded test proves the parser runs only after authorization.
+Contract paths use OpenAPI `{param}` syntax everywhere (HTTP and upgrade
+contracts alike); the registrar translates to framework syntax, and the
+catalog stores the contract form. Put a primary target identity in the path
+when that is the honest resource model, but do not contort batch, share, or
+field-level operations merely to avoid body-dependent authorization. A
+deferred `body()` thunk may preserve the coarse path check before parsing; all
+bounded body data must still be validated and authorized before effects.
 
 Stable failure semantics — same externally visible response per class, same code path (no cause-specific shortcut), never an oracle:
 

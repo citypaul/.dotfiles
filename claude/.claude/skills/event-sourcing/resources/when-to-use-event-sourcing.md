@@ -31,8 +31,8 @@ Two "strong fit" answers, or a genuinely event-shaped domain, justify the cost. 
 The DDD skill's `domain-events.md` ends where this skill begins. The full ladder:
 
 1. **Explicit return values** — a domain function returns its result; the use case acts on it. No events, no indirection. Most code lives here.
-2. **In-process domain events** — cross-aggregate coordination within one transaction, dispatched in-process.
-3. **Outbox pattern** — reliable at-least-once delivery of events to other services, saved in the same transaction as the state change.
+2. **In-process domain events** — best-effort same-process reactions after one aggregate decision; they provide neither durable delivery nor cross-aggregate atomicity.
+3. **Outbox pattern** — durable publication intent saved with the state change, followed by retried and possibly duplicated delivery attempts. Consumers must be idempotent; permanent failure remains possible and observable.
 4. **Event sourcing** — events *are* the persistence. The state is a fold of the log.
 
 Climb one rung at a time, and only when the rung you are on cannot express what you need. Rungs 1–3 keep current state as the source of truth and treat events as *outputs*. Rung 4 inverts that: events become the *input* to state. That inversion is the whole cost and the whole power — do not pay it for coordination you can get from rung 3.

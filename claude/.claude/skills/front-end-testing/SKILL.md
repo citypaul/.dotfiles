@@ -1,6 +1,6 @@
 ---
 name: front-end-testing
-description: Behavior-driven UI testing patterns. Covers Vitest Browser Mode (preferred), Playwright E2E evidence boundaries, and DOM Testing Library. Use when testing any front-end application, writing UI or end-to-end tests, querying DOM elements, simulating user interactions, or reviewing whether a browser/user-journey test actually proves what it claims. For React-specific patterns, see the react-testing skill.
+description: Behavior-driven UI testing patterns across Vitest Browser Mode, Playwright E2E evidence boundaries, and DOM Testing Library. Use when testing any front-end application, writing UI or end-to-end tests, querying DOM elements, simulating user interactions, or choosing the lightest harness that proves a browser-observable claim. For React-specific patterns, see the react-testing skill.
 ---
 
 # Front-End Testing
@@ -51,9 +51,13 @@ it('should render button', () => {
 
 ---
 
-## Vitest Browser Mode (Preferred)
+## Vitest Browser Mode for Browser-Observable Behaviour
 
-**Always prefer Vitest Browser Mode over jsdom/happy-dom.** Tests run in a real browser (via Playwright), giving production-accurate behavior for CSS, events, focus management, and accessibility.
+Prefer Vitest Browser Mode when the claim depends on real rendering, CSS,
+events, focus management, accessibility, or browser APIs and the repository
+already supports it or the added harness cost is justified. Keep an existing
+stable jsdom/happy-dom harness, or use a lighter environment, when it proves
+pure logic or component contracts without browser-specific behaviour.
 
 ### Why Browser Mode Over jsdom
 
@@ -68,9 +72,16 @@ it('should render button', () => {
 
 ### Setup
 
+Inspect the repository's package manager, lockfile, existing test harness, and
+installed versions before changing dependencies or configuration. If a new
+harness is justified and the user has authorized setup, select exact mutually
+compatible versions from the official compatibility/peer-dependency evidence,
+install them with the repository package manager, and invoke only the
+repository-local binaries (no implicit download). For example:
+
 ```bash
-npm install -D vitest @vitest/browser-playwright
-npx playwright install chromium  # Playwright provider needs browser binaries
+<repo-pm> add --save-dev vitest@<reviewed-version> @vitest/browser-playwright@<reviewed-version>
+<repo-pm> exec playwright install chromium  # inspect this binary download before authorizing it
 ```
 
 ```typescript
@@ -90,7 +101,8 @@ export default defineConfig({
 })
 ```
 
-Quick setup wizard: `npx vitest init browser`
+If the reviewed installed version provides it, run the local setup wizard with
+`<repo-pm> exec vitest init browser`; inspect its planned config writes first.
 
 ### Focused Browser-Test Feedback
 
@@ -156,7 +168,12 @@ await page.getByRole('button', { name: /submit/i }).click()
 await page.getByLabelText(/email/i).fill('test@example.com')
 ```
 
-In jsdom codebases, use `@testing-library/user-event` instead — always prefer it over `fireEvent` (see `resources/dom-testing-library-legacy.md`). Create a fresh `userEvent.setup()` per test, never in `beforeEach`.
+In jsdom codebases, use `@testing-library/user-event` instead — prefer it over
+`fireEvent` for user interactions (see
+`resources/dom-testing-library-legacy.md`). Create a fresh
+`userEvent.setup()` per test by default. An isolated `beforeEach` is also
+valid when it creates a new instance for each non-concurrent test; never reuse
+one suite-global user instance.
 
 ### Multi-Project Setup (Node + Browser)
 
@@ -202,7 +219,7 @@ export default defineConfig({
 **Rules:**
 - Each test creates its own state from scratch — never depend on another test's side effects
 - Clean up any persistent state (database rows, localStorage, cookies) created during the test
-- Use unique identifiers (e.g., timestamp-based) to avoid collisions when tests run in parallel
+- Use identifiers with enough entropy for parallel runs (for example, `crypto.randomUUID()`); timestamps alone can collide
 - Never assume the DOM is in a particular state at the start of a test — render fresh
 - If tests share a server or database, use isolation strategies (transactions, test-specific data)
 
@@ -220,10 +237,14 @@ it('lists users', async () => {
 
 // ✅ CORRECT - Each test is self-contained
 it('creates and displays a user', async () => {
-  const uniqueName = `User-${Date.now()}`
-  await page.getByLabelText(/name/i).fill(uniqueName)
-  await page.getByRole('button', { name: /create/i }).click()
-  await expect.element(page.getByText(uniqueName)).toBeVisible()
+  const uniqueName = `User-${crypto.randomUUID()}`
+  try {
+    await page.getByLabelText(/name/i).fill(uniqueName)
+    await page.getByRole('button', { name: /create/i }).click()
+    await expect.element(page.getByText(uniqueName)).toBeVisible()
+  } finally {
+    await testData.deleteUserByName(uniqueName) // repository-owned idempotent cleanup fixture
+  }
 })
 ```
 
@@ -279,10 +300,10 @@ expect(() => screen.getByText(/error/i)).toThrow();
 // ✅ CORRECT - queryBy returns null
 expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
 
-// ❌ WRONG - exact string match (breaks on whitespace change)
-screen.getByText('Welcome, John Doe');
-// ✅ CORRECT - regex for flexibility
-screen.getByText(/welcome.*john doe/i);
+// Less specific: finds matching text without proving the element's role
+screen.getByText(/welcome,\s+john doe/i);
+// Preferred when this is a heading: query the accessible role and name
+screen.getByRole('heading', { name: /welcome,\s+john doe/i });
 ```
 
 ---
@@ -295,7 +316,7 @@ screen.getByText(/welcome.*john doe/i);
 2. **Improves app accessibility** - Tests force accessible markup
 3. **Refactor-friendly** - Coupled to user experience, not implementation
 
-If an accessible query fails, **your app has an accessibility issue.**
+If an accessible query fails, investigate the accessible name and role first. The failure may reveal an accessibility issue, but it can also mean the query or test setup is wrong.
 
 **Always prefer semantic HTML over ARIA:**
 
@@ -315,7 +336,7 @@ Add ARIA only where semantic HTML is unavailable (e.g., `role="dialog"` on a cus
 
 In Browser Mode, `await expect.element(...)` handles most waiting automatically. In jsdom codebases, use `findBy*` for appearance, `waitFor` for complex conditions, and `waitForElementToBeRemoved` for disappearance.
 
-**Key rules:** no side effects inside `waitFor`, one assertion per `waitFor`, never wrap `findBy` in `waitFor`.
+**Key rules:** no side effects inside `waitFor`; prefer one assertion per `waitFor` for clearer failures; never wrap `findBy` in `waitFor`.
 
 For full patterns and anti-patterns, see `resources/async-patterns.md`.
 
@@ -358,7 +379,7 @@ For factory patterns, see the `testing` skill.
 
 4. **Fetch/axios mocking instead of MSW** — see `resources/msw.md`.
 5. **waitFor misuse** — see `resources/async-patterns.md`.
-6. **jsdom-specific anti-patterns** (skipping `screen`, `fireEvent`, manual `cleanup()`, property assertions instead of jest-dom matchers, missing ESLint plugins) — see `resources/dom-testing-library-legacy.md`.
+6. **jsdom-specific anti-patterns** (skipping `screen`, `fireEvent`, redundant cleanup when the harness already provides it, property assertions instead of jest-dom matchers, missing ESLint plugins) — see `resources/dom-testing-library-legacy.md`.
 7. **HTTP-level shortcuts wearing browser names** — `page.request`/`page.evaluate(fetch)` performing work a "journey"/"browser"/"E2E" test claims the user or frontend did, or forged browser headers (`Sec-Fetch-*`, `Origin`) admitting a non-browser client — see `resources/playwright-e2e.md`.
 
 ---
@@ -367,13 +388,13 @@ For factory patterns, see the `testing` skill.
 
 Before merging UI tests, verify:
 
-- [ ] **Preferred**: Using Vitest Browser Mode with real browser (not jsdom/happy-dom)
+- [ ] The harness fits the claim, repository support, and cost: Browser Mode for browser-observable behavior; a stable lighter harness when it proves the contract
 - [ ] All Playwright/Browser Mode tests are idempotent (no shared state between tests)
 - [ ] Using `getByRole` as first choice for queries (built-in or Testing Library)
 - [ ] Using `expect.element()` for auto-retrying assertions (Browser Mode)
 - [ ] Using `userEvent` for interactions (CDP-based in Browser Mode, or `@testing-library/user-event`)
 - [ ] Testing behavior users see, not implementation details
-- [ ] No manual `cleanup()` calls (automatic)
+- [ ] Cleanup is either verified automatic for this harness or registered once in test setup
 - [ ] No manual `act()` calls for component interactions (Browser Mode handles timing)
 - [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom
 - [ ] Following TDD workflow (see `tdd` skill)
@@ -382,6 +403,6 @@ Before merging UI tests, verify:
 - [ ] Newly created tests join the active watcher, or the affected one-shot reruns after creation; every claimed result executed an expected test
 - [ ] Monorepo runs use the root project/task graph and retain all affected workspace consumers
 - [ ] The complete repository PR test gate passes in non-watch mode against the final tree, including the full required browser/project matrix
-- [ ] Using test factories for data (see `testing` skill)
+- [ ] Factories are used when repeated or nested data becomes clearer; simple one-off values stay inline (see `testing` skill)
 - [ ] In Playwright E2E suites: every browser/journey claim has a browser initiator, and direct HTTP appears only in the narrowly named roles `resources/playwright-e2e.md` classifies (contract, setup, readiness, post-condition, diagnostic, external actor) — never borrowed as browser evidence
 - [ ] For React-specific patterns (hooks, context, components), see `react-testing` skill

@@ -20,14 +20,14 @@ Long streams hurt on four axes: replay performance, versioning burden (an old ev
 
 The stream/aggregate is the consistency boundary: **you never rely on a cross-stream transaction to keep an aggregate's invariants true** (some stores *can* append to several streams atomically, but a well-modelled aggregate never needs it). When one command must affect several aggregates, use eventual consistency across the boundary (Vaughn Vernon: *"If executing a command on one Aggregate instance requires that additional business rules execute on one or more other Aggregates, use eventual consistency"*).
 
-Coordinate multi-aggregate, possibly long-running work with a **process manager / saga** — a stateful reactor that consumes events and issues commands, decomposing the work into locally-atomic steps with **compensating actions** for rollback. Keep it as a pure function of `(state, event) → [newState, commands]`, exactly the shape the DDD skill's `domain-events.md` describes. Never reach for a distributed transaction across aggregates.
+Coordinate multi-aggregate, possibly long-running work with a **process manager / saga** — a stateful reactor that consumes events and issues commands, decomposing the work into locally atomic, idempotent steps. Add compensating actions only when the workflow has a genuine undo path; ordering, correlation, timeouts, and deduplication can justify a process manager without compensation. Keep it as a pure function of `(state, event) → [newState, commands]`, exactly the shape the DDD skill's `domain-events.md` describes. Never reach for a distributed transaction across aggregates.
 
 ## Delivery Guarantees and Idempotency
 
 There are three delivery semantics, and only two are achievable:
 
 - **At-most-once** — a failed message is lost.
-- **At-least-once** — the message always arrives, but possibly more than once. **This is what you build on.**
+- **At-least-once attempts** — a missing acknowledgement causes redelivery, so a consumer may receive the message more than once. It does not promise eventual arrival through permanent failure or a finite retry/dead-letter policy. **Build consumers for duplicate attempts.**
 - **Exactly-once delivery is a myth** (Two Generals / FLP). Tyler Treat: *"Within the context of a distributed system, you cannot have exactly-once message delivery … The way we achieve exactly-once delivery in practice is by faking it."*
 
 You "fake" exactly-once with **idempotent processing plus deduplication**: give every event a store-wide-unique id (or use its global position), and make consumers no-op on one they have already processed — a unique constraint on processed event ids, or the checkpoint-in-the-same-transaction trick from `projections-and-read-models.md`. (A bare stream `version` is not a safe dedupe key across streams — it repeats — so use it only paired with the stream id, or when the consumer's state is scoped to one stream.) Effective exactly-once *processing* on top of at-least-once *delivery* is achievable; exactly-once delivery is not.
@@ -59,7 +59,7 @@ Complementary techniques (Dudycz): the **forgettable payload** (store PII behind
 
 - **The event log is what you back up** — it is the source of truth. Read models, snapshots, and projections are derived and rebuildable, so they are recovery conveniences, not backup obligations.
 - **Replay is a superpower and a safety net.** A corrupted or buggy read model is dropped and rebuilt from the log; a new read model is populated retroactively the same way. This is both disaster recovery and how you ship new views.
-- **Beware replay and external side effects.** Fowler: replaying events must not re-fire real-world effects (emails, payments) — *"those external systems don't know the difference between real processing and replays."* Side effects live in handlers/process managers that run once on the live event, never in `evolve` or in a projection rebuild.
+- **Beware replay and external side effects.** Fowler: replaying events must not re-fire real-world effects (emails, payments) — *"those external systems don't know the difference between real processing and replays."* Side effects live in handlers/process managers that are excluded from replay and are idempotent or deduplicated because live delivery may repeat; never put them in `evolve` or a projection rebuild.
 
 ## Anti-Patterns Catalogue
 
@@ -71,7 +71,7 @@ Each with its fix. (The `SKILL.md` lists the headline set; this is the fuller ca
 - **The event store as an integration bus** — letting other contexts subscribe to your internal events, so *"your persistence becomes your public API"* (Libutzki). *Fix:* publish separate, versioned external events (`modelling-events.md`).
 - **Giant / unbounded streams** — one ever-growing stream. *Fix:* short streams + closing the books.
 - **No versioning strategy** — v1 events with no plan to read them from v2 code. *Fix:* tolerant reader + upcasters from day one (`event-versioning.md`).
-- **Rejecting or validating in `evolve`** — so replay of old events can fail. *Fix:* rules live in `decide`; `evolve` is total.
+- **Putting expected command rejection in `evolve`** — rules for whether a proposed command is allowed belong in `decide`. *Fix:* `evolve` handles every compatible persisted transition, but surfaces an explicit corruption/compatibility error for an impossible known state/event pair instead of silently ignoring history.
 - **Editing or deleting events to "fix" bugs** — destroys replay trust. *Fix:* compensating events.
 - **Snapshot as source of truth** — a snapshot you cannot rebuild. *Fix:* snapshots are a rebuildable cache.
 - **Chasing exactly-once delivery** — *Fix:* at-least-once + idempotent, deduplicated processing.

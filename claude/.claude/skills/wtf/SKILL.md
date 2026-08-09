@@ -11,8 +11,8 @@ Use this skill when the immediately previous response from an LLM was unclear, t
 ## Procedure
 
 1. Read the immediately previous LLM response.
-2. If the response uses domain terms, look for `CONTEXT.md`, `GLOSSARY.md`, `UBIQUITOUS_LANGUAGE.md`, and files matching `*.glossary.yml` in the current project.
-3. Use those files to select the canonical terms and meanings.
+2. If the response uses domain terms, first inspect repository guidance for its declared glossary authority and bounded-context scope. If none is declared, check common locations such as `CONTEXT.md`, `GLOSSARY.md`, `UBIQUITOUS_LANGUAGE.md`, and `*.glossary.yml` without creating a new convention.
+3. Use only the glossary that owns the relevant context to select canonical terms and meanings.
 4. Re-explain the previous response with a clearer structure and simpler wording.
 5. Preserve its meaning and all relevant technical details.
 6. Keep the explanation about the previous response.
@@ -47,3 +47,9 @@ Write in a style inspired by ASD-STE100 Simplified Technical English.
 ## Completion Criterion
 
 The new explanation is complete when it re-explains the immediately previous LLM response, preserves its meaning and relevant technical details, and uses clearer plain language without starting new work.
+
+## Attribution
+
+Adapted from Adam Bulmer's MIT-licensed Mintuz `wtf` skill at pinned revision
+`e436942ef328e692567300dba51424c68850ab12`. See
+`references/source-notes.md` and `LICENSE`.

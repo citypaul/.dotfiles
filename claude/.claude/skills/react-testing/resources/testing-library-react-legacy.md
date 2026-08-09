@@ -1,6 +1,6 @@
 # Legacy: @testing-library/react Patterns
 
-These patterns apply when using `@testing-library/react` with jsdom. **Prefer `vitest-browser-react`** (see the main skill) for new projects. Key dialect differences: `render()` is sync, queries go through the global `screen`, interactions use `@testing-library/user-event`, async appearance uses `findBy*`, and API mocking uses MSW's `setupServer`/`server.use()` (jsdom runs in Node).
+These patterns apply when using `@testing-library/react` with jsdom. Keep this stable lighter harness when it proves the component or hook contract; choose `vitest-browser-react` when the claim needs browser-observable behavior and repository support/cost justify it. Key dialect differences: `render()` is sync, queries go through the global `screen`, interactions use `@testing-library/user-event`, async appearance uses `findBy*`, and API mocking uses MSW's `setupServer`/`server.use()` (jsdom runs in Node).
 
 ## Basic Component Testing
 
@@ -279,15 +279,17 @@ it('should catch errors with error boundary', () => {
   // Suppress console.error for this test
   const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-  render(
-    <ErrorBoundary fallback={<div>Something went wrong</div>}>
-      <ThrowsError />
-    </ErrorBoundary>
-  );
+  try {
+    render(
+      <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ThrowsError />
+      </ErrorBoundary>
+    );
 
-  expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
-
-  spy.mockRestore();
+    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+  } finally {
+    spy.mockRestore();
+  }
 });
 ```
 

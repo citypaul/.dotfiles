@@ -17,10 +17,10 @@ app.get('/api/orders/:id', requireAuth, async (req, res) => {
   return res.json(order); // Any authenticated user can see ANY order
 });
 
-// ✅ CORRECT — verifies the user owns this resource
+// ✅ CORRECT — the lookup is scoped to the authenticated principal
 app.get('/api/orders/:id', requireAuth, async (req, res) => {
-  const order = await orderService.getById(req.params.id);
-  if (order.userId !== req.user.id) {
+  const order = await orderService.findForUser(req.params.id, req.user.id);
+  if (!order) {
     return res.status(404).json({
       type: 'about:blank',
       title: 'Not Found',
@@ -32,7 +32,7 @@ app.get('/api/orders/:id', requireAuth, async (req, res) => {
 });
 ```
 
-Return 404 (not 403) when a user doesn't have access — confirming an object exists is itself an information leak.
+Prefer a principal-scoped lookup so a missing order and an order owned by someone else produce the same absence result. Return the same 404 status and representation in both cases—confirming an object exists is itself an information leak—and avoid materially different timing where practicable. Keep any diagnostic or audit context out of the response and in protected internal telemetry.
 
 ### 2. Broken Authentication
 
@@ -41,7 +41,10 @@ Weak authentication mechanisms, missing rate limiting on auth endpoints, credent
 Mitigations:
 - Rate limit authentication endpoints aggressively
 - Use strong password policies or passwordless auth
-- Implement account lockout after failed attempts
+- Throttle repeated failures by account and source with exponential backoff;
+  use temporary lockout only after a threat-modelled threshold/window, with
+  safe recovery, monitoring, and protection against attacker-induced denial
+  of service
 - Never expose whether an email/username exists in error responses ("Invalid credentials" not "User not found")
 
 ### 3. Broken Object Property Level Authorization
@@ -57,18 +60,24 @@ const allowedUpdates = UpdateUserSchema.parse(req.body);
 const user = await userService.update(req.params.id, allowedUpdates);
 ```
 
-Schema validation at the boundary (see `typescript-strict` skill) prevents mass assignment by design — only fields defined in the schema are accepted.
+Boundary validation prevents mass assignment only when the schema is explicitly
+closed or strips unknown keys before the service sees them. Some validators
+retain additional properties by default or offer passthrough modes. Use an
+allowlist and keep a negative test proving privileged unknown fields cannot
+reach the operation (see `typescript-strict`).
 
 ### 4. Unrestricted Resource Consumption
 
 Missing rate limits, no pagination limits, unbounded queries, expensive operations without throttling.
 
 Mitigations:
-- Rate limit all endpoints (see main skill: Rate Limiting section)
+- Rate limit unauthenticated, costly, or abuse-prone operations according to
+  measured risk; document any client-visible quota policy
 - Set maximum page sizes on pagination
 - Limit query complexity (especially for GraphQL)
 - Set request body size limits
-- Use timeouts on all downstream calls
+- Give network and downstream operations explicit deadlines where the client
+  and operation support cancellation or timeout
 
 ### 5. Broken Function Level Authorization
 
@@ -103,15 +112,27 @@ app.post('/api/webhooks', async (req, res) => {
   const response = await fetch(req.body.callbackUrl); // SSRF risk
 });
 
-// ✅ CORRECT — validate and restrict
+// ✅ PREFERRED — accept callbacks only to explicitly trusted destinations.
+// safeOutboundFetch also resolves every A/AAAA answer, rejects non-global
+// addresses, and repeats those checks for every redirect before connecting.
 app.post('/api/webhooks', async (req, res) => {
   const url = new URL(req.body.callbackUrl);
-  if (url.hostname === 'localhost' || url.hostname.startsWith('10.')) {
-    return res.status(422).json({ ... }); // Block internal addresses
+  const allowedHosts = new Set(['hooks.partner.example']);
+
+  if (
+    url.protocol !== 'https:' ||
+    url.username !== '' ||
+    url.password !== '' ||
+    !allowedHosts.has(url.hostname)
+  ) {
+    return res.status(422).json({ ... });
   }
-  // Additional: allowlist domains, block private IP ranges
+
+  await safeOutboundFetch(url);
 });
 ```
+
+Prefer an outbound proxy or a well-reviewed SSRF-safe client for `safeOutboundFetch`; a string check for `localhost` or selected private prefixes is not sufficient. If arbitrary destinations are a product requirement, resolve and validate every IPv4 and IPv6 address against the complete special-use address registry, pin the validated address for the connection, disable redirects or revalidate each hop, and constrain ports and protocols.
 
 ### 8. Security Misconfiguration
 
@@ -168,6 +189,8 @@ OAuth delegates access; OpenID Connect adds authentication. Select a grant and i
 
 For redirect-based authorization-code flows, RFC 9700 requires PKCE for public clients and recommends it for confidential clients; use `S256`. It also requires exact redirect matching, forbids the resource-owner-password grant, and forbids clients from placing access tokens in URI query parameters. Responses that issue access tokens at the authorization endpoint SHOULD NOT be used unless every named injection and leakage vector is mitigated.
 
+PKCE protects authorization-code exchanges involving a user-agent redirect; do not attach it mechanically to non-authorization-code grants. For service-to-service access, prefer platform workload identity or federation where available. Otherwise, use the client-credentials grant only for a confidential client, with short-lived, audience-restricted access tokens and sender constraint where supported. RFC 6749 says a client-credentials response should not include a refresh token, so do not import an end-user refresh-token pattern into that flow. For sign-in and SSO, use OpenID Connect (or another authentication protocol such as SAML where required); OAuth alone delegates authorization and does not establish an interoperable login protocol.
+
 Load the `secure-oauth-oidc` skill before designing or reviewing an OAuth/OIDC flow. It provides the full RFC 9700 / BCP 240 and OIDC workflow, including applicability-aware controls, issuer and transaction binding, attack analysis, and negative tests. Use `auth-security.md` for JWT BCP guidance.
 
 ### JWT Considerations
@@ -188,14 +211,18 @@ See `auth-security.md` for the full deep-dive on JWT security (RFC 8725 / BCP 22
 
 | Scenario | Pattern |
 |----------|---------|
-| Server-to-server, trusted environment | API keys |
-| User-facing app, delegated access | OAuth 2.0 + PKCE |
-| Microservices, stateless auth needed | JWT (short-lived) + refresh tokens |
-| Internal tools, SSO integration | OAuth 2.0 with your identity provider |
+| Simple service authentication with no delegated authorization | Scoped, rotatable API key over TLS |
+| Redirect-based user authorization | OAuth 2.0 authorization code + PKCE (`S256`); add OpenID Connect when authenticating the user |
+| Service-to-service API access | Platform workload identity/federation where available; otherwise OAuth 2.0 client credentials for a confidential client, using short-lived, audience-restricted access tokens |
+| Internal-tool sign-in or SSO | OpenID Connect with the identity provider, or another authentication protocol such as SAML where required—not bare OAuth |
 
 ## Browser Security Headers
 
-Even non-browser APIs are accessible from browsers. A malicious page can issue requests to any API the user's browser can reach (RFC 9205 / BCP 56). Send these headers on all API responses:
+A malicious page can issue requests to an API the user's browser can reach
+(RFC 9205 / BCP 56), but response headers must match the entry point and the
+content it serves. Apply the following baseline to browser-facing JSON
+responses when the deployment policy does not already provide an equivalent;
+do not mechanically add browser document policy to every machine-only API:
 
 ```
 X-Content-Type-Options: nosniff
@@ -221,9 +248,9 @@ Use TLS for all API communication. Per RFC 9325 (BCP 195):
 
 When reviewing an API for security:
 
-- [ ] Object-level authorization on every endpoint (not just authentication)
+- [ ] Object-level authorization on every access or operation involving a protected object (not just authentication)
 - [ ] Schema validation at every input boundary
-- [ ] Rate limiting on all endpoints, aggressive on auth endpoints
+- [ ] Rate limiting covers unauthenticated, costly, and abuse-prone operations; auth controls are deliberately aggressive
 - [ ] No internal details in error responses (stack traces, file paths, SQL)
 - [ ] CORS configured restrictively
 - [ ] API keys in headers only, never in URLs
@@ -231,6 +258,8 @@ When reviewing an API for security:
 - [ ] All endpoints documented in API spec — no shadow endpoints
 - [ ] Short-lived tokens with proper validation (algorithm, iss, sub, aud, exp)
 - [ ] SSRF protections on any endpoint accepting URLs
-- [ ] Browser security headers on all responses (X-Content-Type-Options, CSP, Referrer-Policy)
+- [ ] Browser-facing entry points apply security headers suited to their content and deployment policy
 - [ ] TLS 1.2+ enforced, TLS 1.0/1.1 disabled
-- [ ] OAuth flows use PKCE with S256
+- [ ] Public authorization-code clients use PKCE with `S256`; confidential authorization-code clients use it unless the RFC 9700 OpenID Connect `nonce` alternative and its required precautions are deliberately selected
+- [ ] Service-to-service flows use workload identity/federation or confidential-client credentials, without assuming refresh tokens
+- [ ] Sign-in and SSO use OpenID Connect or another authentication protocol, not bare OAuth

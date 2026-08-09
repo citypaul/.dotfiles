@@ -21,14 +21,14 @@ The elements Chassaing enumerates are Command, Event, State, `initialState`, `de
 |---------|------|----------------|
 | `initialState` | `State` | The state of a stream with zero events. |
 | `decide` | `(command, state) => Decision<Event>` | **All business rules.** Accept (emit events) or reject (a reason). Pure. |
-| `evolve` | `(state, event) => State` | Apply one already-happened event to state. **No rules, total, never rejects.** |
+| `evolve` | `(state, event) => State` | Apply one already-happened event to state. **No command rules; exhaustive for valid history.** |
 | `isTerminal` | `(state) => boolean` | Optional. True when the aggregate has reached an end state (closed account, finished saga) and accepts no more commands. |
 
 **Note on `initialState` as a value vs a factory.** A frozen immutable literal (`{ status: 'unopened' }`) is safe to share as a constant. If your initial state contains a **mutable container** (a `Map`, a `Set`, an array you spread into), use a factory `() => State` instead, so instances never share one mutable seed.
 
 ## `decide` Returns a Decision, Not Just Events
 
-The classic decider signature is `decide: (command, state) => Event[]`, where an empty array means "nothing to do". That works, but it cannot say *why* a command was refused. This repo models expected business outcomes as **result types**, not exceptions or silent empties (see the DDD skill's error-modelling section and Scott Wlaschin's `Command → Result<Event list, Error>`). So `decide` returns a `Decision`:
+The classic decider signature is `decide: (command, state) => Event[]`, where an empty array means "nothing to do". That works, but it cannot say *why* a command was refused. When callers need the rejection reason, model expected business outcomes as **result types**, not exceptions or silent empties (see the DDD skill's error-modelling section and Scott Wlaschin's `Command → Result<Event list, Error>`). The examples therefore return a `Decision`:
 
 ```typescript
 type Decision<E, R extends string = string> =
@@ -42,12 +42,15 @@ const reject = <R extends string>(reason: R): Decision<never, R> => ({ accepted:
 The `R` type parameter carries the rejection reasons. `accept`/`reject` widen from `never`, so a `decide` annotated with a **union of literal reasons** keeps them for exhaustive handling — `reject('not-open')` is well-typed only if `'not-open'` is in `R`:
 
 ```typescript
-type WithdrawRejection = 'not-open' | 'insufficient-funds' | 'non-positive-amount';
+type WithdrawRejection = 'not-open' | 'insufficient-funds' | 'invalid-amount' | 'currency-mismatch';
 
 const decideWithdraw = (command: Withdraw, state: AccountState): Decision<AccountEvent, WithdrawRejection> => {
   if (state.status !== 'open') return reject('not-open');
-  if (command.amount <= 0) return reject('non-positive-amount');
-  if (command.amount > state.balance) return reject('insufficient-funds');
+  if (!Number.isSafeInteger(command.amount.minorUnits) || command.amount.minorUnits <= 0) {
+    return reject('invalid-amount');
+  }
+  if (command.amount.currency !== state.balance.currency) return reject('currency-mismatch');
+  if (command.amount.minorUnits > state.balance.minorUnits) return reject('insufficient-funds');
   return accept([{ type: 'MoneyWithdrawn', amount: command.amount }]);
 };
 ```
@@ -67,7 +70,7 @@ const rehydrate = <State, C extends { type: string }, E extends { type: string }
 ): State => events.reduce(decider.evolve, decider.initialState);
 ```
 
-There is no stored current state to keep in sync — there is only the fold. That is why `evolve` **must be total**: it will be handed every event the stream has ever contained, including ones written years ago by an older version of `decide`. An `evolve` that throws on an unrecognised or now-invalid event breaks replay permanently. Return state unchanged for events that no longer affect it; never reject.
+There is no stored current state to keep in sync — there is only the fold. That is why `evolve` must exhaustively handle every **valid persisted event**, including shapes written years ago and mapped forward by tolerant readers/upcasters. Do not re-run current command policy during replay. But a known event in an impossible lifecycle state is corrupt history: throw (or return a dedicated corruption result from the rehydrator) instead of silently returning unchanged state. A no-op is valid only for an event deliberately routed to a composed decider that does not own it.
 
 ## The Command Handler Loop
 
@@ -103,7 +106,7 @@ const makeCommandHandler =
 `decide` must be a pure function of `(command, state)` — no `Date.now()`, no random IDs, no I/O. Pass time and identifiers **in through the command** so tests are deterministic and replay is reproducible:
 
 ```typescript
-type DepositMoney = { readonly type: 'Deposit'; readonly amount: number; readonly at: Date };
+type DepositMoney = { readonly type: 'Deposit'; readonly amount: Money; readonly at: Date };
 ```
 
 The application layer stamps `at`/ids when it builds the command; the domain stays pure. This is the same discipline the `functional` skill applies everywhere. (The DDD skill's `domain-events.md` threads `now` in as an explicit `decide` parameter instead — both keep the decider deterministic. Prefer the command-carried form in an event-sourced handler: the retry loop re-runs `decide` on a version conflict, and a timestamp carried by the command is structurally the same on every attempt.)
@@ -123,7 +126,7 @@ A **process manager / reaction** then turns one decider's events into another's 
 - [ ] One generic order chosen and used everywhere (`<State, Command, Event>` recommended)
 - [ ] `decide` is pure, holds all rules, returns `Decision` (accept-with-events or reject-with-reason)
 - [ ] Rejections that must be remembered are modelled as events, not `Decision` rejections
-- [ ] `evolve` is total — returns unchanged state for irrelevant events, never throws or validates
+- [ ] `evolve` applies every valid persisted event; deliberately irrelevant composed events may no-op, while impossible owned transitions surface corruption
 - [ ] Time and ids enter through the command; `decide` calls no clock, random, or I/O
 - [ ] Rehydration is `events.reduce(evolve, initialState)` — no separately stored current state
 - [ ] The command handler appends with `expectedVersion` and reload-re-decides on conflict

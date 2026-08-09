@@ -1,0 +1,21 @@
+Creative Commons Attribution-ShareAlike 4.0 International
+
+The files in this `cli-design` directory (`SKILL.md` and `resources/`) are
+licensed under the Creative Commons Attribution-ShareAlike 4.0 International
+license (CC BY-SA 4.0), not the repository-root MIT license.
+
+This bundle adapts *Command Line Interface Guidelines* by Aanand Prasad,
+Ben Firshman, Carl Tashian, and Eva Parish from the pinned source revision
+697d6a29fc8c93d3981a755c0c7683507ad39c3e:
+
+https://github.com/cli-guidelines/cli-guidelines/blob/697d6a29fc8c93d3981a755c0c7683507ad39c3e/content/_index.md
+
+The upstream work is licensed under CC BY-SA 4.0. This local bundle is a
+modified adaptation; `resources/source-notes.md` records the changes and
+revision history. No upstream endorsement is implied.
+
+License legal code:
+https://creativecommons.org/licenses/by-sa/4.0/legalcode
+
+Pinned upstream license copy:
+https://github.com/cli-guidelines/cli-guidelines/blob/697d6a29fc8c93d3981a755c0c7683507ad39c3e/LICENSE

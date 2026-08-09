@@ -21,6 +21,13 @@ type CliResult = {
   readonly exitCode: number;
 };
 
+const parseFinalJsonLine = (stderr: string): unknown => {
+  const lines = stderr.split('\n').filter((line) => line.trim() !== '');
+  const finalLine = lines.at(-1);
+  if (finalLine === undefined) throw new Error('Missing JSON error envelope');
+  return JSON.parse(finalLine);
+};
+
 const createCliRunner = (binPath: string) => {
   const run = (args: readonly string[], options?: {
     readonly env?: Readonly<Record<string, string>>;
@@ -79,16 +86,8 @@ describe('stream separation', () => {
     const result = await cli.run(['analyze', '--json', '--verbose', 'input.txt']);
 
     JSON.parse(result.stdout);
-    expect(result.stderr).toContain('analyzing');
-    expect(result.stdout).not.toContain('analyzing');
-  });
-
-  it('routes warnings to stderr even in JSON mode', async () => {
-    const result = await cli.run(['analyze', '--json', 'deprecated-format.txt']);
-
-    const parsed = JSON.parse(result.stdout);
-    expect(parsed.ok).toBe(true);
-    expect(result.stderr).toContain('deprecated');
+    expect(result.stderr).toContain('found');
+    expect(result.stdout).not.toContain('found');
   });
 
   it('keeps progress indicators off stdout', async () => {
@@ -133,10 +132,10 @@ const exitCodeScenarios: readonly CliScenario[] = [
     expectedExitCode: 0,
   }),
   createCliScenarios({
-    name: 'domain failure when threshold not met',
-    args: ['analyze', '--threshold', '95', 'low-quality.txt'],
+    name: 'domain failure when no files are found',
+    args: ['analyze', 'empty/'],
     expectedExitCode: 1,
-    expectedStderr: /threshold not met/i,
+    expectedStderr: /no files/i,
   }),
   createCliScenarios({
     name: 'invalid usage on unknown flag',
@@ -149,13 +148,6 @@ const exitCodeScenarios: readonly CliScenario[] = [
     args: ['analyze'],
     expectedExitCode: 2,
     expectedStderr: /required|missing/i,
-  }),
-  createCliScenarios({
-    name: 'config error on invalid config file',
-    args: ['analyze', 'input.txt'],
-    env: { MYCLI_CONFIG: '/nonexistent/config.json' },
-    expectedExitCode: 78,
-    expectedStderr: /config.*not found|configuration/i,
   }),
 ];
 ```
@@ -195,11 +187,14 @@ describe('exit codes', () => {
 
   it('includes error code in JSON mode failures', async () => {
     const result = await cli.run([
-      'analyze', '--json', '--threshold', '95', 'low-quality.txt',
+      'analyze', '--json', 'empty/',
     ]);
 
     expect(result.exitCode).toBe(1);
-    const parsed = JSON.parse(result.stdout);
+    expect(result.stdout).toBe('');
+    const parsed = parseFinalJsonLine(result.stderr) as {
+      readonly error: { readonly code: string };
+    };
     expect(parsed).toHaveProperty('ok', false);
     expect(parsed.error).toHaveProperty('code');
     expect(typeof parsed.error.code).toBe('string');
@@ -235,17 +230,20 @@ describe('pipe behavior', () => {
     expect(result.stdout).not.toMatch(spinnerChars);
   });
 
-  it('does not prompt interactively when stdout is piped', async () => {
-    const result = await cli.run(['init'], {
-      env: { CI: 'true' },
+  it('does not prompt interactively when stdin is piped', () => {
+    const config = detectOutputConfig({
+      flags: { json: false, plain: false, noColor: false },
+      env: {},
+      stdinIsTTY: false,
+      stdoutIsTTY: true,
+      stderrIsTTY: true,
     });
 
-    expect(result.exitCode).not.toBe(0);
-    expect(result.stderr).toMatch(/non-interactive|use --force|no tty/i);
+    expect(config.interactive).toBe(false);
   });
 
   it('produces output parseable by line-oriented tools', async () => {
-    const result = await cli.run(['list', '--plain']);
+    const result = await cli.run(['analyze', '--plain', 'input.txt']);
 
     const lines = result.stdout.trim().split('\n');
     for (const line of lines) {
@@ -286,29 +284,28 @@ type FakeLogger = Logger & {
 const createFakeLogger = (): FakeLogger => {
   const entries: LogEntry[] = [];
   return {
-    debug: (category, message) => { entries.push({ level: 'debug', category, message }); },
-    info: (category, message) => { entries.push({ level: 'info', category, message }); },
-    warn: (category, message) => { entries.push({ level: 'warn', category, message }); },
+    debug: (category, message) => {
+      entries.push({ level: 'debug', category, message });
+      return Promise.resolve();
+    },
+    info: (category, message) => {
+      entries.push({ level: 'info', category, message });
+      return Promise.resolve();
+    },
+    warn: (category, message) => {
+      entries.push({ level: 'warn', category, message });
+      return Promise.resolve();
+    },
     get entries() { return entries; },
   };
 };
 
-type FakeFileSystem = {
-  readonly readFile: (path: string) => Promise<string | undefined>;
-  readonly writeFile: (path: string, content: string) => Promise<void>;
-  readonly written: ReadonlyMap<string, string>;
-};
-
-const createFakeFileSystem = (
-  files?: Readonly<Record<string, string>>,
-): FakeFileSystem => {
-  const store = new Map(Object.entries(files ?? {}));
-  return {
-    readFile: async (path) => store.get(path),
-    writeFile: async (path, content) => { store.set(path, content); },
-    get written() { return store; },
-  };
-};
+const createFakeAnalyzer = (
+  files: Readonly<Record<string, readonly Issue[]>>,
+): Analyzer => ({
+  discoverFiles: async () => Object.keys(files),
+  analyzeFile: (file) => files[file] ?? [],
+});
 ```
 
 ### Handler Tests
@@ -316,64 +313,53 @@ const createFakeFileSystem = (
 ```typescript
 describe('analyze handler', () => {
   const createTestInput = (overrides?: Partial<AnalyzeInput>): AnalyzeInput => ({
-    filePath: 'input.txt',
-    threshold: 80,
-    format: 'json' as const,
+    target: 'src/',
     ...overrides,
   });
 
-  it('returns success when quality exceeds threshold', async () => {
-    const fs = createFakeFileSystem({ 'input.txt': 'high quality content' });
+  it('returns the canonical target, issue count, and issues', async () => {
+    const issue: Issue = {
+      file: 'src/app.ts',
+      line: 7,
+      severity: 'warning',
+      message: 'Example finding',
+    };
+    const analyzer = createFakeAnalyzer({ 'src/app.ts': [issue] });
     const logger = createFakeLogger();
 
-    const result = await analyzeHandler(
-      createTestInput({ threshold: 50 }),
-      { fs, logger },
-    );
+    const result = await handleAnalyze(createTestInput(), { analyzer, logger });
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.score).toBeGreaterThanOrEqual(50);
+      expect(result.data.target).toBe('src/');
+      expect(result.data.issueCount).toBe(1);
+      expect(result.data.issues).toEqual([issue]);
     }
   });
 
-  it('returns domain error when quality below threshold', async () => {
-    const fs = createFakeFileSystem({ 'input.txt': 'low quality' });
+  it('returns NO_FILES when discovery is empty', async () => {
+    const analyzer = createFakeAnalyzer({});
     const logger = createFakeLogger();
 
-    const result = await analyzeHandler(
-      createTestInput({ threshold: 99 }),
-      { fs, logger },
-    );
+    const result = await handleAnalyze(createTestInput(), { analyzer, logger });
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error.code).toBe('THRESHOLD_NOT_MET');
+      expect(result.error.code).toBe('NO_FILES');
     }
   });
 
-  it('returns error when file not found', async () => {
-    const fs = createFakeFileSystem({});
+  it('logs the same diagnostic text used by integration tests', async () => {
+    const analyzer = createFakeAnalyzer({ 'src/app.ts': [] });
     const logger = createFakeLogger();
 
-    const result = await analyzeHandler(
-      createTestInput({ filePath: 'missing.txt' }),
-      { fs, logger },
-    );
+    await handleAnalyze(createTestInput(), { analyzer, logger });
 
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error.code).toBe('FILE_NOT_FOUND');
-    }
-  });
-
-  it('logs diagnostic messages without affecting result', async () => {
-    const fs = createFakeFileSystem({ 'input.txt': 'content' });
-    const logger = createFakeLogger();
-
-    await analyzeHandler(createTestInput(), { fs, logger });
-
-    expect(logger.entries.some((e) => e.level === 'info')).toBe(true);
+    expect(logger.entries).toContainEqual({
+      level: 'info',
+      category: 'analyze',
+      message: 'found 1 files',
+    });
   });
 });
 ```
@@ -399,13 +385,13 @@ import { z } from 'zod';
 const analyzeSuccessSchema = z.object({
   ok: z.literal(true),
   data: z.object({
-    score: z.number(),
-    file: z.string(),
-    findings: z.array(z.object({
-      rule: z.string(),
-      severity: z.enum(['error', 'warning', 'info']),
+    target: z.string(),
+    issueCount: z.number().int().nonnegative(),
+    issues: z.array(z.object({
+      file: z.string(),
+      line: z.number().int().positive(),
+      severity: z.enum(['error', 'warning']),
       message: z.string(),
-      line: z.number().optional(),
     })),
   }),
 });
@@ -416,7 +402,7 @@ const analyzeErrorSchema = z.object({
     code: z.string(),
     message: z.string(),
     fix: z.string().optional(),
-    transient: z.boolean().optional(),
+    transient: z.boolean(),
   }),
 });
 
@@ -443,12 +429,12 @@ describe('JSON output contract', () => {
 
   it('error output conforms to documented schema', async () => {
     const result = await cli.run([
-      'analyze', '--json', '--threshold', '99', 'low-quality.txt',
+      'analyze', '--json', 'empty/',
     ]);
 
     expect(result.exitCode).toBe(1);
-
-    const parsed = analyzeOutputSchema.parse(JSON.parse(result.stdout));
+    expect(result.stdout).toBe('');
+    const parsed = analyzeOutputSchema.parse(parseFinalJsonLine(result.stderr));
     expect(parsed.ok).toBe(false);
   });
 
@@ -457,14 +443,18 @@ describe('JSON output contract', () => {
     const parsed = JSON.parse(result.stdout);
 
     expect(parsed).toHaveProperty('ok');
-    expect(parsed).toHaveProperty('data.score');
-    expect(parsed).toHaveProperty('data.file');
-    expect(parsed).toHaveProperty('data.findings');
+    expect(parsed).toHaveProperty('data.target');
+    expect(parsed).toHaveProperty('data.issueCount');
+    expect(parsed).toHaveProperty('data.issues');
   });
 
   it('includes error code and message in error response', async () => {
-    const result = await cli.run(['analyze', '--json', 'missing.txt']);
-    const parsed = JSON.parse(result.stdout);
+    const result = await cli.run(['analyze', '--json', 'empty/']);
+    expect(result.stdout).toBe('');
+    const parsed = parseFinalJsonLine(result.stderr) as {
+      readonly ok: false;
+      readonly error: { readonly code: string; readonly message: string };
+    };
 
     expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toMatch(/^[A-Z][A-Z_]+$/);
@@ -477,7 +467,7 @@ describe('JSON output contract', () => {
     const parsed = JSON.parse(result.stdout);
 
     const requiredTopLevel = ['ok', 'data'];
-    const requiredData = ['score', 'file', 'findings'];
+    const requiredData = ['target', 'issueCount', 'issues'];
 
     for (const key of requiredTopLevel) {
       expect(parsed).toHaveProperty(key);
@@ -638,7 +628,9 @@ const createCliRunner = (binPath: string, defaults?: RunOptions): CliRunner => {
     );
 
     return {
-      parsed: JSON.parse(result.stdout),
+      parsed: result.exitCode === 0
+        ? JSON.parse(result.stdout)
+        : parseFinalJsonLine(result.stderr),
       stderr: result.stderr,
       exitCode: result.exitCode,
     };
@@ -654,32 +646,6 @@ const createCliRunner = (binPath: string, defaults?: RunOptions): CliRunner => {
 describe('mycli integration', () => {
   const cli = createCliRunner('./dist/mycli.js', {
     timeoutMs: 15_000,
-    env: { MYCLI_CONFIG: './fixtures/test-config.json' },
-  });
-
-  it('processes stdin input', async () => {
-    const result = await cli.run(['analyze', '-'], {
-      stdin: 'content from stdin',
-    });
-
-    expect(result.exitCode).toBe(0);
-  });
-
-  it('handles timeouts gracefully', async () => {
-    const result = await cli.run(['analyze', 'enormous-file.txt'], {
-      timeoutMs: 100,
-    });
-
-    expect(result.timedOut).toBe(true);
-  });
-
-  it('respects environment variable configuration', async () => {
-    const result = await cli.runJson(['config', 'show'], {
-      env: { MYCLI_THRESHOLD: '90' },
-    });
-
-    expect(result.exitCode).toBe(0);
-    expect(result.parsed).toHaveProperty('data.threshold', 90);
   });
 
   it('combines JSON parsing with stderr diagnostics', async () => {
@@ -689,7 +655,14 @@ describe('mycli integration', () => {
 
     expect(exitCode).toBe(0);
     expect(parsed).toHaveProperty('ok', true);
-    expect(stderr).toContain('analyzing');
+    expect(stderr).toContain('found');
+  });
+
+  it('parses the final structured line after failure diagnostics', async () => {
+    const { parsed, exitCode } = await cli.runJson(['analyze', 'empty/']);
+
+    expect(exitCode).toBe(1);
+    expect(parsed).toHaveProperty('ok', false);
   });
 });
 ```

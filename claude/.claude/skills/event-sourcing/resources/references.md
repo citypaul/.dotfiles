@@ -1,6 +1,6 @@
 # Source Notes
 
-Load this when checking the rationale and primary sources behind the event-sourcing guidance. The fuller cross-skill reference lives in `claude/.claude/skills/REFERENCES.md` in the source repo (https://github.com/citypaul/.dotfiles) — not bundled when this skill is installed standalone.
+Load this when checking the rationale and primary sources behind the event-sourcing guidance. These focused source notes are bundled so the skill remains self-contained when installed standalone.
 
 ## Foundations and Definitions
 
@@ -23,7 +23,7 @@ Load this when checking the rationale and primary sources behind the event-sourc
 - Jérémie Chassaing, "Aggregate Composition" (DDD Europe 2023): https://codeberg.org/thinkbeforecoding/dddeu-2023-deciders — `compose`, `adapt`, `many`; Deciders form a category.
 - Scott Wlaschin, *Domain Modeling Made Functional* (2018) + https://fsharpforfunandprofit.com — workflow = `Command → Result<Event list, Error>` (errors as values); make illegal states unrepresentable (State as a discriminated union of lifecycle phases).
 - Oskar Dudycz, Emmett docs: https://event-driven-io.github.io/emmett/ — TS `Decider<State, Command, Event>` (the dominant TS generic order we adopt), `CommandHandler`, `DeciderSpecification`. Note: pre-1.0; licence unresolved.
-- Oskar Dudycz, "Testing business logic in Event Sourcing" (2023): https://event-driven.io/en/testing_event_sourcing/ — the decide-fold-assert test shape the literature calls given-when-then. We translate it to behaviour-driven tests (see `testing-event-sourced-systems.md`), we do **not** adopt the DSL.
+- Oskar Dudycz, "Testing business logic in Event Sourcing" (2023): https://event-driven.io/en/testing_event_sourcing/ — the decide-fold-assert test shape the literature calls given-when-then. `testing-event-sourced-systems.md` shows the equivalent direct behaviour-driven expression; use an existing project DSL when it improves clarity, but do not introduce one by default.
 
 ## Modelling and EventStorming
 
@@ -40,7 +40,7 @@ Load this when checking the rationale and primary sources behind the event-sourc
 
 ## Storage and Tooling
 
-- Kasey Speakman, "Event Storage in Postgres" (2018): https://dev.to/kspeakman/event-storage-in-postgres-4dk2 — the canonical `event` table and `UNIQUE (stream_id, version)` as the optimistic-concurrency mechanism.
+- Kasey Speakman, "Event Storage in Postgres" (2018): https://dev.to/kspeakman/event-storage-in-postgres-4dk2 — the canonical `event` table and per-stream uniqueness constraint. Our adapter also compares the actual stream head atomically so a stale-high expected version cannot create a gap.
 - Eventide, message-db: https://github.com/message-db/message-db — Postgres `messages` schema and `write_message` with `expected_version`.
 - Kurrent (EventStoreDB): https://www.kurrent.io/ — event-store capability list; catch-up vs persistent subscriptions; Node client rebrand `@eventstore/db-client` → `@kurrent/kurrentdb-client`.
 - Robert Pankowecki (Arkency), quoting Greg Young, "Correlation id and causation id in evented systems" (2018): https://blog.arkency.com/correlation-id-and-causation-id-in-evented-systems/ — *"copy its correlation id as your correlation id, its message id is your causation id."*

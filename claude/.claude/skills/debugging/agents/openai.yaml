@@ -1,0 +1,4 @@
+interface:
+  display_name: "Debugging"
+  short_description: "Find the supported cause of a software failure"
+  default_prompt: "Use $debugging to diagnose this failure from evidence and test one causal hypothesis. Implement a fix only if the request authorizes it."

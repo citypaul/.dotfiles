@@ -13,12 +13,29 @@ Pick a feature where business logic is tangled with infrastructure — typically
 ```typescript
 // BEFORE — everything in the route handler
 export async function POST(request: Request) {
-  const body = await request.json();
-  const user = await db.select().from(users).where(eq(users.id, body.userId)).get();
+  const principal = await authenticateRequest(request);
+  if (!principal) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'malformed-json' }, { status: 400 });
+  }
+  const parsedBody = DeductBodySchema.strict().safeParse(rawBody);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: 'invalid-body' }, { status: 422 });
+  }
+  const body = parsedBody.data;
+  const user = await db.select().from(users).where(eq(users.id, principal.userId)).get();
   if (!user) return NextResponse.json({ error: 'not found' }, { status: 404 });
-  if (user.balance < body.amount) return NextResponse.json({ error: 'insufficient' }, { status: 422 });
-  await db.update(users).set({ balance: user.balance - body.amount }).where(eq(users.id, user.id));
-  return NextResponse.json({ balance: user.balance - body.amount });
+  if (!Number.isSafeInteger(body.amountMinorUnits) || body.amountMinorUnits <= 0) {
+    return NextResponse.json({ error: 'invalid amount' }, { status: 422 });
+  }
+  if (body.currency !== user.currency) return NextResponse.json({ error: 'currency mismatch' }, { status: 422 });
+  if (user.balanceMinorUnits < body.amountMinorUnits) return NextResponse.json({ error: 'insufficient' }, { status: 422 });
+  const balanceMinorUnits = user.balanceMinorUnits - body.amountMinorUnits;
+  await db.update(users).set({ balanceMinorUnits }).where(eq(users.id, user.id));
+  return NextResponse.json({ balanceMinorUnits, currency: user.currency });
 }
 ```
 
@@ -27,18 +44,30 @@ export async function POST(request: Request) {
 Pull the business rule into a pure function. No infrastructure, no async.
 
 ```typescript
-// hexagon/billing/deduct-balance.ts — extracted pure function
+// packages/billing/hexagon/domain/src/deduct-balance.ts — extracted pure function
 type DeductResult =
   | { readonly success: true; readonly user: User }
-  | { readonly success: false; readonly reason: 'insufficient-balance' | 'not-found' };
+  | { readonly success: false; readonly reason: 'non-positive-amount' | 'currency-mismatch' | 'insufficient-balance' };
 
 const deductBalance = (user: User, amount: Money): DeductResult => {
-  if (amount.amount > user.balance.amount) {
+  if (!Number.isSafeInteger(amount.minorUnits) || !Number.isSafeInteger(user.balance.minorUnits)) {
+    throw new Error('Invalid Money invariant');
+  }
+  if (amount.minorUnits <= 0) {
+    return { success: false, reason: 'non-positive-amount' };
+  }
+  if (amount.currency !== user.balance.currency) {
+    return { success: false, reason: 'currency-mismatch' };
+  }
+  if (amount.minorUnits > user.balance.minorUnits) {
     return { success: false, reason: 'insufficient-balance' };
   }
   return {
     success: true,
-    user: { ...user, balance: createMoney(user.balance.amount - amount.amount, user.balance.currency) },
+    user: {
+      ...user,
+      balance: createMoney(user.balance.minorUnits - amount.minorUnits, user.balance.currency),
+    },
   };
 };
 ```
@@ -48,10 +77,12 @@ const deductBalance = (user: User, amount: Money): DeductResult => {
 Define the external conversation that application policy needs. Keep the contract inside and express it in domain language.
 
 ```typescript
-// hexagon/billing/repository.ts — inside port
+// packages/billing/hexagon/application/src/user-repository.ts — application-owned port
+type StoredUser = { readonly value: User; readonly version: number };
+
 interface UserRepository {
-  readonly findById: (id: UserId) => Promise<User | undefined>;
-  readonly save: (user: User) => Promise<void>;
+  readonly findById: (id: UserId) => Promise<StoredUser | undefined>;
+  readonly save: (user: User, expectedVersion: number) => Promise<'saved' | 'conflict'>;
 }
 ```
 
@@ -60,14 +91,18 @@ interface UserRepository {
 Wrap the existing database access behind the port interface.
 
 ```typescript
-// adapters/driven/postgres/drizzle-user-repository.ts — driven adapter
+// packages/billing/adapters/driven/postgres/src/drizzle-user-repository.ts — driven adapter
 const createDrizzleUserRepository = (db: Database): UserRepository => ({
   findById: async (id) => {
     const row = await db.select().from(users).where(eq(users.id, id)).get();
-    return row ? toUser(row) : undefined;
+    return row ? { value: toUser(row), version: row.version } : undefined;
   },
-  save: async (user) => {
-    await db.update(users).set(toRow(user)).where(eq(users.id, user.id));
+  save: async (user, expectedVersion) => {
+    const updated = await db.update(users)
+      .set({ ...toRow(user), version: expectedVersion + 1 })
+      .where(and(eq(users.id, user.id), eq(users.version, expectedVersion)))
+      .returning({ id: users.id });
+    return updated.length === 1 ? 'saved' : 'conflict';
   },
 });
 ```
@@ -77,20 +112,33 @@ const createDrizzleUserRepository = (db: Database): UserRepository => ({
 Wire the domain function to the port.
 
 ```typescript
-// hexagon/billing/deduct-user-balance.ts — driving port + implementation
+// packages/billing/hexagon/application/src/deduct-user-balance.ts — driving port + use case
+type DeductUserBalanceResult =
+  | DeductResult
+  | { readonly success: false; readonly reason: 'not-found' | 'concurrent-change' };
+
+declare const authenticatedPrincipal: unique symbol;
+type AuthenticatedPrincipal = {
+  readonly [authenticatedPrincipal]: true;
+  readonly userId: UserId;
+};
+
 interface ForDeductingUserBalances {
-  readonly deductUserBalance: (dto: { readonly userId: UserId; readonly amount: Money }) => Promise<DeductResult>;
+  readonly deductUserBalance: (
+    dto: { readonly principal: AuthenticatedPrincipal; readonly amount: Money },
+  ) => Promise<DeductUserBalanceResult>;
 }
 
 const createUserBalanceDeduction = (
   userRepo: UserRepository,
 ): ForDeductingUserBalances => ({
   deductUserBalance: async (dto) => {
-    const user = await userRepo.findById(dto.userId);
-    if (!user) return { success: false, reason: 'not-found' };
-    const result = deductBalance(user, dto.amount);
-    if (result.success) await userRepo.save(result.user);
-    return result;
+    const stored = await userRepo.findById(dto.principal.userId);
+    if (!stored) return { success: false, reason: 'not-found' };
+    const result = deductBalance(stored.value, dto.amount);
+    if (!result.success) return result;
+    const saved = await userRepo.save(result.user, stored.version);
+    return saved === 'saved' ? result : { success: false, reason: 'concurrent-change' };
   },
 });
 ```
@@ -100,13 +148,30 @@ const createUserBalanceDeduction = (
 ```typescript
 // AFTER — serverless executable entrypoint; inline composition is still trivial
 export async function POST(request: Request) {
+  // Authentication owns the provider-free principal; the body cannot select a user.
+  const principal = await authenticateRequest(request);
+  if (!principal) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const db = createDb(env.DB);
   const userRepo = createDrizzleUserRepository(db);
   const balanceDeduction: ForDeductingUserBalances = createUserBalanceDeduction(userRepo);
-  const body = DeductSchema.parse(await request.json());
-  const result = await balanceDeduction.deductUserBalance(body);
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'malformed-json' }, { status: 400 });
+  }
+  const parsedBody = DeductBodySchema.strict().safeParse(rawBody);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: 'invalid-body' }, { status: 422 });
+  }
+  const body = parsedBody.data;
+  const result = await balanceDeduction.deductUserBalance({
+    principal,
+    amount: createMoney(body.amountMinorUnits, body.currency),
+  });
   if (!result.success) {
-    return NextResponse.json({ error: result.reason }, { status: result.reason === 'not-found' ? 404 : 422 });
+    const status = result.reason === 'not-found' ? 404 : result.reason === 'concurrent-change' ? 409 : 422;
+    return NextResponse.json({ error: result.reason }, { status });
   }
   return NextResponse.json({ balance: result.user.balance });
 }
@@ -126,7 +191,7 @@ Inline construction is valid here only when the framework makes this handler the
 
 ## What NOT to Do
 
-- **Don't create a complete `hexagon/` skeleton and migrate everything at once.** Use `structure-codebase` to establish the first honest inside/outside slice, write tests, verify it, then move to the next.
+- **Don't create a complete repository-root `hexagon/` skeleton and migrate everything at once.** Use `structure-codebase` to establish one capability's first honest inside/outside slice, write tests, verify it, then move to the next.
 - **Don't introduce ports for things that don't need them.** A simple config lookup doesn't need a `ConfigPort` interface.
 - **Don't force hex arch on CRUD endpoints.** If a route handler just reads from a database and returns JSON with no business logic, leave it alone.
 - **Don't create abstract base classes** (`BaseRepository<T>`). Each port is specific to its aggregate.

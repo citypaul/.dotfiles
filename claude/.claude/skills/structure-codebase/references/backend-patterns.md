@@ -48,52 +48,27 @@ A BFF is a product-specific driving host. Engineers commonly navigate it from an
 ```text
 src/
 ├── endpoints/
-│   ├── router.ts                           # explicit production route catalog
-│   ├── router.dev.ts                       # dev imports production one way
+│   ├── router.ts                           # explicit route catalog
 │   ├── health/
 │   │   └── get.ts
 │   └── api/
-│       ├── build/
-│       │   └── get.ts
-│       ├── orders/
-│       │   └── by-order-id/
-│       │       ├── router.ts
-│       │       ├── commands/
-│       │       │   ├── post.ts
-│       │       │   └── to-command.ts
-│       │       ├── events/
-│       │       │   ├── get.sse.ts
-│       │       │   ├── delete.dev.ts
-│       │       │   └── sse/
-│       │       │       ├── connection.ts
-│       │       │       ├── connection-queue.ts
-│       │       │       └── cursor.ts
-│       │       ├── ingest/
-│       │       │   └── post.dev.ts
-│       │       └── live/
-│       │           └── upgrade.websocket.ts
-│       └── sessions/
-│           └── by-room-id/
-│               └── init/
+│       └── orders/
+│           ├── post.ts
+│           └── by-order-id/
+│               ├── get.ts
+│               └── cancel/
 │                   └── post.ts
 ├── workflows/
-│   └── live-event-stream/
-│       ├── subscriptions.ts
-│       ├── fan-out.ts
-│       ├── project-resync.ts
-│       ├── observe-stream.ts
-│       └── replay-buffer.ts
+│   └── order-summary/
+│       ├── load-order.ts
+│       └── load-delivery-estimate.ts
 ├── composition/
-│   ├── create-routing.ts
-│   ├── event-stream.ts
+│   ├── routes.ts
 │   ├── database.ts
-│   ├── collaboration.ts
-│   ├── video.ts
-│   └── config/
+│   ├── upstream-clients.ts
+│   └── config.ts
 ├── openapi/
-├── runtime.ts
-├── main.ts
-└── main.dev.ts
+└── main.ts
 ```
 
 Apply these rules:
@@ -101,19 +76,16 @@ Apply these rules:
 - Keep `router.ts` explicit, but delegate route branches so it remains a catalog rather than a god file.
 - Use plain names such as `by-order-id`; do not imitate `[orderId]` file-router syntax unless the framework requires it.
 - Keep endpoint leaves transport-thin: parse, translate, call, and respond. Authentication and browser policy arrive installed by the prepared registrar, not chosen per leaf.
-- Give every endpoint leaf a feature-local contract with an explicit access classification — public, protected read, protected browser mutation, or protected upgrade — and mount it through a composition-prepared registrar instead of per-route middleware choices. The public set stays small and reviewed. Raw WebSocket upgrade leaves (`upgrade.websocket.ts`) get the same classification and appear in the same derived catalog even though ordinary middleware never runs for them.
-- Keep connection-local SSE writer, cursor, and back-pressure state with the endpoint.
-- Keep per-stream replay, fan-out, subscriptions, and resynchronization in a route-independent workflow because multiple transports share them.
-- Keep concrete stores, provider clients, registries, configuration, resource ownership, and shutdown in composition.
-- Let a routing factory return both the HTTP app and a raw upgrade handler when WebSocket upgrade bypasses normal routing.
-- Make development routing a one-way extension. Production entrypoints must have no import path to `.dev` modules.
+- Give endpoint leaves explicit access classifications and install shared browser/security policy at a prepared entry-point boundary rather than choosing middleware ad hoc in every leaf.
+- Keep route-independent aggregation workflows outside the endpoint tree when several transports or routes genuinely share them.
+- Keep concrete stores, upstream clients, configuration, resource ownership, and shutdown in composition.
 - Keep OpenAPI generation aligned with the explicit route catalog.
 
 This section owns the physical shape only. For whether a BFF is warranted, how many, aggregation and partial-failure design, and upstream identity mediation, load the `bff-design` skill. For each endpoint's access classification, the composition-prepared registrar that installs session/CSRF/Origin policy by construction, protected SSE and WebSocket registration, and the derived entry catalog with its enforcement gates, load the `bff-entry-points` skill.
 
 Do not give the BFF a hexagon merely because it calls hexagonal packages. Extract a provider-free inside package only when the BFF itself owns substantial, durable application policy.
 
-When the BFF does earn an internal capability hexagon, that hexagon owns the use-case, its ports, and the driven adapters — never the inbound HTTP translation. The endpoint's transport-thin leaf still lives at `endpoints/<url>/<method>.ts` and delegates into the capability's use-case, exactly like a leaf that calls an external hexagonal package. Every route must be discoverable by its URL under `endpoints/`, whatever internal capability fulfils it — in the tree above, `sessions/by-room-id/init/post.ts` stays in `endpoints/` even when an in-BFF capability behind `composition/video.ts` fulfils it. A route file inside a capability folder's `inbound-adapters/` is a structure smell: move the leaf to `endpoints/`, keep the use-case and driven adapters in the hexagon.
+When the BFF does earn an internal capability hexagon, that capability owns the use case, its ports, and its driven adapters — never the inbound HTTP translation. Keep the transport-thin leaf discoverable under `endpoints/<url>/<method>.ts` and delegate into the capability. A route file hidden inside a capability's inbound-adapter directory is a structure smell when engineers navigate the host by URL.
 
 ## Framework-Constrained Backend
 

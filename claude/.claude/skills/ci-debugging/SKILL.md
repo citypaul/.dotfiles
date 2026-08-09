@@ -7,25 +7,39 @@ description: Systematic CI/CD failure diagnosis using hypothesis-first investiga
 
 Every CI failure is real until proven otherwise. Never assume flakiness.
 
+This skill owns pipeline-specific evidence and environment deltas. For a local
+or runtime failure outside CI, use `debugging`.
+
 ## Getting the Data
 
-Pull the actual failure output before forming hypotheses:
+Identify the CI provider from the repository configuration, then pull the actual failure output with that provider's connected tool, CLI, or UI before forming hypotheses. Preserve the run, job, attempt, commit SHA, and timestamps so later comparisons refer to the same execution.
+
+For GitHub Actions:
 
 ```bash
 gh run list --branch <branch> --limit 5        # find the failing run
 gh run view <run-id> --log-failed              # only the failed steps' logs
 gh run view <run-id> --job <job-id> --log      # one job's full log
 gh run download <run-id>                       # artifacts (coverage, reports, screenshots)
-gh run rerun <run-id> --failed                 # re-run only failed jobs (for evidence, not hope)
 ```
 
-For step-level detail, re-run with debug logging: set the `ACTIONS_STEP_DEBUG=true` secret/variable, or `gh run rerun <run-id> --debug`. Compare the failing run against the last green run on the same branch (`gh run list`) — the diff in commits, dependency lockfiles, and workflow files between those two runs is the primary suspect list.
+Rerunning a workflow or changing a CI variable mutates external state and may
+repeat deploys, migrations, notifications, or other effects. Do that only
+with explicit authority after inspecting the workflow and failed job for side
+effects. When authorized, rerun only the failed jobs with
+`gh run rerun <run-id> --failed`, or use
+`gh run rerun <run-id> --debug` for step-level logging; remove any temporary
+debug variable afterwards. For another provider, use its equivalent controls
+without translating commands by guesswork. Compare the failing run against
+the last green run on the same branch — the diff in commits, dependency
+lockfiles, and pipeline files between those two runs is the primary suspect
+list.
 
 If the system under test emits structured telemetry (canonical events, traces, in-memory exporter output from test runs), pull it as evidence alongside the logs — see the `observability` skill.
 
 ## Hypothesis-First Diagnosis
 
-Before investigating, list at least 3 possible root causes. Investigate each systematically rather than jumping to the first guess.
+Before editing, list plausible causes, rank them by evidence, and test one falsifiable hypothesis at a time. Do not invent a fixed minimum merely to fill a list.
 
 **Example hypotheses for a test timeout:**
 1. Test relies on network access unavailable in CI
@@ -34,11 +48,11 @@ Before investigating, list at least 3 possible root causes. Investigate each sys
 
 ## Local Reproduction
 
-Always reproduce the failure locally before pushing fixes.
+Reproduce locally when a faithful environment is available before pushing fixes.
 
 - Run the **exact** failing command, not a close equivalent
 - Match the CI environment as closely as possible (Node version, env vars)
-- If it passes locally, the delta between environments IS the bug
+- If it passes locally, treat the environment delta as evidence to localize; the cause may still be timing, state, or an external dependency
 
 ## Environment Delta Analysis
 
@@ -48,7 +62,7 @@ Compare CI vs local:
 |--------|-------|
 | Node/runtime version | CI config vs `node -v` locally |
 | OS | Linux CI vs macOS local |
-| Dependency resolution | Fresh `npm ci` vs cached `node_modules` |
+| Dependency resolution | Repository's locked clean-install command and package cache (for npm, `npm ci` vs cached `node_modules`) |
 | Env vars | CI secrets/config vs local `.env` |
 | Parallelism | CI may run tests in parallel differently |
 | Memory/CPU | CI runners often have less resources |
@@ -64,7 +78,11 @@ Compare CI vs local:
 
 ## Fix Verification
 
-After identifying a fix:
+If the request is diagnosis-only, report the supported root cause, evidence,
+affected jobs, uncertainty, and recommended fix, then stop. Diagnosis does not
+authorize workflow, production, dependency, test, or configuration changes.
+
+When the user requested a fix, after identifying it:
 
 1. Explain **why** it addresses the root cause (not just the symptom)
 2. Run the exact failing command locally
@@ -75,19 +93,28 @@ After identifying a fix:
 | Anti-Pattern | Why It's Wrong | Instead |
 |-------------|----------------|---------|
 | "It's flaky, re-run it" | Masks real issues | Investigate the failure |
-| Adding retries/sleeps | Hides timing bugs | Fix the race condition |
+| Adding blind retries/sleeps | Can hide timing bugs | Identify the cause; add bounded retry only when the external contract requires it |
 | Pushing speculative fixes | Wastes CI cycles | Reproduce and verify locally |
 | Reading only the last error line | Misses root cause | Read full output from the top |
 | Fixing symptoms | Problem will recur | Trace to root cause |
 
 ## Proving Flakiness
 
-A failure is only flaky if you have evidence:
-- Multiple independent runs with **identical** environment showing different results
-- AND you can identify the non-deterministic source (race condition, time-dependent test, external service)
-
-Without this evidence, treat every failure as a real bug.
+Different outcomes across independent runs with the same controlled inputs are
+evidence that the outcome is nondeterministic. That proves flakiness even when
+the source is not yet diagnosed. Record which inputs and environment facts were
+actually controlled, then localize the cause: race, time, shared state, resource
+pressure, or an external dependency. A single unexplained failure remains a
+real failure, not permission to re-run until green.
 
 ## Handoff
 
-Once the root cause is identified, write a failing test that reproduces it **before** fixing — load the `tdd` skill (or `characterisation-tests` if the broken code has no tests). A CI fix without a pinning test is a recurrence waiting to happen.
+Once the root cause is identified, a diagnosis-only handoff ends with the
+evidence and recommended guard. For an authorized fix, leave the smallest
+durable regression guard that fits it. For production behavior, write the
+failing behavior test before the fix using `tdd` (or
+`characterisation-tests` when legacy behavior first needs capture). For
+provider configuration, permissions, or an external outage, use a config
+assertion, dry-run, contract check, or monitored recovery proof as appropriate.
+If no executable guard is feasible, record the evidence and remaining
+detection path instead of fabricating a test.

@@ -35,7 +35,7 @@ It became unexpectedly popular when I shared the [CLAUDE.md file](claude/.claude
 
 This repository now serves two purposes:
 
-1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, auto-discovered first-party skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
+1. **[CLAUDE.md](claude/.claude/CLAUDE.md)** + **[Skills](claude/.claude/skills/)** + **[Ten specialized agents](claude/.claude/agents/)** + **[Five slash commands](claude/.claude/commands/)** - Development guidelines, auto-discovered first-party skill patterns + 18 impeccable design skills from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) + 6 web quality skills from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) + 3 Next.js skills from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills) + the optional `grill-me` planning interview skill from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me) + the `seo-audit` marketing skill from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and automated quality guidance (what most visitors want)
 2. **Personal dotfiles** - My shell configs, git aliases, and tool configurations (what this repo was originally for)
 
 **Most people are here for CLAUDE.md and the agents.** This README focuses primarily on those, with [dotfiles coverage at the end](#-personal-dotfiles-the-original-purpose).
@@ -48,7 +48,9 @@ This repository now serves two purposes:
 
 [**→ Read the full CLAUDE.md file**](claude/.claude/CLAUDE.md)
 
-CLAUDE.md is a **living document** that defines development principles, patterns, and anti-patterns. It transforms abstract concepts into actionable decision frameworks.
+CLAUDE.md is a **living working-policy document** for this repository. Canonical
+skills own reusable practices; source, tests, glossaries, accepted decisions,
+and maintained docs own the facts they can keep current.
 
 ### Core Philosophy
 
@@ -74,11 +76,11 @@ Unlike typical style guides, CLAUDE.md provides:
 
 | Section | What It Provides | Detailed Patterns |
 |---------|-----------------|-------------------|
-| **Testing Principles** | Behavior-driven testing, 100% coverage strategy, factory patterns | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
+| **Testing Principles** | Behavior-driven tests, isolated state, contextual fixtures, and repository-owned coverage diagnostics | [→ skills/testing](claude/.claude/skills/testing/SKILL.md) |
 | **Mutation Testing** | End-of-phase Stryker full/diff runs, survivor triage, mutator-rule resource | [→ skills/mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) |
-| **Test Design Review** | Dave Farley's 8 properties evaluation, Farley Score calculation, test quality assessment | [→ skills/test-design-reviewer](claude/.claude/skills/test-design-reviewer/SKILL.md) |
-| **Front-End Testing** | Vitest Browser Mode (preferred) + DOM Testing Library patterns, real browser testing with Playwright | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
-| **React Testing** | Vitest Browser Mode with vitest-browser-react (preferred) + React Testing Library patterns | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
+| **Test Design Review** | Evidence-based qualitative review against Dave Farley's eight properties, with unknowns left unscored | [→ skills/test-design-reviewer](claude/.claude/skills/test-design-reviewer/SKILL.md) |
+| **Front-End Testing** | Claim-appropriate Browser Mode, Playwright, or DOM Testing Library patterns | [→ skills/front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) |
+| **React Testing** | Browser Mode or React Testing Library selected by observable claim, repository support, and cost | [→ skills/react-testing](claude/.claude/skills/react-testing/SKILL.md) |
 | **TypeScript Guidelines** | Schema-first decision framework, type vs interface clarity, immutability patterns | [→ skills/typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) |
 | **TDD Process** | RED-GREEN-REFACTOR increments, end-of-phase mutation/alternate-evidence PR gate, quality gates, anti-patterns | [→ skills/tdd](claude/.claude/skills/tdd/SKILL.md) |
 | **Refactoring** | Priority classification, semantic vs structural framework, DRY decision tree | [→ skills/refactoring](claude/.claude/skills/refactoring/SKILL.md) |
@@ -87,32 +89,34 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Improve Codebase Architecture** | Evidence-led architecture audits that rank bounded candidates and produce self-contained visual HTML reports with before/after diagrams | [→ skills/improve-codebase-architecture](claude/.claude/skills/improve-codebase-architecture/SKILL.md) |
 | **Evaluate Existing Solutions** | Local-first, current evidence for adopt/adapt/combine/build decisions across primitives, libraries, tools, applications, frameworks, and services | [→ skills/evaluate-existing-solutions](claude/.claude/skills/evaluate-existing-solutions/SKILL.md) |
 | **Functional Programming** | Immutability violations catalog, pure functions, composition patterns | [→ skills/functional](claude/.claude/skills/functional/SKILL.md) |
-| **Expectations** | Learning capture guidance, documentation templates, quality criteria | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
+| **Expectations** | Routes reusable principles, local policy, vocabulary, decisions, behavior, and temporary delivery knowledge to the artifact that owns each truth | [→ skills/expectations](claude/.claude/skills/expectations/SKILL.md) |
 | **Planning** | Turn a selected child story into vertical implementation slices, or sequence a reducer-defined program, with a delivery shape for each slice | [→ skills/planning](claude/.claude/skills/planning/SKILL.md) |
 | **Story Splitting** | Turn broad stories, epics, features, and backlog items into independently valuable child stories; based on Tim Ottinger's story-splitting resource list and linked articles | [→ skills/story-splitting](claude/.claude/skills/story-splitting/SKILL.md) |
 | **Stack Pull Requests** | Decide whether vertical implementation work should use independent PRs or an optional hard-/flow-lineage stack across one or more slices, then deliver it safely | [→ skills/stack-pull-requests](claude/.claude/skills/stack-pull-requests/SKILL.md) |
+| **Debugging** | Evidence-preserving diagnosis for local and runtime failures: reproduce, localize, and test one falsifiable hypothesis; fix the owning boundary and leave a guard only when a fix was requested | [→ skills/debugging](claude/.claude/skills/debugging/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Production Parity Skill Builder** | Creates app-specific skills that inspect docs, code, tests, CI, deployment, infrastructure, config, auth, and environment setup to catch drift between production and non-production environments | [→ skills/production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) |
 | **Structure Codebase** | Selects the lightest honest source-tree shape: first-class frontend structures, visible hexagonal boundaries when earned, and feature-, context-, endpoint-, workflow-, framework-, or shallow forms elsewhere; package/import enforcement and safe migrations | [→ skills/structure-codebase](claude/.claude/skills/structure-codebase/SKILL.md) |
 | **Hexagonal Architecture** | Ports and adapters, driving/driven asymmetry, CQRS-lite, composition roots, cross-cutting concerns, DI patterns, anti-patterns with code examples, full worked example, incremental adoption. 7 resources including source notes | [→ skills/hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) |
-| **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, "Where Does This Code Belong?" decision framework. 6 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
+| **Domain-Driven Design** | Ubiquitous language, value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, bounded contexts with ACL, error modeling, layer ownership, and focused sources. 7 deep-dive resources | [→ skills/domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) |
 | **Event Sourcing** | Events as the source of truth, current state as a left fold (the Decider); event stores with optimistic concurrency, projections and read models, event versioning (tolerant reader/upcasting), snapshots, sagas, GDPR crypto-shredding, and behaviour-driven testing of deciders. Leads with a when-to-use complexity ladder. 8 deep-dive resources + source notes | [→ skills/event-sourcing](claude/.claude/skills/event-sourcing/SKILL.md) |
-| **Twelve-Factor App** | Config via env vars, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
+| **Twelve-Factor App** | Deploy-time config via environment variables or platform-native injection, stateless processes, graceful shutdown, structured logging, backing services | [→ skills/twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) |
 | **Impeccable Design** | Comprehensive frontend design vocabulary: distinctive interfaces, systematic typography, OKLCH color, anti-AI-slop methodology + 17 steering commands | [→ impeccable](https://impeccable.style/skills/) |
-| **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 5 deep-dive resources | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
+| **API Design** | Contract-first, Hyrum's Law, RFC 9457 errors, idempotency, rate limiting, REST conventions, pagination, backward compatibility, OWASP API Security Top 10. 5 deep-dive resources + source notes | [→ skills/api-design](claude/.claude/skills/api-design/SKILL.md) |
 | **Secure OAuth and OIDC** | RFC 9700 / BCP 240 security workflow for OAuth 2.0 and OpenID Connect: applicability-aware controls, issuer and transaction binding, ID Token validation, attack catalog, negative tests, migrations, and evidence-based audits | [→ skills/secure-oauth-oidc](claude/.claude/skills/secure-oauth-oidc/SKILL.md) |
 | **BFF Design** | The backend-for-frontend pattern itself: adoption signals and honest costs, one-experience-one-BFF granularity with frontend-team ownership, the shape-don't-decide rule, upstream aggregation with partial-failure and resilience budgets, identity-keyed caching, user-identity mediation toward upstreams (token exchange, confused-deputy prevention), and the alternatives (gateway, GraphQL federation, token-mediating backend, meta-framework server). 4 deep-dive references | [→ skills/bff-design](claude/.claude/skills/bff-design/SKILL.md) |
 | **BFF Entry Points** | Explicit public/protected access classification for every BFF/backend HTTP entry point, a composition-prepared endpoint registrar that installs session/CSRF/Origin/Fetch Metadata policy by construction, provider-free in-application authorization, protected SSE/WebSocket registration, browser session coordination, and automated enforcement gates. 6 deep-dive references | [→ skills/bff-entry-points](claude/.claude/skills/bff-entry-points/SKILL.md) |
 | **CLI Design** | Unix-composable CLI patterns: stdout/stderr stream separation, format flags (--json/--plain), exit codes, TTY detection, composability, error design. Language-agnostic principles with TypeScript implementation patterns. 4 deep-dive resources | [→ skills/cli-design](claude/.claude/skills/cli-design/SKILL.md) |
 | **Finding Seams** | Identifying substitution points in untestable code -- function parameter, configuration, module, and object seams for TypeScript/JS. FP-first with OOP patterns in a separate resource for legacy class-based code. Based on Michael Feathers' *Working Effectively with Legacy Code*. 3 deep-dive resources | [→ skills/finding-seams](claude/.claude/skills/finding-seams/SKILL.md) |
 | **Characterisation Tests** | Documenting actual behavior of existing code before making changes. The 5-step algorithm, heuristics, modern tooling (Vitest snapshots, combination testing, approval testing). Based on Michael Feathers' *Working Effectively with Legacy Code*. 2 deep-dive resources | [→ skills/characterisation-tests](claude/.claude/skills/characterisation-tests/SKILL.md) |
-| **Storyboard** | Multi-surface design audit on a single HTML page. Live iframes of every mock side-by-side, ASCII flow diagram with colour-coded gaps, per-mock `/critique`+`/clarify`+`/audit`+`/polish` checklist, brainstorm-question cards for missing mocks. Use before any multi-surface feature lands code. Pairs with impeccable design skills | [→ skills/storyboard](claude/.claude/skills/storyboard/SKILL.md) |
+| **Storyboard** | Optional working audit for a multi-surface UX when side-by-side mocks and flow gaps materially improve review; delete it after use unless the project maintains it | [→ skills/storyboard](claude/.claude/skills/storyboard/SKILL.md) |
 | **Teach Me** | Evidence-based private tutor for any topic. Mission-grounded learning plans, discovery interview, trusted-source curation, Socratic questioning, Bloom's Taxonomy progression, spaced repetition, confidence calibration, learning records, living glossary, self-contained HTML lessons per session, course generation. 5 deep-dive resources. Invoked via `/teach-me [topic]` | [→ skills/teach-me](claude/.claude/skills/teach-me/SKILL.md) |
-| **Diagrams** | Create diagrams in Markdown using Mermaid, Graphviz, Vega-Lite, PlantUML, JSON Canvas, infographics, info cards, architecture diagrams. Decision guide picks the right tool; 8 per-tool references. Vendored from [markdown-viewer/skills](https://github.com/markdown-viewer/skills) under MIT | [→ skills/diagrams](claude/.claude/skills/diagrams/SKILL.md) |
-| **Find Skills** | Discovers installable agent skills from `npx skills` / [skills.sh](https://skills.sh/) and inspects the full bundle, capabilities, provenance, license, maintenance, compatibility, and overlap before recommending. Vendored and locally hardened from [vercel-labs/skills](https://github.com/vercel-labs/skills) under MIT | [→ skills/find-skills](claude/.claude/skills/find-skills/SKILL.md) |
-| **Find Gaps** | Conversational pre-implementation review for written stories, plans, acceptance criteria, specs, and design mocks. Surveys the artifact with a per-type checklist, then walks you through gaps **one question at a time**, turning each answer into a new AC (Given/When/Then), plan paragraph, or mock-state spec written back to the source of truth. Output is the tightened artifact, not a gap report. Pairs with `storyboard` for multi-mock audits | [→ skills/find-gaps](claude/.claude/skills/find-gaps/SKILL.md) |
+| **Diagrams** | Creates renderer-aware, evidence-backed, accessible diagrams with observable validation gates. The current core is an original rewrite; source notes preserve the removed historical import and published-history rights follow-up | [→ skills/diagrams](claude/.claude/skills/diagrams/SKILL.md) |
+| **Find Skills** | Coordinates the minimum installed skill set first, then discovers installable skills through [skills.sh](https://skills.sh/) or the reviewed `skills@1.5.22` CLI and inspects the full bundle, capabilities, provenance, license, maintenance, compatibility, and overlap. Vendored and locally hardened from [vercel-labs/skills at `0b8fb22`](https://github.com/vercel-labs/skills/tree/0b8fb22aaa7f82447d4befe1b6a95d30a5b279b8/skills/find-skills); source notes distinguish the import-time MIT declaration from the later full upstream notice | [→ skills/find-skills](claude/.claude/skills/find-skills/SKILL.md) |
+| **Find Gaps** | Conversational pre-implementation review for written stories, plans, acceptance criteria, specs, and design mocks. Surveys the artifact with a per-type checklist, then walks you through gaps **one question at a time**, turning each answer into an artifact-native precondition/trigger/outcome criterion, plan paragraph, or mock-state spec written back to the source of truth. Output is the tightened artifact, not a separate gap report. Pairs with `storyboard` for multi-mock audits | [→ skills/find-gaps](claude/.claude/skills/find-gaps/SKILL.md) |
+| **Acceptance Review** | Read-only criterion-by-criterion proof of whether a PR, branch, diff, or implementation satisfies its authoritative requirement | [→ skills/acceptance-review](claude/.claude/skills/acceptance-review/SKILL.md) |
 | **WTF** | Explicitly re-explains the immediately previous model response in plain, precise UK English without starting new work. Invoke with `/wtf` in Claude Code or `$wtf` in Codex | [→ skills/wtf](claude/.claude/skills/wtf/SKILL.md) |
-| **Grill Me** | Relentless one-question-at-a-time decision-tree interviews before story splitting, planning, or implementation. Stress-tests decisions branch-by-branch, explores the codebase when it can answer questions directly, and recommends an answer for each unresolved question | [→ skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) |
+| **Grill Me (optional external)** | One-question-at-a-time decision-tree interviews before story splitting, planning, or implementation; omitted by `--no-external`, with `specification` as the first-party fallback | [→ skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) |
 | **Next.js Skills** | Best practices for App Router, RSC boundaries, async APIs, metadata, Cache Components, and Next.js upgrades | [→ next-skills](https://skills.sh/vercel-labs/next-skills) |
 | **Web Quality Audit** | Comprehensive Lighthouse-based quality review across all categories | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
 | **Performance** | Loading speed, runtime efficiency, resource optimization | [→ web-quality-skills](https://github.com/addyosmani/web-quality-skills) |
@@ -136,8 +140,8 @@ Unlike typical style guides, CLAUDE.md provides:
 |---------|-------|-------------|
 | Tests that break when I refactor | [testing](claude/.claude/skills/testing/SKILL.md) | Test behavior through public APIs, not implementation |
 | 100% coverage but bugs still slip through | [mutation-testing](claude/.claude/skills/mutation-testing/SKILL.md) | Coverage measures execution, mutation testing measures detection |
-| Tests break when refactoring UI components | [front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) | Use Vitest Browser Mode for real browser testing, query by role |
-| Testing React components, hooks, or context | [react-testing](claude/.claude/skills/react-testing/SKILL.md) | Use vitest-browser-react for Browser Mode, renderHook for hooks |
+| Tests break when refactoring UI components | [front-end-testing](claude/.claude/skills/front-end-testing/SKILL.md) | Match the harness to the claim and query by role |
+| Testing React components, hooks, or context | [react-testing](claude/.claude/skills/react-testing/SKILL.md) | Use Browser Mode for browser-observable behavior; keep a lighter stable harness when it proves the contract |
 | Don't know when to use schemas vs types | [typescript-strict](claude/.claude/skills/typescript-strict/SKILL.md) | 5-question decision framework |
 | Code that "looks the same" - should I abstract it? | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Semantic vs structural abstraction guide |
 | Refactoring everything vs nothing | [refactoring](claude/.claude/skills/refactoring/SKILL.md) | Priority classification (Critical/High/Nice/Skip) |
@@ -146,22 +150,24 @@ Unlike typical style guides, CLAUDE.md provides:
 | A module makes callers understand its implementation | [codebase-design](claude/.claude/skills/codebase-design/SKILL.md) | Hide coherent decisions behind a smaller complete contract; optimize leverage and locality, not line count |
 | Don't know where architecture work would pay off | [improve-codebase-architecture](claude/.claude/skills/improve-codebase-architecture/SKILL.md) | Rank evidence-backed candidates and compare them visually in an offline HTML report |
 | About to build generic machinery that may already exist | [evaluate-existing-solutions](claude/.claude/skills/evaluate-existing-solutions/SKILL.md) | Inspect local/platform primitives, research current established options, and compare them with a genuine bespoke baseline |
-| Accidental mutations breaking things | [functional](claude/.claude/skills/functional/SKILL.md) | Complete immutability violations catalog |
-| Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | TDD quality gates + git verification |
+| Accidental shared-state mutation | [functional](claude/.claude/skills/functional/SKILL.md) | Ownership-aware immutable alternatives |
+| Writing code before tests | [tdd](claude/.claude/skills/tdd/SKILL.md) | RED-GREEN-REFACTOR with observable evidence, independent of commit choreography |
 | Losing context on complex features | [expectations](claude/.claude/skills/expectations/SKILL.md) | Learning capture framework (7 criteria) |
-| Requirement is still fuzzy or decision-heavy | [grill-me](https://skills.sh/mattpocock/skills/grill-me) | Pressure-test the decision tree one question at a time before writing stories or plans |
+| Requirement is still fuzzy or decision-heavy | [specification](claude/.claude/skills/specification/SKILL.md) | Resolve one question at a time into examples and acceptance criteria; use optional `grill-me` when installed for extra pressure-testing |
 | Turning a broad requirement into stories | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Produce independently valuable child stories with scope, deferrals, and acceptance examples |
 | Planning significant implementation work | [planning](claude/.claude/skills/planning/SKILL.md) | Sequence a selected child story vertically, or a reducer-defined program, and choose each slice's delivery shape |
 | One slice is too large, or later slices should start before lower PRs merge | [stack-pull-requests](claude/.claude/skills/stack-pull-requests/SKILL.md) | Choose independent PRs or a justified hard-/flow-lineage stack without turning technical layers into stories |
 | Tightening a story, plan, AC set, or mock | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Find missing decisions and write confirmed answers back into the artifact |
+| Checking whether implementation satisfies agreed requirements | [acceptance-review](claude/.claude/skills/acceptance-review/SKILL.md) | Map every authoritative criterion to implementation and verification evidence, then return an exact verdict |
 | Backlog items keep turning into frontend/backend tickets | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Reject component stories; split by capability, path, interface, data, rules, quality, or learning |
+| A local or runtime failure needs a root cause | [debugging](claude/.claude/skills/debugging/SKILL.md) | Preserve evidence, reproduce, localize, and test one causal hypothesis; implement only when a fix was requested |
 | CI pipeline keeps failing | [ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) | Every failure is real until proven otherwise, hypothesis-first diagnosis |
 | Local, CI, PR, or staging differs from production | [production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) | Generate an app-specific parity skill that inspects source, infra, config, and auth before asking targeted questions |
 | Project folders hide ownership or architecture | [structure-codebase](claude/.claude/skills/structure-codebase/SKILL.md) | Select the lightest honest shape; make hexagonal inside/outside visible only when real and keep every interior featureful |
 | Separating domain from infrastructure | [hexagonal-architecture](claude/.claude/skills/hexagonal-architecture/SKILL.md) | Ports define contracts, adapters implement them, domain stays pure |
 | Complex business rules need modeling | [domain-driven-design](claude/.claude/skills/domain-driven-design/SKILL.md) | Ubiquitous language, glossary enforcement, value objects, aggregates |
 | History and audit are part of the domain | [event-sourcing](claude/.claude/skills/event-sourcing/SKILL.md) | Events are the source of truth; current state is a left fold you can always rebuild |
-| Config scattered in code, not env vars | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Validate config at startup with Zod, inject via options objects |
+| Deploy-varying config embedded in source or build artifacts | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Validate injected config at startup and pass it through composition options |
 | Service won't scale horizontally | [twelve-factor](claude/.claude/skills/twelve-factor/SKILL.md) | Stateless processes, external backing services, graceful shutdown |
 | UI looks generic or AI-generated | [impeccable](https://impeccable.style/skills/) | `/impeccable teach` to set context, `/impeccable craft` to build with design methodology |
 | Need to plan UX before coding | [impeccable](https://impeccable.style/skills/) | `/shape` produces a design brief; `/impeccable craft` runs the full shape-build-iterate flow |
@@ -181,11 +187,11 @@ Unlike typical style guides, CLAUDE.md provides:
 | Want "all the mocks in one place" for a feature | [storyboard](claude/.claude/skills/storyboard/SKILL.md) | Side-by-side embedded mocks + per-mock audit checklist, pairs with `/impeccable` pipeline |
 | Want to learn a topic properly, not just read about it | [teach-me](claude/.claude/skills/teach-me/SKILL.md) | Socratic tutor, Bloom's progression, spaced repetition — invoked via `/teach-me [topic]` |
 | Need a diagram, chart, or visualization in Markdown | [diagrams](claude/.claude/skills/diagrams/SKILL.md) | Decision guide picks Mermaid / Graphviz / Vega-Lite / PlantUML / Canvas / infographic for the job |
-| Wishing an agent skill existed for this task | [find-skills](claude/.claude/skills/find-skills/SKILL.md) | Search the open skills ecosystem via `npx skills find`; verify installs and source before recommending |
+| Wishing an agent skill existed for this task | [find-skills](claude/.claude/skills/find-skills/SKILL.md) | Browse the open skills ecosystem first; verify the complete source before recommending or installing |
 | Working on a Next.js App Router app | [next-skills](https://skills.sh/vercel-labs/next-skills) | Next.js best practices, Cache Components guidance, and official-upgrade workflow |
 | Reviewing a plan, spec, or mocks before coding starts | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Conversational loop: asks one question at a time and writes each answer back as a new AC / plan paragraph / mock-state spec |
 | "What could go wrong?" / "What's missing?" on a design | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Forces every gap category end-to-end; each confirmed answer updates the artifact, not a todo list |
-| Want a plan interrogated before implementation | [grill-me](https://skills.sh/mattpocock/skills/grill-me) | Relentless one-question-at-a-time review that explores the codebase when possible and recommends an answer for each decision |
+| Want a plan interrogated before implementation | [specification](claude/.claude/skills/specification/SKILL.md) | Use its one-question protocol, or optional `grill-me` when installed, before implementation |
 | Slow page loads or poor Lighthouse scores | [performance](https://github.com/addyosmani/web-quality-skills) | Critical rendering path, code splitting, image optimization |
 | Failing Core Web Vitals (LCP, INP, CLS) | [core-web-vitals](https://github.com/addyosmani/web-quality-skills) | LCP < 2.5s, INP < 200ms, CLS < 0.1 |
 | Accessibility compliance gaps | [accessibility](https://github.com/addyosmani/web-quality-skills) | WCAG 2.1 guidelines, perceivable/operable/understandable/robust |
@@ -195,7 +201,7 @@ Unlike typical style guides, CLAUDE.md provides:
 
 ### How Skills Work
 
-Skills are **auto-discovered** by Claude when relevant:
+Compatible agents **auto-discover** skills when relevant:
 - Writing TypeScript? → `typescript-strict` skill loads automatically
 - Running tests? → `testing` skill provides factory patterns
 - After GREEN? → `refactoring` skill assesses opportunities while behavior tests stay green
@@ -213,8 +219,10 @@ Skills are **auto-discovered** by Claude when relevant:
 - Code with hard-to-test dependencies? → `finding-seams` skill identifies substitution points
 - Changing code with no tests? → `characterisation-tests` skill documents existing behavior
 - Building a UI? → `impeccable` skill loads design methodology and anti-slop patterns
-- Stress-testing a plan or design? → `grill-me` asks one question at a time and recommends answers
-- Need a second opinion on finished work? → `double-check` spins up a *different* AI provider's CLI agent (codex/claude/gemini/cursor-agent) and argues it out until both agents agree
+- Stress-testing a plan or design? → `specification` asks one focused question at a time; optional `grill-me` can deepen the interview when installed
+- Diagnosing a local or runtime failure? → `debugging` preserves evidence and tests one causal hypothesis at a time
+- Checking finished work against authoritative requirements? → `acceptance-review` returns a read-only criterion-by-criterion verdict
+- Need a second opinion on finished work? → `double-check` uses a read-only independent reviewer when available, or a disclosed fresh-context fallback, and re-reviews the final state until findings close
 - History and audit are part of the domain? → `event-sourcing` models current state as a left fold of immutable events (and tells you when *not* to)
 
 ### Scope-to-Implementation Flow
@@ -223,18 +231,19 @@ For product work, the skills form a requirements-to-code pipeline. Each skill ow
 
 | Stage | Question | Skill | Output |
 |-------|----------|-------|--------|
-| 1. Decide | Do we understand the product/design decision tree? | `grill-me` | Resolved decisions, recommended answers, and remaining open questions |
+| 1. Decide | Do we understand the product/design decision tree? | `specification`; optional `grill-me` when installed | Resolved decisions, acceptance examples, and remaining open questions |
 | 2. Split | What independently valuable child stories exist? | `story-splitting` | Child stories with value, scope, deferrals, acceptance examples, and release constraints |
 | 3. Tighten | What is missing, ambiguous, unverifiable, or unsafe? | `find-gaps` | Confirmed artifact updates: AC, plan paragraphs, mock-state specs, or a return to `story-splitting` |
 | 4. Select technology when needed | Should we reuse, adopt, adapt, combine, build, defer, or do nothing? | `evaluate-existing-solutions` | Current evidence, hard gates, qualitative trade-offs, ownership, and exit strategy |
-| 5. Plan | How do we implement the selected child story safely? | `planning` | Vertical slices with independent-PR or explicit dependency-stack delivery in `plans/` |
+| 5. Plan | How do we implement the selected child story safely? | `planning` | Vertical slices in the repository's planning workflow (`plans/` fallback), with independent-PR or explicit dependency-stack delivery |
 | 6. Build | How do we change code without outrunning tests? | `tdd` + `testing` + applicable `refactoring`, then `mutation-testing` at PR readiness | RED-GREEN-REFACTOR for behavior change; verified preservation path for pure restructuring; one accumulated-scope mutation gate before PR |
+| 7. Accept | Does the final implementation satisfy the authoritative requirement? | `acceptance-review` | Read-only criterion evidence and an exact satisfies / does-not-satisfy / indeterminate verdict |
 
-Use the earliest stage that matches the uncertainty. Skip `grill-me` when the decision is already clear. Skip `story-splitting` for tiny or already-narrow work. Use `find-gaps` only once there is an artifact to inspect. Use technology selection proportionately for a material generic mechanism or durable new dependency—not domain logic, small glue, routine use of an already-adopted tool, or ordinary fixes. Use `planning` only after one child story or narrow capability and any consequential technology choice have been selected.
+Use the earliest stage that matches the uncertainty. Skip the decision interview when intent is already clear. Skip `story-splitting` for tiny or already-narrow work. Use `find-gaps` only once there is an artifact to inspect. Use technology selection proportionately for a material generic mechanism or durable new dependency—not domain logic, small glue, routine use of an already-adopted tool, or ordinary fixes. Use `planning` only after one child story or narrow capability and any consequential technology choice have been selected.
 
 `storyboard` fits between Split and Tighten when UX spans multiple surfaces: it creates the visual artifact; `find-gaps` then reviews missing states and flow gaps.
 
-**No manual invocation needed** - Claude detects when skills apply. Impeccable steering commands (`/shape`, `/critique`, `/polish`, etc.) can also be invoked directly, and you can explicitly ask to be "grilled" on a plan when you want a deeper interview.
+**No manual invocation needed** - compatible agents detect when skills apply. Impeccable steering commands (`/shape`, `/critique`, `/polish`, etc.) can also be invoked directly. You can explicitly request the optional `grill-me` interview when it is installed.
 
 ---
 
@@ -244,10 +253,10 @@ Use the earliest stage that matches the uncertainty. Skip `grill-me` when the de
 
 **What's inside:**
 - Behavior-driven testing principles with anti-patterns
-- Factory function patterns for test data (no `let`/`beforeEach`)
-- Achieving 100% coverage through business behavior (not implementation)
+- Fresh-state and contextual factory patterns for test data
+- Repository-owned coverage as a diagnostic, with behavior as the target
 - React component testing strategies
-- Validating test data with schemas
+- Reusing production schemas when they already own the contract
 
 **Concrete example from the docs:**
 
@@ -261,7 +270,7 @@ it("should call validateAmount", () => {
 
 // ✅ GOOD - Behavior-focused test (refactor-safe)
 it("should reject payments with negative amounts", () => {
-  const payment = getMockPayment({ amount: -100 });
+  const payment = getMockPayment({ amountMinorUnits: -100, currency: 'GBP' });
   const result = processPayment(payment);
   expect(result.success).toBe(false);
   expect(result.error.message).toBe("Invalid amount");
@@ -270,7 +279,7 @@ it("should reject payments with negative amounts", () => {
 
 **Why this matters:** The first test will fail if you refactor `validateAmount` into a different structure. The second test only cares about behavior - refactor all you want, as long as negative amounts are rejected.
 
-**Key insight:** A separate `payment-validator.ts` file gets 100% coverage without dedicated tests - it's fully tested through `payment-processor` behavior tests. No 1:1 file mapping needed.
+**Key insight:** A separate `payment-validator.ts` file may be fully exercised through `payment-processor` behavior tests. Mirror implementation files only when the file itself is the stable public unit under test.
 
 ---
 
@@ -288,27 +297,27 @@ it("should reject payments with negative amounts", () => {
 
 **The core insight:**
 
-Code coverage tells you what code your tests *execute*. Mutation testing tells you if your tests would *detect changes* to that code. A test suite with 100% coverage can still miss 40% of potential bugs.
+Code coverage tells you what code your tests *execute*. Mutation testing tells you whether the tests would *detect meaningful changes* to that code. Complete line coverage alone does not prove that assertions protect behavior.
 
 **Concrete example from the docs:**
 
 ```typescript
 // Production code
-const calculateTotal = (price: number, quantity: number): number => {
-  return price * quantity;
+const calculateArea = (width: number, height: number): number => {
+  return width * height;
 };
 
-// Mutant: price / quantity
+// Mutant: width / height
 // Question: Would tests fail if * became /?
 
 // ❌ WEAK TEST - Would NOT catch mutant
-it('calculates total', () => {
-  expect(calculateTotal(10, 1)).toBe(10); // 10 * 1 = 10, 10 / 1 = 10 (SAME!)
+it('calculates area', () => {
+  expect(calculateArea(10, 1)).toBe(10); // 10 * 1 = 10, 10 / 1 = 10 (SAME!)
 });
 
 // ✅ STRONG TEST - Would catch mutant
-it('calculates total', () => {
-  expect(calculateTotal(10, 3)).toBe(30); // 10 * 3 = 30, 10 / 3 = 3.33 (DIFFERENT!)
+it('calculates area', () => {
+  expect(calculateArea(10, 3)).toBe(30); // 10 * 3 = 30, 10 / 3 = 3.33 (DIFFERENT!)
 });
 ```
 
@@ -324,27 +333,26 @@ it('calculates total', () => {
 
 **What's inside:**
 - Strict mode requirements and tsconfig setup
-- **Type vs interface distinction** (data vs behavior contracts)
-- **5-question decision framework**: When schemas ARE vs AREN'T required
+- **Type vs interface semantics** with repository convention first
+- **Boundary decision framework**: When runtime schemas are required
 - Schema-first development with Zod
 - Schema usage in tests (import from shared locations, never redefine)
 - Branded types for type safety
 
-**The 5-question framework from the docs:**
+**The boundary framework from the docs:**
 
 Ask these in order:
-1. **Does data cross a trust boundary?** (external → internal) → ✅ Schema required
-2. **Does type have validation rules?** (format, constraints) → ✅ Schema required
-3. **Is this a shared data contract?** (between systems) → ✅ Schema required
-4. **Used in test factories?** → ✅ Schema required (for validation)
-5. **Pure internal type?** (utility, state, behavior) → ❌ Type is fine
+1. **Does untrusted data cross a runtime boundary?** → ✅ Validate with a schema
+2. **Is the contract exchanged between independently deployed systems?** → ✅ Validate at ingress/egress
+3. **Does a production schema already exist for a contract-shaped fixture?** → Reuse it when that adds evidence
+4. **Is this a trusted internal invariant?** → A type, smart constructor, or domain value may be clearer
 
 **Concrete example from the docs:**
 
 ```typescript
 // ❌ Schema NOT needed - pure internal type
 type Point = { readonly x: number; readonly y: number };
-type CartTotal = { subtotal: number; tax: number; total: number };
+type SearchWindow = { readonly offset: number; readonly limit: number };
 
 // ✅ Schema REQUIRED - API response (trust boundary + validation)
 const UserSchema = z.object({
@@ -357,7 +365,9 @@ const user = UserSchema.parse(apiResponse);
 
 **Key insight:** Not all types need schemas. Use schemas at trust boundaries and for validation. For internal types and utilities, plain TypeScript types are sufficient.
 
-**Critical rule:** Tests must import real schemas from shared locations, never redefine them. This prevents type drift between tests and production.
+**Critical rule:** When a production schema exists and is relevant to the
+test's claim, import it rather than redefining the same contract. Do not invent
+a runtime schema solely for a test factory.
 
 ---
 
@@ -377,7 +387,7 @@ const user = UserSchema.parse(apiResponse);
 
 **The refactoring priority system from the docs:**
 
-🔴 **Critical (Fix Now):** Immutability violations, semantic knowledge duplication, deep nesting (>3 levels)
+🔴 **Critical (Fix Now):** Behavior-changing mutation, divergent copies of one business rule, control flow that obscures a high-risk path
 
 ⚠️ **High Value (Fix This Session):** Unclear names, magic numbers, functions coordinating multiple responsibilities
 
@@ -389,12 +399,12 @@ const user = UserSchema.parse(apiResponse);
 
 ```typescript
 // ❌ DO NOT ABSTRACT - Structural similarity, DIFFERENT semantics
-const validatePaymentAmount = (amount: number): boolean => {
-  return amount > 0 && amount <= 10000; // Fraud rules
+const validateUploadBytes = (bytes: number): boolean => {
+  return Number.isSafeInteger(bytes) && bytes > 0 && bytes <= 10_000_000; // Storage rules
 };
 
-const validateTransferAmount = (amount: number): boolean => {
-  return amount > 0 && amount <= 10000; // Account type rules
+const validateBatchSize = (items: number): boolean => {
+  return Number.isSafeInteger(items) && items > 0 && items <= 10_000; // Worker rules
 };
 // They'll evolve independently - abstracting couples unrelated business rules
 
@@ -418,27 +428,27 @@ const formatPersonDisplayName = (first: string, last: string) => `${first} ${las
 **Problem it solves:** Accidental mutations, nested conditionals, unclear code, when to use FP abstractions
 
 **What's inside:**
-- **Complete immutability violations catalog** (arrays, objects, nested structures)
+- Immutable alternatives for shared values and declared immutable contracts
 - Functional programming patterns and when to use heavy FP abstractions
-- Code structure principles (max 2 levels nesting)
-- Self-documenting code patterns (no comments)
+- Contextual control-flow guidance without a fixed nesting limit
+- Self-documenting code plus comments for non-obvious reasoning, constraints, and trade-offs
 - Naming conventions (functions, types, constants, files)
-- **Options objects pattern** (vs positional parameters)
+- **Options objects pattern** when parameter meaning or evolution makes positional calls unclear
 
 **The immutability catalog from the docs:**
 
 ```typescript
-// ❌ WRONG - Array mutations
+// Avoid when callers share or rely on the original array
 items.push(newItem);        // → [...items, newItem]
 items.pop();                // → items.slice(0, -1)
 items[0] = updatedItem;     // → items.map((item, i) => i === 0 ? updatedItem : item)
 items.sort();               // → [...items].sort()
 
-// ❌ WRONG - Object mutations
+// Avoid when the object crosses an ownership boundary
 user.name = "New Name";     // → { ...user, name: "New Name" }
 delete user.email;          // → const { email, ...rest } = user; rest
 
-// ❌ WRONG - Nested mutations
+// Avoid when the nested value is part of an immutable contract
 cart.items[0].quantity = 5; // → { ...cart, items: cart.items.map((item, i) => i === 0 ? { ...item, quantity: 5 } : item) }
 ```
 
@@ -446,11 +456,11 @@ cart.items[0].quantity = 5; // → { ...cart, items: cart.items.map((item, i) =>
 
 ```typescript
 // Avoid: Unclear at call site
-const payment = createPayment(100, "GBP", "card_123", "cust_456", undefined, { orderId: "789" });
+const payment = createPayment(10_000, "GBP", "card_123", "cust_456", undefined, { orderId: "789" });
 
 // Good: Self-documenting
 const payment = createPayment({
-  amount: 100,
+  amountMinorUnits: 10_000,
   currency: "GBP",
   cardId: "card_123",
   customerId: "cust_456",
@@ -458,7 +468,7 @@ const payment = createPayment({
 });
 ```
 
-**Key insight:** Immutability eliminates entire classes of bugs. The catalog provides the immutable alternative for every common mutation pattern.
+**Key insight:** Prefer immutability at shared boundaries and for declared immutable values. Local mutation is acceptable when ownership is clear, the API contains it, or measurement shows it is the simpler safe implementation.
 
 ---
 
@@ -647,13 +657,13 @@ Product meaning belongs at the capability root, architectural vocabulary belongs
 // ❌ Business logic tangled with infrastructure
 export async function POST(request: Request) {
   const order = await db.select().from(orders).where(eq(orders.id, id)).get();
-  if (order.total > 1000) await requireManagerApproval(order); // business rule in route handler!
+  if (order.itemCount > 100) await requireManagerApproval(order); // business rule in route handler!
   ...
 }
 
 // ✅ Domain stays pure; adapters are thin glue
 const placeOrder = (order: Order): PlaceOrderResult => {
-  if (order.total > 1000) return { success: false, reason: 'requires-approval' };
+  if (order.itemCount > 100) return { success: false, reason: 'requires-approval' };
   ...
 };
 ```
@@ -666,7 +676,7 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 
 **Problem it solves:** Business rules scattered across route handlers and database queries; technical jargon instead of domain language; models that don't evolve as understanding deepens
 
-**What's inside (main skill + 6 deep-dive resources):**
+**What's inside (main skill + 7 deep-dive resources):**
 - **"Where Does This Code Belong?"** — decision framework for the most common DDD question
 - **Building blocks** — value objects, entities, aggregates, domain events (Decider pattern), domain services, specifications, branded types with factory functions
 - **Make Illegal States Unrepresentable** — boolean-to-union pattern + exhaustive switch
@@ -697,7 +707,7 @@ const placeOrder = (order: Order): PlaceOrderResult => {
 **What's inside (main skill + 8 deep-dive resources + source notes):**
 - **When to use it (and when not)** — the complexity ladder (explicit returns → domain events → outbox → event sourcing); event sourcing vs CQRS vs event-driven vs streaming vs CDC/audit log
 - **The Decider write model** — `decide`/`evolve`/`initialState` reused from the DDD skill; current state as a left fold of events; the load → rehydrate → decide → append command-handler loop
-- **The event store as a driven port** — a minimal interface, a concrete Postgres schema where `UNIQUE (stream_id, version)` *is* optimistic concurrency, the event envelope with correlation/causation ids, and the TS/Node tooling landscape (Emmett, KurrentDB, message-db)
+- **The event store as a driven port** — a minimal interface, a concrete Postgres schema where atomic stream-head compare-and-swap enforces expected-version equality and `UNIQUE (stream_id, version)` is defense in depth, the event envelope with correlation/causation ids, and the TS/Node tooling landscape (Emmett, KurrentDB, message-db)
 - **Events as data** — past-tense business naming, EventStorming discovery, granularity (thin/fat/summary), internal vs external events, schema-first tolerant reader on read
 - **Projections & read models** — inline vs async, catch-up subscriptions and checkpoints, idempotency, eventual consistency and read-your-writes, rebuild-from-zero
 - **Event versioning** — the hardest part: immutability, weak schema, upcasting, copy-transform, and preventing the need to version at all
@@ -724,7 +734,7 @@ if (decision.accepted) await store.appendToStream(streamId, decision.events, { e
 
 **Problem it solves:** Inconsistent API contracts, breaking changes that surprise consumers, endpoints returning different shapes, no pagination on list endpoints, duplicate operations from retried requests
 
-**What's inside (main skill + 5 deep-dive resources):**
+**What's inside (main skill + 5 deep-dive resources + source notes):**
 - **Hyrum's Law** — every observable behavior becomes a de facto contract; design implications for what you expose
 - **Contract-first development** — define the interface before implementing (aligns with TDD: define what you want → test → implement)
 - **RFC 9457 error semantics** — standard `application/problem+json` format with security considerations, extension members, validation error patterns
@@ -740,8 +750,9 @@ if (decision.accepted) await store.appendToStream(streamId, decision.events, { e
 - [`resources/auth-security.md`](claude/.claude/skills/api-design/resources/auth-security.md) — JWT best practices (RFC 8725): algorithm allowlisting, claim validation, explicit typing, untrusted header inputs, and routing to the specialist OAuth/OIDC skill
 - [`resources/http-fundamentals.md`](claude/.claude/skills/api-design/resources/http-fundamentals.md) — Building on HTTP semantics (RFC 9205): status code discipline, caching, URI schemes, browser security headers
 - [`resources/problem-details.md`](claude/.claude/skills/api-design/resources/problem-details.md) — RFC 9457 deep detail: ProblemDetail type, type-URI semantics, extension members, security considerations
+- [`resources/source-notes.md`](claude/.claude/skills/api-design/resources/source-notes.md) and [`LICENSE`](claude/.claude/skills/api-design/LICENSE) — immutable provenance audit baseline, explicit original-import history gap, local departures, and the applicable upstream MIT notice
 
-**Adapted from** [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), significantly expanded with RFC 9457, idempotency, rate limiting, OWASP API Security Top 10, versioning strategies, and deprecation patterns. Modified to align with existing skills: TypeScript patterns deferred to `typescript-strict`, data structures use `type` with `readonly` per `functional` skill conventions.
+**Adapted from** Addy Osmani's MIT-licensed [`api-and-interface-design` skill](https://github.com/addyosmani/agent-skills/blob/7676817c12a1317454ae3898a0c5c1eacf5dd3d5/skills/api-and-interface-design/SKILL.md). Local commit `05483d71b5d93ce1acc0287e07320b21a6d120b3` records the adaptation but not the upstream revision originally imported; `7676817c12a1317454ae3898a0c5c1eacf5dd3d5` is a pinned audit baseline, not an import-revision claim. The local skill is significantly expanded with RFC 9457, idempotency, rate limiting, OWASP API Security Top 10, versioning strategies, and deprecation patterns, and aligns TypeScript examples with local conventions. See the linked source notes and MIT notice for the complete record.
 
 ---
 
@@ -817,25 +828,26 @@ mutation-testing       → At PR readiness, verify the accumulated change once
 
 ```typescript
 // BEFORE -- direct dependency, no seam
-const processOrder = (order: Order): OrderResult => {
-  const tax = fetchTaxRate(order.region);  // calls external service
-  return { ...order, total: order.subtotal * (1 + tax) };
+const scheduleDelivery = (delivery: Delivery): DeliveryPlan => {
+  const transitDays = fetchTransitDays(delivery.region);  // calls external service
+  return { ...delivery, totalDays: delivery.preparationDays + transitDays };
 };
 
 // AFTER -- function parameter seam (enabling point: the argument list)
-type TaxResolver = (region: string) => number;
+type TransitDaysResolver = (region: string) => number;
 
-const processOrder = (
-  order: Order,
-  resolveTax: TaxResolver = fetchTaxRate,  // default = production behavior
-): OrderResult => {
-  const tax = resolveTax(order.region);
-  return { ...order, total: order.subtotal * (1 + tax) };
+const scheduleDelivery = (
+  delivery: Delivery,
+  resolveTransitDays: TransitDaysResolver = fetchTransitDays,  // default = production behavior
+): DeliveryPlan => {
+  const transitDays = resolveTransitDays(delivery.region);
+  return { ...delivery, totalDays: delivery.preparationDays + transitDays };
 };
 
 // Test -- pass a fake at the seam
-const result = processOrder(order, () => 0.08);
-expect(result.total).toBe(108);
+const delivery = { ...testDelivery, preparationDays: 3 };
+const result = scheduleDelivery(delivery, () => 2);
+expect(result.totalDays).toBe(5);
 ```
 
 **Key insight:** In functional TypeScript, functions-as-values provide natural built-in seams everywhere. Every function parameter that accepts a callable is both a seam and its own enabling point -- no mocking framework required.
@@ -849,7 +861,7 @@ expect(result.total).toBe(108);
 **What's inside (main skill + 2 deep-dive resources):**
 - **Core concept** -- "A characterisation test characterizes the actual behavior of a piece of code. There's no 'it should do this' -- the tests document what the system really does."
 - **The 5-step algorithm** -- use code in test harness, write assertion you know will fail, let failure tell you the behavior, change test to expect actual behavior, repeat
-- **Feathers' heuristics** -- use coverage as guide, production behavior IS the specification, focus on the change area, mark suspicious behavior
+- **Feathers' heuristics** -- use coverage as a guide; treat deployed behavior as compatibility evidence, not correctness authority; focus on the change area and mark suspicious behavior
 - **When to stop** -- cover every branch your change touches + one layer out; validate the accumulated change later at the end-of-phase mutation gate
 - **Bug handling** -- if system is deployed, someone may depend on the "bug"; document it, mark as suspicious, escalate
 - **Preservation-strength validation** -- use mutator rules cheaply while characterising, then run mutation testing once at PR readiness where meaningful; otherwise record explicit `N/A` plus proportionate alternate evidence
@@ -881,7 +893,7 @@ it('characterises formatPrice', () => {
 
 **What's inside (1 core skill + 9 reference files + 17 steering commands):**
 
-A comprehensive frontend design vocabulary and quality system from [Paul Bakaus](https://impeccable.style/skills/), replacing the original `frontend-design` skill with a much deeper methodology. These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE). Full documentation at [impeccable.style/skills](https://impeccable.style/skills/).
+A comprehensive frontend design vocabulary and quality system from [Paul Bakaus](https://impeccable.style/skills/), replacing the original `frontend-design` skill with a much deeper methodology. The installer selects the declared skill names from reviewed commit [`5d10bc8`](https://github.com/pbakaus/impeccable/tree/5d10bc842cbccd2ae7d3a88296d87d3be0b125b3). Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/5d10bc842cbccd2ae7d3a88296d87d3be0b125b3/LICENSE). Full documentation at [impeccable.style/skills](https://impeccable.style/skills/).
 
 #### Getting Started: Design Context
 
@@ -1026,11 +1038,11 @@ Use steering commands (`/typeset`, `/colorize`, `/layout`, `/animate`, etc.) at 
 
 - **Reference Library** - 9 deep-dive reference files loaded on-demand when relevant. These contain specific CSS examples, technique catalogs, and decision frameworks for typography (OpenType, font loading, modular scales), color (OKLCH, tinted neutrals, dark mode), spatial design (4pt grid, container queries), motion (easing curves, staggering, reduced motion), interactions (8 states, focus rings, popovers), responsive design (input method detection, safe areas), and UX writing (error formulas, translation planning).
 
-**Attribution:** [impeccable](https://impeccable.style/skills/) by Paul Bakaus ([GitHub](https://github.com/pbakaus/impeccable)), licensed under Apache 2.0. Based on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution.
+**Attribution:** [impeccable](https://impeccable.style/skills/) by Paul Bakaus ([GitHub](https://github.com/pbakaus/impeccable/tree/5d10bc842cbccd2ae7d3a88296d87d3be0b125b3)), licensed under Apache 2.0. Based on Anthropic's original frontend-design skill. See the pinned [NOTICE](https://github.com/pbakaus/impeccable/blob/5d10bc842cbccd2ae7d3a88296d87d3be0b125b3/NOTICE.md) for full attribution.
 
 ---
 
-### 🔥 Grill Me → [skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me)
+### 🔥 Grill Me (optional external) → [skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me)
 
 **Problem it solves:** Plans and designs that sound plausible but need ruthless pre-implementation questioning before they become expensive to change
 
@@ -1049,7 +1061,7 @@ Example prompt:
 Use grill-me on this checkout refactor plan before I start implementation.
 ```
 
-Use `find-gaps` when you want confirmed answers written back into a plan, acceptance criteria, or mock spec. Use `grill-me` when you want a sharper interview that pressure-tests the plan first.
+Use `find-gaps` when you want confirmed answers written back into an existing plan, acceptance criteria, or mock spec. When `grill-me` is not installed, use the first-party `specification` skill's one-question protocol.
 
 ---
 
@@ -1070,7 +1082,8 @@ Unlike typical style guides, these skills provide:
 
 ### Schema-First Decision Framework Example
 
-One of the most valuable additions - a 5-question framework for when schemas ARE vs AREN'T required:
+One of the most valuable additions is a boundary framework for when runtime
+schemas are required:
 
 ```typescript
 // ✅ Schema REQUIRED - Trust boundary (API response)
@@ -1082,11 +1095,10 @@ type Point = { readonly x: number; readonly y: number };
 ```
 
 Ask yourself:
-1. Does data cross a trust boundary? → Schema required
-2. Does type have validation rules? → Schema required
-3. Is this a shared data contract? → Schema required
-4. Used in test factories? → Schema required
-5. Pure internal type? → Type is fine
+1. Does untrusted data cross a runtime boundary? → Validate with a schema
+2. Is it exchanged between independently deployed systems? → Validate at ingress/egress
+3. Does a production schema already fit a contract-shaped fixture? → Reuse it when useful
+4. Is it a trusted internal invariant? → A type, smart constructor, or domain value may be enough
 
 ---
 
@@ -1104,8 +1116,9 @@ Ten specialized sub-agents that run in isolated context windows to enforce CLAUD
 - ✅ Behavior tests were written before new or changed production behavior
 - ✅ Preservation-only work has a passing proportionate baseline rather than fabricated RED
 - ✅ Tests verify behavior (not implementation)
-- ✅ All code paths have test coverage
-- ✅ Tests use public APIs only
+- ✅ Changed and high-risk behavior has the repository-required coverage or proportionate alternate evidence
+- ✅ Tests use the public interface at the layer named by each claim
+- ✅ TDD chronology is reported as indeterminate unless a failing-run receipt exists
 - ❌ Flags implementation-focused tests
 - ❌ Catches missing edge case tests
 
@@ -1128,16 +1141,17 @@ Claude Code: [Launches tdd-guardian agent]
 **Use before commits** or **when adding new types/schemas**.
 
 **What it checks:**
-- ❌ `any` types (must use `unknown` or specific types)
+- ❌ Unexplained or leaking `any`; narrow unavoidable interop is allowed
 - ❌ Type assertions without justification
-- ❌ `interface` for data structures (use `type`)
-- ✅ Schema-first development (schemas before types at trust boundaries)
-- ✅ Immutable data patterns
-- ✅ Options objects over positional parameters
+- ✅ Repository convention and language semantics for `type`/`interface`
+- ✅ Runtime schemas at untrusted boundaries
+- ✅ Declared immutability contracts
+- ✅ Options objects where positional arguments are ambiguous
 
 **Includes the nuanced schema-first framework:**
-- Schema required: Trust boundaries, validation rules, contracts, test factories
-- Schema optional: Internal types, utilities, state machines, behavior contracts
+- Schema required: Untrusted runtime boundaries and independently deployed contracts
+- Schema reused when useful: Existing production contracts exercised by tests
+- Schema optional: Trusted internal invariants, utilities, state machines, and behavior contracts
 
 **Example invocation:**
 ```
@@ -1189,13 +1203,11 @@ Claude Code: [Launches refactor-scan agent]
 **Use proactively** when creating documentation or **reactively** to review and improve existing docs.
 
 **What it ensures:**
-- ✅ Value-first approach (why before how)
-- ✅ Scannable structure (visual hierarchy, clear headings)
-- ✅ Progressive disclosure (quick start before deep dive)
-- ✅ Problem-oriented navigation (organized by user problems)
-- ✅ Concrete examples showing value (not just descriptions)
-- ✅ Cross-references and multiple entry points
-- ✅ Actionable next steps in every section
+- ✅ A clear page job, audience, owner, and current authority
+- ✅ The lightest structure that serves that document type
+- ✅ Material capability, current-state, command, code, and link claims are checked
+- ✅ Lasting facts are routed to their durable owner
+- ✅ Navigation, examples, cross-references, and next steps only where useful
 
 **What it checks:**
 - ❌ Wall of text without visual breaks
@@ -1214,22 +1226,21 @@ Claude Code: [Launches docs-guardian agent]
 ```
 
 **Output:**
-- Assessment against 7 pillars of world-class documentation
+- Assessment against the canonical `technical-writing` guidance and page job
 - Critical issues (must fix) vs nice-to-haves
 - Specific improvement recommendations with examples
-- Proposed restructuring for better discoverability
-- Templates for common documentation types (README, guides, API docs)
+- The smallest useful edit or restructuring for the owned document
 
 ---
 
-### 5. `learn` - CLAUDE.md Learning Integrator
+### 5. `learn` - Durable Learning Router
 
 **Use proactively** when discovering gotchas, or **reactively** after completing complex features.
 
-**What it captures:**
+**What it routes:**
 - Gotchas or unexpected behavior discovered
 - "Aha!" moments or breakthroughs
-- Architectural decisions being made
+- Accepted architectural decisions and their trade-offs
 - Patterns that worked particularly well
 - Anti-patterns encountered
 - Tooling or setup knowledge gained
@@ -1241,10 +1252,11 @@ Claude Code: [Launches learn agent]
 ```
 
 **Output:**
-- Asks discovery questions about what you learned
-- Reads current CLAUDE.md to check for duplicates
-- Proposes formatted additions to CLAUDE.md
-- Provides rationale for placement and structure
+- Evidence, scope, and recurrence risk for the learning
+- The existing owner or smallest appropriate destination
+- An update to source/tests, a glossary, decision mechanism, maintained docs,
+  active plan, or repository policy when writing is authorized
+- `CLAUDE.md` only when it is the declared owner of local working policy
 
 ---
 
@@ -1253,25 +1265,26 @@ Claude Code: [Launches learn agent]
 **Use proactively** when starting significant vertical-slice work, or **reactively** to track progress through plan slices.
 
 **What it manages:**
-- Tracks progress through vertical slices in plan files (`plans/<name>.md`)
+- Tracks progress through vertical slices in the repository's plan owner (`plans/<name>.md` only as the fallback)
 - Enforces small increments, TDD, and **commit approval**
 - Never modifies plans without explicit user approval
-- At end: orchestrates learning merge, then **deletes the plan file**
+- At end: orchestrates learning routing, then follows the plan owner's close/archive/delete lifecycle; deletion is only the fallback temporary-file lifecycle and still requires normal authority
 
 **Example invocation:**
 ```
 You: "I need to implement OAuth with JWT tokens and refresh logic"
-Claude Code: [Launches progress-guardian to create plans/oauth.md]
+Claude Code: [Launches progress-guardian to update the repository plan owner]
 
 You: "Tests are passing now"
 Claude Code: [Launches progress-guardian to update plan and ask for commit approval]
 ```
 
 **Output:**
-- Plan file in `plans/` with approved slices and acceptance criteria
-- At end: learnings merged into CLAUDE.md/ADRs, plan file deleted
+- Repository-owned plan artifact with approved slices and acceptance criteria
+- At end: durable facts routed to their owners, then the temporary plan closed or deleted
 
-**Key distinction:** Plan files are TEMPORARY (deleted when done). Learnings merged into permanent knowledge base first.
+**Key distinction:** Plan files are temporary. Move lasting truth to its actual
+owner before closing the plan; Git preserves plan history.
 
 **Related skill:** Load `planning` skill for detailed incremental work principles.
 
@@ -1294,7 +1307,7 @@ Claude Code: [Launches progress-guardian to update plan and ask for commit appro
 - ✅ Foundational choices affecting future architecture
 - ❌ Trivial implementation choices
 - ❌ Temporary workarounds
-- ❌ Standard patterns already in CLAUDE.md
+- ❌ Practices already owned by canonical skills or repository policy
 
 **Example invocation:**
 ```
@@ -1306,13 +1319,15 @@ Claude Code: [Launches adr agent to document the rationale]
 ```
 
 **Output:**
-- Structured ADR in `docs/adr/` with context and alternatives
+- Accepted record in the repository's declared decision mechanism, using
+  `docs/adr/` only as a fallback when an ADR was requested and no owner exists
 - Honest assessment of pros/cons and trade-offs
 - Clear rationale for decision
 - Consequences (positive, negative, neutral)
 - Updated ADR index
 
-**Key distinction:** Documents WHY architecture chosen (permanent), vs learn agent's HOW to work with it (gotchas, patterns).
+**Key distinction:** ADRs record accepted architectural choices and their
+trade-offs; `learn` routes operational knowledge to whatever source owns it.
 
 ---
 
@@ -1326,10 +1341,10 @@ Claude Code: [Launches adr agent to document the rationale]
 
 | Category | What It Validates |
 |----------|------------------|
-| **Change-Path Compliance** | Exactly one of behavior change, pure refactor, reduction transition, or terminal reduction, with mutation-or-`N/A` evidence and truthful gates |
-| **Testing Quality** | Behavior-focused tests, factory patterns, no `let`/`beforeEach` |
-| **TypeScript Strictness** | No `any` types, proper type usage, schema-first at boundaries |
-| **Functional Patterns** | No mutation, pure functions, early returns, no comments |
+| **Change-Path Compliance** | Every changed path classified by all applicable types—behavior, refactor, reduction, docs, dependency, generated, configuration, CI, operations—with the evidence and truthful gates that type owns |
+| **Testing Quality** | Behavior-focused tests, isolated state, and fixtures or factories where useful |
+| **TypeScript Strictness** | Strict baseline, justified interop escapes, and runtime schemas at trust boundaries |
+| **Functional Patterns** | Intentional immutability and pure logic where they reduce coupling |
 | **General Quality** | Clean code, no debug statements, security, appropriate scope |
 
 **Example invocation:**
@@ -1377,11 +1392,13 @@ Claude Code: [Launches use-case-data-patterns agent]
 ```
 
 **Output:**
-- Comprehensive analytical report mapping use cases to data patterns
-- Database interactions and architectural decisions
-- Missing pieces for feature implementation
+- Evidence-labelled trace from actor trigger to observable result
+- Exact owners and locations for policy, domain logic, data, effects, and failure handling
+- Only material correctness, authorization, integrity, concurrency, delivery, recovery, or operability gaps
 
-> **Attribution**: Adapted from [Kieran O'Hara's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md).
+The current agent is an original rewrite. Its
+[source notes](claude/.claude/agents/references/use-case-data-patterns-source-notes.md)
+disclose an earlier unlicensed copy and the unresolved published-history issue.
 
 ---
 
@@ -1395,16 +1412,16 @@ Claude Code: [Launches use-case-data-patterns agent]
 |--------|---------------|
 | **I. Codebase** | Single repo, multiple deploys |
 | **II. Dependencies** | Explicit declaration, lockfile committed |
-| **III. Config** | Env vars, centralized validation, no hardcoded secrets |
-| **IV. Backing Services** | Connections via config URLs |
-| **V. Build/Release/Run** | Dockerfile, CI pipeline separation |
-| **VI. Processes** | No in-memory state, stateless |
-| **VII. Port Binding** | Self-contained, port from config |
-| **VIII. Concurrency** | Separate process types (web/worker) |
-| **IX. Disposability** | Graceful shutdown, drain timeout, health checks |
-| **X. Dev/Prod Parity** | Same backing services everywhere |
-| **XI. Logs** | Structured stdout, no file transports |
-| **XII. Admin Processes** | Scripts in repo, shared config |
+| **III. Config** | External runtime injection, centralized validation, no hardcoded secrets |
+| **IV. Backing Services** | Injected platform resource bindings (URLs are one common form) |
+| **V. Build/Release/Run** | Distinct build, release configuration, and run stages in the declared platform workflow |
+| **VI. Processes** | Disposable execution with durable state externalized where the workload requires it |
+| **VII. Port Binding** | Self-contained service binding or the platform's equivalent handler contract |
+| **VIII. Concurrency** | Scale through the platform's applicable process, function, job, or worker units |
+| **IX. Disposability** | Fast start and bounded graceful shutdown; probes and draining only where the platform owns them |
+| **X. Dev/Prod Parity** | Minimized time, personnel, tooling, and backing-service contract differences |
+| **XI. Logs** | Structured platform-captured process streams, no file transports |
+| **XII. Admin Processes** | One-off processes run from the same release with the same injected config |
 
 **Example invocation:**
 ```
@@ -1430,7 +1447,7 @@ Five slash commands that encode common workflows into single invocations:
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
-| **`/setup`** | One-shot project onboarding — detect tech stack, create CLAUDE.md, hooks, commands, and PR reviewer | Starting work on a new project (replaces `/init`) |
+| **`/setup`** | Authorized project onboarding — detect tech stack, create project guidance, hooks, commands, and PR reviewer | Only when the user explicitly requests onboarding/config generation |
 | **`/pr`** | Create a pull request following standards | When ready to submit work |
 | **`/plan`** | Create a plan document on a branch with a PR — no code changes | When planning work before implementation |
 | **`/continue`** | Continue after a merged independent PR or advance/sync a stack | Moving to the next slice or dependent layer |
@@ -1438,24 +1455,25 @@ Five slash commands that encode common workflows into single invocations:
 
 ### Recommended Flow
 
-This is the full lifecycle for working on a feature, from project setup through to completion. Commands and agents are shown in the order you'd use them.
+This is the delivery lifecycle for a feature. Project setup is a separate,
+one-time action used only when explicitly requested.
 
-#### Phase 1: Project Setup (once per project)
+#### Optional Project Setup (once per project, with explicit authorization)
 
 ```
 /setup  →  Detects tech stack, creates .claude/CLAUDE.md, hooks, commands, PR reviewer
 ```
 
-**Why first:** `/setup` replaces Claude Code's built-in `/init`. It analyses your project (TypeScript config, CI pipeline, DDD patterns, test runner) and generates project-level configuration so that every subsequent command and agent has the right context. Run this once when you start working on a new project — it creates:
+**When explicitly onboarding:** `/setup` replaces Claude Code's built-in `/init`. With authorization to create project configuration, it analyses the TypeScript config, CI pipeline, DDD patterns, and test runner, then creates:
 - `.claude/CLAUDE.md` with exact build/test/lint/typecheck commands
 - `.claude/settings.json` with PostToolUse hooks (auto-typecheck after file edits)
 - `.claude/commands/pr.md` with project-specific quality gates
 - `.claude/agents/pr-reviewer.md` with project-specific review rules
 
-#### Phase 2: Plan the Work (before writing any code)
+#### Phase 1: Plan the Work (before writing any code)
 
 ```
-/plan  →  Creates a plan in plans/ on a branch with a PR — no code, just the plan
+/plan  →  Uses the repository's plan owner; falls back to plans/ + a plan-only PR when none is declared
 ```
 
 **Why before code:** Planning in a separate phase prevents the most common friction point — Claude jumping straight to implementation before the approach is agreed. The plan becomes a PR you can review and approve before any code is written. Each slice defaults to one trunk-based PR; `stack-pull-requests` may add review layers inside one slice or link hard-/flow-lineage vertical slices when work should proceed before lower reviews merge.
@@ -1498,12 +1516,14 @@ Stack              →  /continue adds a dependent layer or slice from the curre
 #### Phase 6: Capture Knowledge (throughout and at the end)
 
 ```
-learn agent       →  Captures gotchas and patterns into CLAUDE.md
+learn agent       →  Routes durable learnings to their actual owners
 adr agent         →  Documents significant architectural decisions
 docs-guardian     →  Updates user-facing documentation
 ```
 
-**Why at the end:** Learnings are best captured when you have full context on what mattered and what didn't. Use the `learn` agent for CLAUDE.md updates and the `adr` agent for architectural decisions.
+**Why at the end:** Use `learn` to route durable facts to their actual owners,
+`adr` for accepted architectural decisions, and `docs-guardian` only for
+maintained pages affected by the change.
 
 #### One-Time Setup (optional)
 
@@ -1530,7 +1550,11 @@ docs-guardian     →  Updates user-facing documentation
 
 ### How the Workflow Works (Regardless of Installation Method)
 
-Once installed, the full development lifecycle is: `/setup` → `/plan` → single-PR or stack delivery → fast RED-GREEN-REFACTOR or preservation increments → end-of-boundary evidence gate in `/pr` → `/continue` → repeat. See the [Recommended Flow](#recommended-flow) in the Slash Commands section for the detailed walkthrough with rationale for each phase.
+Once installed, the normal delivery lifecycle is: `/plan` → single-PR or stack
+delivery → fast RED-GREEN-REFACTOR or preservation increments → end-of-boundary
+evidence gate in `/pr` → `/continue` → repeat. `/setup` is separate and runs
+only for explicitly authorized project onboarding. See the
+[Recommended Flow](#recommended-flow) for details.
 
 **Agent invocation examples:**
 
@@ -1553,28 +1577,23 @@ Agents are invoked implicitly (Claude detects when to use them) or explicitly:
 - ✅ No per-project configuration needed
 - ✅ Skills install via [skills.sh](https://skills.sh) — works with Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, and 40+ other agents
 - ✅ Modular structure loads details on-demand
-- ✅ Easy updates: `npx skills update -g` for skills, `git pull` for the rest
+- ✅ Explicit maintenance: inspect with `npx skills@1.5.22 list -g`; back up and verify destination ownership before any reviewed replacement, and use `git pull` for the rest
 
-**One-liner installation:**
+**Install from an inspected, immutable checkout:**
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
+git clone https://github.com/citypaul/.dotfiles.git citypaul-dotfiles
+cd citypaul-dotfiles
+INSTALLER_REF=$(git rev-parse HEAD)
+git switch --detach "$INSTALLER_REF"
+less install-claude.sh                    # inspect before execution
+./install-claude.sh --version "$INSTALLER_REF"
 ```
 
-**One-liner with options** (use `bash -s --` to pass arguments):
-```bash
-# Install with OpenCode support
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s -- --with-opencode
-
-# Install specific version
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s -- --version v2.0.0
-```
-
-**Or download and run:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh -o install-claude.sh
-chmod +x install-claude.sh
-./install-claude.sh
-```
+The checkout is downloaded but not executed until you inspect it. Capturing
+`HEAD` before execution pins first-party downloads and skill installation to
+that exact commit. Review source changes before choosing a newer commit; do not
+pipe a moving `main` script into a shell.
 
 **Install options:**
 ```bash
@@ -1589,28 +1608,36 @@ chmod +x install-claude.sh
 ./install-claude.sh --agent codex --agent cursor         # Also install skills for Codex and Cursor (repeatable)
 ./install-claude.sh --skills-only --no-claude-code \     # Install skills ONLY for a non-Claude agent
                     --agent codex
-./install-claude.sh --version v2.0.0                     # Version for CLAUDE.md/commands/agents (skills always latest)
+./install-claude.sh --version <reviewed-tag-or-commit>   # Pin first-party artifacts; moving refs are rejected
 ```
 
 <a id="targeting-other-agents"></a>**Targeting other agents:**
 
-Skills.sh supports 40+ coding agents (Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, …). Use `--agent <name>` (repeatable) to add extra targets alongside the default `claude-code`. Use `--no-claude-code` with `--agent` to target only non-Claude agents. After install, `npx skills list -g` shows which skills each agent can see.
+Skills.sh supports 40+ coding agents (Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, …). Use `--agent <name>` (repeatable) to add extra targets alongside the default `claude-code`. Use `--no-claude-code` with `--agent` to target only non-Claude agents. After install, `npx skills@1.5.22 list -g` shows which skills each agent can see.
 
 The skills CLI installs the **complete skill directory**, not just `SKILL.md`. Companion files such as `agents/openai.yaml`, `references/`, `scripts/`, and `assets/` therefore travel with the skill. For `structure-codebase`, Codex receives its interface metadata at `agents/openai.yaml` without a separate installation step.
 
-The destination depends on the selected agents:
+This installer passes `--copy` to the pinned CLI explicitly. The destination
+depends on the selected agents:
 
-- **A universal agent only** (Codex, OpenCode, and others whose `skillsDir` is `.agents/skills`) gets a copy under `~/.agents/skills/<name>/`; that shared path is the agent's read path.
-- **A per-agent client only** (Claude Code, Cursor, …) gets a copy in its own skills directory, such as `~/.claude/skills/<name>/`.
-- **Universal and per-agent clients together** share one canonical copy under `~/.agents/skills/<name>/`; the per-agent directory is a symlink to it.
+- **A universal agent** (Codex, OpenCode, and others whose global target is `.agents/skills`) gets a copy under `~/.agents/skills/<name>/`; that shared path is the agent's read path.
+- **A per-agent client** (Claude Code, Continue, Windsurf, …) gets a copy in its own skills directory, such as `~/.claude/skills/<name>/`.
+- **Multiple selected targets** receive separate copies in their resolved
+  global directories; no hidden canonical directory is written for a
+  non-universal target.
 
 All three layouts expose the same complete bundle. Include `--agent codex` when Codex should discover and use the skill (the installer targets Claude Code only by default).
 
-**Migration from the old curl-based installer is automatic.** If `~/.claude/skills/` contains regular directories left behind by a previous install, the installer moves them to `~/.claude/skills.pre-skills-sh.<timestamp>/` before running `npx skills add`, so the CLI can create the correct copy/symlink layout for every selected agent. The move is non-destructive — the timestamped backup stays on disk until you remove it.
+**Existing skill directories are preserved.** The CLI lock does not record
+per-destination ownership, so a matching lock name cannot prove that a target
+copy is disposable. Before any skill install, the installer resolves every
+selected agent's pinned global target and stops if any target contains
+content. Back up and explicitly clear the target, or use a separately reviewed
+CLI update workflow.
 
 **What gets installed:**
 - ✅ `~/.claude/CLAUDE.md` (~160 lines - lean core principles)
-- ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) (`npx skills add`):
+- ✅ `~/.claude/skills/` — installed via [skills.sh](https://skills.sh) with `npx skills@1.5.22 add`; every source revision and selected skill name is explicit:
   - [citypaul/.dotfiles](https://skills.sh/citypaul/.dotfiles) — auto-discovered first-party patterns (tdd, testing, mutation-testing, typescript-strict, functional, refactoring, planning, story-splitting, stack-pull-requests, front-end-testing, react-testing, event-sourcing, and more)
   - [pbakaus/impeccable](https://skills.sh/pbakaus/impeccable) — frontend design vocabulary + 17 steering commands
   - [addyosmani/web-quality-skills](https://skills.sh/addyosmani/web-quality-skills) — accessibility, performance, SEO, core-web-vitals, best-practices, web-quality-audit
@@ -1621,35 +1648,40 @@ All three layouts expose the same complete bundle. Include `--agent codex` when 
 - ✅ `~/.claude/commands/` (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)
 - ✅ `~/.claude/agents/` (10 specialized workflow agents)
 
-**Managing skills after install:**
+**Inspecting skills after install:**
 ```bash
-npx skills list -g              # List installed skills
-npx skills update -g            # Update all skills to latest
-npx skills find <query>         # Discover more skills on skills.sh
-npx skills remove -g <name>     # Uninstall a skill
+npx skills@1.5.22 list -g              # List installed skills
+npx skills@1.5.22 find <query>         # Discover more skills on skills.sh
 ```
+
+The CLI's `update` and `remove` commands mutate destinations without this installer's ownership preflight. Do not run them as routine maintenance: first back up the exact targets, prove they are CLI-owned, and review the resolved source bytes. The conservative path is a clean, reviewed replacement. To update a pinned source, review its diff, change the exact commit in this repository, and run the installer tests before release.
 
 > **Requires Node.js** for skills install (so `npx` is available). Use `--claude-only` or `--agents-only` if you don't have Node installed.
 
 <details>
 <summary><b>Why does the installer use skills.sh instead of <code>curl</code>ing skills directly?</b></summary>
 
-The installer used to `curl` every `SKILL.md` straight from this repo into `~/.claude/skills/`. It worked, but it was Claude-Code-only and the file list lived inside the installer. Switching skill installs to the [skills.sh](https://skills.sh) CLI (`npx skills add`) changes four things:
+The installer used to `curl` every `SKILL.md` straight from this repo into `~/.claude/skills/`. It worked, but it was Claude-Code-only and the file list lived inside the installer. Switching skill installs to the pinned [skills.sh](https://skills.sh) CLI changes four things:
 
 1. **Multi-agent portability.** The same skills are now installable against [40+ coding agents](https://github.com/vercel-labs/skills) — Claude Code, Cursor, Codex, GitHub Copilot, OpenCode, Gemini CLI, Cline, Continue, Windsurf, and more — via the `-a <agent>` flag. Using these skills from a non-Claude tool no longer requires a Claude-specific copy step. `--with-opencode` is now just an extra `-a opencode` on the existing install instead of a second duplicated tree.
 
-2. **Lifecycle commands.** `npx skills list -g`, `update -g`, and `remove -g <name>` manage skills after install. Previously the only way to "update" was to re-run the whole installer and overwrite everything. `npx skills find <query>` also surfaces skills beyond this repo from the open ecosystem (Vercel's `agent-skills`, community authors, etc.).
+2. **Inspection and discovery commands.** `npx skills@1.5.22 list -g` records what the shared lock knows, and `find <query>` surfaces skills beyond this repo. Mutating `update`/`remove` commands bypass this installer's destination-ownership preflight, so they require an explicit backup, ownership check, and source review rather than being advertised as safe routine lifecycle operations.
 
-3. **One source of truth on disk.** Skills live once at `~/.agents/skills/<name>` (the universal cache); Claude Code gets a symlink into `~/.claude/skills/<name>`; Codex and other "universal" agents read the cache directly. A single `npx skills update -g` propagates everywhere a skill is wired up.
+3. **Explicit target copies.** The installer passes `--copy`, so installation
+   writes only the selected agents' resolved global targets. The shared lock
+   records source metadata but does not prove ownership of any destination.
 
-4. **Installer doesn't grow with the skill list.** Three `curl` loops with hard-coded file lists (including every `resources/*.md` and `references/*.md`) collapsed to a small set of `npx skills add` calls. Adding a new skill to `claude/.claude/skills/` no longer requires a matching installer edit — the CLI discovers it.
+4. **Installer doesn't grow with the skill list.** Three `curl` loops with hard-coded file lists (including every `resources/*.md` and `references/*.md`) collapsed to a small set of pinned CLI calls. Adding a new skill to `claude/.claude/skills/` no longer requires a matching installer edit — the CLI discovers it.
 
-5. **Auto-migration from the old curl installer.** Before running `npx skills add`, the installer looks for regular directories under `~/.claude/skills/` (the shape the old curl installer wrote) and moves them to `~/.claude/skills.pre-skills-sh.<timestamp>/`. Without this step the CLI would treat the stale dirs as Claude-Code-specific installs and keep them invisible to non-Claude agents. A verification pass after install warns if anything still ended up as a regular directory.
+5. **Safe destination preflight.** Before invoking the installer, setup checks
+   every selected agent target and refuses to overwrite existing content.
+   Custom, stale-lock, and prior-install directories remain untouched until
+   the user explicitly backs up and resolves them.
 
 **Trade-offs:**
 - Requires Node.js for `npx`. `--claude-only` and `--agents-only` still work without it.
-- The skills CLI doesn't expose ref pinning yet, so skills always install from the latest upstream commit. `--version` still pins `CLAUDE.md`, commands, and agents.
-- Skills used to ship at the same `v3.x` tag as everything else in this repo; now they roll independently. Use `npx skills list -g --json` if you want to snapshot what's installed.
+- The executable CLI is pinned to [`skills@1.5.22`](https://github.com/vercel-labs/skills/tree/v1.5.22). Every repository source uses the CLI's `#<git-ref>` syntax, and every selected skill name is declared before installation; source changes require an explicit pin update and re-audit. `--version` pins first-party skills, `CLAUDE.md`, commands, and agents to the same reviewed release/commit.
+- Skills used to ship at the same `v3.x` tag as everything else in this repo; now they roll independently. Use `npx skills@1.5.22 list -g --json` if you want to snapshot what's installed.
 
 `CLAUDE.md`, slash commands, and Claude-Code agents are still `curl`ed directly from this repo — they aren't skills and aren't part of the skills.sh ecosystem.
 
@@ -1705,65 +1737,35 @@ OpenCode doesn't automatically read `~/.claude/` files. It uses different discov
 | Component | Claude Code | OpenCode | Integration |
 |-----------|------------|----------|-------------|
 | Instructions | `~/.claude/CLAUDE.md` | `~/.config/opencode/AGENTS.md` | `opencode.json` instructions field |
-| Skills | `~/.claude/skills/` | `~/.config/opencode/skills/` | OpenCode reads `~/.claude/skills/` natively |
-| Commands | `~/.claude/commands/` | `~/.config/opencode/command/` (singular) | Copied with frontmatter converted |
-| Agents | `~/.claude/agents/` | `~/.config/opencode/agent/` (singular) | Copied with frontmatter converted |
+| Skills | `~/.claude/skills/` | Native compatibility discovery | Loaded on demand; never injected globally through `instructions` |
+| Commands | Pinned repository manifest | `~/.config/opencode/command/` (singular) | Declared files copied with frontmatter converted |
+| Agents | Pinned repository manifest | `~/.config/opencode/agent/` (singular) | Declared files copied with frontmatter converted |
 
-The installer copies commands and agents into OpenCode's directories, stripping Claude Code-specific frontmatter fields (`allowed-tools`, `tools`, `color`) that use incompatible formats between the two tools.
+The installer projects only its declared command and agent manifests from the pinned repository source. It strips incompatible Claude Code frontmatter fields and backs up every pre-existing OpenCode destination before replacement; it never enumerates unrelated local `~/.claude` files. OpenCode discovers skills and projected agents through their native mechanisms rather than injecting every definition into each session.
 
 **Installation:**
 
 ```bash
-# One-liner with OpenCode support
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s -- --with-opencode
+# From the inspected detached checkout in Option 1
+INSTALLER_REF=$(git rev-parse HEAD)
+./install-claude.sh --version "$INSTALLER_REF" --with-opencode
 
-# Or download and run with options
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh -o install-claude.sh
-chmod +x install-claude.sh
-./install-claude.sh --with-opencode
-
-# Install OpenCode config only (if you already have CLAUDE.md installed)
-curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash -s -- --opencode-only
+# OpenCode config only (if CLAUDE.md is already installed)
+./install-claude.sh --version "$INSTALLER_REF" --opencode-only
 ```
 
 **What gets installed:**
-- `~/.config/opencode/opencode.json` - Configuration that enables built-in LSP servers, including TypeScript for projects with a TypeScript dependency, and loads:
-  - `~/.claude/CLAUDE.md` (core principles)
-  - `~/.claude/skills/*/SKILL.md` (all skill patterns)
-  - `~/.claude/agents/*.md` (agent instructions)
-- `~/.config/opencode/command/` - Slash commands from `~/.claude/commands/` (frontmatter converted)
-- `~/.config/opencode/agent/` - Agents from `~/.claude/agents/` (frontmatter converted)
+- `~/.config/opencode/opencode.json` - Configuration that enables built-in LSP servers, including TypeScript for projects with a TypeScript dependency, and loads only `~/.claude/CLAUDE.md` as global instructions
+- Skills remain available through OpenCode's native on-demand compatibility discovery; projected agents remain named agent definitions rather than global instructions
+- `~/.config/opencode/command/` - Declared slash-command manifest from the pinned source (frontmatter converted)
+- `~/.config/opencode/agent/` - Declared agent manifest from the pinned source (frontmatter converted)
 
 **Manual Installation:**
 
-If you prefer to set it up manually:
-
-```bash
-mkdir -p ~/.config/opencode/command ~/.config/opencode/agent
-
-# OpenCode configuration
-cat > ~/.config/opencode/opencode.json << 'EOF'
-{
-  "$schema": "https://opencode.ai/config.json",
-  "lsp": true,
-  "instructions": [
-    "~/.claude/CLAUDE.md",
-    "~/.claude/skills/*/SKILL.md",
-    "~/.claude/agents/*.md"
-  ]
-}
-EOF
-
-# Copy commands, stripping Claude Code-specific 'allowed-tools' field
-for cmd in ~/.claude/commands/*.md; do
-  sed '/^allowed-tools:/d' "$cmd" > ~/.config/opencode/command/"$(basename "$cmd")"
-done
-
-# Copy agents, stripping Claude Code-specific 'tools' and 'color' fields
-for agent in ~/.claude/agents/*.md; do
-  sed '/^tools:/d; /^color:/d' "$agent" > ~/.config/opencode/agent/"$(basename "$agent")"
-done
-```
+Use the inspected pinned installer above. Do not replace it with a glob-based
+copy: the explicit manifest, transformation, and per-destination backup are one
+reviewed operation and prevent unrelated local files from being projected or
+existing OpenCode files from being silently overwritten.
 
 **Learn more:**
 - [OpenCode Documentation](https://opencode.ai/docs/)
@@ -1785,34 +1787,11 @@ done
 For full enforcement in a specific project, install both CLAUDE.md and the agents:
 
 ```bash
-# In your project root
-mkdir -p .claude/agents
-
-# Download CLAUDE.md
-curl -o .claude/CLAUDE.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/CLAUDE.md
-
-# Download all agents
-curl -o .claude/agents/tdd-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/tdd-guardian.md
-curl -o .claude/agents/ts-enforcer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/ts-enforcer.md
-curl -o .claude/agents/refactor-scan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/refactor-scan.md
-curl -o .claude/agents/docs-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/docs-guardian.md
-curl -o .claude/agents/learn.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/learn.md
-curl -o .claude/agents/progress-guardian.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/progress-guardian.md
-curl -o .claude/agents/adr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/adr.md
-curl -o .claude/agents/pr-reviewer.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/pr-reviewer.md
-curl -o .claude/agents/use-case-data-patterns.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/use-case-data-patterns.md
-curl -o .claude/agents/twelve-factor-audit.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/twelve-factor-audit.md
-
-# Download agents README
-curl -o .claude/agents/README.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/agents/README.md
-
-# Download commands
-mkdir -p .claude/commands
-curl -o .claude/commands/setup.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/setup.md
-curl -o .claude/commands/pr.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/pr.md
-curl -o .claude/commands/plan.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/plan.md
-curl -o .claude/commands/continue.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/continue.md
-curl -o .claude/commands/generate-pr-review.md https://raw.githubusercontent.com/citypaul/.dotfiles/main/claude/.claude/commands/generate-pr-review.md
+# From the inspected detached checkout in Option 1, while in your project root
+mkdir -p .claude/agents .claude/commands
+cp /path/to/citypaul-dotfiles/claude/.claude/CLAUDE.md .claude/
+cp /path/to/citypaul-dotfiles/claude/.claude/agents/*.md .claude/agents/
+cp /path/to/citypaul-dotfiles/claude/.claude/commands/*.md .claude/commands/
 ```
 
 ---
@@ -1829,7 +1808,7 @@ curl -o .claude/commands/generate-pr-review.md https://raw.githubusercontent.com
 - ⚠️ **Tradeoff:** Larger file vs v2.0.0's modular structure (156 lines + separate docs)
 - ⚠️ **Tradeoff:** Uses v1.0.0 structure (content identical to v2.0.0, just organized differently)
 
-**Important:** This downloads the v1.0.0 monolithic version. v3.0.0 no longer has @import issues - CLAUDE.md is fully self-contained with skills loaded on-demand. For project-level use, v3.0.0 is now recommended.
+**Important:** This downloads the historical v1.0.0 monolithic version. The current package (4.9.0) uses the v3 architecture generation: a self-contained core with skills loaded on demand. For project-level use, prefer an inspected current release or commit rather than the obsolete v3.0.0 tag.
 
 Download the complete single-file version:
 
@@ -1863,11 +1842,11 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 
 ---
 
-### Version Note: v1.0.0 vs v2.0.0 vs v3.0.0
+### Architecture generations
 
-**Current version (v3.0.0):** Skills-based architecture with lean CLAUDE.md (~160 lines) + auto-discovered skills + 5 slash commands + planning workflow
+**Current package release (v4.9.0):** Uses the v3 skills-based architecture with lean CLAUDE.md (~160 lines), auto-discovered skills, slash commands, and planning workflow.
 
-**Previous version (v2.0.0):** Modular structure with main file (156 lines) + 6 detailed docs loaded via @imports (~3000+ lines total)
+The labels below describe historical architecture generations, not the current package version:
 
 **Legacy version (v1.0.0):** Single monolithic file (1,818 lines, all-in-one)
 
@@ -1877,18 +1856,21 @@ This gives you the complete guidelines (1,818 lines) in a single standalone file
 | **v2.0.0** | @docs/ imports | ~3000 lines always | Full docs always loaded |
 | **v1.0.0** | Single file | ~1800 lines always | Standalone, no dependencies |
 
-- **v3.0.0 (current):** https://github.com/citypaul/.dotfiles/tree/main/claude/.claude
+- **v3 architecture (current source browser; not an installer pin):** [claude/.claude](claude/.claude)
 - **v2.0.0 modular docs:** https://github.com/citypaul/.dotfiles/tree/v2.0.0/claude/.claude
 - **v1.0.0 single file:** https://github.com/citypaul/.dotfiles/blob/v1.0.0/claude/.claude/CLAUDE.md
 
-The installer pulls `CLAUDE.md`, slash commands, and Claude-Code agents from the `main` branch by default — pass `--version v2.0.0` or `--version v1.0.0` to pin those to an older tag. Skills always install from the latest upstream commit via skills.sh, independent of this flag.
+The installer derives an exact commit from an inspected checkout, or requires an
+explicit reviewed release/commit with `--version`. It rejects moving refs and
+uses exact source revisions plus declared skill names; review and test every pin
+change before release.
 
 ---
 
 ## 📚 Documentation
 
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~160 lines)
-- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 17 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and `herdr` from [herdrdev/herdr](https://skills.sh/herdrdev/herdr) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
+- **[Skills](claude/.claude/skills/)** - Auto-discovered patterns from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 3 from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills), 18 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), optional `grill-me` from [mattpocock/skills](https://skills.sh/mattpocock/skills/grill-me), `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and `herdr` from [herdrdev/herdr](https://skills.sh/herdrdev/herdr) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /pr, /plan, /continue, /generate-pr-review)
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (10 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, pr-reviewer, use-case-data-patterns, twelve-factor-audit)
@@ -1917,7 +1899,8 @@ This system is based on several key insights:
 
 4. **Semantic beats structural** - Abstract based on meaning (business concepts), not appearance (code structure).
 
-5. **Document while fresh** - Capture learnings immediately, not during retrospectives when context is lost.
+5. **Route learning while fresh** - Capture evidence while context is available,
+   then put durable knowledge with the source that can keep it true.
 
 6. **Explicit "no refactoring"** - Saying "code is already clean" prevents the feeling that the refactor step was skipped.
 
@@ -1925,14 +1908,17 @@ This system is based on several key insights:
 
 ## 🔄 Continuous Improvement
 
-CLAUDE.md and the agents evolve based on real usage. The `learn` agent ensures valuable insights are captured and integrated:
+The guidance and its owning sources evolve from real usage. The `learn` agent
+routes valuable evidence instead of building a parallel knowledge dump:
 
-- Gotchas discovered → Documented in CLAUDE.md
-- Patterns that work → Added to examples
-- Anti-patterns encountered → Added to warnings
-- Architectural decisions → Preserved with rationale
+- Behavioral constraints → Source and executable tests
+- Domain terms → The bounded-context glossary
+- Reusable practices → Canonical global skills
+- Local working policy → Repository guidance such as CLAUDE.md when it owns it
+- Accepted architectural decisions → The repository's decision mechanism
 
-This creates a **self-improving system** where each project session makes future sessions more effective.
+This keeps each fact with one accountable owner while preserving useful
+learning from completed work.
 
 ---
 
@@ -2110,9 +2096,9 @@ This repository uses [GNU Stow](https://www.gnu.org/software/stow/) for dotfile 
 
 Feel free to browse the repository and cherry-pick what's useful:
 
-- **[git/.gitconfig](git/.gitconfig)** - Git aliases and configuration
-- **[bash/.bashrc](bash/.bashrc)** - Bash shell configuration
-- **[vim/.vimrc](vim/.vimrc)** - Vim editor setup
+- **[zsh/.zshrc](zsh/.zshrc)** - Zsh shell configuration
+- **[tmux/.tmux.conf](tmux/.tmux.conf)** - tmux configuration
+- **[alacritty/.alacritty.toml](alacritty/.alacritty.toml)** - Alacritty terminal configuration
 
 **Note:** These are my personal preferences. Review before installing - you may want to customize them for your workflow.
 
@@ -2146,25 +2132,31 @@ Special thanks to contributors who have shared their work:
 
 - **[Matt Pocock](https://github.com/mattpocock)** and **[John Ousterhout](https://web.stanford.edu/~ouster/cgi-bin/book.php)** - The local `codebase-design` and `improve-codebase-architecture` skills are adapted from Matt's MIT-licensed original [`codebase-design/SKILL.md`](https://github.com/mattpocock/skills/blob/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/codebase-design/SKILL.md), [`DEEPENING.md`](https://github.com/mattpocock/skills/blob/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/codebase-design/DEEPENING.md), [`DESIGN-IT-TWICE.md`](https://github.com/mattpocock/skills/blob/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/codebase-design/DESIGN-IT-TWICE.md), [`improve-codebase-architecture/SKILL.md`](https://github.com/mattpocock/skills/blob/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/improve-codebase-architecture/SKILL.md), and [`HTML-REPORT.md`](https://github.com/mattpocock/skills/blob/66898f60e8c744e269f8ce06c2b2b99ce7660d5f/skills/engineering/improve-codebase-architecture/HTML-REPORT.md) at pinned commit `66898f60`. Ousterhout's deep-module, information-hiding, complexity, and Design It Twice concepts provide the design foundation. Per-skill source notes and complete MIT notices preserve the detailed attribution chain and local departures.
 
-- **[Adam Bulmer](https://github.com/mintuz)** - `reduce-system-complexity` is an attributed adaptation of Adam's MIT-licensed [`reducer/SKILL.md`](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/plugins/core/skills/reducer/SKILL.md) and companion [`agents/openai.yaml`](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/plugins/core/skills/reducer/agents/openai.yaml) at pinned commit `d698a88f`. It retains the conservation ledger, whole-mechanism baseline, first-principles minimum, and dual evidence gates while documenting the rename, narrowed trigger, qualitative ranking, migration safeguards, and local testing/architecture integration. The original [MIT license](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/LICENSE) is preserved beside the adaptation. This repository also vendors Adam's [`wtf/SKILL.md`](https://github.com/mintuz/skills/blob/e436942ef328e692567300dba51424c68850ab12/src/core/skills/wtf/SKILL.md) unchanged at pinned commit `e436942e`, with local Codex invocation metadata and the original MIT licence.
+- **[Adam Bulmer](https://github.com/mintuz)** - `reduce-system-complexity` is an attributed adaptation of Adam's MIT-licensed [`reducer/SKILL.md`](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/plugins/core/skills/reducer/SKILL.md) and companion [`agents/openai.yaml`](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/plugins/core/skills/reducer/agents/openai.yaml) at pinned commit `d698a88f`. It retains the conservation ledger, whole-mechanism baseline, first-principles minimum, and dual evidence gates while documenting the rename, narrowed trigger, qualitative ranking, migration safeguards, and local testing/architecture integration. The original [MIT license](https://github.com/mintuz/skills/blob/d698a88fc1e4d054a25e5919f15658f673f602cb/LICENSE) is preserved beside the adaptation. This repository also adapts Adam's [`wtf/SKILL.md`](https://github.com/mintuz/skills/blob/e436942ef328e692567300dba51424c68850ab12/src/core/skills/wtf/SKILL.md) at pinned commit `e436942e`, adding repository-owned glossary lookup while preserving the original MIT licence and source notes.
+
+  `acceptance-review` also adapts Adam's MIT-licensed [criterion review workflow](https://github.com/mintuz/skills/tree/976d4a0ccda4fc8468ffd2e96e0c6f7db5f42324/src/core/skills/acceptance-review) at pinned commit `976d4a0c`, removing its unavailable sibling dependency and adding explicit authority and indeterminate-evidence handling.
 
 - **[Michael Feathers](https://michaelfeathers.silvrback.com/)** - The `finding-seams` and `characterisation-tests` skills are adapted from *[Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/)* (2004). Feathers' concepts of seams, enabling points, and characterization tests are foundational techniques for making untestable code testable. The skills adapt his C++/Java examples to modern TypeScript/JavaScript patterns.
 
-- **[Addy Osmani](https://github.com/addyosmani)** - The web quality skills (accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit) are sourced from [Addy's web-quality-skills repository](https://github.com/addyosmani/web-quality-skills). These skills are fetched directly from the upstream repository at install time so you always get the latest version. Licensed under the [MIT License](https://github.com/addyosmani/web-quality-skills/blob/main/LICENSE). The `api-design` skill is adapted from [Addy's agent-skills repository](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md), modified to align with existing skill conventions.
+- **[Addy Osmani](https://github.com/addyosmani)** - The web quality skills (accessibility, best-practices, core-web-vitals, performance, seo, web-quality-audit) install from reviewed commit [`95d6e25`](https://github.com/addyosmani/web-quality-skills/tree/95d6e255afe1596b557d7a8498517884438f5b3a), under its [MIT License](https://github.com/addyosmani/web-quality-skills/blob/95d6e255afe1596b557d7a8498517884438f5b3a/LICENSE). The `api-design` skill is adapted from Addy's MIT-licensed [`api-and-interface-design` skill](https://github.com/addyosmani/agent-skills/blob/7676817c12a1317454ae3898a0c5c1eacf5dd3d5/skills/api-and-interface-design/SKILL.md). Local history records no original upstream import revision, so `7676817c12a1317454ae3898a0c5c1eacf5dd3d5` is documented only as an immutable audit baseline; detailed source notes, local departures, and the upstream notice live beside the skill.
 
-- **[Corey Haines](https://github.com/coreyhaines31)** - The `seo-audit` skill is sourced from [Corey's marketingskills repository](https://github.com/coreyhaines31/marketingskills/tree/main/skills/seo-audit). It is fetched directly from upstream at install time via skills.sh, including its references, so users get the latest version. Licensed under the [MIT License](https://github.com/coreyhaines31/marketingskills/blob/main/LICENSE).
+- **[Corey Haines](https://github.com/coreyhaines31)** - The `seo-audit` skill and its references install from reviewed commit [`7868cb9`](https://github.com/coreyhaines31/marketingskills/tree/7868cb9251fad80a73d26e488a5ad5f6c4a9f335/skills/seo-audit). Licensed under the pinned [MIT License](https://github.com/coreyhaines31/marketingskills/blob/7868cb9251fad80a73d26e488a5ad5f6c4a9f335/LICENSE).
 
-- **[Vercel Labs](https://github.com/vercel-labs)** - The Next.js skills (`next-best-practices`, `next-cache-components`, and `next-upgrade`) are sourced from [vercel-labs/next-skills](https://skills.sh/vercel-labs/next-skills). They are fetched directly from upstream at install time via skills.sh so users get the latest Next.js guidance.
+- **[Vercel Labs](https://github.com/vercel-labs)** - The Next.js skills (`next-best-practices`, `next-cache-components`, and `next-upgrade`) install from reviewed commit [`b76d687`](https://github.com/vercel-labs/next-skills/tree/b76d687cf3e026eac3b1032f610f06b47a56377c).
 
-- **[Kieran O'Hara](https://github.com/kieran-ohara)** - The `use-case-data-patterns` agent is adapted from [Kieran's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md). Thank you for creating and sharing this excellent agent specification.
+- **Historical `use-case-data-patterns` provenance:** an earlier revision copied
+  [Kieran O'Hara's agent at `f735349`](https://github.com/kieran-ohara/dotfiles/blob/f7353498be9a2a846faae10dbdb771dfd2af6c7e/config/claude/agents/analyse-use-case-to-data-patterns.md),
+  whose repository did not declare a redistribution licence. The current agent
+  is an original rewrite. Exact evidence and the unresolved older-release
+  permission gap are recorded in its pinned source notes.
 
-- **[Andrea Laforgia](https://github.com/andlaf-ak)** - The `test-design-reviewer` skill is adapted from [Andrea's claude-code-agents repository](https://github.com/andlaf-ak/claude-code-agents/blob/main/test-design-reviewer.md). Thank you for creating and sharing this comprehensive test design review framework based on Dave Farley's testing principles.
+- **Historical `test-design-reviewer` provenance:** an earlier version copied [Andrea Laforgia's file at `278e367`](https://github.com/andrealaforgia/claude-code-agents/blob/278e367057bbe4a57255870e0a30b9d0a6eabc59/test-design-reviewer.md), whose repository did not declare a redistribution license. The current skill is a fresh rewrite around Dave Farley's public test properties. Exact evidence and the unresolved older-release permission gap are recorded in the skill's pinned source notes.
 
 - **[@dm](https://github.com/dm)** - Idea credit for the `production-parity-skill-builder` skill, inspired by the need to keep local, CI, PR, preview, and staging environments aligned with production-only restrictions such as identity-provider group membership.
 
 - **[Tim Ottinger](https://agileotter.blogspot.com/)** - The `story-splitting` skill is based on Tim's [Splitting Stories - A Resource Listicle](https://agileotter.blogspot.com/2022/03/splitting-stories-resource-list.html) and synthesizes the linked work from Tim Ottinger, Bill Wake, Joshua Kerievsky, Gojko Adzic, Neil Killick, George Dinwiddie, Mike Cohn, Richard Lawrence, Peter Green, J. B. Rainsberger, Rachel Davies, and others. Source-by-source provenance is preserved in the skill's `resources/source-notes.md`.
 
-- **[Paul Bakaus](https://github.com/pbakaus)** - The impeccable design skills (core skill + 17 steering commands: shape, critique, audit, polish, harden, typeset, colorize, animate, layout, clarify, adapt, bolder, quieter, distill, delight, optimize, overdrive) are sourced from [impeccable.style](https://impeccable.style/skills/). These skills are fetched directly from the upstream repository at install time. Licensed under the [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/main/LICENSE). Impeccable builds on Anthropic's original frontend-design skill. See the [NOTICE](https://github.com/pbakaus/impeccable/blob/main/NOTICE.md) for full attribution chain.
+- **[Paul Bakaus](https://github.com/pbakaus)** - The impeccable design skills (core skill + 17 steering commands: shape, critique, audit, polish, harden, typeset, colorize, animate, layout, clarify, adapt, bolder, quieter, distill, delight, optimize, overdrive) install from reviewed commit [`5d10bc8`](https://github.com/pbakaus/impeccable/tree/5d10bc842cbccd2ae7d3a88296d87d3be0b125b3). Licensed under its pinned [Apache 2.0 License](https://github.com/pbakaus/impeccable/blob/5d10bc842cbccd2ae7d3a88296d87d3be0b125b3/LICENSE). Impeccable builds on Anthropic's original frontend-design skill; see the pinned [NOTICE](https://github.com/pbakaus/impeccable/blob/5d10bc842cbccd2ae7d3a88296d87d3be0b125b3/NOTICE.md).
 
 ---
 

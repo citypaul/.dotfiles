@@ -1,6 +1,6 @@
 ---
 name: api-design
-description: Stable consumer-facing API and interface design patterns. Use when designing REST endpoints, reusable component prop interfaces, cross-team boundaries, or any externally consumed or versioned contract. Covers contract-first development, error semantics (RFC 9457), REST conventions, pagination, idempotency, rate limiting, and backward compatibility. For an in-process feature or module's coherent responsibility and interface depth, use codebase-design. For TypeScript type patterns and trust-boundary validation, see typescript-strict.
+description: Stable consumer-facing API and interface design patterns. Use when designing REST endpoints, cross-team boundaries, or any externally consumed or versioned service contract. Covers contract-first development, error semantics (RFC 9457), REST conventions, pagination, idempotency, rate limiting, and backward compatibility. For an in-process feature or module's coherent responsibility and interface depth, use codebase-design. For TypeScript type patterns and trust-boundary validation, see typescript-strict.
 ---
 
 # API and Interface Design
@@ -9,7 +9,7 @@ Use this skill for consumer compatibility and protocol semantics. For an in-proc
 
 For TypeScript type patterns (branded types, discriminated unions, schema-first), see the `typescript-strict` skill. For immutability patterns, see the `functional` skill. For testing API behavior, see the `testing` skill. For OAuth 2.0 or OpenID Connect, load the `secure-oauth-oidc` skill rather than treating authentication as an ordinary API-key decision. For browser-facing BFF entry points — public/protected access classification, session cookies, CSRF/Origin/Fetch Metadata policy, protected SSE/WebSocket registration, and endpoint-protection enforcement — load the `bff-entry-points` skill; error shape and REST semantics stay here. For the BFF pattern itself (adoption, granularity, aggregation, upstream identity), load `bff-design` — a single-consumer BFF deployed in lockstep with its frontend legitimately relaxes the versioning discipline this skill mandates for externally consumed contracts.
 
-**Deep-dive resources** are in the `resources/` directory. Load them on demand:
+**Supporting resources** are in the `resources/` directory. Load them on demand:
 
 | Resource | Load when... |
 |----------|-------------|
@@ -18,12 +18,12 @@ For TypeScript type patterns (branded types, discriminated unions, schema-first)
 | `api-security.md` | Securing the API boundary |
 | `auth-security.md` | JWT BCP security and routing to the dedicated OAuth/OIDC skill |
 | `http-fundamentals.md` | HTTP protocol fundamentals — caching directives, content negotiation, browser security, status codes, header design |
+| `source-notes.md` | Reviewing provenance, the immutable audit baseline, license scope, and local departures |
 
 ## When to Use
 
 - Designing new API endpoints
 - Defining contracts between teams or independently released consumers
-- Creating reusable consumer-facing component prop interfaces
 - Changing existing public interfaces
 - Establishing database schema that informs API shape
 
@@ -90,7 +90,9 @@ Pick one error strategy and use it everywhere. Don't mix patterns where some end
 
 ### Choosing an Error Format
 
-**The non-negotiable:** Pick one error shape and use it for every endpoint. Consistency matters more than which format you choose.
+Within one versioned API contract, use one documented error shape unless a
+protocol-specific endpoint requires another. Consistency matters more than
+which compatible format you choose.
 
 **For public APIs with external consumers**, use RFC 9457 (Problem Details). It's the industry standard, machine-readable, and what third-party developers expect. Use `application/problem+json` as the Content-Type.
 
@@ -127,12 +129,18 @@ See `resources/problem-details.md` for full member semantics, single-error and v
 | 404 | Not Found | Resource doesn't exist |
 | 409 | Conflict | Duplicate, version mismatch |
 | 422 | Unprocessable Content | Validation failed (semantically invalid) |
-| 429 | Too Many Requests | Rate limit exceeded (include `Retry-After` header) |
+| 429 | Too Many Requests | Rate limit exceeded; include `Retry-After` when a meaningful retry time is known |
 | 500 | Internal Server Error | Server error (never expose internal details) |
 
 ### Validation at API Boundaries
 
-Validate where external input enters your system. Trust internal code after validation. See the `typescript-strict` skill for schema-first patterns.
+Validate untrusted representation and endpoint-schema input where it enters the
+system, then pass the derived type through internal code. This does not replace
+domain smart constructors or transition checks: invariant enforcement remains
+with the model that owns the value. See `typescript-strict` and
+`domain-driven-design`.
+
+Return 400 when the representation itself cannot be parsed (for example malformed JSON). Once parsing succeeds, return 422 when the value fails the endpoint schema or business validation. Pick and document a different house mapping only when every example, error translator, and consumer uses it consistently.
 
 ```typescript
 app.post('/api/tasks', async (req, res) => {
@@ -162,8 +170,8 @@ Network failures happen. Clients retry. Without idempotency, retries create dupl
 
 | Method | Safe | Idempotent | Notes |
 |--------|------|------------|-------|
-| GET | Yes | Yes | No side effects |
-| PUT | No | Yes | Same request = same result |
+| GET | Yes | Yes | Read-only requested semantics; incidental logging/metrics are allowed |
+| PUT | No | Yes | Same request has the same intended effect; response status/body may differ |
 | DELETE | No | Yes | Deleting twice = same outcome |
 | POST | No | **No** | Needs explicit idempotency handling |
 | PATCH | No | Not guaranteed | Depends on implementation |
@@ -174,31 +182,53 @@ For non-idempotent operations (especially those involving money, orders, or stat
 
 ```typescript
 app.post('/api/payments', async (req, res) => {
-  const idempotencyKey = req.headers['idempotency-key'];
+  const rawIdempotencyKey = req.headers['idempotency-key'];
+  const idempotencyKey =
+    typeof rawIdempotencyKey === 'string' &&
+    /^[\x21-\x7e]{1,128}$/.test(rawIdempotencyKey)
+      ? rawIdempotencyKey
+      : undefined;
   if (!idempotencyKey) {
     return res.status(400).json({
-      type: 'https://api.example.com/problems/missing-idempotency-key',
-      title: 'Missing Idempotency Key',
+      type: 'https://api.example.com/problems/invalid-idempotency-key',
+      title: 'Invalid Idempotency Key',
       status: 400,
-      detail: 'POST /api/payments requires an Idempotency-Key header',
+      detail: 'POST /api/payments requires one visible-ASCII Idempotency-Key of at most 128 characters',
     });
-  }
-
-  const cached = await idempotencyStore.get(idempotencyKey);
-  if (cached) {
-    return res.status(cached.status).json(cached.body);
   }
 
   const result = CreatePaymentSchema.safeParse(req.body);
   if (!result.success) {
-    return res.status(400).json(toValidationProblem(result.error));
+    return res.status(422).json(toValidationProblem(result.error));
   }
 
-  const payment = await paymentService.create(result.data);
-  await idempotencyStore.set(idempotencyKey, {
-    status: 201,
-    body: payment,
+  const scope = req.user.id;
+  const fingerprint = stableHash(result.data);
+  const claim = await idempotencyStore.claim({
+    scope,
+    key: idempotencyKey,
+    fingerprint,
   });
+
+  if (claim.status === 'parameters-mismatch') {
+    return res.status(409).json(toProblem('IDEMPOTENCY_PARAMETERS_MISMATCH'));
+  }
+  if (claim.status === 'completed') {
+    return res.status(claim.response.status).json(claim.response.body);
+  }
+  if (claim.status === 'in-progress') {
+    res.setHeader('Retry-After', '1');
+    return res.status(409).json(toProblem('IDEMPOTENCY_REQUEST_IN_PROGRESS'));
+  }
+
+  // createOnce durably owns operationId + fingerprint beyond response-cache
+  // expiry. For an external provider it also persists/reuses the provider's
+  // payment/intent ID, so recovery never depends on a time-limited request key.
+  const payment = await paymentService.createOnce({
+    operationId: claim.operationId,
+    input: result.data,
+  });
+  await idempotencyStore.complete(claim.id, { status: 201, body: payment });
 
   return res.status(201).json(payment);
 });
@@ -206,25 +236,40 @@ app.post('/api/payments', async (req, res) => {
 
 Design principles:
 - Keys should be scoped to the API key / authenticated user
-- Keys should expire (24 hours is typical)
+- Choose response-cache and claim retention from the documented maximum client
+  retry/reconciliation window and effect risk; 24 hours is not a universal rule
+- Keep a durable operation identity (and fingerprint or tombstone) after cached
+  response eviction, or return an explicit expired/unknown outcome until
+  non-duplication can be established — never silently treat a risky reused key
+  as a fresh operation
 - If parameters differ on retry with the same key, return an error
+- Claim a key atomically; a separate read-then-create sequence is race-prone
+- Coordinate the business effect with the claim through one transaction or a durable downstream operation ID
+- For external payments, persist and reconcile the provider payment/intent ID;
+  bound any request-idempotency-key retry to the provider's documented retention
+- Represent in-progress claims explicitly and define retry/recovery for a worker that fails after claiming
 - Design for "at-least-once" delivery — assume every request might be sent multiple times
 
 ### Making DELETE Idempotent
 
-DELETE should succeed even if the resource is already gone:
+DELETE must have an idempotent effect: repeating it does not delete anything
+else or create a second side effect. The repeated response may remain `204`,
+or it may be `404` when absence is meaningful to clients. Choose and document
+one contract:
 
 ```typescript
 app.delete('/api/tasks/:id', async (req, res) => {
   const deleted = await taskService.delete(req.params.id);
-  // Return 204 whether the resource existed or was already deleted
+  // This API deliberately treats already-absent as success.
   return res.status(204).send();
 });
 ```
 
 ## Rate Limiting
 
-Communicate limits clearly via headers on **every** response — not just 429s.
+When an API exposes a quota policy, communicate the applicable policy and
+remaining state consistently on responses where that information is useful
+to clients. Do not invent quota headers for endpoints without such a policy.
 
 ### Standard Headers (IETF draft — not yet an RFC)
 
@@ -237,7 +282,9 @@ RateLimit: "hour";r=742;t=60             # Current state: 742 remaining, resets 
 
 Earlier drafts used a triplet — `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` — and many shipped APIs still use that triplet or the unstandardized `X-RateLimit-*` family. Expect any of these when consuming APIs. For new APIs, prefer the current draft fields; whichever names you choose, document them — header names are part of your contract, and the draft may still change before becoming an RFC.
 
-On 429 responses, always include `Retry-After` (a stable, standard HTTP header):
+On 429 responses, include `Retry-After` when the server can give a meaningful
+retry time. It is a stable, standard HTTP header, but HTTP permits a 429
+response without it:
 
 ```
 HTTP/1.1 429 Too Many Requests
@@ -302,7 +349,9 @@ Use PATCH for partial updates (only provided fields change). Use PUT only when t
 
 ### Pagination
 
-Always paginate list endpoints:
+Paginate list endpoints whose result can grow beyond a bounded, safe response.
+Small closed enumerations may return the complete set when that bound is part
+of the contract:
 
 ```typescript
 // Request
@@ -355,13 +404,13 @@ type Task = {
 | Rationalization | Reality |
 |---|---|
 | "We'll document the API later" | The types ARE the documentation. Define them first. |
-| "We don't need pagination for now" | You will the moment someone has 100+ items. Add it from the start. |
+| "We don't need a bound for this growing list" | Define pagination or another documented safe bound before the result can grow beyond one response. Closed, contractually bounded lists do not need ceremonial pagination. |
 | "PATCH is complicated, let's just use PUT" | PUT requires the full object every time. PATCH is what clients actually want. |
 | "We'll version the API when we need to" | Breaking changes without versioning break consumers. Design for extension from the start. |
 | "Nobody uses that undocumented behavior" | Hyrum's Law: if it's observable, somebody depends on it. |
 | "Internal APIs don't need contracts" | Internal consumers are still consumers. Contracts prevent coupling and enable parallel work. |
 | "Retries are the client's problem" | Without idempotency, retries create duplicates. Design for at-least-once delivery. |
-| "We'll add rate limiting later" | By then, clients have built around unlimited access. Rate limits are part of the contract. |
+| "We'll add an abuse control after this expensive public operation is attacked" | Protect unauthenticated, costly, or abuse-prone operations from the start. Publish quota headers only when a client-visible quota is actually part of the contract. |
 | "Error messages are just for debugging" | Errors are part of your API's developer experience. Make them actionable, not diagnostic. |
 
 ## Red Flags
@@ -370,30 +419,34 @@ type Task = {
 - Inconsistent error formats across endpoints
 - Error responses that expose stack traces or internal paths
 - Breaking changes to existing fields (type changes, removals)
-- List endpoints without pagination
+- Potentially unbounded list endpoints without pagination or another explicit bound
 - Verbs in REST URLs (`/api/createTask`, `/api/getUsers`)
 - Third-party API responses used without validation
 - No typed input/output schemas for endpoints
-- POST endpoints without idempotency handling for state-changing operations
-- No rate limit headers on responses
+- Retriable POST operations where duplicate attempts can repeat a state-changing effect and no idempotency strategy is defined
+- Documented quota policies whose responses do not expose enough state for clients to behave correctly
 - Retry logic without exponential backoff
-- Missing browser security headers on API responses (`X-Content-Type-Options`, CSP, `Referrer-Policy`)
+- Browser-served responses missing the entry point's applicable security headers
 - Custom `X-` prefixed headers (deprecated by RFC 6648)
 
 ## Verification
 
 After designing an API:
 
-- [ ] Every endpoint has typed input and output schemas
+- [ ] Every endpoint has a typed output contract and typed input where input exists
 - [ ] Error responses follow a single consistent format (RFC 9457 for public APIs, or a simpler consistent shape for internal APIs)
 - [ ] Error responses never leak implementation details (stack traces, internal paths)
-- [ ] Validation happens at system boundaries only
-- [ ] List endpoints support pagination
+- [ ] Untrusted representation/schema validation happens at trust boundaries; domain invariants remain enforced by their owner
+- [ ] Growing list endpoints have pagination or another documented safe bound
 - [ ] New fields are additive and optional (backward compatible)
 - [ ] Naming follows consistent conventions across all endpoints
 - [ ] Contract defined before implementation (contract-first)
-- [ ] POST endpoints that create resources or change state have idempotency handling
-- [ ] Rate limit headers included on responses
+- [ ] Retriable POST operations define how duplicate attempts avoid repeated effects
+- [ ] APIs with documented quota policies expose the client-visible limit state consistently
 - [ ] Content-Type is `application/problem+json` for RFC 9457 responses, `application/json` for simpler formats
-- [ ] Browser security headers on all responses (`X-Content-Type-Options: nosniff`, `CSP: default-src 'none'`, `Referrer-Policy: no-referrer`)
+- [ ] Browser-facing entry points apply security headers suited to the served content and deployment policy
 - [ ] Caching strategy defined (explicit `Cache-Control`, ETags for revalidation, `Vary` where needed)
+
+## Attribution
+
+This skill adapts Addy Osmani's MIT-licensed `api-and-interface-design` skill. Local history records the adaptation but not the original upstream import revision. See `resources/source-notes.md` for the immutable audit baseline (which is not an import-revision claim), retained ideas, and local departures; see `LICENSE` for the applicable upstream notice.

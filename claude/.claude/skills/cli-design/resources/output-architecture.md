@@ -53,35 +53,89 @@ const domainError = (fields: {
 });
 ```
 
-The `transient` boolean is critical for retry logic -- it tells callers whether the failure might resolve on its own.
+The `transient` boolean classifies whether the cause might clear. It is not retry
+authorization: map to exit 75 only before dispatch or when the operation is
+documented and demonstrably retry-safe or idempotent.
 
 ---
 
 ## 2. CLI Entry Point
 
-The entry point wires everything together: parse args, detect format, call handler, format the result, write to stdout, set exit code. No business logic lives here.
+The entry point wires everything together: parse args, detect format, call the handler, format the result, write success to stdout or failure to stderr, and set the exit code. No business logic lives here.
+
+All presentation adapters use one write helper. Awaiting the write callback
+serializes chunks at the destination's pace, while the temporary error listener
+turns `EPIPE` into an explicit outcome instead of an unhandled exception:
+
+```typescript
+// lib/streams.ts
+
+type WriteOutcome = 'written' | 'epipe';
+
+const writeOutput = (
+  stream: NodeJS.WritableStream,
+  data: string,
+): Promise<WriteOutcome> =>
+  new Promise((resolve, reject) => {
+    let settled = false;
+
+    const finish = (error?: NodeJS.ErrnoException): void => {
+      if (settled) return;
+      settled = true;
+      if (error?.code === 'EPIPE') resolve('epipe');
+      else if (error) reject(error);
+      else resolve('written');
+    };
+
+    const onError = (error: NodeJS.ErrnoException): void => {
+      stream.off('error', onError);
+      finish(error);
+    };
+
+    stream.once('error', onError);
+    stream.write(data, (error) => {
+      if (error) {
+        // Node emits the paired 'error' event after this callback; keep the
+        // listener installed so that event cannot become unhandled.
+        finish(error as NodeJS.ErrnoException);
+        return;
+      }
+      stream.off('error', onError);
+      finish();
+    });
+  });
+```
 
 ```typescript
 // cli.ts
 
 import { parseArgs } from 'node:util';
 import { detectOutputConfig } from './lib/tty.js';
+import { writeOutput } from './lib/streams.js';
 import { createStderrLogger, createNoOpLogger } from './lib/logger.js';
-import { createJsonFormatter, createTextFormatter } from './formatters/index.js';
+import {
+  createJsonFormatter,
+  createNdjsonFormatter,
+  createPlainFormatter,
+  createTextFormatter,
+} from './formatters/index.js';
+import { createAnalyzer } from './lib/analyzer.js';
 import { handleAnalyze } from './handlers/analyze.js';
+import { streamAnalysis } from './handlers/stream-analysis.js';
 
 type CliDeps = {
   readonly argv: readonly string[];
   readonly env: Record<string, string | undefined>;
   readonly stdout: NodeJS.WritableStream;
   readonly stderr: NodeJS.WritableStream;
+  readonly stdinIsTTY: boolean;
   readonly stdoutIsTTY: boolean;
   readonly stderrIsTTY: boolean;
 };
 
-const run = async (deps: CliDeps): Promise<number> => {
-  const { values, positionals } = parseArgs({
-    args: deps.argv.slice(2),
+const parseCliArgs = (argv: readonly string[]) =>
+  parseArgs({
+    args: argv.slice(2),
     options: {
       json: { type: 'boolean', default: false },
       plain: { type: 'boolean', default: false },
@@ -94,6 +148,62 @@ const run = async (deps: CliDeps): Promise<number> => {
     strict: true,
   });
 
+const isParseArgsError = (
+  error: unknown,
+): error is Error & { readonly code: string } =>
+  error instanceof Error &&
+  'code' in error &&
+  typeof error.code === 'string' &&
+  error.code.startsWith('ERR_PARSE_ARGS_');
+
+const requestsStructuredOutput = (argv: readonly string[]): boolean => {
+  const args = argv.slice(2);
+  return args.some((arg, index) =>
+    arg === '--json' ||
+    arg === '--format=json' ||
+    arg === '--format=ndjson' ||
+    (arg === '--format' &&
+      (args[index + 1] === 'json' || args[index + 1] === 'ndjson')));
+};
+
+const writeBoundaryFailure = async (
+  deps: Pick<CliDeps, 'argv' | 'stderr'>,
+  error: DomainError,
+): Promise<void> => {
+  const formatter = requestsStructuredOutput(deps.argv)
+    ? createJsonFormatter()
+    : createTextFormatter({ color: false });
+  await writeOutput(deps.stderr, formatter.formatResult(err(error)));
+};
+
+const run = async (deps: CliDeps): Promise<number> => {
+  let parsed: ReturnType<typeof parseCliArgs>;
+  try {
+    parsed = parseCliArgs(deps.argv);
+  } catch (error) {
+    if (!isParseArgsError(error)) throw error;
+    await writeBoundaryFailure(deps, domainError({
+      code: 'INVALID_USAGE',
+      message: error.message,
+      fix: 'Run `mycli analyze --help`',
+    }));
+    return 2;
+  }
+
+  const { values, positionals } = parsed;
+
+  if (
+    values.format !== undefined &&
+    !['plain', 'json', 'ndjson'].includes(values.format)
+  ) {
+    await writeBoundaryFailure(deps, domainError({
+      code: 'INVALID_FORMAT',
+      message: `Unsupported output format: ${values.format}`,
+      fix: 'Use plain, json, or ndjson',
+    }));
+    return 2;
+  }
+
   const outputConfig = detectOutputConfig({
     flags: {
       json: values.json ?? false,
@@ -102,55 +212,112 @@ const run = async (deps: CliDeps): Promise<number> => {
       noColor: values['no-color'] ?? false,
     },
     env: deps.env,
+    stdinIsTTY: deps.stdinIsTTY,
     stdoutIsTTY: deps.stdoutIsTTY,
     stderrIsTTY: deps.stderrIsTTY,
   });
 
   const logger = values.debug
-    ? createStderrLogger({ stream: deps.stderr, categories: ['*'] })
+    ? createStderrLogger({
+        stream: deps.stderr,
+        levels: ['DEBUG', 'INFO', 'WARN'],
+        categories: ['*'],
+      })
     : values.verbose
-      ? createStderrLogger({ stream: deps.stderr, categories: ['info'] })
+      ? createStderrLogger({
+          stream: deps.stderr,
+          levels: ['INFO', 'WARN'],
+          categories: ['*'],
+        })
       : createNoOpLogger();
 
   const formatter = outputConfig.format === 'json'
     ? createJsonFormatter()
-    : createTextFormatter({ color: outputConfig.color });
+    : outputConfig.format === 'plain'
+      ? createPlainFormatter()
+      : createTextFormatter({ color: outputConfig.color });
 
-  const target = positionals[0];
-  if (!target) {
-    deps.stderr.write('Error: MISSING_TARGET — No target specified\n\nFix: mycli analyze <target>\n');
+  const [command, target, ...extraPositionals] = positionals;
+  if (command !== 'analyze' || !target || extraPositionals.length > 0) {
+    const failure = err(domainError({
+      code: 'INVALID_USAGE',
+      message: 'Expected exactly: mycli analyze <target>',
+      fix: 'mycli analyze <target>',
+    }));
+    const failureFormatter = outputConfig.format === 'ndjson'
+      ? createJsonFormatter()
+      : formatter;
+    await writeOutput(deps.stderr, failureFormatter.formatResult(failure));
     return 2;
   }
 
-  const result = await handleAnalyze({ target }, { logger });
+  const analyzer = createAnalyzer();
+  if (outputConfig.format === 'ndjson') {
+    return streamAnalysis(
+      { target },
+      {
+        logger,
+        analyzer,
+        stdout: deps.stdout,
+        stderr: deps.stderr,
+        ndjson: createNdjsonFormatter(),
+      },
+    );
+  }
 
-  deps.stdout.write(formatter.formatResult(result));
+  const result = await handleAnalyze({ target }, { logger, analyzer });
+
+  const rendered = formatter.formatResult(result);
+  const stream = result.ok ? deps.stdout : deps.stderr;
+  const outcome = await writeOutput(stream, rendered);
+  if (result.ok && outcome === 'epipe') return 141;
 
   return result.ok ? 0 : 1;
 };
 
 const main = async (): Promise<void> => {
-  const exitCode = await run({
+  const deps: CliDeps = {
     argv: process.argv,
     env: process.env,
     stdout: process.stdout,
     stderr: process.stderr,
+    stdinIsTTY: process.stdin.isTTY ?? false,
     stdoutIsTTY: process.stdout.isTTY ?? false,
     stderrIsTTY: process.stderr.isTTY ?? false,
-  });
-  process.exitCode = exitCode;
+  };
+
+  try {
+    process.exitCode = await run(deps);
+  } catch {
+    process.exitCode = 1;
+    try {
+      await writeBoundaryFailure(deps, domainError({
+        code: 'UNEXPECTED_FAILURE',
+        message: 'The command failed unexpectedly',
+        fix: 'Re-run with --debug and report the diagnostic',
+      }));
+    } catch {
+      // No safe output channel remains. Keep the non-zero process status.
+    }
+  }
 };
 
-main();
+void main();
 ```
 
 Key design decisions:
 
 - `run` takes all external dependencies as parameters -- fully testable without mocking globals
-- Handler returns data, entry point writes to stdout -- no intermediary output port needed
+- Handler returns data; the entry point writes primary data to stdout and error diagnostics to stderr
+- Awaited writes bound buffering; stdout `EPIPE` returns 141 while stderr `EPIPE` leaves the command's own failure code intact
 - `process.exitCode` instead of `process.exit()` -- allows pending I/O to flush
-- Argument validation happens before handler invocation -- exit code 2 for invalid usage
-- The handler never knows about JSON vs text -- the entry point picks the formatter
+- Parser and usage failures are rendered for the requested human/structured mode
+  and return code 2 before handler invocation
+- Text, plain, JSON, and streaming NDJSON are dispatched explicitly; unsupported
+  format values are rejected rather than silently falling through
+- The outer `main` boundary converts unexpected failures to a stable stderr error
+  and non-zero status
+- The handler never knows about text, plain, or JSON serialization
 
 ---
 
@@ -162,9 +329,9 @@ Structured diagnostics that route to stderr. Silent by default -- if no one conf
 // ports/logger.ts
 
 interface Logger {
-  readonly debug: (category: string, message: string) => void;
-  readonly info: (category: string, message: string) => void;
-  readonly warn: (category: string, message: string) => void;
+  readonly debug: (category: string, message: string) => Promise<void>;
+  readonly info: (category: string, message: string) => Promise<void>;
+  readonly warn: (category: string, message: string) => Promise<void>;
 }
 ```
 
@@ -175,8 +342,11 @@ The real implementation writes to stderr with timestamps and category prefixes:
 
 type LoggerConfig = {
   readonly stream: NodeJS.WritableStream;
+  readonly levels: readonly LogLevel[];
   readonly categories: readonly string[];
 };
+
+type LogLevel = 'DEBUG' | 'INFO' | 'WARN';
 
 const categoryMatches = (
   pattern: string,
@@ -191,10 +361,18 @@ const shouldLog = (
   categories.some((pattern) => categoryMatches(pattern, category));
 
 const createStderrLogger = (config: LoggerConfig): Logger => {
-  const log = (level: string, category: string, message: string): void => {
+  const log = async (
+    level: LogLevel,
+    category: string,
+    message: string,
+  ): Promise<void> => {
+    if (!config.levels.includes(level)) return;
     if (!shouldLog(config.categories, category)) return;
     const timestamp = new Date().toISOString();
-    config.stream.write(`${timestamp} [${level}] [${category}] ${message}\n`);
+    await writeOutput(
+      config.stream,
+      `${timestamp} [${level}] [${category}] ${message}\n`,
+    );
   };
 
   return {
@@ -205,9 +383,9 @@ const createStderrLogger = (config: LoggerConfig): Logger => {
 };
 
 const createNoOpLogger = (): Logger => ({
-  debug: () => {},
-  info: () => {},
-  warn: () => {},
+  debug: () => Promise.resolve(),
+  info: () => Promise.resolve(),
+  warn: () => Promise.resolve(),
 });
 ```
 
@@ -217,7 +395,7 @@ The no-op logger is not a mock -- it is a legitimate implementation used in prod
 
 ## 4. Example Handler
 
-A function that takes input, returns structured data. No I/O, no side effects, no knowledge of output format. The logger parameter is optional -- pass it when you need diagnostics.
+A function that takes input, returns structured data, and has no knowledge of output format. The injected logger is the only diagnostic side effect and may be a no-op.
 
 ```typescript
 // handlers/analyze.ts
@@ -239,13 +417,18 @@ type Issue = {
   readonly message: string;
 };
 
+interface Analyzer {
+  readonly discoverFiles: (target: string) => Promise<readonly string[]>;
+  readonly analyzeFile: (file: string) => readonly Issue[];
+}
+
 const handleAnalyze = async (
   input: AnalyzeInput,
-  ctx: { readonly logger: Logger },
+  ctx: { readonly logger: Logger; readonly analyzer: Analyzer },
 ): Promise<Result<AnalyzeOutput, DomainError>> => {
-  ctx.logger.debug('analyze', `starting analysis of ${input.target}`);
+  await ctx.logger.debug('analyze', `starting analysis of ${input.target}`);
 
-  const files = await discoverFiles(input.target);
+  const files = await ctx.analyzer.discoverFiles(input.target);
   if (files.length === 0) {
     return err(domainError({
       code: 'NO_FILES',
@@ -254,9 +437,9 @@ const handleAnalyze = async (
     }));
   }
 
-  ctx.logger.info('analyze', `found ${files.length} files`);
+  await ctx.logger.info('analyze', `found ${files.length} files`);
 
-  const issues = files.flatMap((file) => analyzeFile(file));
+  const issues = files.flatMap((file) => ctx.analyzer.analyzeFile(file));
 
   return ok({
     target: input.target,
@@ -333,6 +516,32 @@ const createTextFormatter = (config: TextFormatterConfig): ResultFormatter => {
 };
 ```
 
+### Plain Text
+
+Plain mode keeps one stable, unstyled record per line:
+
+```typescript
+// formatters/plain.ts
+
+const createPlainFormatter = (): ResultFormatter => ({
+  formatResult: (result) => {
+    if (!result.ok) {
+      const fix = result.error.fix ? `\t${result.error.fix}` : '';
+      return `${result.error.code}\t${result.error.message}${fix}\n`;
+    }
+
+    if (result.data.issues.length === 0) {
+      return `${result.data.target}\t0\n`;
+    }
+
+    return result.data.issues
+      .map((issue) =>
+        [issue.file, issue.line, issue.severity, issue.message].join('\t'))
+      .join('\n') + '\n';
+  },
+});
+```
+
 ### JSON
 
 ```typescript
@@ -355,6 +564,11 @@ const createJsonFormatter = (): ResultFormatter => ({
 ```
 
 JSON output is always a single line terminated by `\n`. The envelope shape is consistent -- `ok: true` with `data`, or `ok: false` with `error`. No additional fields leak through.
+
+The entry point writes successful envelopes to stdout and failed envelopes to
+stderr. `--json` changes serialization, not stream ownership: on failure stdout
+remains empty, diagnostics may precede the error on stderr, and the final non-empty
+stderr line is the JSON error envelope. Consumers parse that final line.
 
 ### NDJSON (Streaming)
 
@@ -383,32 +597,49 @@ Streaming usage in the adapter:
 ```typescript
 const streamAnalysis = async (
   input: AnalyzeInput,
-  ctx: { readonly logger: Logger; readonly output: NodeJS.WritableStream; readonly ndjson: ReturnType<typeof createNdjsonFormatter> },
+  ctx: {
+    readonly logger: Logger;
+    readonly analyzer: Analyzer;
+    readonly stdout: NodeJS.WritableStream;
+    readonly stderr: NodeJS.WritableStream;
+    readonly ndjson: ReturnType<typeof createNdjsonFormatter>;
+  },
 ): Promise<number> => {
-  const files = await discoverFiles(input.target);
+  const files = await ctx.analyzer.discoverFiles(input.target);
   if (files.length === 0) {
-    ctx.output.write(ctx.ndjson.formatError(domainError({
-      code: 'NO_FILES',
-      message: `No files found matching "${input.target}"`,
-    })));
+    await writeOutput(
+      ctx.stderr,
+      ctx.ndjson.formatError(domainError({
+        code: 'NO_FILES',
+        message: `No files found matching "${input.target}"`,
+      })),
+    );
     return 1;
   }
 
   let issueCount = 0;
   for (const file of files) {
-    const issues = analyzeFile(file);
+    const issues = ctx.analyzer.analyzeFile(file);
     issueCount += issues.length;
     for (const issue of issues) {
-      ctx.output.write(ctx.ndjson.formatRecord({ type: 'issue', data: issue }));
+      const outcome = await writeOutput(
+        ctx.stdout,
+        ctx.ndjson.formatRecord({ type: 'issue', data: issue }),
+      );
+      if (outcome === 'epipe') return 141;
     }
   }
 
-  ctx.output.write(ctx.ndjson.formatRecord({
-    type: 'summary',
-    data: { target: input.target, issueCount },
-  }));
+  const outcome = await writeOutput(
+    ctx.stdout,
+    ctx.ndjson.formatRecord({
+      type: 'summary',
+      data: { target: input.target, issueCount },
+    }),
+  );
+  if (outcome === 'epipe') return 141;
 
-  return issueCount > 0 ? 1 : 0;
+  return 0;
 };
 ```
 
@@ -435,6 +666,7 @@ type TtyInput = {
     readonly noColor: boolean;
   };
   readonly env: Record<string, string | undefined>;
+  readonly stdinIsTTY: boolean;
   readonly stdoutIsTTY: boolean;
   readonly stderrIsTTY: boolean;
 };
@@ -458,10 +690,16 @@ const resolveColor = (
   input: TtyInput,
   format: OutputConfig['format'],
 ): boolean => {
-  if (format === 'json' || format === 'ndjson') return false;
+  if (format === 'plain' || format === 'json' || format === 'ndjson') return false;
   if (input.flags.noColor) return false;
+
+  const forceColor = input.env['FORCE_COLOR'];
+  if (forceColor !== undefined) {
+    return ['', '1', '2', '3', 'true'].includes(forceColor);
+  }
+
   if (input.env['NO_COLOR'] !== undefined && input.env['NO_COLOR'] !== '') return false;
-  if (input.env['FORCE_COLOR'] !== undefined) return true;
+  if (input.env['NODE_DISABLE_COLORS'] !== undefined) return false;
   if (input.env['TERM'] === 'dumb') return false;
   if (!input.stdoutIsTTY) return false;
   return true;
@@ -473,7 +711,7 @@ const resolveInteractive = (
 ): boolean => {
   if (format === 'json' || format === 'ndjson') return false;
   if (input.env['CI'] === 'true') return false;
-  if (!input.stdoutIsTTY) return false;
+  if (!input.stdinIsTTY || !input.stderrIsTTY) return false;
   return true;
 };
 ```
@@ -482,14 +720,21 @@ The priority order follows the check hierarchy from the main skill:
 
 1. Explicit `--format` / `--json` / `--plain` flags (highest priority)
 2. `--no-color` flag
-3. `NO_COLOR` environment variable
-4. `FORCE_COLOR` environment variable
+3. `FORCE_COLOR`: empty, `1`, `2`, `3`, and `true` enable color; every other
+   value, including `0`, disables it. A supported value overrides the two
+   disable-color environment variables below.
+4. Non-empty `NO_COLOR` or defined `NODE_DISABLE_COLORS`
 5. `TERM=dumb`
 6. `CI=true`
-7. TTY detection
+7. stdout TTY detection for primary-output formatting
 8. Default: full interactive with colors
 
-Each resolver is a separate pure function -- easy to test each priority chain independently.
+Prompt eligibility is separate from primary-output formatting: it requires both
+an interactive stdin and an interactive stderr for the prompt UI. Each resolver
+is a separate pure function -- easy to test each priority chain independently.
+The `FORCE_COLOR` values and environment-variable precedence follow Node's
+documented command-line behavior; the explicit application flag remains higher
+priority than environment configuration.
 
 ---
 
@@ -684,18 +929,11 @@ type JsonErrorDetail = z.infer<typeof jsonErrorDetailSchema>;
 }
 ```
 
-The `transient` field enables scripted retry logic:
-
-```bash
-result=$(mycli check --json)
-if echo "$result" | jq -e '.ok' > /dev/null 2>&1; then
-  echo "Success"
-elif echo "$result" | jq -e '.error.transient' > /dev/null 2>&1; then
-  echo "Transient failure — retrying"
-else
-  echo "Permanent failure: $(echo "$result" | jq -r '.error.fix')"
-fi
-```
+The `transient` field describes the cause, but callers must not retry from that
+field alone. Exit 75 is the CLI's retry authorization and is valid only when the
+failure happened before dispatch or the command contract establishes safe,
+idempotent retry. If a mutation may have been accepted, return an ambiguous-outcome
+error with a `status` or reconciliation instruction instead.
 
 ### Schema Validation in Tests
 
@@ -742,12 +980,16 @@ src/
   schemas/
     envelope.ts                   Zod schemas for JSON envelope validation
   lib/
+    streams.ts                    awaited, EPIPE-aware stream writes
     tty.ts                        detectOutputConfig — pure TTY detection
     logger.ts                     createStderrLogger, createNoOpLogger
+    analyzer.ts                   Production Analyzer implementation
   formatters/
     text.ts                       Human-readable formatter (colors, tables)
+    plain.ts                      Stable one-record-per-line formatter
     json.ts                       JSON envelope formatter
     ndjson.ts                     NDJSON streaming formatter
   handlers/
     analyze.ts                    Pure handler — (input) => Result
+    stream-analysis.ts            Streaming NDJSON adapter path
 ```

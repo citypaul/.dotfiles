@@ -19,8 +19,8 @@ Use this reference when a backend explicitly adopts ports and adapters. The obje
 |------|---------|----------------|
 | Domain policy | Pure business rules and business state transitions | Domain language and provider-free libraries |
 | Application policy | Provider-free orchestration and decisions through owned ports | Domain policy and port contracts |
-| Driving port | Application capability offered to an actor | Application/domain types |
-| Driven port | Capability the application requires from an actor | Application/domain types |
+| Driving port | Application-owned capability offered to an actor | Application/domain types |
+| Driven port | Capability required by its innermost consumer; normally application-owned | Application/domain types |
 | Driving adapter | Translates an external trigger into a driving-port call | Transport/framework and inside public API |
 | Driven adapter | Implements a driven port using a concrete technology | Provider SDK and inside public contract |
 | Test interactor | Drives or substitutes at a port | Test framework and inside public contract |
@@ -28,7 +28,7 @@ Use this reference when a backend explicitly adopts ports and adapters. The obje
 
 “Inside is pure” needs precision. Domain computation should be pure. Application orchestration may call injected ports, so it can describe effects, but it performs no concrete I/O and remains runnable in-process with test interactors. Enforce provider independence, not a blanket ban on useful computation libraries.
 
-Ports are inside because the application owns their protocols. Adapters and test actors are outside because they conform to those protocols.
+Ports are inside because the innermost consumer owns their protocols. Driving ports and infrastructure-facing repository/gateway ports are normally application-owned because use cases consume them. Domain owns a port only when the domain model itself genuinely consumes it. Adapters and test actors are outside because they conform to those protocols.
 
 ## Monorepo Target
 
@@ -90,26 +90,26 @@ When a project is deliberately one package, use paths plus automated import rule
 
 ```text
 src/
-├── hexagon/                               # INSIDE
-│   ├── orders/
-│   │   ├── model/
-│   │   ├── approve-order/
-│   │   └── ports/
-│   │       ├── driving/
-│   │       └── driven/
-│   └── allocation/
-├── adapters/                              # OUTSIDE
-│   ├── driving/
-│   │   ├── http/
-│   │   └── kafka/
-│   └── driven/
-│       ├── postgres/
-│       └── adyen/
-├── testing/                               # OUTSIDE test interactors
-└── composition/                           # executable wiring
+└── ordering/                              # CAPABILITY FIRST
+    ├── hexagon/                           # INSIDE
+    │   ├── domain/
+    │   │   ├── orders/
+    │   │   └── allocation/
+    │   └── application/
+    │       ├── approve-order/
+    │       └── ports/
+    ├── adapters/                          # OUTSIDE
+    │   ├── driving/
+    │   │   ├── http/
+    │   │   └── kafka/
+    │   └── driven/
+    │       ├── postgres/
+    │       └── adyen/
+    ├── testing/                           # OUTSIDE test interactors
+    └── composition/                       # executable wiring
 ```
 
-The package manifest may necessarily include provider SDKs. Therefore `src/hexagon` is only honest when lint or architecture tests prevent inside source from importing those dependencies or outward directories. If this protection cannot be added, do not claim the folder is a protected boundary.
+The package manifest may necessarily include provider SDKs. Therefore `src/ordering/hexagon` is only honest when lint or architecture tests prevent inside source from importing those dependencies or outward directories. If this protection cannot be added, do not claim the folder is a protected boundary. Replace `ordering` with the real capability; do not copy it as a universal name.
 
 ## Featureful Interiors
 
@@ -139,7 +139,7 @@ Split by behavior first, then by file responsibility inside that behavior when n
 
 Name ports for purposeful application conversations. A port must represent an external actor boundary, not an internal abstraction introduced for test mocking.
 
-Prefer colocating a port with the policy that owns it:
+Prefer colocating a port with the innermost policy that consumes it. In the usual case below, application policy owns both directions:
 
 ```text
 approve-order/

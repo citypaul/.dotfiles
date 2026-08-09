@@ -10,33 +10,34 @@ Add a parameter for the dependency with a production default. The simplest and m
 
 ```typescript
 // BEFORE -- hidden dependency, no seam
-const processOrder = (order: Order): OrderResult => {
-  const tax = fetchTaxRate(order.region);  // calls external service
-  return { ...order, total: order.subtotal * (1 + tax) };
+const scheduleDelivery = (delivery: Delivery): DeliveryPlan => {
+  const transitDays = fetchTransitDays(delivery.region);  // calls external service
+  return { ...delivery, totalDays: delivery.preparationDays + transitDays };
 };
 ```
 
 ```typescript
 // AFTER -- dependency is a parameter with production default
-type TaxResolver = (region: string) => number;
+type TransitDaysResolver = (region: string) => number;
 
-const processOrder = (
-  order: Order,
-  resolveTax: TaxResolver = fetchTaxRate,
-): OrderResult => {
-  const tax = resolveTax(order.region);
-  return { ...order, total: order.subtotal * (1 + tax) };
+const scheduleDelivery = (
+  delivery: Delivery,
+  resolveTransitDays: TransitDaysResolver = fetchTransitDays,
+): DeliveryPlan => {
+  const transitDays = resolveTransitDays(delivery.region);
+  return { ...delivery, totalDays: delivery.preparationDays + transitDays };
 };
 
 // Test -- for SEPARATION (skip the real service)
-const result = processOrder(order, () => 0.08);
-expect(result.total).toBe(108);
+const delivery = { ...testDelivery, preparationDays: 3 };
+const result = scheduleDelivery(delivery, () => 2);
+expect(result.totalDays).toBe(5);
 
 // Test -- for SENSING (observe what was called)
-const taxCalls: string[] = [];
-const sensingTax: TaxResolver = (region) => { taxCalls.push(region); return 0.1; };
-processOrder(order, sensingTax);
-expect(taxCalls).toEqual(['US-CA']);
+const transitCalls: string[] = [];
+const sensingTransitDays: TransitDaysResolver = (region) => { transitCalls.push(region); return 4; };
+scheduleDelivery(delivery, sensingTransitDays);
+expect(transitCalls).toEqual(['US-CA']);
 ```
 
 **When to use:** Default choice for any function with a hard-coded dependency.
@@ -47,53 +48,60 @@ When a function has multiple dependencies, wrap it in a factory that returns a c
 
 ```typescript
 // BEFORE -- multiple hidden dependencies
-const calculateInvoice = (lineItems: ReadonlyArray<LineItem>): Invoice => {
-  const prices = lineItems.map(item => lookupPrice(item.sku));
-  const subtotal = prices.reduce((sum, p) => sum + p, 0);
-  const tax = getTaxRate() * subtotal;
-  const formatted = formatCurrency(subtotal + tax);
-  return { lineItems, subtotal, tax, total: subtotal + tax, display: formatted };
+const calculateShipment = (lineItems: ReadonlyArray<LineItem>): Shipment => {
+  const weights = lineItems.map(item => lookupWeightGrams(item.sku));
+  const contentsWeightGrams = weights.reduce((sum, grams) => sum + grams, 0);
+  const packagingWeightGrams = getPackagingWeightGrams();
+  const totalWeightGrams = contentsWeightGrams + packagingWeightGrams;
+  return {
+    lineItems,
+    contentsWeightGrams,
+    packagingWeightGrams,
+    totalWeightGrams,
+    display: formatWeight(totalWeightGrams),
+  };
 };
 ```
 
 ```typescript
 // AFTER -- factory accepts dependencies, returns pure function
-type InvoiceDeps = {
-  readonly lookupPrice: (sku: string) => number;
-  readonly getTaxRate: () => number;
-  readonly formatCurrency: (amount: number) => string;
+type ShipmentDeps = {
+  readonly lookupWeightGrams: (sku: string) => number;
+  readonly getPackagingWeightGrams: () => number;
+  readonly formatWeight: (grams: number) => string;
 };
 
-const createInvoiceCalculator = (deps: InvoiceDeps) =>
-  (lineItems: ReadonlyArray<LineItem>): Invoice => {
-    const prices = lineItems.map(item => deps.lookupPrice(item.sku));
-    const subtotal = prices.reduce((sum, p) => sum + p, 0);
-    const tax = deps.getTaxRate() * subtotal;
+const createShipmentCalculator = (deps: ShipmentDeps) =>
+  (lineItems: ReadonlyArray<LineItem>): Shipment => {
+    const weights = lineItems.map(item => deps.lookupWeightGrams(item.sku));
+    const contentsWeightGrams = weights.reduce((sum, grams) => sum + grams, 0);
+    const packagingWeightGrams = deps.getPackagingWeightGrams();
+    const totalWeightGrams = contentsWeightGrams + packagingWeightGrams;
     return {
       lineItems,
-      subtotal,
-      tax,
-      total: subtotal + tax,
-      display: deps.formatCurrency(subtotal + tax),
+      contentsWeightGrams,
+      packagingWeightGrams,
+      totalWeightGrams,
+      display: deps.formatWeight(totalWeightGrams),
     };
   };
 
 // Production -- wire real dependencies
-const calculateInvoice = createInvoiceCalculator({
-  lookupPrice: catalogApi.getPrice,
-  getTaxRate: () => parseFloat(process.env.TAX_RATE!),
-  formatCurrency: intlFormat,
+const calculateShipment = createShipmentCalculator({
+  lookupWeightGrams: (sku) => catalogApi.getWeightGrams(sku),
+  getPackagingWeightGrams: () => packagingCatalog.getStandardWeightGrams(),
+  formatWeight: formatGrams,
 });
 
 // Test -- wire fakes
-const calculateInvoice = createInvoiceCalculator({
-  lookupPrice: () => 100,
-  getTaxRate: () => 0.2,
-  formatCurrency: (n) => `$${n}`,
+const calculateShipment = createShipmentCalculator({
+  lookupWeightGrams: () => 100,
+  getPackagingWeightGrams: () => 20,
+  formatWeight: (grams) => `${grams} g`,
 });
-const invoice = calculateInvoice([testItem]);
-expect(invoice.total).toBe(120);
-expect(invoice.display).toBe('$120');
+const shipment = calculateShipment([testItem]);
+expect(shipment.totalWeightGrams).toBe(120);
+expect(shipment.display).toBe('120 g');
 ```
 
 **When to use:** Functions with 2+ dependencies. This is the FP equivalent of constructor injection.
@@ -227,40 +235,40 @@ The same as Technique 1, but for `async` dependencies. The type signature return
 
 ```typescript
 // BEFORE -- hidden async dependency, no seam
-const getOrderSummary = async (userId: string): Promise<Summary> => {
-  const orders = await db.query('SELECT * FROM orders WHERE user_id = $1', [userId]);
-  const total = orders.reduce((sum, o) => sum + o.amount, 0);
-  return { userId, orderCount: orders.length, totalSpent: total };
+const getShipmentSummary = async (userId: string): Promise<Summary> => {
+  const shipments = await db.query('SELECT * FROM shipments WHERE user_id = $1', [userId]);
+  const totalPackages = shipments.reduce((sum, shipment) => sum + shipment.packageCount, 0);
+  return { userId, shipmentCount: shipments.length, totalPackages };
 };
 ```
 
 ```typescript
 // AFTER -- async dependency as parameter with production default
-type OrderFetcher = (userId: string) => Promise<ReadonlyArray<Order>>;
+type ShipmentFetcher = (userId: string) => Promise<ReadonlyArray<ShipmentRecord>>;
 
-const getOrderSummary = async (
+const getShipmentSummary = async (
   userId: string,
-  fetchOrders: OrderFetcher = (id) => db.query('SELECT * FROM orders WHERE user_id = $1', [id]),
+  fetchShipments: ShipmentFetcher = (id) => db.query('SELECT * FROM shipments WHERE user_id = $1', [id]),
 ): Promise<Summary> => {
-  const orders = await fetchOrders(userId);
-  const total = orders.reduce((sum, o) => sum + o.amount, 0);
-  return { userId, orderCount: orders.length, totalSpent: total };
+  const shipments = await fetchShipments(userId);
+  const totalPackages = shipments.reduce((sum, shipment) => sum + shipment.packageCount, 0);
+  return { userId, shipmentCount: shipments.length, totalPackages };
 };
 
 // Test -- for SEPARATION (skip the real database)
-const result = await getOrderSummary('user-1', async () => [
-  { id: 'o-1', amount: 50 },
-  { id: 'o-2', amount: 75 },
+const result = await getShipmentSummary('user-1', async () => [
+  { id: 'shipment-1', packageCount: 2 },
+  { id: 'shipment-2', packageCount: 3 },
 ]);
-expect(result).toEqual({ userId: 'user-1', orderCount: 2, totalSpent: 125 });
+expect(result).toEqual({ userId: 'user-1', shipmentCount: 2, totalPackages: 5 });
 
 // Test -- for SENSING (observe queries)
 const queries: string[] = [];
-const sensingFetcher: OrderFetcher = async (userId) => {
+const sensingFetcher: ShipmentFetcher = async (userId) => {
   queries.push(userId);
-  return [{ id: 'o-1', amount: 100 }];
+  return [{ id: 'shipment-1', packageCount: 1 }];
 };
-await getOrderSummary('user-1', sensingFetcher);
+await getShipmentSummary('user-1', sensingFetcher);
 expect(queries).toEqual(['user-1']);
 ```
 
@@ -272,7 +280,7 @@ Every technique above can serve either purpose:
 
 | Purpose | Goal | Example |
 |---------|------|---------|
-| **Separation** | Run code in isolation without real collaborators | Pass `() => 0.08` instead of calling the tax API |
+| **Separation** | Run code in isolation without real collaborators | Pass `() => 2` instead of calling the transit-time service |
 | **Sensing** | Observe what code does (args passed, functions called) | Collect calls in an array, assert against them |
 
 When writing your first characterisation tests, you typically need **separation** first (get the code running in a test), then add **sensing** to verify specific behaviors.

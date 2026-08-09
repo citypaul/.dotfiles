@@ -1,21 +1,22 @@
 # Formatting: Structural Rules
 
-Adapted from mintuz/skills "Developer Writing Playbook" (credited in
-REFERENCES), extended with house rules.
+Adapted from Adam Bulmer's pinned Mintuz writing bundle, with heuristics that
+defer to the repository's style guide. See `source-notes.md` and
+`../LICENSE`.
 
 ## Titles and headings
 
-- Title case for the title; 5–8 words; the benefit visible ("X for
-  Faster Y"). Exactly one h1.
-- h2 for sections, h3 for subsections; avoid deeper nesting — if you
-  need h4, the section wants splitting.
+- Follow the repository's title style; make the subject and benefit
+  visible. Use exactly one h1 unless the target format says otherwise.
+- h2 for sections and h3 for subsections by default. Deeper nesting is
+  a prompt to check whether splitting would improve navigation, not an automatic defect.
 - Headings summarize the section's payoff, not its topic ("Gates run
   in CI" beats "CI integration").
 
 ## Table of contents
 
-- Add one when a doc exceeds ~4 sections; one level deep with at most
-  a few key sub-entries — a map, not an index.
+- Add one when it materially improves navigation; keep it a map rather
+  than an exhaustive index.
 - Verify anchors against the target renderer's real slug algorithm
   (GitHub: lowercase, strip punctuation, EACH space becomes a hyphen —
   adjacent spaces produce doubled hyphens). Machine-check, don't
@@ -23,7 +24,7 @@ REFERENCES), extended with house rules.
 
 ## Paragraphs and lists
 
-- 3–5 sentences per paragraph; lead with the point.
+- Lead with the point and split paragraphs when they carry more than one idea.
 - Bullets for unordered ideas; numbers only when order carries
   information — a numbered list claims sequence.
 - Consistent item phrasing and end punctuation; long inline

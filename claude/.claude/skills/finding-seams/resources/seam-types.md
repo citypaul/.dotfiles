@@ -9,7 +9,8 @@ The **default choice** in functional TypeScript. Every function parameter that a
 ### Basic: Default Parameter
 
 ```typescript
-type TaxResolver = (region: string) => number;
+type BasisPoints = number & { readonly __brand: 'BasisPoints' };
+type TaxResolver = (region: string) => BasisPoints;
 
 const calculateTotal = (
   items: ReadonlyArray<LineItem>,
@@ -20,11 +21,16 @@ const calculateTotal = (
     zeroMoney,
   );
   const tax = resolveTax(items[0]?.region ?? 'default');
-  return addMoney(subtotal, multiplyMoney(subtotal, tax));
+  return addMoney(
+    subtotal,
+    multiplyMoneyByBasisPoints(subtotal, tax, 'half-away-from-zero'),
+  );
 };
 
 // Test -- enabling point is the argument list
-const fixedTax: TaxResolver = () => 0.08;
+// basisPoints validates a safe integer in the supported range. The money
+// helper performs checked minor-unit arithmetic with the named rounding rule.
+const fixedTax: TaxResolver = () => basisPoints(800);
 const result = calculateTotal(threeItems, fixedTax);
 expect(result).toEqual(createMoney(3240, 'USD'));
 ```
@@ -62,7 +68,8 @@ const calculateOrder = createOrderCalculator({
 // Test -- wire in fakes (separate scope, e.g. inside a test block)
 const testCalculateOrder = createOrderCalculator({
   resolvePrice: () => createMoney(1000, 'USD'),
-  applyDiscount: (total) => multiplyMoney(total, 0.9),
+  applyDiscount: (total) =>
+    multiplyMoneyByBasisPoints(total, basisPoints(9_000), 'half-away-from-zero'),
 });
 ```
 

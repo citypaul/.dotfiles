@@ -18,18 +18,18 @@ Small pure functions are an implementation technique, not a mandate to publish o
 
 ## Core Principles
 
-- **No data mutation** - immutable structures only
+- **Immutable domain data by default** - keep local or boundary mutation encapsulated when it is clearer or required
 - **Pure functions** wherever possible
 - **Composition** over inheritance
-- **No comments** - code should be self-documenting
-- **Array methods** over loops
-- **Options objects** over positional parameters
+- **Self-documenting code first** - keep comments that explain constraints or non-obvious reasons
+- **Array methods for transformations** - use loops when control flow is clearer
+- **Options objects for parameter groups** - keep simple positional APIs simple
 
 ---
 
 ## Why Immutability Matters
 
-Immutable data is the foundation of functional programming. It makes code **predictable** (same input → same output, no hidden state changes), **debuggable** (state never changes underneath you), **testable** (no hidden mutable state), **React-friendly** (reconciliation and memoization work correctly), and **concurrency-safe** (no race conditions).
+Immutable data is a foundation of functional programming. It makes code **predictable** (same input → same output, no hidden state changes), **debuggable** (state does not change underneath a reader), **testable** (less hidden mutable state), and **React-friendly** (reconciliation and memoization can rely on reference changes). It also reduces shared-state concurrency hazards, but does not by itself prevent races in I/O or coordination.
 
 ```typescript
 // ❌ WRONG - Mutation creates unpredictable behavior
@@ -43,7 +43,7 @@ console.log(user.permissions); // ['read'] - original unchanged
 console.log(updatedUser.permissions); // ['read', 'write'] - new version
 ```
 
-Use `readonly` on all data structure properties and `ReadonlyArray<T>` for arrays so the compiler enforces this. For the full catalog of mutations and their immutable alternatives, load `resources/immutability-catalog.md`.
+Use `readonly` on data that is intended to be immutable and `ReadonlyArray<T>` for immutable arrays so the compiler enforces that contract. Encapsulated mutable accumulators, caches, and adapter state are acceptable when they do not leak mutation into the domain contract. For common mutations and immutable alternatives, load `resources/immutability-catalog.md`.
 
 ---
 
@@ -72,11 +72,11 @@ const withoutInactive = compose(
 
 ---
 
-## No Comments / Self-Documenting Code
+## Self-Documenting Code and Useful Comments
 
-Code should be clear through naming and structure. Comments indicate unclear code.
+Code should be clear through naming and structure. Prefer refactoring comments that merely narrate syntax, but keep comments that explain a non-obvious decision or constraint.
 
-**Exceptions:**
+**Comments worth keeping:**
 - JSDoc for public APIs when generating documentation
 - "Why"-comments required by other skills: characterisation test file headers and SUSPICIOUS behavior markers (see the `characterisation-tests` skill)
 - Constraints the code cannot express (e.g. a workaround pinned to an upstream bug, an ordering requirement imposed by an external system)
@@ -112,7 +112,7 @@ function canUserAccessResource(user: User | undefined): boolean {
 
 Check `undefined` explicitly in the boolean form: optional chaining (`user?.isActive && user?.hasPermission`) yields `boolean | undefined` and fails to compile under strict mode.
 
-If code requires comments to understand, refactor instead: extract functions with descriptive names, use meaningful variable names, break complex logic into steps, use type aliases for domain concepts.
+If a comment only restates what the code does, refactor instead: extract functions with descriptive names, use meaningful variable names, break complex logic into steps, or use type aliases for domain concepts.
 
 ✅ **Acceptable JSDoc for public APIs**
 ```typescript
@@ -125,7 +125,7 @@ export function registerScenario(definition: ScenaristScenario): void {
 
 ---
 
-## Array Methods Over Loops
+## Choosing Array Methods and Loops
 
 Prefer `map`, `filter`, `reduce` for transformations. They're declarative (what, not how) and naturally immutable.
 
@@ -133,10 +133,10 @@ Prefer `map`, `filter`, `reduce` for transformations. They're declarative (what,
 ```typescript
 const scenarioIds = scenarios.map(s => s.id);
 const activeScenarios = scenarios.filter(s => s.active);
-const total = items
-  .filter(item => item.active)
-  .map(item => item.price * item.quantity)
-  .reduce((sum, price) => sum + price, 0);
+const totalActiveMinutes = sessions
+  .filter(session => session.active)
+  .map(session => session.durationMinutes * session.repetitions)
+  .reduce((sum, minutes) => sum + minutes, 0);
 ```
 
 ### When Loops Are Acceptable
@@ -146,35 +146,35 @@ Imperative loops are fine when:
 - Performance critical (measure first!)
 - Side effects are necessary (logging, DOM manipulation)
 
-But even then, prefer `Array.find()` for early termination and `Array.some()` / `Array.every()` for boolean checks.
+Choose `Array.find()`, `Array.some()`, or `Array.every()` when those operations express the intent more directly; do not replace a clear loop merely to satisfy a style rule.
 
 ---
 
-## Options Objects Over Positional Parameters
+## When to Use Options Objects
 
-Default to options objects for function parameters: named parameters, no ordering dependencies, easy optional parameters, self-documenting call sites, TypeScript autocomplete.
+Use an options object when parameters form a meaningful group, several values share the same type, or optional arguments make ordering unclear. A small, stable function with obvious positional parameters can remain positional.
 
 ✅ **CORRECT - Options object**
 ```typescript
-type CreatePaymentOptions = {
-  amount: number;
-  currency: string;
-  cardId: string;
-  cvv: string;
-  saveCard?: boolean;
-  sendReceipt?: boolean;
+type CreateReportOptions = {
+  reportId: string;
+  format: 'pdf' | 'csv';
+  locale: string;
+  timeZone: string;
+  includeCharts?: boolean;
+  sendEmail?: boolean;
 };
 
-function createPayment(options: CreatePaymentOptions): Payment {
-  const { amount, currency, cardId, cvv, saveCard = false, sendReceipt = true } = options;
+function createReport(options: CreateReportOptions): Report {
+  const { reportId, format, locale, timeZone, includeCharts = false, sendEmail = true } = options;
   // ...
 }
 
 // Call site - crystal clear
-createPayment({ amount: 100, currency: 'GBP', cardId: 'card_123', cvv: '123', saveCard: true });
+createReport({ reportId: 'report_123', format: 'pdf', locale: 'en-GB', timeZone: 'Europe/London', includeCharts: true });
 ```
 
-Use positional parameters only when: 1-2 parameters max, the order is obvious (e.g., `add(a, b)`), or for high-frequency utility functions.
+Use positional parameters when the order is obvious, as in `add(a, b)`, or a familiar high-frequency utility would become noisier with an options object. Switch to named options when same-typed or optional arguments make a call ambiguous; parameter count is a signal, not a fixed limit.
 
 ---
 
@@ -195,14 +195,14 @@ Some functions must be impure (I/O, randomness, side effects). Isolate them:
 ```typescript
 // ✅ CORRECT - Isolate impure functions at edges
 // Pure core
-function calculateTotal(items: ReadonlyArray<Item>): number {
-  return items.reduce((sum, item) => sum + item.price, 0);
+function calculateTotalWeightGrams(parcels: ReadonlyArray<Parcel>): number {
+  return parcels.reduce((sum, parcel) => sum + parcel.weightGrams, 0);
 }
 
 // Impure shell (isolated)
-async function saveOrder(order: Order): Promise<void> {
-  const total = calculateTotal(order.items); // Pure
-  await database.save({ ...order, total }); // Impure (I/O)
+async function saveShipment(shipment: Shipment): Promise<void> {
+  const totalWeightGrams = calculateTotalWeightGrams(shipment.parcels); // Pure
+  await database.save({ ...shipment, totalWeightGrams }); // Impure (I/O)
 }
 ```
 
@@ -212,7 +212,7 @@ async function saveOrder(order: Order): Promise<void> {
 
 ## Early Returns Over Nesting
 
-**Max 2 levels of function nesting.** Beyond that, extract functions or flatten with guard clauses. For worked flattening and composition examples, load `resources/composition-patterns.md`.
+Treat deep nesting as a readability signal, not a numeric rule. When nested control flow obscures the main path, extract functions or flatten it with guard clauses. For worked examples, load `resources/composition-patterns.md`.
 
 ```typescript
 // ❌ WRONG - Nested conditions
@@ -236,25 +236,27 @@ if (!user.hasPermission) return;
 
 ## Result Type for Error Handling
 
+Use a `Result` type when expected failures are part of the caller-facing contract and callers must handle both branches. Preserve an established exception, nullable-value, or framework error convention when it communicates the contract more clearly.
+
 ```typescript
 type Result<T, E = Error> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false; readonly error: E };
 
 // Usage
-function processPayment(payment: Payment): Result<Transaction> {
-  if (payment.amount <= 0) {
-    return { success: false, error: new Error('Invalid amount') };
+function processBatch(batch: Batch): Result<BatchRun> {
+  if (batch.itemCount <= 0) {
+    return { success: false, error: new Error('Batch must contain an item') };
   }
 
-  const transaction = executePayment(payment);
-  return { success: true, data: transaction };
+  const run = executeBatch(batch);
+  return { success: true, data: run };
 }
 
 // Caller handles both cases explicitly
-const result = processPayment(payment);
+const result = processBatch(batch);
 if (!result.success) return logError(result.error);
-console.log(result.data.transactionId); // TypeScript knows result.data exists here
+console.log(result.data.batchId); // TypeScript knows result.data exists here
 ```
 
 ---
@@ -263,13 +265,12 @@ console.log(result.data.transactionId); // TypeScript knows result.data exists h
 
 When writing functional code, verify:
 
-- [ ] No data mutation - using spread operators
+- [ ] Domain data is immutable where that is part of its contract; any mutable state is local and encapsulated
 - [ ] Pure functions wherever possible (no side effects)
-- [ ] Code is self-documenting (no comments needed)
-- [ ] Array methods (`map`, `filter`, `reduce`) over loops
-- [ ] Options objects for 3+ parameters
+- [ ] Code is self-documenting; comments explain non-obvious reasons or constraints
+- [ ] Array methods or loops are chosen for clarity and control-flow needs
+- [ ] Options objects group parameters when they improve the caller-facing contract
 - [ ] Composed small functions, not complex monoliths
-- [ ] `readonly` on all data structure properties
-- [ ] `ReadonlyArray<T>` for immutable arrays
-- [ ] Max 2 levels of nesting (use early returns)
-- [ ] Result types for error handling
+- [ ] `readonly` and `ReadonlyArray<T>` express intended immutability
+- [ ] Nesting remains readable; guard clauses or extraction clarify deep paths
+- [ ] Result types are used when expected failures belong in the return contract

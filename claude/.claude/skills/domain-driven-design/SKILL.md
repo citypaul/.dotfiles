@@ -21,8 +21,9 @@ Use the `structure-codebase` skill when designing or changing physical placement
 | `bounded-contexts.md` | Drawing context boundaries, integrating with external systems (ACL), context mapping |
 | `error-modeling.md` | Deciding between result types and exceptions, error propagation |
 | `testing-by-layer.md` | Writing tests for DDD code, property-based testing for invariants |
+| `references.md` | Checking focused source rationale for DDD, layer ownership, and testing |
 
-For authoritative sources, see `claude/.claude/skills/REFERENCES.md` in the source repo (https://github.com/citypaul/.dotfiles) — that file is not bundled when this skill is installed standalone.
+For authoritative sources, see `resources/references.md`.
 
 ---
 
@@ -47,7 +48,7 @@ DDD adds value for **complex domains** with rich business rules. Not every proje
 
 ## Core Principle
 
-**The code must speak the language of the domain.** Every type, function, variable, and test name must use terms from the project's ubiquitous language (glossary). If a concept doesn't have a domain term, that's a modeling gap to discuss with stakeholders — not something to paper over with technical jargon.
+**The code must speak the language of the domain.** The repository's declared glossary is the naming authority for each bounded context. When naming a declared concept, use its canonical spelling and capitalization in types, functions, variables, and tests. A concept absent from the glossary is not automatically approved or forbidden; it is not yet agreed. Plans, research, comments, conversations, and existing code may reveal candidate vocabulary, but they cannot silently canonize it.
 
 **Domain models evolve.** The first model is never the final model. As understanding deepens through conversations with domain experts and building working software, the model should change — types get renamed, aggregates get split or merged, new concepts emerge. This is expected and ideal. A model that never changes is either perfect (unlikely) or stagnant (the team stopped learning). TDD and behavioral tests make this evolution safe — rename a concept, update the glossary, and the tests tell you what needs to change.
 
@@ -76,8 +77,9 @@ export const formatEventDate = (date: string | null) =>
 // → Belongs in presentation code; a hexagonal app may place it at the driving edge
 
 // ✅ Pure AND domain — business rule that affects behavior
-export const isPastEvent = (eventDate: string | null, now: Date) =>
-  eventDate ? parseISO(eventDate) < now : false;
+// The application supplies current time as data; domain code does not read a clock.
+export const isPastEvent = (eventDate: Date | null, now: Date) =>
+  eventDate ? eventDate.getTime() < now.getTime() : false;
 // → Belongs in domain policy for events
 
 // ✅ Pure AND domain — business calculation
@@ -90,11 +92,15 @@ export const calculateCommittedTotal = (items: readonly GiftItem[]) =>
 
 When `structure-codebase` has been applied, enforce domain and any visible hexagonal boundary mechanically with its package/import rules.
 
+When an architecture uses ports, ownership follows the innermost consumer that needs the abstraction. Repository and gateway ports are therefore normally application-owned because use cases consume them. A port belongs in domain only when the domain model itself genuinely consumes that abstraction. "Inside-owned" does not mean "domain-owned."
+
+Keep domain policy free of frameworks, transport and persistence types, clocks, UUID generators, vendor SDKs, and UI concerns. Parse external input at the edge; pass current time, identifiers, and other external facts into domain functions as typed values. Application use cases coordinate those functions and any required ports.
+
 ---
 
 ## Ubiquitous Language & Glossary
 
-DDD projects must maintain a glossary file that defines all domain terms. This is the single source of truth for naming. The glossary evolves as the model evolves — when the team discovers a better name or splits a concept, update the glossary first and let the code follow.
+DDD projects must maintain a repository-declared glossary that defines agreed domain terms. It is the naming authority for its bounded context. The glossary evolves as the model evolves — when the team discovers a better name or splits a concept, decide and record the change before code follows.
 
 ### The Glossary File
 
@@ -119,10 +125,11 @@ For projects with multiple bounded contexts, organize by context. The same term 
 
 ### Enforcement Rules
 
-- All `type` and `interface` names must use glossary terms
-- All function names must use glossary verbs and nouns
-- All test descriptions must use domain language
-- If you need a new term, add it to the glossary first
+- Use the canonical spelling and capitalization whenever naming a declared concept.
+- Treat an absent term as a candidate requiring agreement, not as automatically approved or forbidden.
+- Rejected or deprecated aliases must point to the owning bounded context and canonical replacement.
+- Apply glossary checks to `type` and `interface` names, function names, and test descriptions within the check's declared scope.
+- Treat a green language-lint command as evidence for its targeted ratchet only, never as proof that every prose passage and identifier uses the ubiquitous language correctly.
 
 ```typescript
 // ✅ Uses domain language
@@ -144,21 +151,24 @@ type Item = { readonly id: string; readonly text: string; readonly parentId: str
 
 ### Value Objects
 
-Immutable, identity-less, compared by their attributes (not by reference). Represent domain concepts defined by their attributes. Two `Money` values with the same amount and currency are equal — value objects have no identity.
+Immutable, identity-less, compared by their attributes (not by reference). Represent domain concepts defined by their attributes. Two `Money` values with the same minor units and currency are equal — value objects have no identity.
 
 ```typescript
 type Currency = 'GBP' | 'USD' | 'EUR';
-type Money = { readonly amount: number; readonly currency: Currency };
+type Money = { readonly minorUnits: number; readonly currency: Currency };
 
-const createMoney = (amount: number, currency: Currency): Money => {
-  if (amount < 0) throw new Error('Money cannot be negative');
-  return { amount, currency };
+const createMoney = (minorUnits: number, currency: Currency): Money => {
+  if (!Number.isSafeInteger(minorUnits)) throw new Error('Money minor units must be a safe integer');
+  if (minorUnits < 0) throw new Error('Money cannot be negative');
+  return { minorUnits, currency };
 };
 // Factory throws = invariant violation (a bug in calling code).
 // Schemas catch invalid user input at trust boundaries BEFORE
 // the factory is called. If the factory throws, something
 // bypassed the schema.
 ```
+
+Store and calculate money in integer minor units, never binary floating-point major units. A boundary that accepts decimal text must use the currency's exponent and an explicit policy for excess precision (for example, reject it or round half-even); never convert with `Math.round(rawNumber * 100)`.
 
 For value objects crossing trust boundaries (API input, form data), use Zod schemas. For domain-internal value objects, plain types + factory functions suffice. See the `typescript-strict` skill for schema-first patterns.
 
@@ -169,7 +179,7 @@ For value objects crossing trust boundaries (API input, form data), use Zod sche
 const PledgeInputSchema = z.object({
   occasionId: z.string().min(1).transform(createOccasionId),
   contributorId: z.string().min(1).transform(createContributorId),
-  amount: z.object({ amount: z.number().positive(), currency: CurrencySchema }),
+  amount: z.object({ minorUnits: z.number().int().safe().positive(), currency: CurrencySchema }),
 });
 
 // Reconstitution from persistence — same pattern, used at the integration boundary
@@ -178,8 +188,8 @@ const toOccasion = (row: OccasionRow, giftIdeas: ReadonlyArray<GiftIdea>): Occas
   id: createOccasionId(row.id),
   name: row.name,
   giftIdeas,
-  budget: createMoney(row.budgetAmount, parseCurrency(row.budgetCurrency)),
-  totalPledged: createMoney(row.pledgedAmount, parseCurrency(row.budgetCurrency)),
+  budget: createMoney(row.budgetMinorUnits, parseCurrency(row.budgetCurrency)),
+  totalPledged: createMoney(row.pledgedMinorUnits, parseCurrency(row.budgetCurrency)),
   isFundingClosed: row.isFundingClosed,
 });
 ```
@@ -229,7 +239,7 @@ const renameOccasion = (occasion: Occasion, newName: string): Occasion => ({
 
 ### Make Illegal States Unrepresentable
 
-General type-safety patterns (no `any`, discriminated unions, schema-first) live in the `typescript-strict` skill. The DDD-specific application: model entity **lifecycles** as discriminated unions where each variant carries only the data valid for that state — never boolean flags plus optional fields, which allow contradictory combinations like `{ isVerified: true, verifiedAt: undefined }`:
+General type-safety patterns (contained `any` only at unavoidable interop boundaries, discriminated unions, schema-first validation) live in the `typescript-strict` skill. The DDD-specific application: model entity **lifecycles** as discriminated unions where each variant carries only the data valid for that state — never boolean flags plus optional fields, which allow contradictory combinations like `{ isVerified: true, verifiedAt: undefined }`:
 
 ```typescript
 type Order =
@@ -267,15 +277,22 @@ For detailed aggregate design guidance, see `resources/aggregate-design.md`.
 Complex business rules for filtering, eligibility, or validation are expressed as predicate functions in the domain layer. Evans calls these "specifications."
 
 ```typescript
-// Specification: "can this contributor pledge to this occasion?"
-const canPledge = (occasion: Occasion, contributor: Contributor, amount: Money): boolean =>
-  !occasion.isFundingClosed &&
-  amount.amount <= contributor.walletBalance.amount &&
-  amount.currency === occasion.budget.currency;
+// Specification: "can this eligible contributor pledge to this occasion?"
+const canPledge = (occasion: Occasion, eligibility: ContributorEligibility, amount: Money): boolean => {
+  const values = [amount.minorUnits, occasion.totalPledged.minorUnits, occasion.budget.minorUnits];
+  if (!values.every(Number.isSafeInteger)) return false;
+  if (occasion.totalPledged.minorUnits > occasion.budget.minorUnits) return false;
+  return eligibility.mayPledge &&
+    !occasion.isFundingClosed &&
+    amount.minorUnits > 0 &&
+    amount.currency === occasion.totalPledged.currency &&
+    occasion.totalPledged.currency === occasion.budget.currency &&
+    amount.minorUnits <= occasion.budget.minorUnits - occasion.totalPledged.minorUnits;
+};
 
 // Compose specifications for complex eligibility
 const isGiftReady = (occasion: Occasion): boolean =>
-  occasion.totalPledged.amount >= occasion.budget.amount &&
+  occasion.totalPledged.minorUnits >= occasion.budget.minorUnits &&
   occasion.giftIdeas.some(idea => idea.status === 'selected');
 ```
 
@@ -301,27 +318,59 @@ For most projects, start without domain events and add them when the domain dema
 
 ## Domain Services
 
-When business logic doesn't belong to a single entity, it belongs in a **domain service** — a stateless function in the domain layer that operates across multiple entities or aggregates.
+When business logic doesn't belong to a single entity, it belongs in a **domain service** — a stateless function in the domain layer that combines domain values or read-only policy facts. A domain service does not make multi-aggregate writes atomic: redraw the aggregate when one invariant requires synchronous change, or coordinate one aggregate write plus a durable event in the application layer.
 
 ```typescript
-// ❌ WRONG — cramming cross-entity logic into one entity
+// ❌ WRONG — cramming an external eligibility policy into one entity
 const addContribution = (occasion: Occasion, contribution: Contribution): Occasion => {
-  // This needs to check the contributor's wallet balance — wrong aggregate!
+  // This cannot know whether the contributor is currently eligible.
 };
 
-// ✅ CORRECT — domain service operates across aggregates
+// ✅ CORRECT — pure domain service consumes a read-only policy fact
 const pledgeContribution = (
   occasion: Occasion,
-  contributor: Contributor,
-  amount: Money,
-): PledgeResult => {
-  if (amount.amount > contributor.walletBalance.amount) {
-    return { success: false, reason: 'insufficient-balance' };
+  eligibility: ContributorEligibility,
+  pledge: { readonly id: PledgeId; readonly amount: Money },
+): PledgeDecision => {
+  if (!eligibility.mayPledge) {
+    return { success: false, reason: 'contributor-ineligible' };
   }
+  if (occasion.isFundingClosed) {
+    return { success: false, reason: 'funding-closed' };
+  }
+  if (
+    pledge.amount.currency !== occasion.totalPledged.currency ||
+    occasion.totalPledged.currency !== occasion.budget.currency
+  ) {
+    return { success: false, reason: 'currency-mismatch' };
+  }
+  const values = [
+    occasion.totalPledged.minorUnits,
+    occasion.budget.minorUnits,
+    pledge.amount.minorUnits,
+  ];
+  if (!values.every(Number.isSafeInteger)) throw new Error('Invalid Money invariant');
+  if (pledge.amount.minorUnits <= 0) {
+    return { success: false, reason: 'non-positive-amount' };
+  }
+  if (occasion.totalPledged.minorUnits > occasion.budget.minorUnits) {
+    throw new Error('Invalid Occasion funding invariant');
+  }
+  if (pledge.amount.minorUnits > occasion.budget.minorUnits - occasion.totalPledged.minorUnits) {
+    return { success: false, reason: 'exceeds-budget' };
+  }
+  const totalPledged = occasion.totalPledged.minorUnits + pledge.amount.minorUnits;
+  if (!Number.isSafeInteger(totalPledged)) throw new Error('Money addition overflowed');
   return {
     success: true,
-    occasion: addContribution(occasion, { contributorId: contributor.id, amount }),
-    contributor: deductBalance(contributor, amount),
+    occasion: { ...occasion, totalPledged: createMoney(totalPledged, pledge.amount.currency) },
+    events: [{
+      type: 'PledgeRecorded',
+      id: pledge.id,
+      occasionId: occasion.id,
+      contributorId: eligibility.contributorId,
+      amount: pledge.amount,
+    }],
   };
 };
 ```
@@ -332,10 +381,12 @@ const pledgeContribution = (
 |--|----------------|----------|
 | Contains business logic? | Yes | No — orchestration only |
 | Logical role | Domain policy | Application policy — coordinates domain operations and collaborations |
-| Depends on | Domain types only | Domain services and repository/integration contracts; ports when the architecture defines them |
-| Example | `pledgeContribution(occasion, contributor, amount)` | `handlePledge(repo, dto)` — loads, calls domain service, saves |
+| Depends on | Domain types only by default | Domain services and normally application-owned repository/integration ports |
+| Example | `pledgeContribution(occasion, eligibility, pledge)` | `handlePledge(persistence, eligibilityGateway, dto)` — loads, calls domain service, saves one aggregate plus its outbox event |
 
-Physical placement depends on the selected architecture. In a visible hexagonal backend both roles are inside, commonly in separate domain/application packages when that dependency boundary earns its cost, or in cohesive feature/use-case modules inside one package. DDD without hexagonal architecture may use another context-first arrangement. Follow `structure-codebase` rather than assuming `domain/` contains all inside code.
+Keep domain business decisions pure by default. A domain-owned driven port is a rare, explicit exception only when the model itself—not application orchestration—owns the conversation. The consuming domain service is then effectful but still provider-free: isolate its pure decision logic and test the port interaction with a fake. Do not use this exception for repositories or gateways needed only by application orchestration.
+
+Physical placement depends on the selected architecture. Organize by bounded context or business capability before technical role. In a visible hexagonal backend both roles are inside, commonly in separate domain/application packages when that dependency boundary earns its cost, or in cohesive feature/use-case modules inside one capability package. DDD without hexagonal architecture may use another context-first arrangement. Follow `structure-codebase` rather than assuming `domain/` contains all inside code.
 
 For detailed guidance, see `resources/domain-services.md`.
 
@@ -346,9 +397,13 @@ For detailed guidance, see `resources/domain-services.md`.
 Use discriminated union result types for expected business outcomes. Reserve exceptions for programmer mistakes and infrastructure failures.
 
 ```typescript
+type PledgeDecision =
+  | { readonly success: true; readonly occasion: Occasion; readonly events: readonly PledgeRecorded[] }
+  | { readonly success: false; readonly reason: 'contributor-ineligible' | 'non-positive-amount' | 'currency-mismatch' | 'exceeds-budget' | 'funding-closed' };
+
 type PledgeResult =
-  | { readonly success: true; readonly occasion: Occasion; readonly contributor: Contributor }
-  | { readonly success: false; readonly reason: 'insufficient-balance' | 'funding-closed' | 'not-found' };
+  | PledgeDecision
+  | { readonly success: false; readonly reason: 'not-found' | 'concurrent-change' }; // application outcomes
 ```
 
 **The test:** Could a user's action legitimately cause this outcome? If yes → result type. If no (it would mean a bug) → exception.
@@ -359,10 +414,10 @@ For detailed error modeling patterns and how errors propagate through layers, se
 
 ## Repository Pattern
 
-Repositories provide collection-like access to aggregates. Put the **interface on the policy side that consumes it** and the concrete implementation with infrastructure or integration code. In an explicitly hexagonal system the interface is an inside-owned driven port, preferably beside its owning application policy, and the implementation is a driven adapter. DDD without ports and adapters does not gain adapter layers by implication; follow the architecture selected by `structure-codebase`. Repositories use `interface` (not `type`) because they define behavior contracts, and their methods use domain language.
+Repositories provide collection-like access to aggregates. Put the **interface with the innermost policy that consumes it** and the concrete implementation with infrastructure or integration code. In an explicitly hexagonal system, repository ports are normally application-owned because use cases load and save aggregates; place them beside that application policy and let a driven adapter implement them. Put one in domain only when the domain model itself genuinely owns and consumes the abstraction. DDD without ports and adapters does not gain adapter layers by implication; follow the architecture selected by `structure-codebase`. Repositories use `interface` (not `type`) because they define behavior contracts, and their methods use domain language.
 
 ```typescript
-// Policy-side repository contract — an inside-owned port when hexagonal architecture is used
+// Application-owned repository contract — an inside-owned port when hexagonal architecture is used
 interface OccasionRepository {
   readonly findById: (id: OccasionId) => Promise<Occasion | undefined>;
   readonly save: (occasion: Occasion) => Promise<void>;
@@ -413,7 +468,7 @@ const getTestOccasion = (overrides?: Partial<Occasion>): Occasion =>
     id: createOccasionId('occasion-1'),
     name: "Mum's Birthday",
     giftIdeas: [],
-    budget: createMoney(100, 'GBP'),
+    budget: createMoney(10_000, 'GBP'),
     totalPledged: createMoney(0, 'GBP'),
     isFundingClosed: false,
     ...overrides,
@@ -476,9 +531,10 @@ Treating the initial model as sacred — refusing to rename types, split aggrega
 ## Checklist
 
 - [ ] Glossary file exists and is up to date
-- [ ] All types use glossary terms
-- [ ] All functions use glossary verbs and nouns
-- [ ] All test descriptions use domain language
+- [ ] Declared concepts use the glossary's canonical spelling and capitalization
+- [ ] Missing terms are treated as candidates requiring agreement, not silently adopted
+- [ ] Rejected aliases name the owning bounded context and canonical replacement
+- [ ] Any green language-lint result is reported with its actual targeted scope
 - [ ] Value objects are immutable and identity-less
 - [ ] Entities are always valid (invariants enforced on construction and transitions)
 - [ ] Entities have branded IDs; primitive value objects use branded types
@@ -487,7 +543,9 @@ Treating the initial model as sacred — refusing to rename types, split aggrega
 - [ ] Aggregates contain no read-only properties that exist solely for query convenience
 - [ ] Other aggregates referenced by ID, not embedded
 - [ ] Cross-aggregate logic in domain services, not crammed into one entity
-- [ ] Repository interfaces live on the consuming policy side; concrete implementations live with infrastructure/integration
+- [ ] Use cases and orchestration live in application policy, not domain policy
+- [ ] Repository and gateway ports live with the innermost consumer—normally application policy; domain owns only ports it genuinely consumes
+- [ ] Concrete driven adapters implement inside-owned ports and live with infrastructure/integration
 - [ ] Discriminated unions have exhaustive switch handling
 - [ ] Expected business outcomes use result types, not exceptions
 - [ ] Domain logic has zero infrastructure dependencies

@@ -27,13 +27,17 @@ When `type` is a resolvable URI (http/https), it SHOULD point to human-readable 
   "type": "https://api.example.com/problems/insufficient-funds",
   "title": "Insufficient Funds",
   "status": 422,
-  "detail": "Your account balance of $5.00 is insufficient for a $10.00 transfer.",
+  "detail": "Your USD account balance is insufficient for the requested transfer.",
   "instance": "/transfers/abc123",
-  "balance": 5.00
+  "balanceMinorUnits": 500,
+  "currency": "USD"
 }
 ```
 
-**Extension members** (like `balance` above) are allowed — clients MUST ignore extensions they don't recognize, which enables forward-compatible evolution of error responses.
+**Extension members** (like `balanceMinorUnits` and `currency` above) are
+allowed — clients MUST ignore extensions they don't recognize, which enables
+forward-compatible evolution. Financial extensions must carry explicit
+currency and integer minor units; do not publish ambiguous binary-float money.
 
 ## Example — Validation Errors
 

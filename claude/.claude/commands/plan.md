@@ -1,5 +1,5 @@
 ---
-description: Create a vertical-slice or selected reduction plan on a branch with a PR - no code changes
+description: Create a vertical-slice or selected reduction plan in the repository's planning workflow - no code changes
 argument-hint: [feature or work to plan]
 allowed-tools: Read, Glob, Grep, Write, Bash(git:*), Bash(gh:*)
 ---
@@ -10,9 +10,6 @@ Current branch state:
 Current branch:
 !`git branch --show-current`
 
-Active plans:
-!`ls plans/ 2>/dev/null || echo "No plans/ directory found"`
-
 Create a vertical-slice plan for the requested work: $ARGUMENTS
 
 1. Detect the repository's default branch. If currently on it, create a new feature branch first
@@ -22,8 +19,8 @@ Create a vertical-slice plan for the requested work: $ARGUMENTS
 5. Define known-good vertical implementation slices; default each to one trunk-based PR, and use `stack-pull-requests` when one slice needs review layers or later slices should start on the same evolving baseline before lower PRs merge
 6. If the selected story, acceptance criteria, or mocks are ambiguous, use `find-gaps` to tighten the artifact before finalizing the plan
 7. For a mechanism-reduction program, use `reduce-system-complexity` first to define the conserved contract, ledger, terminal mechanism-removal state, and behavior/mechanism gates
-8. Write the plan to `plans/<feature-name>.md` (create the directory if needed)
-9. Create a PR with the plan for review
+8. Discover and use the repository's declared planning workflow and location. If none exists and a durable file is appropriate, use `plans/<feature-name>.md` as the explicit fallback. Do not create a parallel file when the repository owns plans in issues or another system; stop if that owner is unavailable through the current tools.
+9. Follow the repository's review workflow; for the fallback file-backed workflow, create a PR containing only the plan
 
 ## Plan File Structure
 
@@ -91,14 +88,14 @@ Before each PR:
 For an intra-slice stack, nest the exact `#### Delivery Shape` and whole-stack gate under that slice. For a cross-slice stack, place one shared map before the first included slice and reference it from each included slice. Never stack the whole plan by default.
 
 ---
-*Delete this file when the plan is complete. If `plans/` is empty, delete the directory.*
+*Delete this temporary artifact when the plan is complete. When using the fallback `plans/` layout, remove the directory if it becomes empty.*
 ```
 
 ## Constraints
 
 - **Do NOT write any production code, test code, or implementation files**
-- **Plan document only** — the only file you should create/modify is in `plans/`
-- Write the plan to a file, never present it inline in chat
+- **Plan artifact only** — modify only the repository-declared plan owner, or the authorized fallback file
+- Use the repository's declared workflow; do not create a file solely because this command was invoked
 - **Prefer vertical slices** — break work into the smallest independently mergeable units that deliver observable value through the real production path.
 - **Avoid layer-cake plans** — database-only, API-only, UI-only, and "do all plumbing first" work is allowed only when it names the next vertical slice it unlocks with independent verification, or advances an explicitly selected reduction program toward a named terminal mechanism-removal state.
 - Each slice defaults to one trunk-based PR. Use independent PRs when slices can merge in any order without blocking or duplicating work, or later work waits for earlier merge. Load `stack-pull-requests` for intra-slice review layers or a cross-slice hard/flow lineage where upper work starts before lower merge; require benefits worth cascading rebase, CI, and approval churn.

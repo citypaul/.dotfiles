@@ -25,7 +25,7 @@ The ACL translates between an external model and your domain model at the bounda
 // External API returns their model
 type StripeCharge = {
   readonly id: string;
-  readonly amount: number;        // cents
+  readonly amount: number;        // integer minor units in Stripe's contract
   readonly currency: string;      // lowercase
   readonly status: string;
 };
@@ -41,7 +41,7 @@ const toPaymentResult = (charge: StripeCharge): PaymentResult => {
     return {
       success: true,
       chargeId: createChargeId(charge.id),
-      amount: createMoney(charge.amount / 100, parseCurrency(charge.currency)),
+      amount: createMoney(charge.amount, parseCurrency(charge.currency)),
     };
   }
   return { success: false, reason: `Payment failed: ${charge.status}` };
@@ -52,13 +52,13 @@ The ACL lives at the integration boundary — a driven adapter when hexagonal ar
 
 ## Shared Kernel
 
-A minimal set of types shared across contexts. Keep it as small as possible — only truly universal value objects.
+A minimal set of types shared across contexts. Keep it as small as possible — only truly universal value objects — and give every shared concept one explicit owning context or purpose-named package.
 
 ```typescript
-// shared-kernel/
+// packages/monetary-values/  — named owner and reviewed public contract
 //   money.ts
-//   email.ts
-//   branded-ids.ts  (if IDs cross context boundaries)
+// packages/contact-addresses/ — a separate owner when sharing is genuinely earned
+//   email-address.ts
 ```
 
 **Warning signs the shared kernel is too large:**
@@ -86,7 +86,6 @@ src/
       budgets/
       application/
       public.ts
-  shared-kernel/     # Minimal stable value objects only
 ```
 
 This structure protects context public APIs without claiming an inside/outside technology test wall.
@@ -95,23 +94,25 @@ This structure protects context public APIs without claiming an inside/outside t
 
 ```
 packages/
-  gifting/                           # context/capability grouping directory
-    hexagon/                         # visible provider-free inside
-      domain/                        # workspace package when warranted
-      application/                   # workspace package when warranted
+  gifting/                           # context/capability first
+    hexagon/
+      domain/                        # pure business rules and model
+      application/                   # use cases and normally application-owned ports
     adapters/
       driving/
       driven/
     testing/
   budgeting/
     hexagon/
-      budget-management/
+      domain/
+      application/
     adapters/
       driving/
       driven/
     testing/
-  shared-kernel/                     # minimal workspace package
 ```
+
+If both contexts genuinely share a concept, assign it one explicit context or purpose-owned package and expose it through that owner's public contract; do not create a repository-root `shared`, `utils`, or catch-all `shared-kernel` bucket.
 
 The grouping directories do not make a context real. Glossary scope, model authority, public contracts, and enforced imports do. The `hexagon/` directories add a separate claim: their packages are provider-free and independently testable from actors and adapters.
 

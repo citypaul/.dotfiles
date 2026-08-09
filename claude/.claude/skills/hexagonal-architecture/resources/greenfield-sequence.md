@@ -11,7 +11,7 @@ Before writing code, use the `structure-codebase` skill to choose the physical s
 Define the first driving port — the interface only. Then RED first: write a unit test that calls the driving port and expects a constant, and watch it fail. Only then write the smallest implementation behind the port: no parameters beyond the essentials, returning that constant (the classic fake-it step).
 
 ```typescript
-// hexagon/tax/for-calculating-taxes.ts — first driving port
+// packages/taxation/hexagon/application/src/for-calculating-taxes.ts
 interface ForCalculatingTaxes {
   readonly taxOn: (amount: Money) => Money;
 }
@@ -30,7 +30,7 @@ This first test is deliberately disposable — but be precise about which test t
 Define the first driven port and an outside fake under `testing/` that returns a simple value. RED first again: update the test to build the fake, pass it in, and expect the fake's value — use a *different* value than Step 1 so the test fails against the hardcoded constant. Then triangulate: change the app to take the driven port as a constructor/factory parameter and consult it instead of hardcoding.
 
 ```typescript
-// hexagon/tax/tax-rate-provider.ts — first driven port
+// packages/taxation/hexagon/application/src/tax-rate-provider.ts
 interface TaxRateProvider {
   readonly rateFor: (amount: Money) => TaxRate;
 }

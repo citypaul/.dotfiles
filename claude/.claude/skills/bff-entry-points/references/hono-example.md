@@ -38,7 +38,8 @@ export const createEndpointRegistrar = (deps: {
     app.openapi(route, toHonoHandler(contract, handler));
     if (contract.request?.body) {
       // Document the body without installing its validator: the OpenAPI registry
-      // carries the schema; the handler's body() thunk parses after authorization.
+      // carries the schema; the operation's body() thunk controls bounded parsing
+      // between any coarse path authorization and body-dependent authorization.
       app.openAPIRegistry.registerPath(withRequestBody(route, contract.request.body));
     }
     catalog.push(toCatalogEntry(contract));               // after a successful mount — no phantom entries
@@ -58,7 +59,7 @@ export const createEndpointRegistrar = (deps: {
 };
 ```
 
-`toHonoHandler` is the adapter that makes leaves framework-neutral: it reads `c.var.principal`, `c.req.valid('param')`/`valid('query')`, and — when the contract declares a body — builds `body: () => parseWith(contract.request.body, c.req)` (size-limited, strict media type), then calls the `HandlerFor` shape.
+`toHonoHandler` is the adapter that makes leaves framework-neutral: it reads `c.var.principal`, `c.req.valid('param')`/`valid('query')`, and — when the contract declares a body — builds `body: () => parseWith(contract.request.body, c.req)` (size-limited, strict media type), then calls the `HandlerFor` shape. The operation performs any available coarse principal/param check, awaits the thunk, authorizes every body-referenced target, and only then acts.
 
 `finalize()` is mandatory, idempotent, and *structurally* sealing: it is the only thing that returns a serveable host (`{ fetch: app.fetch }`), so composition cannot mount an unfinalized registrar — there is nothing to mount — and `register` throws once sealed. It mounts, for every catalog path, an `app.all` fallback answering 405 with an accurate `Allow` header — covering `OPTIONS` too, which in this same-origin profile serves no preflight and grants nothing — and records each fallback as a `kind: 'method-denial'` catalog entry carrying that `allow` list (no fabricated access class — a path can host a public GET and a protected POST, so denial is the entry's behavior). The fallback *is* in `app.routes`, keeping runtime reconciliation bidirectional. Hono synthesizes `HEAD` inside dispatch, so it never appears in `app.routes`: `finalize()` appends a `derived-head` entry per GET (inheriting that GET's classification), and gate 5's normalization counts the GET route as covering it.
 
@@ -113,14 +114,15 @@ export const registerCancelOrder = (endpoints: EndpointRegistrar, orders: ForCan
       orderId: params.orderId,
       command: body,                 // deferred thunk — the operation authorizes, then awaits it
     });
-    return respondWith(result);      // composition-owned: not-found → 404, not-order-owner → 403, ok → 200
+    return respondWith(result);      // composition-owned: absent/foreign tenant → the same not-found/404;
+                                     // a deliberately disclosed same-tenant refusal → 403; ok → 200
   });
 ```
 
 ## Hono-Specific Cautions
 
 - **Every sub-app in the tree must be `OpenAPIHono`.** A plain `Hono` instance silently drops the OpenAPI (and thus security-metadata) declarations mounted beneath it — gate 4 will catch it, but know why.
-- **Declared body schemas validate before the handler runs — so the registrar never declares them.** `createRoute`'s `request.body` installs a pre-handler validator, which would parse the body before the operation authorizes. The registrar therefore strips the body from the runtime route (`withoutBody`), registers the schema for documentation via `openAPIRegistry.registerPath`, and delivers the body as the handler's post-authorization `body()` thunk (size-limited, strict media type). Seed the ordering test: a spy on the schema proves parsing happens after the operation's authorization step.
+- **Declared body schemas validate before the handler runs — so the registrar never declares them.** `createRoute`'s `request.body` installs a pre-handler validator, removing the operation's control over coarse-check → bounded-parse → body-dependent-check ordering. The registrar therefore strips the body from the runtime route (`withoutBody`), registers the schema for documentation via `openAPIRegistry.registerPath`, and delivers the body as a size-limited, strict-media-type thunk. Seed both ordering cases: coarse refusal never parses; body-dependent refusal validates the body but produces no effect.
 - **Gate 5 reads `app.routes`, not the OpenAPI document.** A raw `app.get('/admin', ...)` never reaches the generated spec, so OpenAPI-paths reconciliation would miss exactly the bypass the gate exists for. Reconcile the runtime route collection (normalized method + translated path) against the catalog, and seed the violation test with a direct mount to prove the gate fails.
 - Per-route `middleware` in `createRoute` needs `as const` for context typing; the registrar supplies it — endpoint owners never touch the field.
 - `app.use(path, mw)` with an OpenAPI path needs `route.getRoutingPath()` (`{param}` → `:param`); avoid the trap by keeping all middleware inside `middlewareFor`.

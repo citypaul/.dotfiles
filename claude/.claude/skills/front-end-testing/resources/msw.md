@@ -56,8 +56,12 @@ export const handlers = [
 **One-time prerequisite** — generate the Service Worker script into your served public directory:
 
 ```bash
-npx msw init public/
+./node_modules/.bin/msw init public/
 ```
+
+Use the repository-installed, locked MSW version and inspect/authorize this
+generated-file write before running it; do not let a missing local binary
+trigger an implicit download.
 
 **In a setup file** (Browser Mode `setupFiles` run inside the browser):
 

@@ -22,8 +22,8 @@ If the slice participates in a selected reduction program, stop and route it thr
 
 Per CLAUDE.md: evaluate refactoring opportunities when applicable after GREEN or another passing proportionate preservation baseline; record `N/A` when restructuring is not applicable. Do not run the mutation harness before or after every refactor.
 
-1. **External APIs stay unchanged** - Public interfaces must not break
-2. **All tests must still pass** - Without modification
+1. **Preserve the agreed contract** - Do not change observable behavior or break accepted callers under the label of refactoring
+2. **Keep proportionate evidence green** - Tests may be refactored when they continue proving the same contract
 3. **Semantic over structural** - Only abstract when code shares meaning, not just structure
 4. **Clean code is good enough** - If code is already expressive, say so explicitly
 
@@ -95,7 +95,7 @@ For each file, evaluate:
 
 **B. Structural Simplicity**
 - Are there nested conditionals that could use early returns?
-- Is nesting depth ≤2 levels?
+- Does nesting make branches, outcomes, or effects materially hard to trace?
 - Are functions focused on one responsibility, regardless of incidental line count?
 
 **C. Knowledge Duplication**
@@ -109,8 +109,8 @@ For each file, evaluate:
 - Is the abstraction obvious and useful (not speculative)?
 
 **E. Immutability Compliance**
-- Are all data operations non-mutating?
-- Could `readonly` types be added?
+- Are shared or declared immutable values protected from mutation?
+- Is local mutation contained behind clear ownership, and could `readonly` strengthen a boundary contract?
 
 **F. Functional Patterns**
 - Are functions pure where possible?
@@ -119,9 +119,9 @@ For each file, evaluate:
 #### 3. Classify Findings
 
 **🔴 Critical (Fix Now):**
-- Immutability violations
+- Mutation that escapes its owner or breaks a declared immutable contract
 - Semantic knowledge duplication
-- Deeply nested code (>3 levels)
+- Nested control flow whose branches or effects are materially hard to follow
 
 **⚠️ High Value (Should Fix):**
 - Unclear names affecting comprehension
@@ -158,28 +158,26 @@ The following code requires no refactoring:
 
 #### 🔴 Critical Refactoring Needed
 
-##### 1. Knowledge Duplication: Free Shipping Threshold
-**Files**: `order-calculator.ts:23`, `shipping-service.ts:45`, `cart-total.ts:67`
-**Issue**: The rule "free shipping over £50" is duplicated in 3 places
-**Impact**: Changes to shipping policy require updates in multiple locations
+##### 1. Knowledge Duplication: Shipment Batch Limit
+**Files**: `order-planner.ts:23`, `shipping-service.ts:45`, `dispatch-plan.ts:67`
+**Issue**: The rule "split shipments above 50 parcels" is duplicated in 3 places
+**Impact**: Changes to dispatch capacity require updates in multiple locations
 **Semantic Analysis**: All three instances represent the same business knowledge
 **Recommendation**:
 ```typescript
 // Extract to shared constant and function
-export const FREE_SHIPPING_THRESHOLD = 50;
-export const STANDARD_SHIPPING_COST = 5.99;
+export const MAX_PARCELS_PER_BATCH = 50;
 
-export const calculateShippingCost = (itemsTotal: number): number => {
-  return itemsTotal > FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_COST;
-};
+export const requiresSplitShipment = (parcelCount: number): boolean =>
+  parcelCount > MAX_PARCELS_PER_BATCH;
 ```
-**Files to update**: order-calculator.ts, shipping-service.ts, cart-total.ts
+**Files to update**: order-planner.ts, shipping-service.ts, dispatch-plan.ts
 
 #### ⚠️ High Value Refactoring
 
 ##### 1. Complex Nested Conditionals
 **File**: `payment-processor.ts:56-78`
-**Issue**: 3 levels of nested if statements
+**Issue**: Nested branches obscure distinct failure and success outcomes
 **Recommendation**: Use early returns (see example)
 
 #### 💡 Consider for Next Refactoring Session
@@ -205,20 +203,20 @@ export const calculateShippingCost = (itemsTotal: number): number => {
 
 ### 🎯 Recommended Action Plan
 
-1. **Commit current green state first**: `git commit -m "feat: add payment processing"`
-2. **Fix critical issues** (immutability, knowledge duplication)
-3. **Run all tests** - must stay green
-4. **Commit refactoring**: `git commit -m "refactor: extract shipping cost calculation"`
-5. **Address high-value issues** if time permits
-6. **Skip** "consider" items unless actively working in those areas
+1. **Record the current green baseline** with the repository's affected checks
+2. **Fix critical issues** (ownership leaks, knowledge duplication)
+3. **Run the affected and required PR checks** - they must stay green
+4. **Address high-value issues** if time permits
+5. **Skip** "consider" items unless actively working in those areas
+6. **Commit only when the user explicitly authorizes it**
 
 ### ⚠️ Refactoring Checklist
 
 - [ ] Tests are currently passing (green state)
-- [ ] Current code is committed
+- [ ] The baseline is recorded and recoverable
 - [ ] Refactoring adds clear value
-- [ ] External APIs will remain unchanged
-- [ ] All tests will continue passing without modification
+- [ ] Agreed behavior and accepted contracts will remain intact
+- [ ] Affected tests or alternate evidence will continue proving that contract
 - [ ] Changes address semantic duplication, not just structural similarity
 ```
 
@@ -232,8 +230,8 @@ export const calculateShippingCost = (itemsTotal: number): number => {
 
 ✅ Good news: The code is already clean and expressive. No refactoring needed.
 
-Let's commit and move to the next test:
-`git commit -m "feat: [feature description]"`
+Move to the next test. If the user has authorized commits, record this green
+checkpoint separately from later behavior changes.
 ```
 
 OR if refactoring is valuable:
@@ -301,7 +299,7 @@ Let's refactor these while tests stay green."
 
 No refactoring needed. This is production-ready.
 
-Ready to commit?"
+Ready to apply this bounded refactor?"
 ```
 
 ## Critical Rule: Semantic Meaning Over Structure
@@ -312,21 +310,23 @@ Ready to commit?"
 
 ```typescript
 // Similar structure, DIFFERENT semantic meaning - DO NOT ABSTRACT
-const validatePaymentAmount = (amount: number): boolean => {
-  return amount > 0 && amount <= 10000;
+const validateUploadBytes = (bytes: number): boolean => {
+  return Number.isSafeInteger(bytes) && bytes > 0 && bytes <= 10_000_000;
 };
 
-const validateTransferAmount = (amount: number): boolean => {
-  return amount > 0 && amount <= 10000;
+const validateBatchSize = (items: number): boolean => {
+  return Number.isSafeInteger(items) && items > 0 && items <= 10_000;
 };
 
 // ❌ WRONG - Abstracting these couples unrelated business rules
-const validateAmount = (amount: number, max: number): boolean => {
-  return amount > 0 && amount <= max;
+const validateQuantity = (value: number, max: number): boolean => {
+  return Number.isSafeInteger(value) && value > 0 && value <= max;
 };
 ```
 
-**Why not abstract?** Payment limits and transfer limits are different business concepts that will likely evolve independently. Payment limits might change based on fraud rules; transfer limits might change based on account type.
+**Why not abstract?** Upload bytes and worker batch sizes use different units,
+owners, and failure policies. Their current numeric shape is coincidence, not
+one shared contract.
 
 ### Example: Same Concept - SAFE TO ABSTRACT
 
@@ -377,22 +377,20 @@ const validateYearsOfExperience = (years: number): boolean => {
 ### IS a DRY Violation (Same Knowledge)
 
 ```typescript
-class Order {
-  calculateTotal(): number {
-    const itemsTotal = this.items.reduce((sum, item) => sum + item.price, 0);
-    const shippingCost = itemsTotal > 50 ? 0 : 5.99; // Knowledge duplicated!
-    return itemsTotal + shippingCost;
+class DispatchPlan {
+  requiresSplitShipment(): boolean {
+    return this.parcels.length > 50; // Knowledge duplicated!
   }
 }
 
-class ShippingCalculator {
-  calculate(orderAmount: number): number {
-    return orderAmount > 50 ? 0 : 5.99; // Same knowledge!
+class ShippingService {
+  requiresSplitShipment(parcelCount: number): boolean {
+    return parcelCount > 50; // Same knowledge!
   }
 }
 ```
 
-**Assessment**: The rule "free shipping over £50, otherwise £5.99" is the same business knowledge repeated. **Should refactor.**
+**Assessment**: The rule "split shipments above 50 parcels" is the same business knowledge repeated. **Should refactor.**
 
 ## Decision-Making Questions
 
@@ -400,8 +398,8 @@ class ShippingCalculator {
 
 1. **Value Check**: Will this genuinely make the code better?
 2. **Semantic Check**: Do the similar code blocks represent the same concept?
-3. **API Check**: Will external callers be affected?
-4. **Test Check**: Will tests need to change (bad) or stay the same (good)?
+3. **Contract Check**: Will agreed behavior or accepted callers be affected?
+4. **Evidence Check**: Will changed tests still prove the same contract?
 5. **Clarity Check**: Will this be more readable and maintainable?
 6. **Premature Check**: Am I abstracting before I understand the pattern?
 
@@ -410,8 +408,8 @@ class ShippingCalculator {
 Before recommending refactoring, verify:
 - ✅ Applicable tests are currently green and/or reviewed alternate evidence covers the conserved behavior and guarantees
 - ✅ Refactoring adds genuine value
-- ✅ External APIs stay unchanged
-- ✅ Tests won't need modification
+- ✅ Agreed behavior and accepted contracts stay intact
+- ✅ Affected tests or alternate evidence continue proving that contract
 - ✅ Addressing semantic duplication (not just structural)
 - ✅ Not creating premature abstractions
 
@@ -420,11 +418,11 @@ Before recommending refactoring, verify:
 ### Extract Constant
 ```typescript
 // Before
-if (amount > 10000) { ... }
+if (parcelCount > 50) { ... }
 
 // After
-const MAX_PAYMENT_AMOUNT = 10000;
-if (amount > MAX_PAYMENT_AMOUNT) { ... }
+const MAX_PARCELS_PER_BATCH = 50;
+if (parcelCount > MAX_PARCELS_PER_BATCH) { ... }
 ```
 
 ### Early Returns
@@ -448,27 +446,22 @@ return doSomething(user);
 ### Extract Function
 ```typescript
 // Before
-const processOrder = (order: Order) => {
-  const itemsTotal = order.items.reduce((sum, item) => sum + item.price, 0);
-  const shipping = itemsTotal > 50 ? 0 : 5.99;
-  return itemsTotal + shipping;
+const planShipment = (shipment: Shipment) => {
+  const parcelCount = shipment.parcels.length;
+  return { parcelCount, requiresSplit: parcelCount > 50 };
 };
 
 // After
-const calculateItemsTotal = (items: OrderItem[]): number => {
-  return items.reduce((sum, item) => sum + item.price, 0);
-};
+const MAX_PARCELS_PER_BATCH = 50;
 
-const calculateShipping = (itemsTotal: number): number => {
-  const FREE_SHIPPING_THRESHOLD = 50;
-  const STANDARD_SHIPPING = 5.99;
-  return itemsTotal > FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING;
-};
+const countParcels = (parcels: readonly Parcel[]): number => parcels.length;
 
-const processOrder = (order: Order): number => {
-  const itemsTotal = calculateItemsTotal(order.items);
-  const shipping = calculateShipping(itemsTotal);
-  return itemsTotal + shipping;
+const requiresSplitShipment = (parcelCount: number): boolean =>
+  parcelCount > MAX_PARCELS_PER_BATCH;
+
+const planShipment = (shipment: Shipment) => {
+  const parcelCount = countParcels(shipment.parcels);
+  return { parcelCount, requiresSplit: requiresSplitShipment(parcelCount) };
 };
 ```
 

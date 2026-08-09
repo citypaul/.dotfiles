@@ -110,6 +110,12 @@ else
   fail "opencode.json: missing '\"lsp\": true' to enable TypeScript LSP"
 fi
 
+if grep -qE '~/.claude/(skills/\*/SKILL\.md|agents/\*\.md)' "$OPENCODE_CONFIG"; then
+  fail "opencode.json: must not inject every skill or agent as global instructions"
+else
+  pass "opencode.json: leaves skills and agents to native on-demand discovery"
+fi
+
 if grep -qE '^stow .* opencode( |$)' "$INSTALL_SCRIPT"; then
   pass "install.sh: stows opencode dotfiles"
 else
@@ -139,6 +145,124 @@ for agent in "$AGENTS_DIR"/*.md; do
     fail "$name: missing 'description:' field"
   fi
 done
+
+echo ""
+
+echo "Testing OpenCode-only installer ownership..."
+echo ""
+
+BIN_DIR="$TMPDIR/bin"
+CLEAN_HOME="$TMPDIR/clean-home"
+OWNERSHIP_HOME="$TMPDIR/ownership-home"
+EXACT_COMMIT=$(git -C "$REPO_ROOT" rev-parse --verify HEAD)
+mkdir -p "$BIN_DIR" "$CLEAN_HOME" "$OWNERSHIP_HOME"
+
+cat > "$BIN_DIR/curl" <<'STUB'
+#!/usr/bin/env bash
+url=""
+dest=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o) dest="$2"; shift 2 ;;
+    http*) url="$1"; shift ;;
+    *) shift ;;
+  esac
+done
+
+case "$url" in
+  */opencode.json)
+    printf '%s\n' '{ "lsp": true }' > "$dest"
+    ;;
+  */commands/*)
+    printf '%s\n' '---' 'description: Test command' 'allowed-tools: Bash' '---' 'command body' > "$dest"
+    ;;
+  */agents/*)
+    printf '%s\n' '---' 'name: test-agent' 'description: Test agent' 'tools: Read, Bash' 'color: blue' '---' 'agent body' > "$dest"
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+STUB
+chmod +x "$BIN_DIR/curl"
+
+HOME="$CLEAN_HOME" PATH="$BIN_DIR:/usr/bin:/bin" \
+  "$REPO_ROOT/install-claude.sh" --opencode-only --version "$EXACT_COMMIT" \
+  > "$TMPDIR/opencode-clean-output"
+
+if [[ ! -e "$CLEAN_HOME/.claude" ]]; then
+  pass "opencode-only does not create unrelated Claude directories"
+else
+  fail "opencode-only must not create ~/.claude roots"
+fi
+
+mkdir -p \
+  "$OWNERSHIP_HOME/.claude/commands" \
+  "$OWNERSHIP_HOME/.claude/agents" \
+  "$OWNERSHIP_HOME/.config/opencode/command" \
+  "$OWNERSHIP_HOME/.config/opencode/agent"
+printf '%s\n' 'unmanaged command' > "$OWNERSHIP_HOME/.claude/commands/unmanaged.md"
+printf '%s\n' 'unmanaged agent' > "$OWNERSHIP_HOME/.claude/agents/unmanaged.md"
+printf '%s\n' 'custom OpenCode command' > "$OWNERSHIP_HOME/.config/opencode/command/pr.md"
+printf '%s\n' 'custom OpenCode agent' > "$OWNERSHIP_HOME/.config/opencode/agent/tdd-guardian.md"
+BROKEN_TARGET="$OWNERSHIP_HOME/missing-command-target"
+ln -s "$BROKEN_TARGET" "$OWNERSHIP_HOME/.config/opencode/command/continue.md"
+
+HOME="$OWNERSHIP_HOME" PATH="$BIN_DIR:/usr/bin:/bin" \
+  "$REPO_ROOT/install-claude.sh" --opencode-only --version "$EXACT_COMMIT" \
+  > "$TMPDIR/opencode-ownership-output"
+
+# A second immediate replacement must allocate another backup instead of
+# overwriting the first one, even inside the same wall-clock second.
+HOME="$OWNERSHIP_HOME" PATH="$BIN_DIR:/usr/bin:/bin" \
+  "$REPO_ROOT/install-claude.sh" --opencode-only --version "$EXACT_COMMIT" \
+  >> "$TMPDIR/opencode-ownership-output"
+
+if [[ ! -e "$OWNERSHIP_HOME/.config/opencode/command/unmanaged.md" ]] &&
+   [[ ! -e "$OWNERSHIP_HOME/.config/opencode/agent/unmanaged.md" ]]; then
+  pass "OpenCode projection ignores unmanaged Claude files"
+else
+  fail "OpenCode projection must use only the declared manifest"
+fi
+
+command_backup_count=0
+agent_backup_count=0
+command_custom_preserved=false
+agent_custom_preserved=false
+for backup in "$OWNERSHIP_HOME/.config/opencode/command/pr.md.backup."*; do
+  [[ -f "$backup" ]] || continue
+  command_backup_count=$((command_backup_count + 1))
+  grep -q 'custom OpenCode command' "$backup" && command_custom_preserved=true
+done
+for backup in "$OWNERSHIP_HOME/.config/opencode/agent/tdd-guardian.md.backup."*; do
+  [[ -f "$backup" ]] || continue
+  agent_backup_count=$((agent_backup_count + 1))
+  grep -q 'custom OpenCode agent' "$backup" && agent_custom_preserved=true
+done
+if [[ "$command_backup_count" -ge 2 ]] && [[ "$agent_backup_count" -ge 2 ]] &&
+   [[ "$command_custom_preserved" == true ]] && [[ "$agent_custom_preserved" == true ]]; then
+  pass "OpenCode destination collisions receive unique lossless backups"
+else
+  fail "OpenCode projection must preserve every replacement in a unique backup"
+fi
+
+broken_link_preserved=false
+for backup in "$OWNERSHIP_HOME/.config/opencode/command/continue.md.backup."*; do
+  [[ -L "$backup" ]] && broken_link_preserved=true
+done
+if [[ "$broken_link_preserved" == true ]] && [[ ! -e "$BROKEN_TARGET" ]] &&
+   [[ -f "$OWNERSHIP_HOME/.config/opencode/command/continue.md" ]]; then
+  pass "OpenCode replacement preserves dangling symlinks without following them"
+else
+  fail "OpenCode replacement must back up dangling symlinks without writing through them"
+fi
+
+if ! grep -q '^allowed-tools:' "$OWNERSHIP_HOME/.config/opencode/command/pr.md" &&
+   ! grep -Eq '^(tools|color):' "$OWNERSHIP_HOME/.config/opencode/agent/tdd-guardian.md"; then
+  pass "OpenCode projection transforms only declared source files"
+else
+  fail "OpenCode projected frontmatter is incompatible"
+fi
 
 echo ""
 

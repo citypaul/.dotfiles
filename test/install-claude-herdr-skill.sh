@@ -63,7 +63,7 @@ HOME="$TMPDIR/home" \
 PATH="$TMPDIR/bin:/usr/bin:/bin" \
   "$REPO_ROOT/install-claude.sh" --no-agents > "$TMPDIR/output"
 
-if grep -Fq -- "skills add herdrdev/herdr -g -a claude-code -s herdr -y" "$NPX_LOG"; then
+if grep -Fq -- "skills@1.5.22 add herdrdev/herdr#1777e9bba32b953ed1ad203b4a16d01105539000 -g -a claude-code -s herdr --copy -y" "$NPX_LOG"; then
   pass "installs the herdr skill for claude-code"
 else
   fail "missing herdr skill install for claude-code"
@@ -79,7 +79,7 @@ HOME="$TMPDIR/home" \
 PATH="$TMPDIR/bin:/usr/bin:/bin" \
   "$REPO_ROOT/install-claude.sh" --no-agents --agent codex > "$TMPDIR/output-codex"
 
-if grep -Fq -- "skills add herdrdev/herdr -g -a claude-code -a codex -s herdr -y" "$NPX_LOG"; then
+if grep -Fq -- "skills@1.5.22 add herdrdev/herdr#1777e9bba32b953ed1ad203b4a16d01105539000 -g -a claude-code -a codex -s herdr --copy -y" "$NPX_LOG"; then
   pass "installs the herdr skill for claude-code and codex"
 else
   fail "herdr skill did not target both agents"
@@ -105,7 +105,7 @@ echo ""
 echo "Testing the help text advertises the herdr source..."
 echo ""
 
-if "$REPO_ROOT/install-claude.sh" --help | grep -Fq -- "herdrdev/herdr --skill herdr"; then
+if "$REPO_ROOT/install-claude.sh" --help | grep -Fq -- "herdrdev/herdr#1777e9b --skill herdr"; then
   pass "help lists herdrdev/herdr as a default external source"
 else
   fail "help does not mention the herdr skill source"

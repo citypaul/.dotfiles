@@ -1,8 +1,9 @@
-# Document Types: One Mode Per Page
+# Document Types: One Primary Reader Job Per Page
 
-The single most violated rule in real-world docs: mixing tutorial,
-how-to, reference, and explanation on one page. Nearly every "Getting
-Started" page is a tutorial/how-to/explanation smoothie.
+Mixing tutorial, how-to, reference, and explanation without a clear
+primary job often makes a page hard to navigate. Small supporting
+sections are fine; split when the blend obscures who the page serves
+or what a complete answer looks like.
 
 ## The four modes (Diátaxis — Procida, diataxis.fr)
 

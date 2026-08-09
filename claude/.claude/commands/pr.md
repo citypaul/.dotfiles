@@ -62,11 +62,15 @@ Create a PR with:
 - Focus on WHAT changed and WHY
 - **Prefer small PRs** — if the change could be split into independently mergeable units, consider doing so
 
-Include verification notes for exactly one change path:
+Include verification notes for every applicable change path; mixed PRs may use
+more than one:
 
 - **Behavior change** — RED/GREEN evidence plus mutation results, or explicit mutation `N/A` with proportionate alternate evidence
 - **Pure refactor** — passing baseline plus mutation results, or explicit mutation `N/A` with proportionate alternate evidence
 - **Reduction transition** — program/terminal-slice link, conserved contract, `behavior gate: pass`, independent verification, owner/removal/bounded-lifetime metadata for any bridge (`N/A` when none), `mechanism gate: pending — no net-reduction claim`, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
 - **Terminal reduction** — reducer program/report/ledger link (or `N/A — authorized single terminal slice`), passing behavior/mechanism gates, discharged transition obligations, removal of superseded machinery and expired bridges, plus mutation results or explicit mutation `N/A` with proportionate alternate evidence
+- **Docs/dependency/generated/configuration/CI/operations** — applicable
+  source/render/lock/provenance/compatibility/syntax/dry-run/rollback/regeneration
+  evidence; omit unrelated TDD, refactoring, or mutation claims
 
 Use `gh pr create` with the appropriate base, title, and body. For a stack, create only the current boundary unless whole-stack submission was explicitly confirmed.

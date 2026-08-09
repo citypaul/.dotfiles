@@ -167,7 +167,7 @@ By the end of this course you will be able to:
 
 ## How to Use This Course
 
-- **With Claude:** Run `/teach-me [topic]` for interactive, guided sessions
+- **With an agent:** Invoke `teach-me` through the active host for interactive, guided sessions
 - **Self-study:** Read each session file, then work through the exercises
 - **Reference:** Use the cheat sheet for quick lookups after studying
 

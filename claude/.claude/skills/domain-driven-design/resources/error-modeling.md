@@ -4,12 +4,16 @@ How to represent and propagate errors across architectural layers.
 
 ## The Default: Discriminated Union Results
 
-For expected business outcomes (validation failures, business rule violations, not-found), return a discriminated union. This is the functional approach — errors are data, not control flow.
+For expected outcomes, return discriminated unions. Domain results contain business decisions such as rule violations; application results may add orchestration outcomes such as not-found. Errors stay explicit data rather than hidden control flow.
 
 ```typescript
+type PledgeDecision =
+  | { readonly success: true; readonly occasion: Occasion; readonly events: readonly PledgeRecorded[] }
+  | { readonly success: false; readonly reason: 'contributor-ineligible' | 'non-positive-amount' | 'currency-mismatch' | 'exceeds-budget' | 'funding-closed' };
+
 type PledgeResult =
-  | { readonly success: true; readonly occasion: Occasion; readonly contributor: Contributor }
-  | { readonly success: false; readonly reason: 'insufficient-balance' | 'funding-closed' | 'not-found' };
+  | PledgeDecision
+  | { readonly success: false; readonly reason: 'not-found' | 'concurrent-change' }; // application outcomes
 ```
 
 **Why not exceptions?** Exceptions are invisible in the type signature. A function that returns `Occasion` but can throw `InsufficientBalanceError` has a hidden return path that the compiler doesn't track. Callers can forget to handle it. A discriminated union makes every outcome explicit — the compiler enforces exhaustive handling.
@@ -26,15 +30,16 @@ These should crash or propagate up to a top-level error handler. They are not bu
 
 ```typescript
 // ✅ Exception — invariant violation means a bug
-const createMoney = (amount: number, currency: Currency): Money => {
-  if (amount < 0) throw new Error('Money cannot be negative');
-  return { amount, currency };
+const createMoney = (minorUnits: number, currency: Currency): Money => {
+  if (!Number.isSafeInteger(minorUnits)) throw new Error('Money minor units must be a safe integer');
+  if (minorUnits < 0) throw new Error('Money cannot be negative');
+  return { minorUnits, currency };
 };
 
 // ✅ Result type — expected business outcome
-const pledgeContribution = (...): PledgeResult => {
-  if (amount.amount > contributor.walletBalance.amount) {
-    return { success: false, reason: 'insufficient-balance' };
+const pledgeContribution = (...): PledgeDecision => {
+  if (!eligibility.mayPledge) {
+    return { success: false, reason: 'contributor-ineligible' };
   }
   ...
 };
@@ -45,31 +50,41 @@ const pledgeContribution = (...): PledgeResult => {
 ## How Errors Propagate Through Layers
 
 ```
-Domain function    → returns PledgeResult (discriminated union)
+Domain function    → returns PledgeDecision (business outcomes)
        ↓
-Use case           → inspects result, decides whether to save
+Use case           → adds application outcomes such as not-found and decides whether to save
        ↓
 Route handler      → translates result.reason to HTTP status code
        ↓
-HTTP response      → { error: "insufficient-balance" } with 422
+HTTP response      → { error: "contributor-ineligible" } with 422
 ```
 
 Each layer handles errors at its own level of abstraction:
 
 ```typescript
 // Domain: returns result with business reason
-const pledgeContribution = (...): PledgeResult => {
+const pledgeContribution = (...): PledgeDecision => {
   if (occasion.isFundingClosed) return { success: false, reason: 'funding-closed' };
   ...
 };
 
 // Use case: propagates result, controls save
 const handlePledge = async (repos, dto): Promise<PledgeResult> => {
-  ...
-  const result = pledgeContribution(occasion, contributor, dto.amount);
+  const stored = await repos.occasion.findById(dto.occasionId);
+  const eligibility = await repos.eligibility.findFor(dto.contributorId);
+  if (!stored || !eligibility) return { success: false, reason: 'not-found' };
+
+  const result = pledgeContribution(stored.value, eligibility, {
+    id: dto.pledgeId,
+    amount: dto.amount,
+  });
   if (result.success) {
-    await repos.occasion.save(result.occasion);
-    await repos.contributor.save(result.contributor);
+    const saved = await repos.occasion.saveWithOutbox(
+      result.occasion,
+      result.events,
+      stored.version,
+    );
+    if (saved === 'conflict') return { success: false, reason: 'concurrent-change' };
   }
   return result;
 };
@@ -77,6 +92,7 @@ const handlePledge = async (repos, dto): Promise<PledgeResult> => {
 // Route handler: translates to HTTP
 const status = result.success ? 200
   : result.reason === 'not-found' ? 404
+  : result.reason === 'concurrent-change' ? 409
   : 422;
 return NextResponse.json(
   result.success ? { pledged: result.occasion.totalPledged } : { error: result.reason },
@@ -110,7 +126,7 @@ The `reason` field is a string literal union — exhaustive switch handling catc
 ```typescript
 // WRONG — invisible failure mode, caller must remember to catch
 const pledgeContribution = (...): Occasion => {
-  if (amount > balance) throw new InsufficientBalanceError();
+  if (occasion.isFundingClosed) throw new FundingClosedError();
   ...
 };
 ```
@@ -143,7 +159,7 @@ it('rejects pledge when funding is closed', async () => {
   const result = await handlePledge(occasionRepo, contributorRepo, {
     occasionId: closedOccasion.id,
     contributorId: testContributor.id,
-    amount: createMoney(25, 'GBP'),
+    amount: createMoney(2_500, 'GBP'),
   });
 
   expect(result).toEqual({ success: false, reason: 'funding-closed' });

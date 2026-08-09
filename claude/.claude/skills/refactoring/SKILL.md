@@ -1,6 +1,6 @@
 ---
 name: refactoring
-description: Refactoring assessment and behavior-preserving patterns for code with a passing baseline and proportionate preservation evidence. Use when the user asks to clean up, simplify, or restructure a selected area, or after GREEN establishes the passing baseline for a TDD increment. Mutation testing verifies the accumulated result later at the end-of-phase PR-readiness gate. Covers commit-before-refactoring discipline, when refactoring adds value vs when to skip it, and priority classification. For any slice in a selected whole-path reduction program—transition or terminal—use reduce-system-complexity as the governing skill; refactoring may be secondary when applicable. For repository-wide architecture discovery use improve-codebase-architecture; for a module contract use codebase-design. Do NOT use for insufficiently evidenced code or adding behavior.
+description: Refactoring assessment and behavior-preserving patterns for code with a passing baseline and proportionate preservation evidence. Use when the user asks to clean up, simplify, or restructure a selected area, or after GREEN establishes the passing baseline for a TDD increment. Mutation testing verifies the accumulated result later at the end-of-phase PR-readiness gate. Covers recoverable-baseline discipline, when refactoring adds value vs when to skip it, and priority classification; commits always require explicit user approval. For any slice in a selected whole-path reduction program—transition or terminal—use reduce-system-complexity as the governing skill; refactoring may be secondary when applicable. For repository-wide architecture discovery use improve-codebase-architecture; for a module contract use codebase-design. Do NOT use for insufficiently evidenced code or adding behavior.
 ---
 
 # Refactoring
@@ -15,29 +15,31 @@ This skill safely implements a bounded, behavior-preserving improvement. Use `im
 
 - Assess after GREEN or another passing proportionate preservation baseline
 - Only refactor if it improves the code
-- **Commit working code BEFORE refactoring** (critical safety net)
+- **Establish a verified, recoverable baseline before refactoring; commit only with explicit user approval**
 
-### Commit Before Refactoring - WHY
+### Establish a Recoverable Baseline - WHY
 
 Having a working baseline before refactoring:
 - Allows reverting if refactoring breaks things
 - Provides safety net for experimentation
 - Makes refactoring less risky
-- Shows clear separation in git history
+- Can show clear separation in git history when the user authorizes commits
+
+If the baseline cannot be restored safely without creating a commit, stop and ask for approval rather than committing implicitly.
 
 **Workflow:**
 1. BASELINE: Applicable tests pass and/or the conserved behavior and guarantees have proportionate evidence
-2. COMMIT: Save the working baseline with its preservation evidence
+2. CHECKPOINT: Record the baseline and preservation evidence. Create a baseline commit only when the user explicitly approves it
 3. REFACTOR: Improve structure in small steps under the `tdd` skill's canonical fast-feedback policy. From a clean baseline, prefer a proven repository-owned graph-complete watcher; use diff-selected Vitest watch only when the installed version/configuration has passed the canonical clean-start live proof, otherwise repeat the affected one-shot. In monorepos use the root graph so transitive consumers remain eligible
 4. VERIFY: Keep focused and affected tests plus other proportionate evidence green after each step; do not rerun the full suite after every edit
-5. COMMIT: Save refactored code
+5. CHECKPOINT: Present the verified refactor. Commit it only after explicit user approval
 6. PRE-PR GATE: When the phase is otherwise ready for a PR, run mutation testing once for the accumulated scope where meaningful, or record explicit `N/A` plus proportionate alternate evidence; address valuable survivors within that gate
 
 ## Priority Classification
 
 | Priority | Action | Examples |
 |----------|--------|----------|
-| Critical | Fix now | Data mutation (see the `functional` skill), knowledge duplication, >3 levels nesting |
+| Critical | Fix now | Behavior-changing mutation, divergent copies of one business rule, control flow that obscures a high-risk path |
 | High | This session | Magic numbers, unclear names, functions coordinating multiple responsibilities |
 | Nice | Later | Minor naming, single-use helpers |
 | Skip | Don't change | Already clean code |
@@ -58,31 +60,41 @@ Having a working baseline before refactoring:
 
 ```typescript
 // After GREEN establishes a passing behavior-test baseline:
-const processOrder = (order: Order): ProcessedOrder => {
-  const itemsTotal = order.items.reduce((sum, item) => sum + item.price, 0);
-  const shipping = itemsTotal > 50 ? 0 : 5.99;
-  return { ...order, total: itemsTotal + shipping, shippingCost: shipping };
+const planBatch = (batch: Batch): PlannedBatch => {
+  const itemSlots = batch.items.reduce((sum, item) => sum + item.quantity, 0);
+  const bufferSlots = itemSlots > 50 ? 0 : 6;
+  return { ...batch, plannedSlots: itemSlots + bufferSlots, bufferSlots };
 };
 
 // ASSESSMENT:
-// ⚠️ High: Magic numbers 50, 5.99 → extract constants
+// ⚠️ High: Magic numbers 50, 6 → extract constants
 // ✅ Skip: Structure is clear enough
 // DECISION: Extract constants only
 ```
 
-## Speculative Code is a TDD Violation
+## New Behavior Needs Evidence
 
-If code isn't driven by a failing test, don't write it.
+Do not add new behavior without a failing test or other repository-authorized
+acceptance proof that demands it. A behavior-preserving refactor may change
+lines without a new RED test only while proportionate preservation evidence
+stays green. At PR readiness, use mutation evidence for the accumulated scope
+where meaningful and explicit alternate evidence where it is not; never invent
+structural mutants.
 
-**Key lesson**: Every new behavior must have a failing test that demanded it. A behavior-preserving refactor may change lines without a new RED test, but only to improve structure while proportionate preservation evidence stays green. At PR readiness, use mutation evidence for the accumulated scope where meaningful and explicit alternate evidence where it is not; never invent structural mutants. Do not add speculative behavior.
-
-❌ **Speculative code examples:**
+❌ **Speculative additions:**
 - "Just in case" logic
 - Features not yet needed
-- Code written "for future flexibility"
-- Untested error handling paths
+- Abstractions written only for imagined future flexibility
+- New error behavior with no accepted contract
 
-✅ **Correct approach**: Delete speculative code. If the behavior is needed, write a failing test that demands it, then implement.
+✅ **Correct approach**: Do not add the speculative behavior. If it is needed,
+write a failing test that demands it, then implement it.
+
+Existing untested code is not proven speculative or dead. Before removing a
+branch, characterize its observable behavior, inspect every caller and
+reachability path, and resolve the behavior authority. Delete it only when the
+evidence shows it is unreachable or the accepted contract explicitly retires
+it, then keep the preservation/regression checks green.
 
 ```typescript
 // ❌ WRONG - Speculative error handling (no test demands this)
@@ -114,6 +126,8 @@ Don't refactor when:
 
 ## Commit Messages for Refactoring
 
+When the user approves a refactoring commit, use a focused message such as:
+
 ```
 refactor: extract scenario validation logic
 refactor: simplify error handling flow
@@ -122,7 +136,7 @@ refactor: rename ambiguous parameter names
 
 **Format**: `refactor: <what was changed>`
 
-**Note**: Refactoring commits should NOT be mixed with feature commits.
+**Note**: When commits are used, refactoring commits should not be mixed with feature commits.
 
 ---
 
@@ -133,7 +147,7 @@ refactor: rename ambiguous parameter names
 - [ ] If the refactored phase is ready for a PR, mutation results were reviewed once for the accumulated scope where meaningful, or explicit `N/A` plus proportionate alternate evidence was recorded
 - [ ] No unplanned consumer-facing API was added; internal or temporary contracts follow the selected design and compatibility plan
 - [ ] Code more readable than before
-- [ ] Committed separately from features
-- [ ] Committed BEFORE refactoring (safety net)
+- [ ] Any commits were explicitly approved and kept separate from features
+- [ ] A verified, recoverable baseline was established; a baseline commit was created only if approved
 - [ ] No speculative code added
 - [ ] Behavior unchanged within the confidence and fidelity of the passing preservation evidence

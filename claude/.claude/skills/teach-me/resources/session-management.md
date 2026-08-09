@@ -12,13 +12,13 @@ When `/teach-me [topic]` is invoked and existing progress exists:
 
 ```
 CHECK (in order):
-├─► learning/[topic-slug]/session-log.md     (project-local, repo root)
-├─► ~/.claude/learning/[topic-slug]/session-log.md  (general)
-├─► Memory system — search for learning memories about [topic]
-└─► Any of the above may be the source of truth; prefer the most recent
+├─► The learner's chosen topic workspace
+├─► Any repository-declared learning location
+├─► Host memory, when available and authorized
+└─► Prefer the workspace containing the existing plan; reconcile conflicts explicitly
 ```
 
-When checking, search for the topic loosely (a topic may have been slugged differently — `terraform` vs `terraform-dreamcatcher`). If artifacts for one topic turn up in more than one location or under more than one slug, ask the learner which is canonical, consolidate everything there, and continue with that single workspace. All new artifacts always go beside the existing plan — never start a parallel workspace.
+When checking, search for the topic loosely (a topic may have been slugged differently — `terraform` vs `terraform-platform`). If artifacts for one topic turn up in more than one location or under more than one slug, ask the learner which is canonical, consolidate everything there, and continue with that single workspace. All new artifacts always go beside the existing plan — never start a parallel workspace.
 
 ### 2. Summarize Where We Left Off
 
@@ -32,7 +32,7 @@ Also re-read the mission in `plan.md` and the learning records in `session-log.m
 
 ### 3. Run Spaced Review
 
-Before new material, review items that are due. This is non-negotiable — spaced repetition is the highest-impact technique for retention.
+Before new material, review due items when retention across sessions is part of the learner's goal. Spaced retrieval is a strong default, but the learner may choose a one-off explanation instead.
 
 Pull review items from the session log's "Spaced review due" section. Ask 3-5 questions covering due items.
 
@@ -113,11 +113,11 @@ When a later record contradicts an earlier one (understanding deepened or was co
 
 ---
 
-## Memory Integration
+## Optional Memory Integration
 
 ### What to Save to Memory
 
-After each session, save or update a memory with type `project`:
+If the host provides memory and the learner authorizes it, save or update one learning-progress entry:
 
 ```markdown
 ---
@@ -191,10 +191,10 @@ type: project
 
 ## Session Continuity Across Conversations
 
-Each conversation with Claude is independent — there is no automatic memory of previous conversations. Continuity relies on:
+Do not assume the host carries complete context across conversations. Portable continuity relies on:
 
 1. **Learning files** — the session log, plan, and cheat sheet persist on disk
-2. **Memory system** — learning progress memories persist across conversations
+2. **Optional host memory** — when available, authorized, and current
 3. **The learner themselves** — they remember what they've learned (and the skill should leverage this through review)
 
 ### Starting a New Conversation
@@ -202,7 +202,7 @@ Each conversation with Claude is independent — there is no automatic memory of
 When the learner types `/teach-me [topic]` in a new conversation:
 
 1. Check for learning files at both locations
-2. Check memory for learning progress
+2. Check authorized host memory when available
 3. Read the session log to understand where things stand
 4. Begin with a brief check-in: "Last time we covered [X]. Let me ask a few review questions before we continue."
 5. Run spaced review
@@ -241,7 +241,7 @@ The learner has graduated when they can:
 
 1. Update the learning plan status to "Complete"
 2. Generate or update the final cheat sheet
-3. Update memory to reflect completion and final level
+3. Update authorized host memory when it is in use
 4. Suggest next topics if the learner wants to continue deeper
 5. Note any persistent gaps for future reference
 

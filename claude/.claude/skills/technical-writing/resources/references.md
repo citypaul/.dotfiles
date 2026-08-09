@@ -35,4 +35,4 @@ sources.
 - Netlify, Agent Experience — https://www.netlify.com/agent-experience/ and https://agentexperience.ax/
 - John Carroll, minimalism — https://www.instructionaldesign.org/theories/minimalism/ and "Ten Misconceptions about Minimalism" (1996) — https://ris.utwente.nl/ws/files/249663536/Caroll1996ten.pdf
 - STC, minimalism heuristics revisited — https://www.stc.org/techcomm/2021/02/04/minimalism-heuristics-revisited-developing-a-practical-review-tool/
-- Adam Bradley (mintuz), Developer Writing Playbook — https://github.com/mintuz/skills/blob/main/plugins/core/skills/writing/SKILL.md (the seed this skill adapted)
+- Adam Bulmer (mintuz), Developer Writing Playbook and formatting guide — https://github.com/mintuz/skills/blob/280c015271cbf539f7950469df6f515cc41be6ec/plugins/core/skills/writing/SKILL.md and https://github.com/mintuz/skills/blob/280c015271cbf539f7950469df6f515cc41be6ec/plugins/core/skills/writing/formatting.md (the pinned seed this skill adapted; see `source-notes.md`)

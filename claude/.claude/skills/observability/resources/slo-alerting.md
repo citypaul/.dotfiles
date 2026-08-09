@@ -8,7 +8,7 @@ Per service type, start from this menu and pick the two or three that map to wha
 
 | Service type | Candidate SLIs |
 |--------------|---------------|
-| User-facing request/response | Availability (good requests / total), latency (p99 within threshold), correctness |
+| User-facing request/response | Availability (good requests / valid requests), latency (requests below threshold / valid requests), correctness |
 | Storage | Durability, availability, read/write latency |
 | Pipeline / batch | Freshness (data age), throughput, correctness |
 | All | Correctness — the one every system should track |
@@ -22,7 +22,7 @@ Definition discipline for each SLI:
 
 ## Setting the SLO
 
-- Percentiles, never averages — the tail is where users suffer
+- Express the budgeted SLO as good events / valid events. For latency-distribution diagnosis, use percentiles rather than averages because means hide the tail
 - Start from measured reality, not aspiration; tighten deliberately later
 - Keep the internal target slightly stricter than anything published or contractual
 - Do not overachieve: consistently delivering 99.99% against a 99.9% SLO teaches users to depend on 99.99%
@@ -116,4 +116,8 @@ Every page links one. Concise beats complete:
 **Recent causes:** dated list — prune anything stale.
 ```
 
-Review cadence: any alert below ~90% precision ("was this page real and actionable?") gets redesigned, demoted to ticket, or deleted. Track pages per on-call shift; a healthy target is a few per day *across the whole rotation*, not per person per night ([Ewaschuk](https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/mobilebasic)).
+Review measured page outcomes on a regular cadence. Alerts that repeatedly page
+without urgent, actionable, user-visible work should be redesigned, demoted to
+a ticket, automated, or deleted. Set a page-load objective from the service's
+risk and staffing model rather than importing a universal precision percentage
+or pages-per-day target ([Ewaschuk](https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/mobilebasic)).

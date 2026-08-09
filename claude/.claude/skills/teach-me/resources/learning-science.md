@@ -35,7 +35,7 @@ These techniques are synergistic. The most effective approach combines them: pre
 
 **What:** Reviewing material at expanding intervals rather than cramming.
 
-**Why it works:** Spacing forces partial forgetting, making each retrieval event more effortful and thus more strengthening. The optimal gap scales with the desired retention period — roughly 10-20% of the target retention interval (Bjork & Bjork, 2011).
+**Why it works:** Spacing allows some forgetting, making later retrieval effortful enough to strengthen access. Useful intervals depend on the material, learner, and intended retention period; adapt them from observed performance rather than presenting one schedule as optimal.
 
 **How to apply:**
 - Track when each concept was last reviewed
@@ -61,7 +61,7 @@ Adjust intervals based on performance. Struggled → shorten. Easy → lengthen.
 
 **What:** Mixing different topics or problem types within practice, rather than practicing one type at a time (blocked practice).
 
-**Why it works:** Interleaving forces discrimination — the learner must identify which concept applies, not just execute a known procedure. One study found interleaving produced 76% better scores at a one-month delay compared to blocked practice.
+**Why it works:** Interleaving can improve discrimination — the learner must identify which concept applies, not just execute a known procedure. Its benefit depends on the task and the learner already having enough foundation to compare the categories.
 
 **When to use each:**
 - **Blocked**: When first learning a concept — the learner needs to understand the basic structure
@@ -110,7 +110,7 @@ Adjust intervals based on performance. Struggled → shorten. Easy → lengthen.
 - Introduce variation in how problems are presented
 - If the learner consistently fails → reduce difficulty (the difficulty is undesirable)
 - If the learner consistently succeeds without effort → increase difficulty (too easy, no learning)
-- The sweet spot: the learner succeeds about 70-85% of the time with genuine effort
+- Calibrate from evidence: repeated failure means reduce difficulty; effortless success means increase it
 
 ---
 
@@ -153,7 +153,7 @@ Adjust intervals based on performance. Struggled → shorten. Easy → lengthen.
 
 **What:** Combining verbal explanations with visual representations so information is encoded through both linguistic and visual-spatial systems (Paivio, 1986).
 
-**Why it works:** Verbal and visual information process through separate cognitive channels. Dual encoding creates redundant retrieval paths. Mayer (2009) found multimedia learning boosted test scores by 89%. Key constraint: visuals must be integrated and complementary, not decorative.
+**Why it works:** Complementary verbal and visual representations can create additional retrieval cues and make relationships easier to inspect. The benefit is not a universal percentage: it depends on the material and on the visual being relevant rather than decorative.
 
 **How to apply:**
 - Accompany explanations with diagrams, concept maps, or spatial representations
@@ -174,14 +174,18 @@ Adjust intervals based on performance. Struggled → shorten. Easy → lengthen.
 
 | Phase | Difficulty is... | Therefore |
 |-------|-----------------|-----------|
-| Knowledge acquisition (TEACH) | The enemy — it consumes working memory needed for understanding | Simple language, concrete examples, low cognitive load |
-| Skill practice (PRACTICE/REVIEW) | The tool — effortful retrieval builds storage strength | Retrieval practice, spacing, interleaving, variation |
+| Knowledge acquisition (TEACH) | Excess difficulty can consume working memory needed for understanding | Simple language, concrete examples, low cognitive load |
+| Skill practice (PRACTICE/REVIEW) | Desirable difficulty can strengthen retrieval and storage | Retrieval practice, spacing, interleaving, variation |
 
 **How to apply:**
-- Never assess mastery from same-session performance — only spaced performance counts
-- Do not graduate a concept from review because the learner was fluent at the end of the session it was taught
-- When a learner says "I've got this" right after learning, treat it as a fluency signal, not evidence — schedule the spaced check anyway
-- Conversely, effortful struggle during spaced retrieval is a *good* sign, not a regression
+- Do not infer durable mastery from same-session performance alone; spaced
+  performance is stronger retention evidence
+- Do not graduate a concept from a long-term review plan solely because the
+  learner was fluent at the end of the teaching session
+- When durable retention is the goal, treat "I've got this" as current-fluency
+  evidence and offer a later spaced check when feasible
+- Effortful spaced retrieval can be productive, but distinguish desirable
+  difficulty from missing prerequisites or unproductive confusion
 
 ---
 

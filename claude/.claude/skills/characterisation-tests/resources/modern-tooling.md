@@ -54,19 +54,19 @@ Test many input combinations at once to rapidly characterise a function's behavi
 
 ```typescript
 // Option 1: it.each with inline snapshot (pure Vitest, no extra dependency)
-const amounts = [100, 1000, 10000, 15000] as const;
-const types = ['standard', 'premium', 'business'] as const;
+const activityPoints = [100, 1000, 10000, 15000] as const;
+const tiers = ['standard', 'premium', 'business'] as const;
 const years = [0, 1, 3, 5, 7, 10] as const;
 
-const combinations = amounts.flatMap(amount =>
-  types.flatMap(type =>
-    years.map(y => ({ amount, type, years: y })),
+const combinations = activityPoints.flatMap(points =>
+  tiers.flatMap(tier =>
+    years.map(y => ({ points, tier, years: y })),
   ),
 );
 
 it('characterises all input combinations', () => {
   const results = combinations.map(
-    c => `${c.type}/${c.amount}/${c.years} → ${calculateDiscount(c.amount, c.type, c.years)}`,
+    c => `${c.tier}/${c.points}/${c.years} → ${calculateBonus(c.points, c.tier, c.years)}`,
   );
   expect(results).toMatchInlineSnapshot();
   // Vitest fills in all 72 results on first run
@@ -137,7 +137,12 @@ For complex outputs where automated comparison isn't enough, use an explicit app
 3. If no approved file exists, the test fails -- a human must review and approve
 4. If files differ, the test fails -- a human reviews the change
 
-The `approvals` npm package (`npm install approvals`) provides this workflow with diff tool support (documented Jest/Mocha integration; usable from Vitest via its plain `approvals.verify` API).
+The `approvals` npm package provides this workflow with diff-tool support
+(documented Jest/Mocha integration; usable from Vitest via its plain
+`approvals.verify` API). Do not add it merely because it is listed here. If the
+repository needs the workflow, evaluate the dependency, select an exact
+compatible version, obtain normal dependency authority, and install it through
+the repository package manager.
 
 **When to prefer approval tests:** When the output is complex enough that a human should review it before accepting as baseline (e.g., HTML rendering, PDF generation, complex business reports).
 
@@ -149,6 +154,6 @@ Use coverage and mutation-aware test design to know when you've characterised en
 2. **Identify untested branches**: look for red/uncovered lines in the area you're changing
 3. **Add characterisation tests** targeting those paths
 4. **Repeat** until the change area + one layer out has adequate branch coverage
-5. **Plan the later mutation gate**: record the changed production scope and likely mutant risks; run the automated `mutation-testing` harness once the completed phase is otherwise ready for its PR
+5. **Plan proportionate test-strength evidence**: record the changed production scope and likely mutant risks; if repository policy or change risk selects `mutation-testing`, run it once for the accumulated change at the chosen verification point
 
-Coverage tells you which paths are *exercised*. Mutation testing tells you which are *protected*. A test that executes a branch but doesn't assert on its effect is a false sense of security. Use mutator rules before changing the code, then use the automated harness at the end-of-phase PR-readiness gate so it does not slow every inner increment.
+Coverage tells you which paths are *exercised*. Mutation testing can show which are *protected*. A test that executes a branch but doesn't assert on its effect is a false sense of security. Use mutator rules before changing the code; when an automated harness is warranted, run it against the accumulated change so it does not slow every inner increment.

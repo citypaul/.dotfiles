@@ -9,7 +9,7 @@ For writing good tests (factories, behavior-driven patterns), load the `testing`
 
 Mutation testing answers the question: **"Are my tests actually catching bugs?"**
 
-Code coverage tells you what code your tests execute. Mutation testing tells you if your tests would **detect changes** to that code. A test suite with 100% coverage can still miss 40% of potential bugs.
+Code coverage tells you what code your tests execute. Mutation testing tells you if your tests would **detect meaningful changes** to that code. Complete line coverage alone does not prove that assertions protect behavior.
 
 **Default posture:** use an automated mutation harness first. For JavaScript and TypeScript projects, recommend Stryker as the starting point if it is not already set up. Use manual/mental mutations only as a fallback, a teaching aid, or a focused follow-up for subtle survivors.
 
@@ -75,21 +75,28 @@ At the end-of-phase PR-readiness gate, prove test effectiveness with Stryker whe
 
 ```bash
 rg --files | rg '(^|/)(package.json|stryker\.config\.(mjs|cjs|js|json)|stryker\.conf\.(js|json))$'
+git status --porcelain
 git diff <review-base>...HEAD --name-only
 ```
 
 - Identify the package manager, test runner, affected package(s), and existing Stryker config.
 - Use the actual review boundary: the detected default branch for a single PR, or the immediately lower branch for a stacked PR layer.
+- Diff-scoped mutation intentionally covers committed branch changes only. Require a clean working tree before running it. If `git status --porcelain` is non-empty, stop and explain that staged, unstaged, and untracked work is excluded; do not silently commit, stash, or claim a complete diff result.
 - For a stacked slice, mutate the focused layer against its parent. The top also runs the cumulative acceptance and repository gates required by `stack-pull-requests`.
 - In monorepos, start in the smallest affected package, then widen to the repo-level command when the targeted run is healthy.
 - If no Stryker setup exists in a JS/TS project, recommend adding it before doing manual mutation analysis.
 
 ### Step 2: Set Up Stryker When Missing
 
-Use the official initializer as the starting point:
+First select compatible exact Stryker package versions from official
+documentation and the repository's runtime/test-runner constraints. Adding
+the dependency and running an initializer both change the repository, so
+obtain the same authorization required for other dependency/setup changes.
+Then use the repository's package manager with that reviewed version, for
+example:
 
 ```bash
-npm init stryker@latest
+pnpm dlx create-stryker@<reviewed-version>
 ```
 
 Then inspect and adapt the generated `stryker.config.*`:
@@ -116,24 +123,24 @@ Suggest project scripts for full-project, cached, and branch-diff mutation runs:
 The `mutation:diff` helper should:
 
 - Read the base branch argument, defaulting to the repository's detected default branch.
-- Collect changed files with `git diff --name-only --diff-filter=ACMRTUXB <base>...HEAD`.
+- Refuse to run when `git status --porcelain` is non-empty, explaining that `<base>...HEAD` excludes staged, unstaged, and untracked work.
+- Collect changed files with `git diff --name-only -z --diff-filter=ACMRTUXB <base>...HEAD` and parse NUL-delimited records; filenames may contain whitespace or newlines.
 - Keep changed production files matching the project's source extensions.
 - Exclude test/spec files, fixtures, snapshots, generated files, declaration files, and build output.
-- Run `stryker run --incremental --force --mutate <comma-separated-files>`.
+- Invoke the repository-local Stryker binary without a shell. If its `--mutate` option requires comma-separated patterns, reject a candidate filename containing a comma with a clear message before joining; never silently change the scope.
 - Exit clearly when there are no changed production files to mutate.
 
-Prefer a small Node helper over dense shell inside `package.json`; quoting `*`, `!`, and command substitution is fragile across shells. For quick local use, this POSIX one-liner is acceptable:
-
-```bash
-CHANGED=$(git diff --name-only --diff-filter=ACMRTUXB <review-base>...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep -Ev '(^|/)(__tests__|test|tests|fixtures|generated)/|\.(test|spec|d)\.' | paste -sd, -)
-test -n "$CHANGED" && npx stryker run --incremental --force --mutate "$CHANGED"
-```
+Use a small Node helper, not dense shell inside `package.json`: command substitution cannot preserve NUL-delimited paths, and quoting `*`, `!`, commas, and newlines is fragile across shells.
 
 Use exact line ranges for tiny follow-up checks when the report points to a specific survivor:
 
 ```bash
-npx stryker run --incremental --force --mutate src/example.ts:42-57
+pnpm exec stryker run --incremental --force --mutate src/example.ts:42-57
 ```
+
+Use the repository's actual package manager; the examples use pnpm only to
+show a repository-local binary. Do not let an execution command silently
+download a moving Stryker release.
 
 ### Step 4: Run and Triage
 
@@ -156,7 +163,7 @@ Fix obvious issues immediately:
 - Missing side-effect verification
 - High-value business rules such as money, permissions, eligibility, safety, or data loss
 
-Use the harness's ask-question facility for subtle survivors that require human judgment. Ask one concise question with concrete choices, explain the mutation, and describe the tradeoff. Use this when behavior is intentionally unspecified, the correct domain rule is unclear, the test would be expensive or brittle, or the mutant may be equivalent but you are not certain.
+For subtle survivors that require human judgment, use the active harness's structured ask-question facility when available; otherwise ask one concise plain-text question. Give concrete choices, explain the mutation, and describe the tradeoff. Use this when behavior is intentionally unspecified, the correct domain rule is unclear, the test would be expensive or brittle, or the mutant may be equivalent but you are not certain.
 
 ### Step 5: Kill Survivors With TDD
 
@@ -194,7 +201,7 @@ export default {
 
 Adapt `testRunner`, `mutate`, `vitest.configFile`, build commands, and checker plugins to match the project. Do not cargo-cult this exact config into a repo with a different layout.
 
-**Vitest Browser Mode caveat:** Stryker's Vitest runner targets Node-based test projects, not browser-mode ones. In a repo that follows the house preference for Browser Mode UI tests, scope `mutate` to non-UI source covered by Node tests, or point Stryker at the Node project of a multi-project Vitest setup. Verify current Browser Mode support in the Stryker docs before assuming a UI package can be mutated.
+**Vitest Browser Mode caveat:** Stryker's Vitest runner targets Node-based test projects, not browser-mode ones. When a repository uses Browser Mode because the tested claim needs real browser behavior and the support/cost fit, scope `mutate` to non-UI source covered by Node tests, or point Stryker at the Node project of a multi-project Vitest setup. Verify current Browser Mode support in the Stryker docs before assuming a UI package can be mutated.
 
 ### CI and Quality Gates
 

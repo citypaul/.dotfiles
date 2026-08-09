@@ -57,6 +57,41 @@ procedural content generation."
   and remediation. An API reference documenting only the happy path
   documents half the API.
 
+## Lifecycle: State, Not Age
+
+Maintained documentation describes current truth. Keep an active plan or specification workspace only while its outcome is unfinished. Delete it when the outcome ships or its assumptions are superseded; do not assign completed specifications a time-to-live or retain them as an informal archive. Git already preserves the history.
+
+Before deletion, move each lasting constraint to its current owner:
+
+| Constraint | Current owner |
+|------------|---------------|
+| Observable behavior or regression | Source code and an executable test |
+| Accepted architecture decision | The repository's accepted ADR location |
+| Package contract or setup | Package documentation |
+| Operational procedure | Maintained operational documentation |
+| Approved domain vocabulary | The bounded context's authoritative glossary |
+| Temporary sequencing or blockers | Current status or the active plan only |
+
+Do not leave maintained pages pointing at deleted workspaces or bare delivery identifiers. If an issue, PR, task, requirement, specification, or ADR identifier is still useful, introduce the purpose in plain language so the sentence remains understandable without opening the historical artifact.
+
+A documentation index is a routing surface, not a catalogue. Name where a reader starts and distinguish current authority, active work, accepted decisions, and historical evidence. Delete overlapping, obsolete, speculative, generated, and unowned pages when they no longer answer a maintained question.
+
+Documentation-only changes do not inherently require a RED-GREEN-REFACTOR loop. Test executable examples, link checks, lint rules, and other documentation guards—including a positive control that proves a new guard detects a known failure.
+
+## Git Archaeology for Missing Behavior
+
+Investigate current source, tests, status, and accepted ADRs before searching history. Then use the narrowest useful Git query:
+
+```bash
+git log -S '<concept>'              # commits that add or remove an exact string
+git log -G '<pattern>'              # commits whose patches match a pattern
+git log --all -- <path>             # history of a deleted or moved document
+git show <commit>:<path>            # recover a file at one revision
+git blame -L <start>,<end> <path>   # trace the origin of current behavior
+```
+
+Follow an introducing commit to its merged pull request when discussion there may explain the decision. Treat every recovered specification as evidence at that revision, never as current authority. If its rationale still constrains the product, promote that rationale into the current authoritative artifact instead of reviving the old workspace.
+
 ## Every page is page one (Baker)
 
 Readers arrive at pages, not sites — search brought them then, RAG

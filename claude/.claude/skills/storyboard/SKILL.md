@@ -1,18 +1,18 @@
 ---
 name: storyboard
-description: Produce a mock-audit storyboard — a single HTML page embedding every UX surface in a scope of work side-by-side, with per-mock audit checklists, a flow diagram, and gap cards for missing mocks. Use before any feature touching multiple UX surfaces begins implementation. Also use when the user says "make it easy for me to see all these mocks in one place", "audit the mocks", or "I want to review the whole flow".
+description: Produce a mock-audit storyboard — a single HTML page embedding related UX surfaces side-by-side, with per-mock audit checklists, a flow diagram, and gap cards for missing mocks. Use when reviewing several mocks together would materially reduce context-switching or expose cross-surface gaps, or when the user asks to see or audit a whole flow in one place.
 ---
 
 # Storyboard
 
-A **storyboard** is a single reviewable HTML page that stitches every UX surface in a scope of work into one view. Each existing mock is embedded as a live `<iframe>`. A flow diagram at the top shows how the user moves through them. Gap cards mark mocks that still need producing. Per-mock audit checklists give the reviewer a place to approve or flag concrete fixes.
+A **storyboard** is a single reviewable HTML page that stitches every UX surface in a scope of work into one view. Existing mocks are embedded as sandboxed `<iframe>` elements only when they are authoritative and safe to load; otherwise the page uses a labelled static image. A flow diagram at the top shows how the user moves through them. Gap cards mark mocks that still need producing. Per-mock audit checklists give the reviewer a place to approve or flag concrete fixes.
 
 **Purpose:** move the design audit from "open a dozen tabs and try to hold the flow in your head" to "open one page and scroll". Gives you a reviewable artifact that pairs with whatever textual decision record you keep (a plan doc, an audit note, a PR description).
 
 ## When to produce one
 
-- **Before any feature whose scope touches ≥ 2 UX surfaces begins implementation.** Examples: a signup flow (signup → verify email → onboarding), a settings page (profile / notifications / delete / billing), an invitation flow (send → email → accept → landing).
-- **Before a planned chunk of work that covers multiple surfaces** — whatever the project's unit of planning (milestone, epic, phase, batch). When the chunk collectively touches multiple surfaces, storyboard the whole thing before starting.
+- **When a flow has enough related surfaces or states that reviewing them separately hides transitions, inconsistencies, or gaps.** Examples: signup → verification → onboarding, or a settings flow with destructive and recovery states.
+- **Before a planned chunk of work only when the combined review earns its maintenance cost.** A count of surfaces alone is not a reason to create another artifact.
 - **Single-feature audit** when a feature spans multiple states (a flow with loading / empty / populated / error states across 3+ steps).
 - **The user explicitly asks** for "everything in one place", "the whole flow", "audit the mocks", "I want to see all of this together".
 - **Before producing new mocks.** Storyboarding the existing ones first reveals gaps visually and forces brainstorm questions per gap before drafting.
@@ -42,7 +42,7 @@ Place the storyboard HTML in the project's existing mocks or launch-planning fol
 - `apps/<app>/design-mocks/<scope>-audit.html`
 - `design-mocks/<scope>-storyboard.html`
 
-Never place storyboards inside `plans/` — plan files are deleted when their work completes (see the `planning` skill), and the storyboard should outlive the plan.
+Treat the storyboard as an active review artifact, not a permanent record. Follow the repository's artifact layout while it is in use; delete it when the reviewed outcome ships or its assumptions are superseded unless a named owner still maintains it for a current question. Git history is the archive.
 
 Match the naming convention of other artifacts in the repo. If there's a mock manifest or index page, add a featured link to the storyboard so it's discoverable.
 
@@ -74,10 +74,10 @@ Back-link to the parent index (mocks manifest, planning index, etc.).
 - Responsive grid (typically 3-column on desktop, collapsing to single column on mobile). One cell per mock.
 - Each cell contains:
   - Small badge + filename header.
-  - Mock name (serif display).
+  - Mock name using the project's heading typography.
   - Short description (1–2 sentences).
-  - `<iframe>` at fixed height (780px works well for primary mocks, 640px for adjacent; adjust to project).
-  - "Open in new tab ↗" link.
+  - A sandboxed `<iframe>` at fixed height (780px works well for primary mocks, 640px for adjacent; adjust to project), or the documented static fallback.
+  - "Open in new tab ↗" link with `rel="noopener noreferrer"`.
   - **Audit checklist card** — prompts for each impeccable discipline relevant to the mock: `/critique`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/impeccable harden`, `/distill`. Plus any scope-specific questions ("discoverability of edit affordance?", "loading state mocked?").
 
 ### 5. Transition / state gaps
@@ -91,7 +91,7 @@ When something should be mocked but isn't obvious (e.g. a post-action toast, a s
 - Visually distinct background / border (use the project's "action" tint).
 - Each cell:
   - Badge + filename for the mock to be produced.
-  - Serif display name.
+  - Display name using the project's heading typography.
   - Description of what the mock represents.
   - **Brainstorm questions** — unordered list. Each bullet = one explicit decision that must be made before drafting the mock. Cover: entry point(s), shape (sheet / dialog / page), field list, edge/error states, integration with existing patterns, destructive-action semantics, cancel behaviour.
 
@@ -110,7 +110,7 @@ Ordered list describing the steps from this storyboard to code-lands:
 2. Answer the brainstorm questions on each gap card.
 3. Produce the gap mocks via `/impeccable craft` + run them through the design pipeline (`/shape` → `/critique` → `/layout` → `/clarify` → `/polish`, plus `/adapt` for responsive + `/impeccable harden` for edge states).
 4. Apply any fixes to existing mocks the audit flagged.
-5. Commit mocks + audit note (with commit approval, per the repo's workflow gate). Code starts.
+5. Save the reviewed mocks and audit note through the repository's authorized delivery workflow. Implementation starts.
 
 ### 9. Footer
 
@@ -118,15 +118,30 @@ Meta line: scope code · last-updated date · pair-read links.
 
 ## Style conventions
 
-Use the project's existing design tokens — **do not invent new ones**. If the project has a Tailwind config with brand colours, typography, and shadow tokens, import/reuse those so the storyboard looks native. Specifically:
+Use the project's existing design tokens and layout tooling — **do not invent
+new ones**. If the project uses Tailwind, reuse its configured utilities; do
+not emit Tailwind classes into a project that does not compile them. If no
+local convention exists, use a small framework-neutral inline-CSS fallback.
+Specifically:
 
-- **Colours:** primary action (for gap cards + existing-mock badges), text, background, "done/exists" confirmation, and "uncertain/?" states. Four-to-five tokens cover everything.
-- **Fonts:** a serif for display (page title, section headings, mock names) and a sans for body. Every storyboard has the same typographic rhythm.
-- **Badges:** sage for "exists", coral/primary for "gap", gold/amber for "uncertain" — or whatever the project's palette calls those.
+- **Colours:** map action, text, background, exists, gap, and uncertain roles to
+  local semantic tokens. A fallback may define only the minimum accessible
+  colours the page needs.
+- **Fonts:** reuse local body and heading stacks; do not add a serif or font
+  dependency solely for the storyboard.
+- **Badges:** use the project's semantic status colours, with text/glyph labels
+  so colour is never the only signal.
 - **Iframe frame:** fixed height, border, rounded corners, light shadow. Same visual weight across the grid.
-- **Container:** `max-w-7xl mx-auto` for the outer width so the page has breathing room on ultra-wide monitors.
+- **Container:** use the local page-shell/container pattern. A framework-neutral
+  fallback can use `max-width`, `margin-inline: auto`, and responsive padding.
 
 Match the local codebase's existing mock or index-page style. Copy the `<style>` block from a sibling mock rather than re-inventing.
+
+## Embedding safety
+
+Treat every mock and URL as untrusted content even when it lives in the repository. Prefer relative, reviewed, repository-owned targets; never embed credential-bearing URLs or private third-party pages. Give each iframe a `sandbox` attribute with only the capabilities the mock demonstrably needs. Static mocks need no tokens; interactive mocks commonly need `allow-scripts`, but same-origin untrusted content must not receive both `allow-scripts` and `allow-same-origin`. If that combination is genuinely required, serve it from an isolated origin or use the static fallback.
+
+Add a restrictive Content Security Policy to the storyboard itself (normally self-hosted frames/images/styles only, plus the minimum locally justified exceptions). Do not add `allow-top-navigation`, popups, forms, downloads, camera, microphone, or clipboard access merely to make a mock work. If sandboxing or CSP prevents faithful rendering, label the limitation and use a static authority rather than weakening the review page silently.
 
 ## Prettier safety
 
@@ -140,22 +155,21 @@ Three rules learned the hard way:
 
 After producing the storyboard:
 
-1. **Link it from the project's mocks manifest or index page** under an "Active audits" or similar section so it's discoverable.
-2. **Reference it from the decision-record markdown** (the plan file, audit note, or PR description) as the visual companion.
-3. **Reference it from the item / feature README(s)** in the "Design" section.
-4. The storyboard supersedes scattered "here's the hub-list mock, click here for the archive confirm" links. One place, always.
+1. **Link it from the project's mocks manifest or index page** under an "Active audits" or similar section while it is current.
+2. **Reference it from the active decision artifact** (plan, audit note, or PR description) as the visual companion.
+3. Remove active links when the storyboard is deleted or superseded; promote lasting design constraints to maintained product documentation or tests.
 
 ## Non-negotiables
 
-- **Live iframes, not screenshots.** The mocks must render — reviewers need to click, scroll, and see real behaviour. Screenshots go stale instantly; embedded iframes stay current.
+- **Prefer live, rendered mocks.** Use iframes when the authoritative source is embeddable and safe to load. If only a static authoritative mock exists, embed the image, label it non-interactive, and record which states cannot be exercised.
 - **Gaps must have brainstorm questions.** A gap card without questions is dead weight. Each gap is a forcing function to make decisions before drafting.
 - **One page, not a tree.** Scrolling through one page is cheaper than navigating a tree of links. If the scope is so big the page becomes unreadable, split by sub-flow but keep each split to one page.
 - **Checklist is genuine, not decorative.** Every item on the audit checklist corresponds to a real design discipline. The reviewer uses the checklist to guide review; the agent uses it to guide follow-up work. Don't list `/critique` if `/critique` won't actually run.
 
 ## Anti-patterns
 
-❌ **Using `<img>` screenshots of the mocks.**
-Screenshots go stale the moment the underlying mock changes. Iframes stay current. Every storyboard uses `<iframe>` for embedded mocks.
+❌ **Presenting a static mock as live evidence.**
+Static images are valid when they are the available authority, but they must be labelled non-interactive and cannot prove scrolling, transitions, focus, or runtime states.
 
 ❌ **"TODO: add brainstorm questions" on a gap card.**
 A gap without answered questions is a gap without the skill's value. Brainstorm now or remove the card.
@@ -180,16 +194,16 @@ User says `/storyboard <scope>` or asks one of the trigger phrases (see frontmat
 2. Gathers existing mocks, flow, gaps, adjacent surfaces.
 3. Drafts brainstorm questions for each gap (doesn't answer them — the user will).
 4. Produces the HTML file at the canonical project path.
-5. Updates the mocks manifest / index page with the featured link.
+5. Updates the mocks manifest / index page with an active-audit link when that index exists.
 6. Reports back with the file path + brief summary so the user can open it in a browser.
 
 ## Related skills
 
 - **`impeccable`** family (`/shape`, `/critique`, `/layout`, `/clarify`, `/audit`, `/polish`, `/adapt`, `/impeccable harden`, `/distill`) — external skills from pbakaus/impeccable; the audit checklists reference these and the gap-mock production step runs them. Note `harden` exists only as an `/impeccable` subcommand, not a standalone skill. If they aren't installed, list only the disciplines that will actually run (see Non-negotiables: the checklist is genuine, not decorative).
 - **`story-splitting`** — use when the storyboard reveals the feature is too broad or needs to be split by flow, role, state, interface, data, rule, or quality level before implementation.
-- **`planning`** — plans live at project root; the storyboard artifact supplements the plan's decision record after the scope has been split into implementable slices.
+- **`planning`** — supplement the repository-owned plan artifact after the scope has been split into implementable slices; use root `plans/` only as the planning skill's fallback when no local owner exists and a file is authorized.
 - **`find-gaps`** — use after the storyboard exists to turn missing states, unanswered brainstorm questions, and unclear transitions into concrete acceptance criteria or mock-state specs.
-- **`expectations`** — after the storyboard audit surfaces learnings worth preserving, capture them into CLAUDE.md / ADRs.
+- **`expectations`** — after the storyboard audit surfaces lasting learnings, route them to the repository's current guidance, accepted decisions, glossary, source, or tests.
 
 ## Quick Reference
 
@@ -227,7 +241,8 @@ User says `/storyboard <scope>` or asks one of the trigger phrases (see frontmat
 
 **Rules of thumb:**
 
-- Live iframes always. No screenshots.
+- Prefer live iframes when they are the maintained authority and can render
+  safely; use the documented static-authority fallback when they cannot.
 - Every gap has brainstorm questions.
 - One page, not a tree.
 - `<pre>` for ASCII. Never `<div class="whitespace-pre">`.

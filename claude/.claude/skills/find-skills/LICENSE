@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Vercel Labs and contributors to https://github.com/vercel-labs/skills
+Copyright (c) 2026 Vercel, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,9 +22,8 @@ SOFTWARE.
 
 ---
 
-This license applies to the contents of this directory
-(claude/.claude/skills/find-skills/), which was vendored from
-https://github.com/vercel-labs/skills/tree/main/skills/find-skills.
-The upstream project declares MIT licensing in its package.json and README.md
-but does not ship a root LICENSE file; the notice above reproduces the MIT
-terms to preserve attribution as required by the license.
+This exact notice was added upstream in commit
+e173b8c88f2581cfdaa1b6767c6519a08155790e and is preserved for material
+adapted from vercel-labs/skills. The older imported snapshot predated the full
+notice; see references/source-notes.md for that distinction and immutable
+source links.

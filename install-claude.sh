@@ -2,7 +2,7 @@
 #
 # Install CLAUDE.md development framework to ~/.claude/
 #
-# Skills are installed via the skills.sh CLI (npx skills), which supports
+# Skills are installed via the skills.sh CLI, which supports
 # Claude Code, Cursor, Codex, Copilot, OpenCode, Gemini CLI, and 40+ other
 # agents. CLAUDE.md, slash commands, and agents are Claude-Code-specific
 # artifacts and are still downloaded directly from this repo.
@@ -12,12 +12,12 @@
 #   ./install-claude.sh --claude-only      # Install only CLAUDE.md
 #   ./install-claude.sh --no-agents        # Install without agents
 #   ./install-claude.sh --skills-only      # Install only skills
-#   ./install-claude.sh --version v3.0.0   # Install specific version (for CLAUDE.md/commands/agents)
+#   ./install-claude.sh --version <ref>    # Use an exact reviewed release/commit
 #   ./install-claude.sh --with-opencode    # Also install OpenCode configuration
 #
-# One-liner installation:
-#   curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
-#
+# Run this script from an inspected checkout. When --version is omitted, the
+# checkout's exact HEAD commit is used. A standalone copy must receive an exact
+# reviewed release tag or commit with --version; moving refs are rejected.
 
 set -e  # Exit on error
 
@@ -29,7 +29,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default settings
-VERSION="${VERSION:-main}"
+VERSION="${VERSION:-}"
 INSTALL_CLAUDE=true
 INSTALL_SKILLS=true
 INSTALL_COMMANDS=true
@@ -39,20 +39,51 @@ INSTALL_EXTERNAL=true
 INSTALL_IMPECCABLE=true
 INSTALL_PONYTAIL=true
 BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
+SKILLS_CLI_VERSION="1.5.22" # https://github.com/vercel-labs/skills/tree/v1.5.22
 
-# Skill sources on skills.sh (https://skills.sh)
-OWN_SKILLS_REPO="citypaul/.dotfiles"
-WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills"
-NEXT_SKILLS_REPO="vercel-labs/next-skills"
-IMPECCABLE_SKILLS_REPO="pbakaus/impeccable"
-MATTPOCOCK_SKILLS_REPO="https://github.com/mattpocock/skills"
-MARKETING_SKILLS_REPO="coreyhaines31/marketingskills"
-HERDR_SKILLS_REPO="herdrdev/herdr"
-GRILL_ME_SKILL="grill-me"
-SEO_AUDIT_SKILL="seo-audit"
-HERDR_SKILL="herdr"
+# Reviewed immutable source revisions. The Skills CLI supports `#<git-ref>`;
+# every source is pinned and every selected name is declared before mutation.
+OWN_SKILLS_REPO_BASE="citypaul/.dotfiles"
+WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills#95d6e255afe1596b557d7a8498517884438f5b3a"
+NEXT_SKILLS_REPO="vercel-labs/next-skills#b76d687cf3e026eac3b1032f610f06b47a56377c"
+IMPECCABLE_SKILLS_REPO="pbakaus/impeccable#5d10bc842cbccd2ae7d3a88296d87d3be0b125b3"
+MATTPOCOCK_SKILLS_REPO="https://github.com/mattpocock/skills#84fdeffd12f2ee307994d1eb6feb48173b6e0502"
+MARKETING_SKILLS_REPO="coreyhaines31/marketingskills#7868cb9251fad80a73d26e488a5ad5f6c4a9f335"
+HERDR_SKILLS_REPO="herdrdev/herdr#1777e9bba32b953ed1ad203b4a16d01105539000"
 
-# Agents to target when installing skills via `npx skills add`.
+FIRST_PARTY_SKILLS=(
+  acceptance-review api-design bff-design bff-entry-points
+  characterisation-tests ci-debugging cli-design codebase-design debugging
+  diagrams domain-driven-design double-check evaluate-existing-solutions
+  event-sourcing expectations find-gaps find-skills finding-seams
+  folder-structure front-end-testing functional hexagonal-architecture
+  improve-codebase-architecture mutation-testing observability planning
+  production-parity-skill-builder react-testing reduce-system-complexity
+  refactoring secure-oauth-oidc specification stack-pull-requests
+  story-splitting storyboard structure-codebase tdd teach-me technical-writing
+  test-design-reviewer testing twelve-factor typescript-strict
+  ubiquitous-language wtf
+)
+WEB_QUALITY_SKILLS=(
+  accessibility best-practices core-web-vitals performance seo web-quality-audit
+)
+NEXT_SKILLS=(next-best-practices next-cache-components next-upgrade)
+IMPECCABLE_SKILLS=(
+  adapt animate audit bolder clarify colorize critique delight distill
+  impeccable layout optimize overdrive polish quieter shape typeset
+)
+GRILL_ME_SKILLS=(grill-me)
+SEO_AUDIT_SKILLS=(seo-audit)
+HERDR_SKILLS=(herdr)
+COMMAND_FILES=(setup.md pr.md plan.md continue.md generate-pr-review.md)
+AGENT_FILES=(
+  tdd-guardian.md ts-enforcer.md refactor-scan.md docs-guardian.md adr.md
+  learn.md pr-reviewer.md use-case-data-patterns.md progress-guardian.md
+  twelve-factor-audit.md
+)
+CLAUDE_AGENT_FILES=("${AGENT_FILES[@]}" README.md)
+
+# Agents to target when installing skills via the pinned Skills CLI.
 # Built up from --agent/--with-opencode flags; default is claude-code only.
 SKILL_AGENTS=(claude-code)
 INCLUDE_CLAUDE_CODE=true
@@ -127,6 +158,10 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --version)
+      if [[ $# -lt 2 || "$2" == --* ]]; then
+        echo -e "${RED}Error: --version requires a value${NC}"
+        exit 1
+      fi
       VERSION="$2"
       shift 2
       ;;
@@ -151,20 +186,22 @@ Options:
   --no-claude-code     Skip the default claude-code target for skills
                        (use with --agent to target other agents only)
   --with-opencode      Shorthand for --agent opencode + install OpenCode config
-  --opencode-only      Install only OpenCode configuration (no skills/agents/commands)
+  --opencode-only      Install only OpenCode config plus projected agents/commands (no Claude artifacts or skills)
   --no-external        Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit + herdr)
   --no-impeccable      Skip impeccable design skills only
   --no-ponytail        Skip the ponytail plugin (Claude Code + Codex)
-  --version VERSION    Version for CLAUDE.md/commands/agents (default: main). Skills always latest.
+  --version REF        Exact reviewed release tag or commit for first-party artifacts.
+                       Defaults to the current checkout's exact HEAD. Moving refs are rejected.
   --help, -h           Show this help message
 
-Default external skill sources:
-  addyosmani/web-quality-skills
-  vercel-labs/next-skills
-  pbakaus/impeccable
-  mattpocock/skills --skill grill-me
-  coreyhaines31/marketingskills --skill seo-audit
-  herdrdev/herdr --skill herdr
+Default external skill sources are pinned to reviewed commits; the installer
+selects only the declared names from each source:
+  addyosmani/web-quality-skills#95d6e25
+  vercel-labs/next-skills#b76d687
+  pbakaus/impeccable#5d10bc8
+  mattpocock/skills#84fdeff --skill grill-me
+  coreyhaines31/marketingskills#7868cb9 --skill seo-audit
+  herdrdev/herdr#1777e9b --skill herdr
 
 Examples:
   # Install everything (recommended)
@@ -176,8 +213,8 @@ Examples:
   # Install only skills for Codex (no Claude Code)
   $0 --skills-only --no-claude-code --agent codex
 
-  # One-liner installation
-  curl -fsSL https://raw.githubusercontent.com/citypaul/.dotfiles/main/install-claude.sh | bash
+  # From an inspected checkout; pins all first-party downloads to exact HEAD
+  $0 --version "\$(git rev-parse HEAD)"
 
 EOF
       exit 0
@@ -189,6 +226,31 @@ EOF
       ;;
   esac
 done
+
+# A checkout gives us an exact source revision without executing a moving
+# remote script. Standalone copies must receive one explicitly.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ -z "$VERSION" ]] && command -v git >/dev/null 2>&1; then
+  VERSION="$(git -C "$script_dir" rev-parse --verify HEAD 2>/dev/null || true)"
+fi
+
+if [[ -z "$VERSION" ]]; then
+  echo -e "${RED}Error: --version requires an exact reviewed release tag or commit outside a git checkout${NC}"
+  exit 1
+fi
+
+if [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]]; then
+  : # already immutable
+elif command -v git >/dev/null 2>&1 &&
+     git -C "$script_dir" show-ref --verify --quiet "refs/tags/$VERSION"; then
+  VERSION="$(git -C "$script_dir" rev-parse --verify "refs/tags/${VERSION}^{commit}")"
+else
+  echo -e "${RED}Error: '$VERSION' is not a full commit SHA or a tag in the inspected checkout${NC}"
+  exit 1
+fi
+
+OWN_SKILLS_REPO="$OWN_SKILLS_REPO_BASE#$VERSION"
 
 # Honour --no-claude-code by stripping claude-code from the target list
 if [[ "$INCLUDE_CLAUDE_CODE" == false ]]; then
@@ -244,13 +306,19 @@ download_file() {
   local url="$1"
   local dest="$2"
   local description="$3"
+  local download_tmp
 
   echo -e "${YELLOW}→${NC} Downloading $description..."
+  mkdir -p "$(dirname "$dest")"
+  download_tmp="$(mktemp "${dest}.download.XXXXXXXX")"
 
-  if curl -fsSL "$url" -o "$dest"; then
+  if curl -fsSL "$url" -o "$download_tmp"; then
+    backup_file "$dest"
+    mv "$download_tmp" "$dest"
     echo -e "${GREEN}✓${NC} $description installed"
     return 0
   else
+    rm -f "$download_tmp"
     echo -e "${RED}✗${NC} Failed to download $description"
     return 1
   fi
@@ -260,92 +328,189 @@ download_file() {
 backup_file() {
   local file="$1"
 
-  if [[ -f "$file" ]]; then
+  if [[ -e "$file" || -L "$file" ]]; then
     local backup
-    backup="${file}.backup.$(date +%Y%m%d_%H%M%S)"
+    backup="$(mktemp "${file}.backup.XXXXXXXX")"
     echo -e "${YELLOW}→${NC} Backing up existing file to $backup"
     mv "$file" "$backup"
   fi
 }
 
-# The skills CLI records everything it manages in ~/.agents/.skill-lock.json.
-# Older CLI versions installed skills as symlinks into the universal
-# ~/.agents/skills/ cache; since skills CLI ~1.5 each skill is COPIED into the
-# agent directory (e.g. ~/.claude/skills/<name>) as a regular directory. So a
-# regular directory no longer implies a pre-skills.sh leftover — the lock file
-# is the source of truth for what the CLI owns.
-SKILL_LOCK_FILE=~/.agents/.skill-lock.json
+# Download one owned Claude artifact, transform it for OpenCode in temporary
+# files, then back up and replace only its declared destination.
+download_filtered_file() {
+  local url="$1"
+  local dest="$2"
+  local description="$3"
+  local filter="$4"
+  local source_tmp
+  local filtered_tmp
 
-skill_is_lock_managed() {
-  local name="$1"
-  [[ -f "$SKILL_LOCK_FILE" ]] || return 1
-  if command -v node >/dev/null 2>&1; then
-    node -e '
-      const fs = require("fs");
-      try {
-        const lock = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-        const skills = lock.skills ?? {};
-        process.exit(Object.prototype.hasOwnProperty.call(skills, process.argv[2]) ? 0 : 1);
-      } catch {
-        process.exit(1);
-      }
-    ' "$SKILL_LOCK_FILE" "$name"
-  else
-    grep -q "\"$name\":" "$SKILL_LOCK_FILE"
+  source_tmp="$(mktemp)"
+  mkdir -p "$(dirname "$dest")"
+  filtered_tmp="$(mktemp "${dest}.download.XXXXXXXX")"
+  echo -e "${YELLOW}→${NC} Downloading $description..."
+
+  if ! curl -fsSL "$url" -o "$source_tmp"; then
+    rm -f "$source_tmp" "$filtered_tmp"
+    echo -e "${RED}✗${NC} Failed to download $description"
+    return 1
   fi
+
+  if ! sed "$filter" "$source_tmp" > "$filtered_tmp"; then
+    rm -f "$source_tmp" "$filtered_tmp"
+    echo -e "${RED}✗${NC} Failed to transform $description"
+    return 1
+  fi
+
+  backup_file "$dest"
+  mv "$filtered_tmp" "$dest"
+  rm -f "$source_tmp"
+  echo -e "${GREEN}✓${NC} $description installed"
 }
 
-# Migrate skill directories left behind by the pre-skills.sh curl-based
-# installer. Those were written as regular directories at ~/.claude/skills/<name>
-# and are NOT tracked in the skills CLI lock file, so the CLI would manage them
-# in-place instead of installing them properly. Moving them aside lets the CLI
-# install each source cleanly on this run.
-#
-# Symlinked entries (old-CLI universal-cache layout) and regular directories
-# tracked in ~/.agents/.skill-lock.json (new-CLI copy layout) are both
-# CLI-managed and must be left alone.
-#
-# The files are moved, not deleted — everything ends up under
-# ~/.claude/skills.pre-skills-sh.<timestamp>/ and can be restored manually.
-migrate_legacy_skill_dirs() {
-  local skills_dir=~/.claude/skills
-  [[ -d "$skills_dir" ]] || return 0
+# Global destination map from the pinned skills@1.5.22 agent registry. This
+# installer passes --copy explicitly, so only the resolved selected destinations
+# can be replaced. The CLI lock records no per-destination ownership, so a
+# matching name never proves a target disposable.
+global_skills_dir_for_agent() {
+  local agent="$1"
+  local config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 
-  local stale=()
-  local entry name
-  for entry in "$skills_dir"/*/; do
-    [[ -d "$entry" ]] || continue
-    name="$(basename "$entry")"
-    [[ -L "$skills_dir/$name" ]] && continue
-    skill_is_lock_managed "$name" && continue
-    stale+=("$name")
+  case "$agent" in
+    amp|antigravity|antigravity-cli|cline|codex|cursor|dexto|firebender|gemini-cli|github-copilot|kimi-code-cli|loaf|opencode|replit|universal|warp|zed)
+      echo "$HOME/.agents/skills" ;;
+    claude-code) echo "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" ;;
+    aider-desk) echo "$HOME/.aider-desk/skills" ;;
+    astrbot) echo "$HOME/.astrbot/data/skills" ;;
+    autohand-code) echo "${AUTOHAND_HOME:-$HOME/.autohand}/skills" ;;
+    augment) echo "$HOME/.augment/skills" ;;
+    bob) echo "$HOME/.bob/skills" ;;
+    openclaw)
+      if [[ -d "$HOME/.openclaw" ]]; then echo "$HOME/.openclaw/skills"
+      elif [[ -d "$HOME/.clawdbot" ]]; then echo "$HOME/.clawdbot/skills"
+      elif [[ -d "$HOME/.moltbot" ]]; then echo "$HOME/.moltbot/skills"
+      else echo "$HOME/.openclaw/skills"; fi ;;
+    codearts-agent) echo "$HOME/.codeartsdoer/skills" ;;
+    codebuddy) echo "$HOME/.codebuddy/skills" ;;
+    codemaker) echo "$HOME/.codemaker/skills" ;;
+    codestudio) echo "$HOME/.codestudio/skills" ;;
+    command-code) echo "$HOME/.commandcode/skills" ;;
+    continue) echo "$HOME/.continue/skills" ;;
+    cortex) echo "$HOME/.snowflake/cortex/skills" ;;
+    crush) echo "$HOME/.config/crush/skills" ;;
+    deepagents) echo "$HOME/.deepagents/agent/skills" ;;
+    devin) echo "$config_home/devin/skills" ;;
+    droid) echo "$HOME/.factory/skills" ;;
+    forgecode) echo "$HOME/.forge/skills" ;;
+    goose) echo "$config_home/goose/skills" ;;
+    grok) echo "${GROK_HOME:-$HOME/.grok}/skills" ;;
+    hermes-agent) echo "${HERMES_HOME:-$HOME/.hermes}/skills" ;;
+    inference-sh) echo "$HOME/.inferencesh/skills" ;;
+    jazz) echo "$HOME/.jazz/skills" ;;
+    junie) echo "$HOME/.junie/skills" ;;
+    iflow-cli) echo "$HOME/.iflow/skills" ;;
+    kilo) echo "$HOME/.kilocode/skills" ;;
+    kimchi) echo "$config_home/kimchi/harness/skills" ;;
+    kiro-cli) echo "$HOME/.kiro/skills" ;;
+    kode) echo "$HOME/.kode/skills" ;;
+    lingma) echo "$HOME/.lingma/skills" ;;
+    mcpjam) echo "$HOME/.mcpjam/skills" ;;
+    minimax-code) echo "$HOME/.minimax/skills" ;;
+    mistral-vibe) echo "${VIBE_HOME:-$HOME/.vibe}/skills" ;;
+    moxby) echo "$HOME/.moxby/skills" ;;
+    mux) echo "$HOME/.mux/skills" ;;
+    openhands) echo "$HOME/.openhands/skills" ;;
+    ona) echo "$HOME/.ona/skills" ;;
+    pi) echo "$HOME/.pi/agent/skills" ;;
+    qoder) echo "$HOME/.qoder/skills" ;;
+    qoder-cn) echo "$HOME/.qoder-cn/skills" ;;
+    qwen-code) echo "$HOME/.qwen/skills" ;;
+    reasonix) echo "$HOME/.reasonix/skills" ;;
+    rovodev) echo "$HOME/.rovodev/skills" ;;
+    roo) echo "$HOME/.roo/skills" ;;
+    tabnine-cli) echo "$HOME/.tabnine/agent/skills" ;;
+    terramind) echo "$HOME/.terramind/skills" ;;
+    tinycloud) echo "$HOME/.tinycloud/skills" ;;
+    trae) echo "$HOME/.trae/skills" ;;
+    trae-cn) echo "$HOME/.trae-cn/skills" ;;
+    windsurf) echo "$HOME/.codeium/windsurf/skills" ;;
+    zcode) echo "$HOME/.zcode/skills" ;;
+    zencoder|zenflow) echo "$HOME/.zencoder/skills" ;;
+    neovate) echo "$HOME/.neovate/skills" ;;
+    pochi) echo "$HOME/.pochi/skills" ;;
+    adal) echo "$HOME/.adal/skills" ;;
+    eve|promptscript|*) return 1 ;;
+  esac
+}
+
+skill_dir_has_entries() {
+  local dir="$1" entry
+  [[ -d "$dir" ]] || return 1
+  for entry in "$dir"/* "$dir"/.[!.]* "$dir"/..?*; do
+    [[ -e "$entry" || -L "$entry" ]] && return 0
+  done
+  return 1
+}
+
+guard_selected_skill_dirs() {
+  local agent dir entry blocked=false
+  local checked_dirs=()
+
+  for agent in "${SKILL_AGENTS[@]}"; do
+    if ! dir="$(global_skills_dir_for_agent "$agent")"; then
+      echo -e "${RED}✗${NC} Cannot safely resolve the pinned CLI destination for agent: $agent"
+      return 1
+    fi
+    [[ " ${checked_dirs[*]} " == *" $dir "* ]] || checked_dirs+=("$dir")
   done
 
-  if [[ ${#stale[@]} -eq 0 ]]; then
-    return 0
+  for dir in "${checked_dirs[@]}"; do
+    if skill_dir_has_entries "$dir"; then
+      blocked=true
+      echo -e "${RED}✗${NC} Existing skill content found in $dir:"
+      for entry in "$dir"/* "$dir"/.[!.]* "$dir"/..?*; do
+        [[ -e "$entry" || -L "$entry" ]] || continue
+        echo -e "      • $(basename "$entry")"
+      done
+    fi
+  done
+
+  if [[ "$blocked" == true ]]; then
+    echo -e "    Skill installation stopped before skills@$SKILLS_CLI_VERSION could replace a destination."
+    echo -e "    Back up and explicitly clear the listed target, or use a separately reviewed CLI update workflow."
+    return 1
   fi
-
-  local backup
-  backup="$skills_dir.pre-skills-sh.$(date +%Y%m%d_%H%M%S)"
-  echo -e "${YELLOW}→${NC} Found ${#stale[@]} pre-skills.sh skill director$([[ ${#stale[@]} -eq 1 ]] && echo "y" || echo "ies") at ~/.claude/skills/"
-  echo -e "${YELLOW}→${NC} Moving to $backup so the skills CLI can route them through the universal path"
-  mkdir -p "$backup"
-  for name in "${stale[@]}"; do
-    mv "$skills_dir/$name" "$backup/"
-    echo -e "   • $name"
-  done
-  echo ""
 }
 
 # Optional (community) skill sources that failed to install. Collected so a
 # single bad upstream source warns at the end instead of aborting setup.
 FAILED_SKILL_SOURCES=()
 
+validate_unique_skill_names() {
+  local names=("$@") seen=() name prior
+  for name in "${names[@]}"; do
+    for prior in "${seen[@]}"; do
+      if [[ "$name" == "$prior" ]]; then
+        echo -e "${RED}✗${NC} Duplicate skill name in reviewed install manifest: $name"
+        return 1
+      fi
+    done
+    seen+=("$name")
+  done
+}
+
 # Install skills from a skills.sh source for the selected agents
 install_skills_from() {
   local source="$1"
   local label="$2"
-  local skill="${3:-*}"
+  shift 2
+  local skills=("$@")
+
+  if [[ ${#skills[@]} -eq 0 ]]; then
+    echo -e "${RED}✗${NC} No reviewed skill names declared for $source"
+    return 1
+  fi
 
   echo -e "${YELLOW}→${NC} Installing $label from $source for: ${SKILL_AGENTS[*]}"
 
@@ -356,9 +521,9 @@ install_skills_from() {
   done
 
   # -g: install globally (per-agent paths managed by the skills CLI)
-  # -s '*': install all skills from the source, or a named skill when provided
+  # -s: install only the reviewed names declared above
   # -y: skip prompts
-  if npx --yes skills add "$source" -g "${agent_args[@]}" -s "$skill" -y; then
+  if npx --yes "skills@$SKILLS_CLI_VERSION" add "$source" -g "${agent_args[@]}" -s "${skills[@]}" --copy -y; then
     echo -e "${GREEN}✓${NC} $label installed"
   else
     echo -e "${RED}✗${NC} Failed to install $label from $source"
@@ -374,33 +539,6 @@ install_skills_from() {
 install_optional_skills_from() {
   if ! install_skills_from "$@"; then
     FAILED_SKILL_SOURCES+=("$1")
-  fi
-}
-
-# Verify everything under ~/.claude/skills/ is managed by the skills CLI —
-# either a symlink (old-CLI universal-cache layout) or a regular directory
-# tracked in ~/.agents/.skill-lock.json (new-CLI copy layout). Anything else
-# is an unmanaged stray the CLI will not update and other agents cannot see.
-verify_skills_installed() {
-  local skills_dir=~/.claude/skills
-  [[ -d "$skills_dir" ]] || return 0
-
-  local stale=() entry name
-  for entry in "$skills_dir"/*/; do
-    [[ -d "$entry" ]] || continue
-    name="$(basename "$entry")"
-    [[ -L "$skills_dir/$name" ]] && continue
-    skill_is_lock_managed "$name" && continue
-    stale+=("$name")
-  done
-
-  if [[ ${#stale[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}⚠${NC}  ${#stale[@]} skill(s) under ~/.claude/skills/ are not managed by the skills CLI"
-    echo -e "    (not symlinked and not tracked in ~/.agents/.skill-lock.json — the CLI won't update them):"
-    for name in "${stale[@]}"; do
-      echo -e "      • $name"
-    done
-    echo -e "    Re-run ${YELLOW}$0 --skills-only${NC} to migrate them, or remove via ${YELLOW}npx skills remove -g -s <name>${NC}."
   fi
 }
 
@@ -430,16 +568,19 @@ install_ponytail_for() {
   fi
 }
 
-# Create directories for non-skills artifacts
-echo -e "${BLUE}Creating directories...${NC}"
-mkdir -p ~/.claude/agents ~/.claude/commands
-echo -e "${GREEN}✓${NC} Directories created"
-echo ""
+# Create only the selected Claude artifact roots. Skills and OpenCode-only
+# modes must not create unrelated ~/.claude directories.
+if [[ "$INSTALL_AGENTS" == true || "$INSTALL_COMMANDS" == true ]]; then
+  echo -e "${BLUE}Creating directories...${NC}"
+  [[ "$INSTALL_AGENTS" == true ]] && mkdir -p ~/.claude/agents
+  [[ "$INSTALL_COMMANDS" == true ]] && mkdir -p ~/.claude/commands
+  echo -e "${GREEN}✓${NC} Directories created"
+  echo ""
+fi
 
 # Install CLAUDE.md
 if [[ "$INSTALL_CLAUDE" == true ]]; then
   echo -e "${BLUE}Installing CLAUDE.md...${NC}"
-  backup_file ~/.claude/CLAUDE.md
   download_file \
     "$BASE_URL/$VERSION/claude/.claude/CLAUDE.md" \
     ~/.claude/CLAUDE.md \
@@ -452,38 +593,52 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "${BLUE}Installing skills via skills.sh...${NC}"
   echo -e "${YELLOW}→${NC} Target agents: ${SKILL_AGENTS[*]}"
   echo -e "${YELLOW}→${NC} (Pass --agent <name> to target more — see skills.sh for the full list)"
+  echo -e "${YELLOW}→${NC} Skills CLI, source revisions, and selected names are pinned. Re-audit before changing any pin. Use --no-external for first-party skills only."
   echo ""
 
-  migrate_legacy_skill_dirs
+  install_manifest=("${FIRST_PARTY_SKILLS[@]}")
+  if [[ "$INSTALL_EXTERNAL" == true ]]; then
+    install_manifest+=("${WEB_QUALITY_SKILLS[@]}" "${NEXT_SKILLS[@]}" "${GRILL_ME_SKILLS[@]}" "${SEO_AUDIT_SKILLS[@]}" "${HERDR_SKILLS[@]}")
+  fi
+  if [[ "$INSTALL_IMPECCABLE" == true ]]; then
+    install_manifest+=("${IMPECCABLE_SKILLS[@]}")
+  fi
 
-  install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)"
+  if ! validate_unique_skill_names "${install_manifest[@]}"; then
+    exit 1
+  fi
+
+  if ! guard_selected_skill_dirs; then
+    exit 1
+  fi
+
+  install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)" "${FIRST_PARTY_SKILLS[@]}"
 
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
-    install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)"
-    install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel-labs/next-skills)"
-    install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "$GRILL_ME_SKILL"
-    install_optional_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "$SEO_AUDIT_SKILL"
+    install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)" "${WEB_QUALITY_SKILLS[@]}"
+    install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel-labs/next-skills)" "${NEXT_SKILLS[@]}"
+    install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "${GRILL_ME_SKILLS[@]}"
+    install_optional_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "${SEO_AUDIT_SKILLS[@]}"
     # Lets an agent drive the terminal multiplexer it is running inside —
     # split a pane, run a command in it, read the output back, and wait on a
     # sibling agent without stealing focus. Installed for every target agent
     # because each one benefits from it independently.
-    install_optional_skills_from "$HERDR_SKILLS_REPO" "herdr skill (herdrdev/herdr)" "$HERDR_SKILL"
+    install_optional_skills_from "$HERDR_SKILLS_REPO" "herdr skill (herdrdev/herdr)" "${HERDR_SKILLS[@]}"
   fi
 
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
-    install_optional_skills_from "$IMPECCABLE_SKILLS_REPO" "impeccable design skills (pbakaus/impeccable)"
+    install_optional_skills_from "$IMPECCABLE_SKILLS_REPO" "impeccable design skills (pbakaus/impeccable)" "${IMPECCABLE_SKILLS[@]}"
   fi
 
   echo ""
-  verify_skills_installed
-
   if [[ ${#FAILED_SKILL_SOURCES[@]} -gt 0 ]]; then
     echo -e "${YELLOW}⚠${NC}  ${#FAILED_SKILL_SOURCES[@]} optional skill source(s) were skipped after failing to install:"
     for src in "${FAILED_SKILL_SOURCES[@]}"; do
       echo -e "      • $src"
     done
     echo -e "    These are third-party community sources; setup continued without them."
-    echo -e "    Re-run ${YELLOW}$0 --skills-only${NC} later, or check the source on skills.sh."
+    echo -e "    Review the failed source on skills.sh. Before retrying, back up and explicitly clear the selected targets,"
+    echo -e "    or use a separately reviewed ownership-safe workflow; successful installs make an automatic rerun stop by design."
   fi
   echo ""
 fi
@@ -500,16 +655,7 @@ fi
 if [[ "$INSTALL_COMMANDS" == true ]]; then
   echo -e "${BLUE}Installing commands (slash commands)...${NC}"
 
-  commands=(
-    "setup.md"
-    "pr.md"
-    "plan.md"
-    "continue.md"
-    "generate-pr-review.md"
-  )
-
-  for cmd in "${commands[@]}"; do
-    backup_file ~/.claude/commands/"$cmd"
+  for cmd in "${COMMAND_FILES[@]}"; do
     download_file \
       "$BASE_URL/$VERSION/claude/.claude/commands/$cmd" \
       ~/.claude/commands/"$cmd" \
@@ -522,22 +668,7 @@ fi
 if [[ "$INSTALL_AGENTS" == true ]]; then
   echo -e "${BLUE}Installing Claude Code agents...${NC}"
 
-  agents=(
-    "tdd-guardian.md"
-    "ts-enforcer.md"
-    "refactor-scan.md"
-    "docs-guardian.md"
-    "adr.md"
-    "learn.md"
-    "pr-reviewer.md"
-    "use-case-data-patterns.md"
-    "progress-guardian.md"
-    "twelve-factor-audit.md"
-    "README.md"
-  )
-
-  for agent in "${agents[@]}"; do
-    backup_file ~/.claude/agents/"$agent"
+  for agent in "${CLAUDE_AGENT_FILES[@]}"; do
     download_file \
       "$BASE_URL/$VERSION/claude/.claude/agents/$agent" \
       ~/.claude/agents/"$agent" \
@@ -550,40 +681,39 @@ fi
 if [[ "$INSTALL_OPENCODE" == true ]]; then
   echo -e "${BLUE}Installing OpenCode configuration...${NC}"
   mkdir -p ~/.config/opencode
-  backup_file ~/.config/opencode/opencode.json
   download_file \
     "$BASE_URL/$VERSION/opencode/.config/opencode/opencode.json" \
     ~/.config/opencode/opencode.json \
     "opencode.json"
 
-  # Copy commands for OpenCode, stripping Claude Code-specific frontmatter
+  # Project only the declared command manifest from the pinned source,
+  # stripping Claude Code-specific frontmatter. Never enumerate a user's
+  # ~/.claude directory as installation input.
   # OpenCode uses ~/.config/opencode/command/ (singular) for slash commands
   # The 'allowed-tools' field is Claude Code-specific and not valid in OpenCode
-  if [[ -d ~/.claude/commands ]]; then
-    echo -e "${BLUE}Copying commands for OpenCode...${NC}"
-    mkdir -p ~/.config/opencode/command
-    for cmd in ~/.claude/commands/*.md; do
-      if [[ -f "$cmd" ]]; then
-        sed '/^allowed-tools:/d' "$cmd" > ~/.config/opencode/command/"$(basename "$cmd")"
-        echo -e "${GREEN}✓${NC} command/$(basename "$cmd")"
-      fi
-    done
-  fi
+  echo -e "${BLUE}Installing commands for OpenCode...${NC}"
+  mkdir -p ~/.config/opencode/command
+  for cmd in "${COMMAND_FILES[@]}"; do
+    download_filtered_file \
+      "$BASE_URL/$VERSION/claude/.claude/commands/$cmd" \
+      ~/.config/opencode/command/"$cmd" \
+      "command/$cmd" \
+      '/^allowed-tools:/d'
+  done
 
-  # Copy agents for OpenCode, stripping Claude Code-specific frontmatter
+  # Project only real agent files (not README.md) from the pinned source.
   # OpenCode uses ~/.config/opencode/agent/ (singular) for agents
   # The 'tools' field expects an object in OpenCode but is a string in Claude Code
   # The 'color' field expects hex (#RRGGBB) in OpenCode but is a named color in Claude Code
-  if [[ -d ~/.claude/agents ]]; then
-    echo -e "${BLUE}Copying agents for OpenCode...${NC}"
-    mkdir -p ~/.config/opencode/agent
-    for agent in ~/.claude/agents/*.md; do
-      if [[ -f "$agent" ]]; then
-        sed '/^tools:/d; /^color:/d' "$agent" > ~/.config/opencode/agent/"$(basename "$agent")"
-        echo -e "${GREEN}✓${NC} agent/$(basename "$agent")"
-      fi
-    done
-  fi
+  echo -e "${BLUE}Installing agents for OpenCode...${NC}"
+  mkdir -p ~/.config/opencode/agent
+  for agent in "${AGENT_FILES[@]}"; do
+    download_filtered_file \
+      "$BASE_URL/$VERSION/claude/.claude/agents/$agent" \
+      ~/.config/opencode/agent/"$agent" \
+      "agent/$agent" \
+      '/^tools:/d; /^color:/d'
+  done
 
   echo ""
 fi
@@ -595,7 +725,7 @@ echo -e "${GREEN}╚════════════════════
 echo ""
 
 # Show what was installed
-echo -e "${BLUE}Installed to ~/.claude/${NC}"
+echo -e "${BLUE}Installed components:${NC}"
 echo ""
 
 if [[ "$INSTALL_CLAUDE" == true ]]; then
@@ -614,7 +744,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
     echo -e "     • pbakaus/impeccable — design vocabulary + steering commands"
   fi
-  echo -e "     Run ${YELLOW}npx skills list -g${NC} to see paths for each agent."
+  echo -e "     Run ${YELLOW}npx skills@$SKILLS_CLI_VERSION list -g${NC} to see paths for each agent."
 fi
 
 if [[ "$INSTALL_PONYTAIL" == true ]]; then
@@ -633,8 +763,8 @@ if [[ "$INSTALL_OPENCODE" == true ]]; then
   echo -e ""
   echo -e "${BLUE}Installed to ~/.config/opencode/${NC}"
   echo -e "  ${GREEN}✓${NC} opencode.json (OpenCode rules configuration)"
-  echo -e "  ${GREEN}✓${NC} command/ (slash commands from ~/.claude/commands/)"
-  echo -e "  ${GREEN}✓${NC} agent/ (agents from ~/.claude/agents/)"
+  echo -e "  ${GREEN}✓${NC} command/ (declared commands from the pinned source)"
+  echo -e "  ${GREEN}✓${NC} agent/ (declared agents from the pinned source)"
   if [[ "$INSTALL_SKILLS" == true ]]; then
     echo -e "  ${GREEN}✓${NC} skills also installed into OpenCode via skills.sh"
   fi
@@ -644,31 +774,29 @@ echo ""
 echo -e "${BLUE}Architecture:${NC}"
 echo ""
 echo -e "  ${YELLOW}CLAUDE.md${NC}  → Core principles (~100 lines, always loaded)"
-echo -e "  ${YELLOW}skills/${NC}    → Detailed patterns (loaded on-demand). Managed by ${YELLOW}npx skills${NC}"
+echo -e "  ${YELLOW}skills/${NC}    → Detailed patterns (loaded on-demand). Installed with pinned ${YELLOW}skills@$SKILLS_CLI_VERSION${NC}"
 echo -e "  ${YELLOW}commands/${NC}  → Slash commands (manually invoked)"
 echo -e "  ${YELLOW}agents/${NC}    → Complex multi-step workflows"
 echo ""
-echo -e "${BLUE}Managing skills:${NC}"
+echo -e "${BLUE}Inspecting skills:${NC}"
 echo ""
-echo -e "  ${YELLOW}npx skills list -g${NC}              List installed skills"
-echo -e "  ${YELLOW}npx skills update -g${NC}            Update skills to latest"
-echo -e "  ${YELLOW}npx skills find <query>${NC}         Search skills.sh for more skills"
-echo -e "  ${YELLOW}npx skills remove -g <name>${NC}     Uninstall a skill"
+echo -e "  ${YELLOW}npx skills@$SKILLS_CLI_VERSION list -g${NC}              List installed skills"
+echo -e "  ${YELLOW}npx skills@$SKILLS_CLI_VERSION find <query>${NC}         Search skills.sh for more skills"
+echo -e "  Mutating update/remove commands bypass this installer's ownership preflight; back up and verify exact targets first."
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
 echo ""
-echo -e "  1. Verify installation:"
-echo -e "     ${YELLOW}ls -la ~/.claude/${NC}"
-echo ""
-echo -e "  2. Test with Claude Code:"
-echo -e "     Open any project and use: ${YELLOW}/memory${NC}"
-echo ""
-echo -e "  3. Try the /pr command:"
-echo -e "     ${YELLOW}/pr${NC}"
-echo ""
+if [[ "$INSTALL_CLAUDE" == true || "$INSTALL_COMMANDS" == true || "$INSTALL_AGENTS" == true ]]; then
+  echo -e "  Verify Claude Code artifacts: ${YELLOW}ls -la ~/.claude/${NC}"
+  [[ "$INSTALL_COMMANDS" == true ]] && echo -e "  Try a command: ${YELLOW}/pr${NC}"
+  echo ""
+elif [[ "$INSTALL_OPENCODE" == true ]]; then
+  echo -e "  Verify OpenCode artifacts: ${YELLOW}ls -la ~/.config/opencode/${NC}"
+  echo ""
+fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
-  echo -e "  4. Learn about agents:"
+  echo -e "  Learn about agents:"
   echo -e "     ${YELLOW}cat ~/.claude/agents/README.md${NC}"
   echo ""
 fi
@@ -678,7 +806,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   echo ""
   echo -e "  Skills via skills.sh work with 40+ agents (Codex, Cursor, Copilot, Gemini CLI, ...)."
   echo -e "  Re-run with ${YELLOW}--agent <name>${NC} (repeatable) to add more:"
-  echo -e "     ${YELLOW}$0 --skills-only --agent codex --agent cursor${NC}"
+  echo -e "     ${YELLOW}$0 --skills-only --no-claude-code --agent codex --agent cursor${NC}"
   echo ""
 fi
 
@@ -726,8 +854,8 @@ echo ""
 echo -e "  • ${YELLOW}Kieran O'Hara${NC} — use-case-data-patterns agent"
 echo -e "    ${BLUE}https://github.com/kieran-ohara/dotfiles${NC}"
 echo ""
-echo -e "  • ${YELLOW}Andrea Laforgia${NC} — test-design-reviewer skill"
-echo -e "    ${BLUE}https://github.com/andlaf-ak/claude-code-agents${NC}"
+echo -e "  • ${YELLOW}Andrea Laforgia${NC} — historical test-design-reviewer source; current skill is a clean rewrite and the old source declared no public redistribution license"
+echo -e "    ${BLUE}https://github.com/andrealaforgia/claude-code-agents/blob/278e367057bbe4a57255870e0a30b9d0a6eabc59/test-design-reviewer.md${NC}"
 echo ""
 echo -e "${BLUE}For help or issues:${NC}"
 echo -e "  ${YELLOW}https://github.com/citypaul/.dotfiles${NC}"

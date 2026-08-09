@@ -32,13 +32,13 @@ Load this when checking the rationale behind the observability guidance. Ranked 
 ## SRE Practice
 
 - Google SRE book, "Service Level Objectives" (ch. 4): https://sre.google/sre-book/service-level-objectives/
-  - SLI/SLO/SLA definitions; error budget as the innovation/reliability contract; percentiles over averages; don't overachieve → SLO section + `slo-alerting.md` worksheet.
+  - SLI/SLO/SLA definitions; error budget as the innovation/reliability contract; ratio-based objectives, with percentiles over averages for latency-distribution diagnosis; don't overachieve → SLO section + `slo-alerting.md` worksheet.
 - Google SRE Workbook, "Alerting on SLOs": https://sre.google/workbook/alerting-on-slos/
   - The six-step derivation ending in multiwindow multi-burn-rate alerts; the 14.4×/6×/1× parameter table; precision/recall/detection/reset framework → alerting section + `slo-alerting.md`.
 - Google SRE book, "Monitoring Distributed Systems" (ch. 6): https://sre.google/sre-book/monitoring-distributed-systems/
   - Four golden signals with the dropped nuances (latency of failed requests separately; histograms because averages hide the tail); symptoms over causes.
 - Rob Ewaschuk, "My Philosophy on Alerting": https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/mobilebasic
-  - "Do your users care if your MySQL servers are down?"; pages must be urgent, actionable, user-visible, intelligence-requiring; ~90% precision review bar; basis of SRE book ch. 6. Prometheus endorses it: https://prometheus.io/docs/practices/alerting/
+  - "Do your users care if your MySQL servers are down?"; pages must be urgent, actionable, user-visible, intelligence-requiring. The source's approximate precision bar is context, not a universal local cutoff; this skill instead requires measured repeated false-page remediation. Basis of SRE book ch. 6. Prometheus endorses it: https://prometheus.io/docs/practices/alerting/
 - Tom Wilkie, "The RED Method": https://grafana.com/blog/the-red-method-how-to-instrument-your-services/
   - Rate/Errors/Duration for request-driven services, framed explicitly as a user-experience proxy against Gregg's infrastructure-focused USE method.
 

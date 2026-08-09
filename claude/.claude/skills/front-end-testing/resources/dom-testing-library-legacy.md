@@ -1,6 +1,6 @@
 # Legacy: DOM Testing Library + jsdom Patterns
 
-These patterns apply only when using `@testing-library/dom` directly with jsdom/happy-dom. **Prefer Vitest Browser Mode** for new projects — query priority, behavior-driven philosophy, and userEvent guidance in the main skill apply identically there with built-in equivalents.
+These patterns apply only when using `@testing-library/dom` directly with jsdom/happy-dom. Keep this lighter harness when it proves the claim and fits the repository; choose Vitest Browser Mode when behavior depends on real rendering, CSS, focus, browser APIs, or browser event semantics. Query priority, behavior-driven philosophy, and userEvent guidance in the main skill apply in either environment.
 
 ## The screen Object
 
@@ -60,14 +60,13 @@ it('should handle user input', async () => {
 ```
 
 ```typescript
-// ❌ WRONG - Setup in beforeEach
-let user;
-beforeEach(() => {
-  user = userEvent.setup(); // Shared state across tests
-});
+// ❌ WRONG - one stateful user shared by the whole suite
+const user = userEvent.setup();
 ```
 
-**Why:** Each test gets clean state, prevents test interdependence.
+**Why:** Each test should get clean state. Creating a new instance in an
+isolated `beforeEach` is also valid for non-concurrent tests; the defect is
+reusing state across tests, not the lifecycle hook itself.
 
 ### Common Interactions
 
@@ -84,7 +83,9 @@ await user.clear(screen.getByLabelText(/search/i));
 
 ## jest-dom Matchers
 
-**Install:** `npm install -D @testing-library/jest-dom`
+If the repository does not already provide equivalent matchers and setup is
+authorized, apply the main skill's exact-version/local-package-manager policy:
+`<repo-pm> add --save-dev @testing-library/jest-dom@<reviewed-version>`.
 
 (Browser Mode has equivalent matchers built in via `expect.element()` — do not install jest-dom there.)
 
@@ -106,26 +107,32 @@ expect(checkbox).toBeChecked();
 
 **Why:** Better failure messages, clearer intent.
 
-## Manual cleanup() Calls
+## Cleanup Ownership
 
-❌ **WRONG - Manual cleanup**
+When the runner exposes the global `afterEach` hook that Testing Library
+expects, cleanup is automatic and another cleanup hook is redundant:
+
 ```typescript
-afterEach(() => {
-  cleanup(); // Automatic in modern Testing Library!
-});
+// No cleanup hook needed: this harness has verified auto-cleanup.
 ```
 
-✅ **CORRECT - No cleanup needed**
+Vitest defaults to `globals: false`; if the repository does not install an
+equivalent global hook, register cleanup explicitly in shared test setup:
+
 ```typescript
-// Cleanup happens automatically
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+
+afterEach(() => cleanup());
 ```
 
 ## ESLint Plugins
 
-**Install these plugins** to catch anti-patterns automatically:
+If the repository's lint policy adopts these plugins, install reviewed exact
+versions through its package manager:
 
 ```bash
-npm install -D eslint-plugin-testing-library eslint-plugin-jest-dom
+<repo-pm> add --save-dev eslint-plugin-testing-library@<reviewed-version> eslint-plugin-jest-dom@<reviewed-version>
 ```
 
 **.eslintrc.js:**

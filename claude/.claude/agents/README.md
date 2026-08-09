@@ -33,7 +33,9 @@ This directory contains specifications for specialized Claude Code agents that w
 - Detecting mutations or `any` types
 - Reviewing TypeScript compliance
 
-**Core responsibility**: No `any` types, schema-first development, immutability.
+**Core responsibility**: Apply the canonical `typescript-strict` skill:
+contain unsafe interop, validate untrusted boundaries, and follow the
+repository's type-system policy.
 
 ---
 
@@ -72,10 +74,10 @@ This directory contains specifications for specialized Claude Code agents that w
 **Core responsibility**: Ensure PRs meet quality standards before merge.
 
 **Review categories**:
-1. Change-path compliance - Is exactly one of behavior change, pure refactor, reduction transition, or terminal reduction classified with its required evidence and truthful gate state?
+1. Change-path compliance - Is every path classified by all applicable types (behavior, refactor, reduction, docs, dependency, generated, configuration, CI, operations) with the evidence and gate state that type owns?
 2. Testing Quality - Are tests behavior-focused?
-3. TypeScript Strictness - No `any`, proper types?
-4. Functional Patterns - Immutability, pure functions?
+3. TypeScript Strictness - Repository policy, contained unsafe types, and boundary validation?
+4. Functional Patterns - Clear ownership of values, mutation, and effects?
 5. General Quality - Clean code, security, scope?
 
 **Project-specific extensions**: Use `/generate-pr-review` command to create project-specific review automation that combines global rules with project conventions.
@@ -85,7 +87,9 @@ This directory contains specifications for specialized Claude Code agents that w
 ### Documentation & Knowledge Agents
 
 #### `docs-guardian`
-**Purpose**: Creates and maintains world-class permanent documentation.
+**Purpose**: Creates or reviews maintained developer-facing documentation using
+the page job, audience, repository authority, and canonical `technical-writing`
+and `expectations` guidance.
 
 **Use proactively when**:
 - Creating new README, guides, or API docs
@@ -96,9 +100,11 @@ This directory contains specifications for specialized Claude Code agents that w
 - Documentation needs improvement
 - Feature complete (update docs)
 
-**Core responsibility**: Permanent, user-facing, professional documentation (README, guides, API docs).
+**Core responsibility**: Accurate, appropriately shaped README, guide, reference,
+runbook, tutorial, or conceptual documentation owned by the repository.
 
-**Key distinction**: Creates PERMANENT docs that live forever in the repository.
+**Key distinction**: Maintained docs describe current truth. Their structure and
+lifecycle follow their owner; Git preserves history.
 
 ---
 
@@ -123,12 +129,12 @@ This directory contains specifications for specialized Claude Code agents that w
 - ✅ Pattern decisions affecting multiple modules
 - ❌ Trivial implementation choices
 - ❌ Temporary workarounds
-- ❌ Standard patterns already in CLAUDE.md
+- ❌ Practices already owned by canonical skills or repository policy
 
 ---
 
 #### `learn`
-**Purpose**: Captures learnings, gotchas, and patterns into CLAUDE.md.
+**Purpose**: Routes durable, non-obvious learnings to their actual owner.
 
 **Use proactively when**:
 - Discovering unexpected behavior
@@ -139,9 +145,12 @@ This directory contains specifications for specialized Claude Code agents that w
 - Fixing complex bugs
 - After any significant learning moment
 
-**Core responsibility**: Document gotchas, patterns, anti-patterns, decisions while context is fresh.
+**Core responsibility**: Keep reusable knowledge with the source, test, glossary,
+decision mechanism, maintained documentation, active plan, or repository policy
+that can keep it true.
 
-**Key distinction**: Captures HOW to work with the codebase (gotchas, patterns), not WHY architecture chosen (that's ADRs).
+**Key distinction**: `CLAUDE.md` owns local working policy only when the repository
+declares it as that owner; it is not a catch-all knowledge base.
 
 ---
 
@@ -157,7 +166,9 @@ This directory contains specifications for specialized Claude Code agents that w
 
 **Core responsibility**: Produce a compliance report covering all 12 factors with specific file/line citations, gaps, and prioritized actionable suggestions.
 
-**Output:** Compliance report with factor summary table, violation details, code suggestions, and prioritized action plan written to `twelve-factor-audit.md`.
+**Output:** Read-only findings in chat by default, with applicable-factor
+statuses, exact evidence, and the smallest corrective directions. Write
+`twelve-factor-audit.md` only when the user requests a report file.
 
 **Related skill**: Load `twelve-factor` skill for detailed 12-factor patterns.
 
@@ -176,16 +187,20 @@ This directory contains specifications for specialized Claude Code agents that w
 - Identifying gaps in data access patterns
 - Investigating architectural decisions
 
-**Core responsibility**: Create comprehensive analytical reports mapping use cases to data patterns, database interactions, and architectural decisions.
+**Core responsibility**: Produce a read-only, evidence-labelled trace from an
+actor's trigger through policy, domain logic, data access, effects, and the
+observable result, then identify only material gaps.
 
-> **Attribution**: Adapted from [Kieran O'Hara's dotfiles](https://github.com/kieran-ohara/dotfiles/blob/main/config/claude/agents/analyse-use-case-to-data-patterns.md).
+The current agent is an original rewrite. Its
+[source notes](references/use-case-data-patterns-source-notes.md) disclose an
+earlier unlicensed copy and the unresolved published-history permission issue.
 
 ---
 
 ### Workflow & Planning Agents
 
 #### `progress-guardian`
-**Purpose**: Tracks progress through significant work using plan files in `plans/`.
+**Purpose**: Tracks progress through significant work using the repository's declared planning workflow (`plans/` only as the fallback).
 
 **Use proactively when**:
 - Starting significant multi-step work
@@ -195,15 +210,16 @@ This directory contains specifications for specialized Claude Code agents that w
 **Use reactively when**:
 - Completing a step (update plan progress)
 - Plan needs changing (propose changes, get approval)
-- Feature complete (merge learnings, delete plan file)
+- Feature complete (route learnings, then follow the plan owner's close/archive/delete lifecycle)
 
 **Core responsibility**:
-- Track progress through plan files in `plans/` directory
+- Track progress through the repository-owned plan artifact
 - Enforce small increments, TDD, commit approval
 - Never modify plans without explicit user approval
-- At end: orchestrate learning merge, then **DELETE plan file**
+- At end: route durable learning, then follow the plan owner's lifecycle; delete only a fallback temporary plan file with normal authority
 
-**Key distinction**: Plan files are TEMPORARY (deleted when done). Learnings merged into CLAUDE.md/ADRs before deletion.
+**Key distinction**: Plan files are temporary. Before closing one, route lasting
+knowledge through `expectations` to its actual owner.
 
 **Related skill**: Load `planning` skill for detailed incremental work principles.
 
@@ -216,7 +232,7 @@ This directory contains specifications for specialized Claude Code agents that w
 ```
 progress-guardian (orchestrates)
     │
-    ├─► Creates: plans/<name>.md
+    ├─► Creates/updates: repository plan owner (fallback: plans/<name>.md)
     │
     ├─► For each implementation increment in the current slice or PR boundary:
     │   ├─→ tdd-guardian (RED-GREEN-REFACTOR)
@@ -233,23 +249,23 @@ progress-guardian (orchestrates)
     │   └─→ pr-reviewer (comprehensive PR review)
     │
     ├─► At end:
-    │   ├─→ learn (merge learnings → CLAUDE.md)
-    │   ├─→ docs-guardian (update permanent docs)
-    │   └─→ DELETE plan file from plans/
+    │   ├─→ learn (route durable learnings to their owners)
+    │   ├─→ docs-guardian (update affected maintained docs)
+    │   └─→ DELETE/close the temporary plan artifact
     │
     └─► Related: `planning` skill (incremental work principles)
 ```
 
 ### Typical Workflow
 
-**Recommended command flow:** `/setup` → `/plan` → chosen single-PR or stack delivery → applicable evidence path → `/pr` → `/continue` → repeat
+**Recommended delivery flow:** `/plan` → chosen single-PR or stack delivery → applicable evidence path → `/pr` → `/continue` → repeat
 
-1. **Onboard project** (once)
-   - Run `/setup` to detect tech stack and generate project-level config
+1. **Onboard project when explicitly requested** (once)
+   - Run `/setup` only with authorization to inspect and generate project-level configuration
    - Run `/generate-pr-review` if custom PR review rules needed
 
 2. **Plan the work** (before writing any code)
-   - Run `/plan` to create a plan in `plans/` on a branch with a PR
+   - Run `/plan` to use the repository's planning workflow; absent one, it may create a fallback `plans/` file on a branch with a PR
    - Default every implementation slice to one trunk-based PR; use `stack-pull-requests` when one slice needs review layers or later slices should start on the same evolving baseline before lower PRs merge
    - Get approval for the plan before writing any code
 
@@ -265,7 +281,7 @@ progress-guardian (orchestrates)
    - Propose changes, **get approval before modifying plan**
 
 5. **When architectural decision arises**
-   - Invoke `adr` if decision warrants permanent record
+   - Invoke `adr` if the accepted decision warrants a durable record in the repository's decision mechanism
 
 6. **Before commits**
    - Invoke `ts-enforcer`: Verify TypeScript compliance
@@ -287,10 +303,10 @@ progress-guardian (orchestrates)
 
 9. **Feature complete**
    - Verify every owning PR landed and all acceptance criteria are met
-   - Invoke `learn`: Merge gotchas/patterns → CLAUDE.md
+   - Invoke `learn`: Route durable gotchas and patterns to their owning source
    - Invoke `adr`: Create ADRs for architectural decisions
-   - Invoke `docs-guardian`: Update permanent docs
-   - **DELETE plan file from `plans/`** (delete `plans/` if empty)
+   - Invoke `docs-guardian`: Update affected maintained docs
+   - **DELETE/close the temporary plan artifact** (remove fallback `plans/` if empty)
 
 ## When to Use Which Agent
 
@@ -309,7 +325,9 @@ Quick decision table for all agents:
 | "Is this 12-factor compliant?" | `twelve-factor-audit` | When onboarding or assessing deployment readiness |
 | "Where am I in this work?" | `progress-guardian` | Throughout multi-step work |
 
-**Note:** `learn` and `adr` can both apply to the same decision — `learn` captures "how to use it" (→ CLAUDE.md), `adr` captures "why we chose it" (→ ADR doc).
+**Note:** `learn` and `adr` can both apply to the same decision: `learn` routes
+operational knowledge to its owner; `adr` records an accepted architectural
+choice in the repository's decision mechanism.
 
 ## Key Distinctions
 
@@ -317,13 +335,13 @@ Quick decision table for all agents:
 
 | Aspect | progress-guardian | adr | learn | docs-guardian |
 |--------|------------------|-----|-------|---------------|
-| **Lifespan** | Temporary (days/weeks) | Permanent | Permanent | Permanent |
+| **Lifespan** | Temporary (days/weeks) | Retained while the decision remains relevant; supersede explicitly | Determined by the selected owner | Maintained while the page has an owner and purpose |
 | **Audience** | Current developer | Future developers | AI assistant + developers | Users + developers |
 | **Purpose** | Track progress through plan | Explain "why" decisions | Explain "how" to work | Explain "what" and "how to use" |
-| **Content** | Plan file in `plans/` | Context, decision, consequences | Gotchas, patterns | Features, API, setup |
-| **Updates** | On approval (plan changes) | Once (rarely updated) | As learning occurs | When features change |
-| **Format** | Structured plan | Structured ADR format | Informal examples | Professional, polished |
-| **End of life** | **DELETED** when done | Lives forever | Lives forever | Lives forever |
+| **Content** | Repository plan artifact (fallback: `plans/`) | Context, decision, consequences | Source/test/glossary/policy/doc update selected by `expectations` | Current product, API, setup, operations, or conceptual guidance |
+| **Updates** | On approval (plan changes) | Supersede or amend according to repository policy | When evidence justifies a durable update | When owned truth changes |
+| **Format** | Structured plan | Repository decision format | Format of the actual owner | Shape selected for the page job |
+| **End of life** | **DELETED/closed** when done | Superseded or archived by repository policy | Removed or superseded with its owner | Removed, redirected, or archived when no longer owned/current |
 
 ### When to Use Which Documentation Agent
 
@@ -331,25 +349,25 @@ Quick decision table for all agents:
 - "What am I working on right now?"
 - "What's the next step?"
 - "Where was I when I stopped yesterday?"
-- → Answer: Temporary plan file in `plans/` (deleted when done)
+- → Answer: Temporary repository-owned plan artifact (deleted/closed when done)
 
 **Use `adr`** for:
 - "Why did we choose technology X over Y?"
 - "What were the trade-offs in this architectural decision?"
 - "Why is the system designed this way?"
-- → Answer: Permanent ADR in `docs/adr/`
+- → Answer: Accepted record in the repository's declared decision mechanism
 
 **Use `learn`** for:
 - "What gotchas should I know about?"
 - "What patterns work well here?"
 - "How do I avoid this common mistake?"
-- → Answer: Permanent entry in `CLAUDE.md`
+- → Answer: Update the owning source, test, glossary, decision, maintained doc, active plan, or repository policy
 
 **Use `docs-guardian`** for:
 - "How do I install this?"
 - "How do I use this API?"
 - "What features does this have?"
-- → Answer: Permanent `README.md`, guides, API docs
+- → Answer: Maintained README, guide, reference, runbook, tutorial, or conceptual page shaped for its job
 
 **Use `use-case-data-patterns`** for:
 - "How does this feature work end-to-end?"
@@ -363,7 +381,7 @@ Commands complement agents by encoding common workflows into single invocations.
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
-| `/setup` | Project onboarding — detect tech stack, create CLAUDE.md, hooks, commands, PR reviewer | Starting work on a new project (replaces `/init`) |
+| `/setup` | Authorized project onboarding — detect tech stack, create project guidance, hooks, commands, PR reviewer | Only when the user explicitly requests onboarding/config generation |
 | `/pr` | Create a pull request following standards | When ready to submit work |
 | `/plan` | Create a plan document on a branch with a PR — no code | When planning work before implementation |
 | `/continue` | Pull merged PR, create new branch, update plan | After a PR is merged and you want to continue |
@@ -415,7 +433,7 @@ These agents work together to create a comprehensive development workflow:
 - **Improvement**: refactor-scan assesses code after GREEN or another passing proportionate preservation baseline; mutation testing verifies the accumulated result later at PR readiness
 - **Review**: pr-reviewer validates PRs before merge
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
-- **Progress**: progress-guardian tracks work through plan files in `plans/`
+- **Progress**: progress-guardian tracks work through the repository's declared plan owner
 
 **Key workflow principles** (see `planning` skill for details):
 - All work in small, known-good increments

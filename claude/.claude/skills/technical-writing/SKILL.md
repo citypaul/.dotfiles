@@ -18,14 +18,13 @@ I care, and how do I start. Everything below serves that contract.
 | `resources/formatting.md` | Structural rules — titles, headings, paragraphs, lists, intros/outros, tables of contents |
 | `resources/references.md` | Sources for every claim above |
 
-## One Mode Per Page
+## One Primary Reader Job Per Page
 
-The most violated rule in documentation: a page is a tutorial, a
-how-to, a reference, or an explanation — never a blend (Diátaxis; the
-full typology, the tutorial/how-to distinction most docs miss, and the
-model's honest limits live in `resources/doc-types.md`). Decide the
-mode before the first sentence; when a page fights you, it is usually
-two modes wearing one URL.
+Choose the page's primary reader job: tutorial, how-to, reference, or
+explanation (Diátaxis; its honest limits live in
+`resources/doc-types.md`). Supporting material may cross a boundary
+when that helps the same job. Split the page when mixed purposes make
+the next action, completeness contract, or intended audience unclear.
 
 ## Principles
 
@@ -33,7 +32,8 @@ two modes wearing one URL.
   the organizing principle, not the system's internal structure. Name
   things by what readers recognize, not how the code is built.
 - **Scannable** — clear headings that summarize their section's payoff,
-  short paragraphs, purposeful emphasis. A heading every 200–250 words.
+  short paragraphs, purposeful emphasis. Add a heading when it gives a
+  skimmer a useful landmark; do not optimize for a word-count quota.
 - **Plain and direct** — active voice, second person for instructions,
   short sentences for complex ideas. Complete sentences beat fragments
   and arrow chains: readable matters more than terse.
@@ -41,44 +41,60 @@ two modes wearing one URL.
   what doesn't change the reader's next step, never to compress the
   prose into jargon the reader must decode.
 
-## Claims Need Receipts
+## Material Claims Need Receipts
 
-Every claim in a technical document is checkable or it is marketing.
+Make material capability, current-state, compatibility, and quantitative
+claims checkable. Explanatory prose, clearly labelled judgment, and normative
+design rationale do not need a fake command or date; unsupported promotional
+claims do.
 
 - **No capability claim without evidence**: numbers a reader can
   verify, a command they can run, a file they can open. "Fast" is
   marketing; "the gates run in 14 seconds on this repo's CI" is a
   claim with a receipt.
-- **Counts and versions rot**: any number quoted in prose (test
-  counts, coverage, versions) is a maintenance liability — either
+- **Counts and versions rot**: changing operational numbers quoted in prose
+  (test counts, coverage, versions) are maintenance liabilities — either
   generate it, date it, or bind it to the kept-current rule (updating
   it is part of every change's definition of done).
-- **Honest limits are content, not confession**: a section naming what
-  the thing does NOT do yet is the most trust-building section in the
-  document. State limits plainly; never imply protection, coverage, or
-  capability that isn't there.
+- **Honest limits are content, not confession**: when the page's scope could
+  imply protection, coverage, or capability it does not provide, name those
+  limits where the reader makes the decision. A short document need not grow a
+  ceremonial limits section when its bounded scope is already explicit.
 - **Idle and empty states must speak**: "0 items processed" that reads
   like success is a lie of layout. Distinguish "nothing to do" from
   "did nothing" everywhere output appears in docs and examples.
-- **Timeless docs**: never pre-announce; no "coming soon",
-  "currently", or "new in…" — docs outlive releases and these rot
-  faster than any code example (Google's rule).
+- **Timeless maintained guidance**: evergreen READMEs and reference docs
+  avoid unowned "coming soon", "currently", or "new in…" labels. Release
+  notes, migration guides, deprecation notices, and time-bounded status pages
+  may need temporal language; attach a version/date and an owner or removal
+  condition so it remains evidence instead of stale promotion.
 
 ## Docs Are Behavior — Verify Them
 
 A document that describes a system is a claim about that system, and
 claims get verified:
 
-- **Verify against the source, not memory**: every flag, exit code,
-  config key, and command in a doc is checked against the code before
-  it ships. If a claim can be executed, execute it.
+- **Verify against the source, not memory**: every material flag, exit code,
+  config key, and executable command a doc asks readers to rely on is checked
+  against the code before it ships. Execute the claim when doing so is safe,
+  authorized, and proportionate; otherwise record the evidence gap.
 - **Machine-check what machines can check**: table-of-contents anchors
   against the renderer's real slug rules, links against files, command
   examples against the binary. Hand-verification is the fallback, not
   the default.
-- **Update docs in the same change**: a behavior change that leaves
-  its documentation stale is incomplete work. The doc diff belongs in
-  the same commit as the behavior diff.
+- **Update docs in the same reviewable change**: a behavior change that
+  leaves its documentation stale is incomplete work. Follow the
+  repository's commit policy rather than imposing one globally.
+
+## Maintained Docs Describe Current Truth
+
+Use `resources/docs-quality.md` for the full state-based lifecycle and Git-archaeology workflow.
+
+- Keep plans and specification workspaces only while their outcomes remain unfinished. Delete them when the outcome ships or their assumptions are superseded; Git history is the archive.
+- Promote lasting constraints to their current owner: source or executable tests for behavior, accepted ADRs for architecture decisions, package or operational docs for maintained procedures, and the authoritative glossary for domain vocabulary.
+- Do not make maintained docs depend on deleted specifications or unexplained delivery identifiers. Introduce the purpose in plain language before any genuinely necessary issue, PR, task, requirement, specification, or ADR identifier.
+- Give documentation indexes a clear starting point and distinguish current authority, active work, decisions, and historical evidence. Prefer a small navigable set of trusted pages; delete duplicated, obsolete, speculative, generated, or unowned prose.
+- Documentation-only changes do not inherently require TDD. Any executable documentation guard still needs a focused test proving it can fail.
 
 ## Writing for AI Agents Too
 
@@ -98,7 +114,7 @@ Developer docs now have two audiences. Agent-readable means:
 ## Document Shapes
 
 - **README / landing**: first screen answers what/why/how-to-start;
-  table of contents for anything over ~4 sections; quickstart as one
+  table of contents when it materially improves navigation; quickstart as one
   coherent journey in true order; honest limits before credits.
 - **Tutorial**: state the destination up front ("you will have X
   working"); number steps; every step's output shown so readers know
@@ -124,10 +140,13 @@ Developer docs now have two audiences. Agent-readable means:
 ## Verification Checklist
 
 - [ ] First screen answers what / why / how-to-start
-- [ ] Headings summarize payoffs; one per 200–250 words; ToC where warranted (anchors machine-checked)
-- [ ] Every claim carries a receipt or a date; no marketing verbs without evidence
-- [ ] Every command/flag/code verified against the source; executable claims executed
-- [ ] Honest-limits section present and current
+- [ ] Headings summarize payoffs; a ToC is present where warranted and its anchors are machine-checked
+- [ ] Material capability/current-state/quantitative claims carry a receipt or date; promotional claims have evidence
+- [ ] Commands, flags, and executable examples readers rely on are verified against source and run where feasible
+- [ ] Material limits appear where implied scope could otherwise mislead
 - [ ] Enumerable facts appear in tables; exact strings given for anything copy-pasteable
 - [ ] Counts/versions bound to the kept-current rule or generated
-- [ ] Doc changes ride the same commit as the behavior they describe
+- [ ] Doc changes ride the same reviewable change as the behavior they describe
+- [ ] Maintained docs describe current truth; completed or superseded workspaces are deleted
+- [ ] Lasting constraints live with their current owner, not only in historical delivery artifacts
+- [ ] Indexes distinguish current authority, active work, decisions, and history

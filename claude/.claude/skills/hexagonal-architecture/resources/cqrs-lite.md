@@ -16,7 +16,7 @@ CQRS-lite: writes go through repositories, reads use query functions that JOIN f
 Query functions are driven adapters. In `structure-codebase`'s visible single-package layout they live under `adapters/driven/` beside the relevant persistence implementation; other established layouts may use a different physical path without changing the role.
 
 ```typescript
-// adapters/driven/postgres/queries/dashboard.ts — JOINs across 4 tables for display
+// packages/reporting/adapters/driven/postgres/src/dashboard.ts — JOINs for display
 const getDashboardCards = async (db: Database, userId: string) => {
   return db.select({
     eventTitle: events.title,
@@ -38,7 +38,7 @@ const getDashboardCards = async (db: Database, userId: string) => {
 Query functions return raw joined data. Provider-free inside functions may interpret it when the transformation encodes business meaning; presentation-only formatting stays at the driving edge.
 
 ```typescript
-// hexagon/dashboard/dashboard-status.ts — provider-free read-model policy, no DB imports
+// packages/reporting/hexagon/application/src/dashboard-status.ts — provider-free policy
 const toDashboardCard = (row: DashboardRow, now: Date): DashboardCard => ({
   title: row.eventTitle,
   emoji: row.occasionEmoji,

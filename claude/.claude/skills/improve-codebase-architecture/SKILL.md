@@ -131,7 +131,7 @@ Stop after the audit unless the user already authorized a specific candidate. As
 
 For the selected candidate:
 
-1. Use `grill-me` when constraints or trade-offs remain decision-heavy.
+1. Use `grill-me` where installed when constraints or trade-offs remain decision-heavy. Otherwise, ask one focused question at a time and include a recommended answer with its trade-off.
 2. Load `codebase-design` and its Design It Twice process for a consequential contract.
 3. Load `ubiquitous-language` if the design needs a new or changed domain term.
 4. Use `structure-codebase` if placement, packages, exports, or dependency enforcement change.

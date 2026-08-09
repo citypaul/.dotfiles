@@ -65,32 +65,34 @@ Ordered from preferred to last-resort. Start with the most explicit option that 
 4. **Module mocking** -- `vi.mock()` to replace imports (**scaffolding only** -- migrate away as you gain coverage)
 5. **Subclass and override** -- for legacy class-based code only (see `resources/oop-patterns.md`)
 
-Steps 1-3 are permanent design improvements. Steps 4-5 are temporary scaffolding.
+Steps 1-3 are candidates for a durable design only when the lasting contract
+earns them. Otherwise keep them private or remove them after
+characterisation. Steps 4-5 are normally temporary scaffolding.
 
 ## Quick Example
 
-Before you can characterise `processOrder`, you need a seam for its hidden dependency:
+Before you can characterise `scheduleDelivery`, you need a seam for its hidden dependency:
 
 ```typescript
 // BEFORE -- no seam, can't test without hitting real API
-const processOrder = (order: Order): OrderResult => {
-  const tax = fetchTaxRate(order.region);
-  return { ...order, total: order.subtotal * (1 + tax) };
+const scheduleDelivery = (delivery: Delivery): DeliveryPlan => {
+  const transitDays = fetchTransitDays(delivery.region);
+  return { ...delivery, totalDays: delivery.preparationDays + transitDays };
 };
 
 // AFTER -- function parameter seam with production default
-type TaxResolver = (region: string) => number;
+type TransitDaysResolver = (region: string) => number;
 
-const processOrder = (
-  order: Order,
-  resolveTax: TaxResolver = fetchTaxRate,
-): OrderResult => {
-  const tax = resolveTax(order.region);
-  return { ...order, total: order.subtotal * (1 + tax) };
+const scheduleDelivery = (
+  delivery: Delivery,
+  resolveTransitDays: TransitDaysResolver = fetchTransitDays,
+): DeliveryPlan => {
+  const transitDays = resolveTransitDays(delivery.region);
+  return { ...delivery, totalDays: delivery.preparationDays + transitDays };
 };
 
 // Test -- swap in a fake at the enabling point (the argument list)
-const result = processOrder(testOrder, () => 0.08);
+const result = scheduleDelivery(testDelivery, () => 2);
 ```
 
 Production code is unchanged at every call site (the default kicks in). Tests pass a fake. The seam is the parameter; the enabling point is the argument list.

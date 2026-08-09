@@ -25,18 +25,22 @@ const sdk = new NodeSDK({
 
 sdk.start();
 
-process.on('SIGTERM', () => {
-  void sdk.shutdown();
-});
+export const shutdownTelemetry = (): Promise<void> => sdk.shutdown();
 ```
+
+Register `shutdownTelemetry` with the application's single shutdown coordinator; do not install a competing signal listener in instrumentation. One coordinator drains the server, backing services, and telemetry in the required order before the process exits.
 
 Run with the instrumentation loaded first:
 
 ```bash
 node --import ./dist/instrumentation.mjs dist/app.mjs
 # or during development (Node 20+):
-npx tsx --import ./src/instrumentation.ts src/app.ts
+./node_modules/.bin/tsx --import ./src/instrumentation.ts src/app.ts
 ```
+
+Use the repository's existing script when it has one. The direct development
+example assumes an already reviewed, locked `tsx` dependency; do not download a
+moving executable implicitly just to run it.
 
 Caveats:
 
@@ -75,22 +79,31 @@ const canonicalLogLine =
     const startedAt = performance.now();
     res.locals.eventContext = ctx;
 
-    res.on('finish', () => {
+    let emitted = false;
+    const emit = (aborted: boolean): void => {
+      if (emitted) return;
+      emitted = true;
       logger.info('canonical-log-line', {
         ...ctx.snapshot(),
         'http.request.method': req.method,
-        'http.route': req.route?.path ?? req.path,
+        ...(typeof res.locals.httpRouteTemplate === 'string'
+          ? { 'http.route': res.locals.httpRouteTemplate }
+          : {}),
         'http.response.status_code': res.statusCode,
+        response_aborted: aborted,
         duration_ms: Math.round(performance.now() - startedAt),
         trace_id: trace.getActiveSpan()?.spanContext().traceId ?? '',
       });
-    });
+    };
+
+    res.once('finish', () => emit(false));
+    res.once('close', () => emit(!res.writableFinished));
 
     next();
   };
 ```
 
-`res.on('finish')` fires on success and error alike — the emission survives the exception path. Downstream code enriches via `ctx.set({ 'pledge.rejection_reason': 'funding-closed' })`; in a hexagonal codebase those domain dimensions arrive through result types, a Domain Probe adapter, or a domain-event subscriber (see the `hexagonal-architecture` skill) — never by passing the accumulator into domain code.
+`finish` covers normally completed responses, including handled error responses; `close` also catches a connection that terminates before completion. The idempotent emitter prevents the normal `finish` → `close` sequence from producing two events and records premature closure in `response_aborted`. The route adapter sets `res.locals.httpRouteTemplate` only after a route matches, using the framework-normalized full template including any mount prefix. Omit `http.route` when that value is unavailable. Never fall back to `req.path` or a partial router path: raw paths can contain identifiers/secrets, while partial templates merge unrelated mounted routes. Downstream code enriches via `ctx.set({ 'pledge.rejection_reason': 'funding-closed' })`; in a hexagonal codebase those domain dimensions arrive through result types, a Domain Probe adapter, or a domain-event subscriber (see the `hexagonal-architecture` skill) — never by passing the accumulator into domain code.
 
 **Span-based alternative:** skip the separate log line and put the same fields on the root span as attributes (`trace.getActiveSpan()?.setAttributes(...)`). A root span with rich attributes IS the canonical event; choose based on where your querying happens.
 
@@ -150,9 +163,9 @@ Use these names instead of inventing your own ([registry](https://opentelemetry.
 
 Custom business attributes get a namespace prefix that can't collide with semconv: `pledge.rejection_reason`, `occasion.id`.
 
-## Collector: Minimal Production Setup
+## Collector: Recommended Production Setup
 
-Direct SDK-to-backend export is fine in development. In production, run a Collector so the app offloads fast and batching/retry/redaction/backend-choice live in config, not code:
+A Collector is the recommended production default so the app offloads quickly and batching, retry, redaction, and backend choice live in config rather than application code. A documented direct-export exception is reasonable for a simple deployment only when the SDK/backend path meets the required buffering, retry, backpressure, filtering, and operational guarantees:
 
 ```yaml
 # otel-collector.yaml
@@ -186,4 +199,4 @@ service:
       exporters: [otlphttp]
 ```
 
-Tail sampling, if you need it, is a Collector processor (`tail_sampling`) — it requires all spans of a trace to reach the same Collector instance, which is what makes it a stateful tier to operate. Start without it; add it when you need guaranteed error-trace retention (see SKILL.md "Sampling and Cost Economics").
+Tail sampling, if you need it, is a Collector processor (`tail_sampling`) — it requires all spans of a trace to reach the same Collector instance, which is what makes it a stateful tier to operate. Start without it; add it when completed-trace attributes justify preferential retention of selected errors or outliers, then capacity-test the policy because it cannot guarantee retention (see SKILL.md "Sampling and Cost Economics").
