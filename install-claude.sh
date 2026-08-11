@@ -41,8 +41,11 @@ INSTALL_PONYTAIL=true
 BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 SKILLS_CLI_VERSION="1.5.22" # https://github.com/vercel-labs/skills/tree/v1.5.22
 
-# Reviewed immutable source revisions. The Skills CLI supports `#<git-ref>`;
-# every source is pinned and every selected name is declared before mutation.
+# Reviewed immutable source revisions. Every source is pinned to a commit and
+# every selected name is declared before mutation. The Skills CLI clones
+# `repo#<ref>` sources with `git clone --branch`, which only accepts branch or
+# tag names, so commit pins are rewritten to GitHub commit-archive URLs before
+# install (see resolve_pinned_source).
 OWN_SKILLS_REPO_BASE="citypaul/.dotfiles"
 WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills#95d6e255afe1596b557d7a8498517884438f5b3a"
 NEXT_SKILLS_REPO="vercel-labs/next-skills#b76d687cf3e026eac3b1032f610f06b47a56377c"
@@ -487,12 +490,42 @@ validate_unique_skill_names() {
   done
 }
 
+# The pinned Skills CLI fetches `repo#<ref>` sources with
+# `git clone --branch <ref>`, and git only accepts branch or tag names there —
+# a commit-SHA pin always dies with "Remote branch <sha> not found in upstream
+# origin". GitHub's commit-archive endpoint serves the same immutable revision
+# as a tarball, and the CLI installs archive URLs without cloning, so
+# commit-pinned GitHub sources are rewritten to that form. Anything else
+# (branch/tag refs, non-GitHub URLs) passes through untouched.
+resolve_pinned_source() {
+  local source="$1"
+  local repo="${source%%#*}"
+  local ref="${source##*#}"
+
+  if [[ "$source" != *"#"* ]] || ! [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "$source"
+    return 0
+  fi
+
+  case "$repo" in
+    https://github.com/*) repo="${repo#https://github.com/}" ;;
+    *://*|git@*)
+      echo "$source"
+      return 0
+      ;;
+  esac
+
+  echo "https://github.com/${repo%.git}/archive/$ref.tar.gz"
+}
+
 # Install skills from a skills.sh source for the selected agents
 install_skills_from() {
   local source="$1"
   local label="$2"
   shift 2
   local skills=("$@")
+  local install_source
+  install_source="$(resolve_pinned_source "$source")"
 
   if [[ ${#skills[@]} -eq 0 ]]; then
     echo -e "${RED}✗${NC} No reviewed skill names declared for $source"
@@ -510,7 +543,7 @@ install_skills_from() {
   # -g: install globally (per-agent paths managed by the skills CLI)
   # -s: install only the reviewed names declared above
   # -y: skip prompts
-  if npx --yes "skills@$SKILLS_CLI_VERSION" add "$source" -g "${agent_args[@]}" -s "${skills[@]}" --copy -y; then
+  if npx --yes "skills@$SKILLS_CLI_VERSION" add "$install_source" -g "${agent_args[@]}" -s "${skills[@]}" --copy -y; then
     echo -e "${GREEN}✓${NC} $label installed"
   else
     echo -e "${RED}✗${NC} Failed to install $label from $source"
