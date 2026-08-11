@@ -52,7 +52,7 @@ Rules that keep workflow scripts working:
 - Default `pipeline()` over `parallel()` barriers; the dedup barrier above is one of the few justified ones.
 - Respect the session's workflow size guideline; scale rosters per `topologies.md`, and use `budget` when the user set a token target.
 - To iterate, edit the persisted script file and re-invoke with `{scriptPath, resumeFromRunId}` — unchanged `agent()` calls replay from cache.
-- The Workflow tool needs explicit user opt-in. A skill instructing you to call it (this one, or an instance like `pr-review` that the user invoked) is that opt-in; a task merely *benefiting* from a graph is not.
+- The Workflow tool needs explicit user opt-in. A skill instructing you to call it (this one, or an instance like `review` that the user invoked) is that opt-in; a task merely *benefiting* from a graph is not.
 
 ## Runtime 2: Agent-tool Fan-out
 

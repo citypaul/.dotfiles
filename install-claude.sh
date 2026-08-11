@@ -59,10 +59,11 @@ FIRST_PARTY_SKILLS=(
   characterisation-tests ci-debugging cli-design codebase-design debugging
   diagrams domain-driven-design double-check evaluate-existing-solutions
   event-sourcing expectations find-gaps find-skills finding-seams
-  folder-structure front-end-testing functional hexagonal-architecture
+  folder-structure front-end-testing functional graph-engineering
+  hexagonal-architecture
   improve-codebase-architecture mutation-testing observability planning
   production-parity-skill-builder react-testing reduce-system-complexity
-  refactoring secure-oauth-oidc specification stack-pull-requests
+  refactoring review secure-oauth-oidc specification stack-pull-requests
   story-splitting storyboard structure-codebase tdd teach-me technical-writing
   test-design-reviewer testing twelve-factor typescript-strict
   ubiquitous-language wtf
@@ -805,7 +806,7 @@ echo -e "${BLUE}Next steps:${NC}"
 echo ""
 if [[ "$INSTALL_CLAUDE" == true || "$INSTALL_COMMANDS" == true || "$INSTALL_AGENTS" == true ]]; then
   echo -e "  Verify Claude Code artifacts: ${YELLOW}ls -la ~/.claude/${NC}"
-  [[ "$INSTALL_SKILLS" == true ]] && echo -e "  Try a multi-lens PR review: ${YELLOW}/pr-review${NC}"
+  [[ "$INSTALL_SKILLS" == true ]] && echo -e "  Try a multi-lens PR review: ${YELLOW}/review${NC}"
   echo ""
 elif [[ "$INSTALL_OPENCODE" == true ]]; then
   echo -e "  Verify OpenCode artifacts: ${YELLOW}ls -la ~/.config/opencode/${NC}"

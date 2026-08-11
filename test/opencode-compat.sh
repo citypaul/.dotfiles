@@ -203,7 +203,7 @@ mkdir -p \
   "$OWNERSHIP_HOME/.config/opencode/agent"
 printf '%s\n' 'unmanaged command' > "$OWNERSHIP_HOME/.claude/commands/unmanaged.md"
 printf '%s\n' 'unmanaged agent' > "$OWNERSHIP_HOME/.claude/agents/unmanaged.md"
-printf '%s\n' 'custom OpenCode command' > "$OWNERSHIP_HOME/.config/opencode/command/pr.md"
+printf '%s\n' 'custom OpenCode command' > "$OWNERSHIP_HOME/.config/opencode/command/plan.md"
 printf '%s\n' 'custom OpenCode agent' > "$OWNERSHIP_HOME/.config/opencode/agent/tdd-guardian.md"
 BROKEN_TARGET="$OWNERSHIP_HOME/missing-command-target"
 ln -s "$BROKEN_TARGET" "$OWNERSHIP_HOME/.config/opencode/command/continue.md"
@@ -229,7 +229,7 @@ command_backup_count=0
 agent_backup_count=0
 command_custom_preserved=false
 agent_custom_preserved=false
-for backup in "$OWNERSHIP_HOME/.config/opencode/command/pr.md.backup."*; do
+for backup in "$OWNERSHIP_HOME/.config/opencode/command/plan.md.backup."*; do
   [[ -f "$backup" ]] || continue
   command_backup_count=$((command_backup_count + 1))
   grep -q 'custom OpenCode command' "$backup" && command_custom_preserved=true
@@ -257,7 +257,7 @@ else
   fail "OpenCode replacement must back up dangling symlinks without writing through them"
 fi
 
-if ! grep -q '^allowed-tools:' "$OWNERSHIP_HOME/.config/opencode/command/pr.md" &&
+if ! grep -q '^allowed-tools:' "$OWNERSHIP_HOME/.config/opencode/command/plan.md" &&
    ! grep -Eq '^(tools|color):' "$OWNERSHIP_HOME/.config/opencode/agent/tdd-guardian.md"; then
   pass "OpenCode projection transforms only declared source files"
 else

@@ -65,9 +65,10 @@ PROGRESS_GUARDIAN="$REPO_ROOT/claude/.claude/agents/progress-guardian.md"
 AGENTS_README="$REPO_ROOT/claude/.claude/agents/README.md"
 USE_CASE_DATA="$REPO_ROOT/claude/.claude/agents/use-case-data-patterns.md"
 USE_CASE_DATA_SOURCE="$REPO_ROOT/claude/.claude/agents/references/use-case-data-patterns-source-notes.md"
-PR_REVIEWER="$REPO_ROOT/claude/.claude/agents/pr-reviewer.md"
+REVIEW_SKILL="$SKILLS/review/SKILL.md"
+REVIEW_LENSES="$SKILLS/review/references/lenses.md"
 TDD_GUARDIAN="$REPO_ROOT/claude/.claude/agents/tdd-guardian.md"
-PR_REVIEW_COMMAND="$REPO_ROOT/claude/.claude/commands/generate-pr-review.md"
+REVIEW_READINESS="$SKILLS/review/references/pr-readiness.md"
 REFACTOR_SCAN="$REPO_ROOT/claude/.claude/agents/refactor-scan.md"
 ACCEPTANCE_REVIEW="$SKILLS/acceptance-review/SKILL.md"
 DEBUGGING="$SKILLS/debugging/SKILL.md"
@@ -435,13 +436,13 @@ require_match "refactor scans preserve accepted contracts" \
   'Agreed behavior and accepted contracts will remain intact' "$REFACTOR_SCAN"
 require_match "refactor scans require commit authority" \
   'Commit only when the user explicitly authorizes it' "$REFACTOR_SCAN"
-require_match "PR mutation findings are ownership-based" \
-  'Mutates an array owned by the caller' "$PR_REVIEWER"
-require_match "PR console findings are adapter-aware" \
+require_match "review mutation findings are ownership-based" \
+  'Mutates an array owned by the caller' "$REVIEW_LENSES"
+require_match "review console findings are adapter-aware" \
   'outside reviewed presentation, process-stream, logging, or diagnostic adapters' \
-  "$PR_REVIEWER" "$PR_REVIEW_COMMAND"
-require_match "PR readonly findings follow immutable contracts" \
-  'readonly` where the API promises immutability' "$PR_REVIEWER" "$PR_REVIEW_COMMAND"
+  "$REVIEW_LENSES"
+require_match "review readonly findings follow immutable contracts" \
+  'readonly` where the API promises immutability' "$REVIEW_LENSES"
 require_match "OpenCode projections use an explicit command manifest" \
   'for cmd in "\$\{COMMAND_FILES\[@\]\}"' "$INSTALLER"
 require_match "OpenCode projections use an explicit agent manifest" \
@@ -520,16 +521,16 @@ require_match "storyboards defer container mechanics to the project" \
   'use the local page-shell/container pattern' "$STORYBOARD"
 require_match "ASCII diagrams remain a deliberate portable option" \
   'ASCII in a `text` fence' "$DIAGRAMS"
-require_match "PR review bodies use files instead of shell interpolation" \
-  'gh pr comment <number> --body-file' "$PR_REVIEWER"
-require_match "PR review classifies every applicable path type" \
-  'Classify each changed path by every applicable type' "$PR_REVIEWER"
+require_match "review report posting uses files instead of shell interpolation" \
+  'gh pr comment <number> --body-file' "$REVIEW_SKILL"
+require_match "review readiness classifies every applicable path type" \
+  'Classify each changed path by every applicable type' "$REVIEW_READINESS"
 require_match "PR readiness permits mixed change-path classifications" \
-  'mixed PRs may use several' "$PR_REVIEWER" "$PR_REVIEW_COMMAND"
+  'mixed PRs may use several' "$REVIEW_READINESS"
 require_match "non-production paths use applicable evidence without mutation ceremony" \
-  'without fabricated mutation' "$PR_REVIEWER" "$PR_REVIEW_COMMAND"
+  'without fabricated mutation' "$REVIEW_READINESS"
 require_match "unrelated PR paths omit inapplicable gate fields" \
-  'Path types outside that responsibility omit the field' "$PR_REVIEW_COMMAND"
+  'Path types outside that responsibility omit the field' "$REVIEW_READINESS"
 require_match "refactor scans treat nesting as a readability signal" \
   'branches, outcomes, or effects materially hard to trace' "$REFACTOR_SCAN"
 require_match "refactor scans permit contained local mutation" \
@@ -608,12 +609,12 @@ reject_match "test-reviewer live attribution is not mutable" \
   'andrealaforgia/claude-code-agents/blob/(main|master)' "$TEST_REVIEWER"
 reject_match "TDD does not impose universal coverage or commit conventions" \
   'Coverage verified at 100%|Conventional commit messages used|no `let`/`beforeEach`' "$TDD"
-reject_match "PR templates do not require exactly one change path" \
-  'Exactly one path is classified' "$PR_REVIEWER" "$PR_REVIEW_COMMAND"
-reject_match "PR templates do not require mutation evidence for every path" \
-  'Every path has one end-of-phase mutation result' "$PR_REVIEWER" "$PR_REVIEW_COMMAND"
-reject_match "generated reviewers do not require ceremonial N/A for unrelated paths" \
-  'record `N/A` when neither applies|otherwise record an explicit `N/A` rationale|assessment is complete, or explicitly `N/A`' "$PR_REVIEW_COMMAND"
+reject_match "review readiness does not require exactly one change path" \
+  'Exactly one path is classified|Classify exactly one change path' "$REVIEW_SKILL" "$REVIEW_READINESS"
+reject_match "review readiness does not require mutation evidence for every path" \
+  'Every path has one end-of-phase mutation result' "$REVIEW_SKILL" "$REVIEW_READINESS"
+reject_match "review readiness does not require ceremonial N/A for unrelated paths" \
+  'record `N/A` when neither applies|otherwise record an explicit `N/A` rationale|assessment is complete, or explicitly `N/A`' "$REVIEW_READINESS"
 reject_match "refactor scans do not impose numeric nesting limits" \
   'nesting depth.*[0-9]|Deeply nested code \(>[0-9]|[0-9]+ levels of nested if' "$REFACTOR_SCAN"
 reject_match "refactor scans do not require universal non-mutation" \
@@ -725,7 +726,7 @@ reject_match "problem details do not publish currency-less float balances" \
   '"balance":[[:space:]]*5\.00' "$API_PROBLEMS"
 reject_match "testing examples do not use ambiguous payment amounts" \
   'getMockPayment\(\{ amount:|payment[[:space:]]*=[[:space:]]*\{ amount:|price:[[:space:]]*[0-9]+|setAmount\(|getAmount\(' \
-  "$TESTING" "$TDD_GUARDIAN" "$PR_REVIEWER" "$README"
+  "$TESTING" "$TDD_GUARDIAN" "$REVIEW_LENSES" "$README"
 reject_match "debugging guidance does not make every diagnosis a fix" \
   'test one falsifiable hypothesis, fix the owning boundary|and fix the shared owning boundary' \
   "$README" "$DEBUGGING_OPENAI"
@@ -740,11 +741,11 @@ reject_match "TDD mirrors do not universalize public APIs, factories, or coverag
 reject_match "refactor scans do not require commits or frozen test code" \
   'Commit current green state first|Current code is committed|All tests will continue passing without modification|Let.s commit and move|Commit refactoring separately' \
   "$REFACTOR_SCAN"
-reject_match "PR reviews do not reject local mutation or loops by shape" \
-  'items\.push\(newItem\).*Use spread|for \(const item of items\).*Consider.*\.map' "$PR_REVIEWER"
-reject_match "PR reviews do not reject every console or mutable data shape" \
+reject_match "reviews do not reject local mutation or loops by shape" \
+  'items\.push\(newItem\).*Use spread|for \(const item of items\).*Consider.*\.map' "$REVIEW_LENSES" "$REVIEW_SKILL"
+reject_match "reviews do not reject every console or mutable data shape" \
   'No console\.log/debug statements|No `console\.log` or debug statements|readonly` on data structure properties|readonly` on immutable data' \
-  "$PR_REVIEWER" "$PR_REVIEW_COMMAND"
+  "$REVIEW_LENSES" "$REVIEW_READINESS"
 reject_match "README does not teach uniqueness as complete event-store concurrency" \
   'UNIQUE \(stream_id, version\).*is.*optimistic concurrency' "$README"
 reject_match "projection checkpoints do not claim atomicity alone is exactly-once" \

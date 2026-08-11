@@ -95,7 +95,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Stack Pull Requests** | Decide whether vertical implementation work should use independent PRs or an optional hard-/flow-lineage stack across one or more slices, then deliver it safely | [→ skills/stack-pull-requests](claude/.claude/skills/stack-pull-requests/SKILL.md) |
 | **Debugging** | Evidence-preserving diagnosis for local and runtime failures: reproduce, localize, and test one falsifiable hypothesis; fix the owning boundary and leave a guard only when a fix was requested | [→ skills/debugging](claude/.claude/skills/debugging/SKILL.md) |
 | **Graph Engineering** | Compose installed skills into orchestrated multi-agent graphs — one sub-agent per skill, stages that fan out, adversarially verify, and synthesize | [→ skills/graph-engineering](claude/.claude/skills/graph-engineering/SKILL.md) |
-| **PR Review** | Multi-agent PR review with installed skills as composable lenses (`/pr-review`), plus the PR-readiness evidence gate for creating PRs | [→ skills/pr-review](claude/.claude/skills/pr-review/SKILL.md) |
+| **Review** | Multi-agent code review of any change boundary — working tree, branch, or PR — with installed skills as composable lenses (`/review`), plus the PR-readiness evidence gate for creating PRs | [→ skills/review](claude/.claude/skills/review/SKILL.md) |
 | **CI Debugging** | Systematic CI/CD failure diagnosis, hypothesis-first debugging, environment delta analysis | [→ skills/ci-debugging](claude/.claude/skills/ci-debugging/SKILL.md) |
 | **Production Parity Skill Builder** | Creates app-specific skills that inspect docs, code, tests, CI, deployment, infrastructure, config, auth, and environment setup to catch drift between production and non-production environments | [→ skills/production-parity-skill-builder](claude/.claude/skills/production-parity-skill-builder/SKILL.md) |
 | **Structure Codebase** | Selects the lightest honest source-tree shape: first-class frontend structures, visible hexagonal boundaries when earned, and feature-, context-, endpoint-, workflow-, framework-, or shallow forms elsewhere; package/import enforcement and safe migrations | [→ skills/structure-codebase](claude/.claude/skills/structure-codebase/SKILL.md) |
@@ -160,7 +160,7 @@ Unlike typical style guides, CLAUDE.md provides:
 | Planning significant implementation work | [planning](claude/.claude/skills/planning/SKILL.md) | Sequence a selected child story vertically, or a reducer-defined program, and choose each slice's delivery shape |
 | One slice is too large, or later slices should start before lower PRs merge | [stack-pull-requests](claude/.claude/skills/stack-pull-requests/SKILL.md) | Choose independent PRs or a justified hard-/flow-lineage stack without turning technical layers into stories |
 | Need several skills applied to one task at once | [graph-engineering](claude/.claude/skills/graph-engineering/SKILL.md) | One orchestrator, one sub-agent per skill — fan out, adversarially verify, synthesize one deliverable |
-| Want a PR reviewed through your architecture skills | [pr-review](claude/.claude/skills/pr-review/SKILL.md) | `/pr-review [#PR] [lens skills...]` — every lens is an installed skill; findings are verified into one ranked report |
+| Want your work reviewed through your architecture skills — before or after opening a PR | [review](claude/.claude/skills/review/SKILL.md) | `/review [target] [lens skills...]` — working tree, branch, or PR; every lens is an installed skill; findings are verified into one ranked report |
 | Tightening a story, plan, AC set, or mock | [find-gaps](claude/.claude/skills/find-gaps/SKILL.md) | Find missing decisions and write confirmed answers back into the artifact |
 | Checking whether implementation satisfies agreed requirements | [acceptance-review](claude/.claude/skills/acceptance-review/SKILL.md) | Map every authoritative criterion to implementation and verification evidence, then return an exact verdict |
 | Backlog items keep turning into frontend/backend tickets | [story-splitting](claude/.claude/skills/story-splitting/SKILL.md) | Reject component stories; split by capability, path, interface, data, rules, quality, or learning |
@@ -210,7 +210,7 @@ Compatible agents **auto-discover** skills when relevant:
 - Running tests? → `testing` skill provides factory patterns
 - After GREEN? → `refactoring` skill assesses opportunities while behavior tests stay green
 - Ready to create a PR? → `mutation-testing` runs once for the accumulated change and drives survivor handling
-- Reviewing a PR, branch, or diff? → `pr-review` fans out one sub-agent per skill lens and synthesizes one adversarially verified, ranked report (`/pr-review`)
+- Reviewing a PR, branch, or diff? → `review` fans out one sub-agent per skill lens and synthesizes one adversarially verified, ranked report (`/review`)
 - Task needs several skills at once? → `graph-engineering` composes installed skills into an orchestrated multi-agent graph, one skill per node
 - Removing whole-path mechanism without changing agreed behavior? → `reduce-system-complexity` keeps conservation and reduction as separate evidence gates
 - Designing one module's lasting responsibility and contract? → `codebase-design` applies deep-module, locality, and Design It Twice lenses
@@ -906,21 +906,21 @@ it('characterises formatPrice', () => {
 - **Runtime ladder** ([`execution.md`](claude/.claude/skills/graph-engineering/references/execution.md)) — Workflow tool, Agent-tool fan-out, or labelled sequential degraded mode
 - **Honest scope** — explicit anti-triggers: no graphs of one node, no fan-outs the user didn't opt into
 
-`pr-review` is the flagship instance of this skill; `double-check` remains the tool for a single independent second opinion.
+`review` is the flagship instance of this skill; `double-check` remains the tool for a single independent second opinion.
 
 ---
 
-### 🔍 PR Review → [skills/pr-review](claude/.claude/skills/pr-review/SKILL.md)
+### 🔍 Review → [skills/review](claude/.claude/skills/review/SKILL.md)
 
-**Problem it solves:** PR reviews that hardcode one generic checklist instead of composing the architecture skills your project actually uses — and readiness evidence checked nowhere in particular
+**Problem it solves:** code reviews that hardcode one generic checklist instead of composing the architecture skills your project actually uses, that can only run once a PR exists, and readiness evidence checked nowhere in particular
 
 **What's inside (main skill + 3 references):**
 
-- **Skills as review lenses** — `/pr-review [#PR] [lens skills...]`: every lens is an installed skill (`hexagonal-architecture`, `domain-driven-design`, `structure-codebase`, ...), each running as its own sub-agent with an isolated context
-- **Composable roster** ([`lenses.md`](claude/.claude/skills/pr-review/references/lenses.md)) — defaults (`typescript-strict`, `functional`, `testing` + built-in readiness and quality lenses) plus project-trait auto-detection; add or remove lenses, `only`, `thorough`, and `post` tokens
-- **PR-readiness evidence gate** ([`pr-readiness.md`](claude/.claude/skills/pr-review/references/pr-readiness.md)) — change-path classification and the mutation-evidence freshness model that gate agent-led PR creation
+- **Skills as review lenses** — `/review [target] [lens skills...]` reviews any boundary at any phase: uncommitted work (`wip`), the current branch, a stacked layer, or a PR (`#123`); every lens is an installed skill (`hexagonal-architecture`, `domain-driven-design`, `structure-codebase`, ...), each running as its own sub-agent with an isolated context
+- **Composable roster** ([`lenses.md`](claude/.claude/skills/review/references/lenses.md)) — defaults (`typescript-strict`, `functional`, `testing` + built-in readiness and quality lenses) plus project-trait auto-detection; add or remove lenses, `only`, `thorough`, and `post` tokens
+- **PR-readiness evidence gate** ([`pr-readiness.md`](claude/.claude/skills/review/references/pr-readiness.md)) — change-path classification and the mutation-evidence freshness model that gate agent-led PR creation
 - **Adversarial verification** — an independent node tries to refute every finding against the actual code before it reaches the report
-- **One ranked report** ([`workflow-template.md`](claude/.claude/skills/pr-review/references/workflow-template.md)) — per-lens verdicts, confirmed findings with `file:line` evidence, surfaced cross-lens conflicts, one recommendation
+- **One ranked report** ([`workflow-template.md`](claude/.claude/skills/review/references/workflow-template.md)) — per-lens verdicts, confirmed findings with `file:line` evidence, surfaced cross-lens conflicts, one recommendation
 
 Built on `graph-engineering` for the generic node/topology/runtime machinery. There is deliberately no `/pr` command anymore: PR creation is ordinary agent-led work gated by the readiness reference above.
 
@@ -1445,7 +1445,7 @@ Three slash commands that encode common workflows into single invocations:
 | **`/plan`** | Create a plan document on a branch with a PR — no code changes | When planning work before implementation |
 | **`/continue`** | Continue after a merged independent PR or advance/sync a stack | Moving to the next slice or dependent layer |
 
-PR review is not a command: the [`pr-review` skill](claude/.claude/skills/pr-review/SKILL.md) provides `/pr-review`, and PR creation is ordinary agent-led work gated by that skill's PR-readiness reference.
+PR review is not a command: the [`review` skill](claude/.claude/skills/review/SKILL.md) provides `/review`, and PR creation is ordinary agent-led work gated by that skill's PR-readiness reference.
 
 ### Recommended Flow
 
@@ -1462,7 +1462,7 @@ one-time action used only when explicitly requested.
 - `.claude/CLAUDE.md` with exact build/test/lint/typecheck commands
 - `.claude/settings.json` with PostToolUse hooks (auto-typecheck after file edits)
 
-PR reviews need no project-generated automation: `/setup` points reviews at the global [`pr-review` skill](claude/.claude/skills/pr-review/SKILL.md), which auto-detects project traits (hexagonal, DDD, React, ...) and composes matching skill lenses at review time.
+Code reviews need no project-generated automation: `/setup` points reviews at the global [`review` skill](claude/.claude/skills/review/SKILL.md), which auto-detects project traits (hexagonal, DDD, React, ...) and composes matching skill lenses at review time.
 
 #### Phase 1: Plan the Work (before writing any code)
 
@@ -1486,7 +1486,7 @@ COMMIT       →  Wait for approval, then commit
 
 #### Phase 4: Pre-PR Quality Gate
 
-Before creating any PR, work through the readiness gate (owned by the `pr-review` skill's [PR-readiness reference](claude/.claude/skills/pr-review/references/pr-readiness.md)), then review:
+Before creating any PR, work through the readiness gate (owned by the `review` skill's [PR-readiness reference](claude/.claude/skills/review/references/pr-readiness.md)), then review:
 
 ```
 PR readiness gate →
@@ -1495,10 +1495,10 @@ PR readiness gate →
   3. survivor handling →  Address valuable survivors; re-run focused/diff mutation checks inside the same gate
   4. remaining checks  →  Run typecheck + lint + test + build, then create the PR (ordinary agent-led work — no dedicated command)
 
-/pr-review →  Multi-agent review of the boundary — every lens is an installed skill, findings adversarially verified into one ranked report
+/review →  Multi-agent review of the boundary — every lens is an installed skill, findings adversarially verified into one ranked report
 ```
 
-**Why evidence at PR readiness:** One focused run per review boundary verifies that the completed implementation and refactoring would catch behavioral faults without taxing every inner TDD loop. A stacked boundary uses its immediate parent as the review base; the top proves the cumulative criteria for every included slice. When the affected mechanism is unreachable, declarative, contractual, integrational, or operational, an explicit `N/A` plus proportionate alternate evidence is more honest. The `/pr-review` readiness lens re-checks this same gate adversarially during review.
+**Why evidence at PR readiness:** One focused run per review boundary verifies that the completed implementation and refactoring would catch behavioral faults without taxing every inner TDD loop. A stacked boundary uses its immediate parent as the review base; the top proves the cumulative criteria for every included slice. When the affected mechanism is unreachable, declarative, contractual, integrational, or operational, an explicit `N/A` plus proportionate alternate evidence is more honest. The `/review` readiness lens re-checks this same gate adversarially during review.
 
 #### Phase 5: Continue
 
@@ -1540,8 +1540,8 @@ maintained pages affected by the change.
 
 Once installed, the normal delivery lifecycle is: `/plan` → single-PR or stack
 delivery → fast RED-GREEN-REFACTOR or preservation increments → end-of-boundary
-evidence gate from the `pr-review` skill's PR-readiness reference → agent-led PR
-creation and `/pr-review` for review → `/continue` → repeat. `/setup` is
+evidence gate from the `review` skill's PR-readiness reference → agent-led PR
+creation and `/review` for review → `/continue` → repeat. `/setup` is
 separate and runs only for explicitly authorized project onboarding. See the
 [Recommended Flow](#recommended-flow) for details.
 

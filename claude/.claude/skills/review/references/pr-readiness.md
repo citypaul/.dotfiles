@@ -2,16 +2,17 @@
 
 The rulebook for the built-in `readiness` lens. It serves two moments with one standard: **reviewing** a PR (does the boundary show this evidence?) and **preparing** one (agent-led PR creation runs this same gate before `gh pr create`). This distribution deliberately has no `/pr` command — creating the PR is ordinary agent work; this gate is what makes it ready.
 
-## 1. Classify exactly one change path
+## 1. Classify every changed path
 
-Every review boundary claims exactly one path and shows that path's evidence:
+Classify each changed path by every applicable type — behavior, refactor, reduction, docs, dependency, generated, configuration, CI, operations; mixed PRs may use several. Each path shows the evidence its claimed types own:
 
 - **Behavior change** — test-first evidence: RED before GREEN for new or changed observable behavior, with behavior-focused tests at the layer the claim names.
 - **Pure refactor** — a passing preservation baseline before the restructuring, behaviorally green throughout; no fabricated structural RED tests.
 - **Reduction transition** — links its program, terminal slice, and conserved contract; passes the behavior gate and independent verification; records owner/removal/bounded-lifetime metadata for any temporary bridge (`N/A` when none); states `mechanism gate: pending — no net-reduction claim`.
 - **Terminal reduction** — links the reducer program/report/ledger (or `N/A — authorized single terminal slice`); passes both gates; discharges transition obligations; removes superseded machinery and expired bridges.
+- **Docs, dependency, generated, configuration, CI, operations** — claim-appropriate evidence for that path (build passes, config exercised, dependency rationale) without fabricated mutation runs or structural RED tests.
 
-A boundary claiming two paths, or a "refactor" whose diff changes observable behavior, fails this lens.
+Path types outside that responsibility omit the field — no ceremonial rows for gates a path type does not own. A path whose claimed type its diff contradicts — a "refactor" that changes observable behavior, a "docs" path touching production logic — fails this lens.
 
 ## 2. The end-of-boundary mutation gate
 
@@ -39,4 +40,4 @@ When reviewing, the lens checks the PR *records* this: mutation results or an ex
 
 ## 5. What the PR body must show
 
-Verification notes for exactly one change path — the evidence from §1 plus the mutation result or explicit `N/A` from §2. A body that asserts readiness without naming its evidence fails the lens with severity `major`; a body whose claims contradict the diff fails with `critical`.
+Verification notes for every claimed change path — the evidence from §1 plus the boundary's mutation result or explicit `N/A` from §2. A body that asserts readiness without naming its evidence fails the lens with severity `major`; a body whose claims contradict the diff fails with `critical`.

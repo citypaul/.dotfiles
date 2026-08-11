@@ -1,6 +1,6 @@
 # Workflow Template — Executing the Review Graph
 
-The concrete dynamic-workflow script for `/pr-review`. Runtime selection, fallback behavior, and script rules live in `graph-engineering/references/execution.md`; this file is the review instance.
+The concrete dynamic-workflow script for `/review`. Runtime selection, fallback behavior, and script rules live in `graph-engineering/references/execution.md`; this file is the review instance.
 
 ## Orchestrator responsibilities before the script runs
 
@@ -26,7 +26,7 @@ args = {
 
 ```js
 export const meta = {
-  name: 'pr-review-graph',
+  name: 'review-graph',
   description: 'Fan skill-loaded review lenses out over a diff, verify findings, synthesize',
   phases: [{ title: 'Lenses' }, { title: 'Verify' }],
 }
@@ -66,7 +66,7 @@ const VERDICT = {
   required: ['verdict', 'reason'],
 }
 
-const lensBrief = (l) => `You are one review lens in a multi-agent PR review.
+const lensBrief = (l) => `You are one review lens in a multi-agent code review.
 ${l.kind === 'skill'
   ? `Your lens is the \`${l.skillRef}\` skill. Load it with the Skill tool (skill "${l.skillRef}"); if unavailable, Read ${l.path}. Follow the skill's own guidance, including its deeper references when relevant.`
   : `Your lens is the built-in "${l.name}" lens. Its rules:\n${l.rules}`}
@@ -77,7 +77,7 @@ Review only this diff (base ${args.target.baseRef}, head ${args.target.headRef})
 --- DIFF ---
 ${args.diff}`
 
-const verifierBrief = (f) => `You are an independent verifier in a PR review. One finding to check — attempt to REFUTE it against the actual code:
+const verifierBrief = (f) => `You are an independent verifier in a code review. One finding to check — attempt to REFUTE it against the actual code:
 ${JSON.stringify(f)}
 Base ${args.target.baseRef}, head ${args.target.headRef}. Check: (1) does it reproduce at that file:line, (2) is it genuinely a rule of the "${f.lens}" lens rather than taste, (3) is it introduced by this diff rather than pre-existing. Default to "refuted" when evidence does not hold up; "unverifiable" when you cannot check either way — never guess. Read-only.`
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review"
+  short_description: "Multi-agent code review of any change boundary with installed skills as composable lenses"
+  default_prompt: "Use $review to review this diff — compose the lens roster (defaults plus auto-detected plus any skills I name), fan out one sub-agent per lens, verify every finding, and give me one ranked report."

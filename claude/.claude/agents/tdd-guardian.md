@@ -1,7 +1,7 @@
 ---
 name: tdd-guardian
 description: >
-  Use this agent to verify TDD process compliance for new or changed observable behavior during fast RED-GREEN-REFACTOR increments and the separate end-of-phase mutation gate. Invoke when users plan to implement behavior, when checking that behavior tests preceded implementation, before committing behavior-changing work, or when the completed phase is ready for PR verification. Do not use for pure behavior-preserving refactoring or mechanism reduction; route those to refactor-scan or reduce-system-complexity with passing preservation evidence. Scope: process compliance only — for type safety use ts-enforcer and for whole-PR review use the pr-review skill (/pr-review).
+  Use this agent to verify TDD process compliance for new or changed observable behavior during fast RED-GREEN-REFACTOR increments and the separate end-of-phase mutation gate. Invoke when users plan to implement behavior, when checking that behavior tests preceded implementation, before committing behavior-changing work, or when the completed phase is ready for PR verification. Do not use for pure behavior-preserving refactoring or mechanism reduction; route those to refactor-scan or reduce-system-complexity with passing preservation evidence. Scope: process compliance only — for type safety use ts-enforcer and for whole-PR review use the review skill (/review).
 tools: Read, Grep, Glob, Bash
 model: sonnet
 color: red

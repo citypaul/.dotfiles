@@ -64,22 +64,22 @@ require_text \
   "planning: schedules one accumulated-scope mutation run"
 
 require_text \
-  "$CLAUDE_ROOT/skills/pr-review/references/pr-readiness.md" \
+  "$CLAUDE_ROOT/skills/review/references/pr-readiness.md" \
   "The target repository's stricter mutation-evidence invalidation rule takes precedence" \
   "pr-readiness: target repository mutation invalidation takes precedence"
 
 require_text \
-  "$CLAUDE_ROOT/skills/pr-review/references/pr-readiness.md" \
+  "$CLAUDE_ROOT/skills/review/references/pr-readiness.md" \
   "If a result is current under the applicable target-repository rule, do not rerun it" \
   "pr-readiness: reuses only mutation evidence current under the applicable rule"
 
 require_text \
-  "$CLAUDE_ROOT/skills/pr-review/references/pr-readiness.md" \
+  "$CLAUDE_ROOT/skills/review/references/pr-readiness.md" \
   "scoped to the accumulated branch diff per that skill's **Run and Triage** guidance" \
   "pr-readiness: follows the mutation skill's diff-first scope"
 
 require_text \
-  "$CLAUDE_ROOT/skills/pr-review/references/pr-readiness.md" \
+  "$CLAUDE_ROOT/skills/review/references/pr-readiness.md" \
   "survivor-fix commits already exercised by the gate's final branch-diff rerun" \
   "pr-readiness: keeps exercised survivor fixes inside one gate"
 
@@ -134,9 +134,9 @@ require_text \
   "plan command: includes the final gate"
 
 require_text \
-  "$CLAUDE_ROOT/skills/pr-review/references/pr-readiness.md" \
+  "$CLAUDE_ROOT/skills/review/references/pr-readiness.md" \
   "Once the current review boundary is otherwise PR-ready" \
-  "pr-review skill: defers mutation until PR readiness"
+  "review skill: defers mutation until PR readiness"
 
 require_text \
   "$CLAUDE_ROOT/skills/codebase-design/references/deepening.md" \

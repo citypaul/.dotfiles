@@ -1,7 +1,7 @@
 ---
 name: refactor-scan
 description: >
-  Use this agent to assess bounded refactoring opportunities after GREEN or another passing proportionate preservation baseline. Invoke when that baseline is established or when weighing whether an abstraction adds value. Mutation testing verifies the accumulated result later at the end-of-phase PR-readiness gate. Scope: selected-area refactoring assessment only — every slice in a selected whole-path reduction program, transition or terminal, is governed by reduce-system-complexity; this agent may be secondary when refactoring applies. For repository-wide architecture discovery use improve-codebase-architecture; for TDD process checks use tdd-guardian; for type safety use ts-enforcer; for whole-PR review use the pr-review skill (/pr-review).
+  Use this agent to assess bounded refactoring opportunities after GREEN or another passing proportionate preservation baseline. Invoke when that baseline is established or when weighing whether an abstraction adds value. Mutation testing verifies the accumulated result later at the end-of-phase PR-readiness gate. Scope: selected-area refactoring assessment only — every slice in a selected whole-path reduction program, transition or terminal, is governed by reduce-system-complexity; this agent may be secondary when refactoring applies. For repository-wide architecture discovery use improve-codebase-architecture; for TDD process checks use tdd-guardian; for type safety use ts-enforcer; for whole-PR review use the review skill (/review).
 tools: Read, Grep, Glob, Bash
 model: sonnet
 color: yellow

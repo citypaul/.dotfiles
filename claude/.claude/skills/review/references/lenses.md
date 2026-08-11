@@ -2,14 +2,14 @@
 
 A lens is any installed skill run as one review node. This registry defines what runs by default, what is auto-detected, and how a lens node is briefed. Nothing here is closed: any skill the user names becomes a lens.
 
-## Built-in Lenses (always on, no skill loaded)
+## Built-in Lenses (no skill loaded)
 
-| Lens | What it judges |
-|------|----------------|
-| `readiness` | Change-path classification and evidence per [`pr-readiness.md`](pr-readiness.md): behavior change vs pure refactor vs reduction transition vs terminal reduction, test-first evidence, the mutation-evidence freshness model, complete non-watch verification |
-| `quality` | Security (secrets, injection, unsafe input handling), leftover debug statements, TODO/FIXME without issues, scope creep vs the PR's claim, PR size |
+| Lens | When it runs | What it judges |
+|------|--------------|----------------|
+| `quality` | Always | Security (secrets, injection, unsafe input handling), leftover debug statements, TODO/FIXME without issues, scope creep vs the change's claim, boundary size |
+| `readiness` | PR targets, boundaries the user says are heading to a PR, or explicit request (`readiness`) | Change-path classification and evidence per [`pr-readiness.md`](pr-readiness.md): behavior change vs pure refactor vs reduction transition vs terminal reduction, test-first evidence, the mutation-evidence freshness model, complete non-watch verification |
 
-Built-in lenses still run as their own nodes; their briefs inline the rules above instead of loading a skill.
+Built-in lenses still run as their own nodes; their briefs inline the rules above instead of loading a skill. For mid-development reviews `readiness` is skipped and listed under "Not covered" — judging PR evidence against work that isn't claiming PR readiness produces noise, not findings.
 
 ## Core Default Skill Lenses
 
@@ -44,7 +44,7 @@ Include when the scout finds the signal (and the diff touches the concern). Dete
 | `twelve-factor` | Env config, backing-service wiring, startup/shutdown, process signals |
 | `observability` | Logging/tracing/metrics/SLO/alerting changes |
 | `cli-design` | CLI entry points, argument parsing, output formatting, exit codes |
-| `refactoring` / `reduce-system-complexity` | The PR claims a pure refactor or a mechanism reduction — the lens checks the claim's own discipline |
+| `refactoring` / `reduce-system-complexity` | The change claims a pure refactor or a mechanism reduction — the lens checks the claim's own discipline |
 
 Roster budget: defaults + auto-detected should land at 3–6 skill lenses. When detection over-fires, keep the most diff-relevant and list the rest under "Not covered" — unless `thorough`, which runs them all.
 
@@ -53,7 +53,7 @@ Roster budget: defaults + auto-detected should land at 3–6 skill lenses. When 
 Instantiate `graph-engineering`'s node template (`references/node-design.md` there) with review specifics:
 
 ```text
-You are one review lens in a multi-agent PR review. Your lens is the
+You are one review lens in a multi-agent code review. Your lens is the
 `<skill>` skill.
 
 1. Load it: Skill tool, skill "<skill>" (fallbacks: "<scoped-name>",
@@ -73,6 +73,15 @@ You are one review lens in a multi-agent PR review. Your lens is the
    `not_assessable` (what your lens couldn't judge from this diff).
 ```
 
-Payload: the diff (or per-lens relevant hunks when the diff is huge — say so in the brief), the PR claim, base/head refs so the node can read full files, and the project-trait notes from the scout.
+Payload: the diff (or per-lens relevant hunks when the diff is huge — say so in the brief), the change's claim, base/head refs so the node can read full files, and the project-trait notes from the scout.
 
 Verifier briefs are unchanged from `graph-engineering`: one finding, mandate to refute against the actual code, `confirmed | refuted | unverifiable`, plus review-specific angles — does it reproduce at that `file:line`, is it truly this lens's rule (not taste), is it introduced by this diff rather than pre-existing.
+
+## Finding Discipline (all lenses)
+
+Findings judge behavior, ownership, and contracts — never idiom by shape alone:
+
+- **Mutation findings are ownership-based.** Mutates an array owned by the caller, shared module state, or an input the contract presents as immutable — that is a finding. Contained local mutation inside a function the diff owns, with no observer, is not a finding by shape.
+- **Console findings are adapter-aware.** Flag stray output only outside reviewed presentation, process-stream, logging, or diagnostic adapters; output that *is* the adapter's job is not debug residue.
+- **`readonly` findings follow the contract.** Require `readonly` where the API promises immutability; do not demand it on every data structure by default.
+- **Loops and local `push` are not findings by shape.** Judge whether the construct leaks mutation or obscures behavior, not whether it could be rewritten as a spread or `.map`.
