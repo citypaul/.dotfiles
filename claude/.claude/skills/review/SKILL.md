@@ -98,7 +98,7 @@ With the `post` token and a PR target: write the report to a scratch file and po
 ## Boundaries
 
 - **During development**, use the focused agents (`tdd-guardian`, `ts-enforcer`, `refactor-scan`) — this skill is the whole-boundary review at the end.
-- **`double-check`** is for a cross-provider second opinion on finished work; it argues, this one fans out. They compose: run `/review`, then `double-check` the contested calls.
+- **`double-check`** answers a different question. This skill is **breadth through your own standards**: many same-provider sub-agents, each applying one of *your* installed skills to the diff, findings verified and merged into one report — wide coverage, but every node shares the host model's blind spots. `double-check` is **independence**: one strong reviewer, preferably from a *different provider*, starting cold with no inherited context, checking scope fidelity against the original requirements and arguing findings across rounds until genuine convergence. Fan out with `/review` for coverage; bring in `double-check` when the risk is that *you* (and every sub-agent you spawn) are wrong the same way — high stakes, contested calls, or a final independent gate before shipping. They compose: `/review` first, `double-check` last.
 - **`/code-review`** (built-in) runs Anthropic's fixed issue-class lenses; this skill exists precisely to compose *your* skills instead.
 - The review reads the target repository's own conventions (its CLAUDE.md, glossary, ADRs) as part of the scout; a lens finding that contradicts an explicit local convention is reported as a conflict, not enforced.
 
