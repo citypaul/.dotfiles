@@ -66,8 +66,9 @@ FIRST_PARTY_SKILLS=(
   characterisation-tests ci-debugging cli-design codebase-design debugging
   diagrams domain-driven-design double-check evaluate-existing-solutions
   event-sourcing expectations find-gaps find-skills finding-seams
-  folder-structure front-end-testing functional hexagonal-architecture
-  improve-codebase-architecture mutation-testing observability planning
+  folder-structure front-end-testing functional graph-engineering
+  hexagonal-architecture
+  improve-codebase-architecture mutation-testing observability panel-review planning
   production-parity-skill-builder react-testing reduce-system-complexity
   refactoring secure-oauth-oidc specification stack-pull-requests
   story-splitting storyboard structure-codebase tdd teach-me technical-writing
@@ -85,10 +86,10 @@ IMPECCABLE_SKILLS=(
 GRILL_ME_SKILLS=(grill-me)
 SEO_AUDIT_SKILLS=(seo-audit)
 HERDR_SKILLS=(herdr)
-COMMAND_FILES=(setup.md pr.md plan.md continue.md generate-pr-review.md)
+COMMAND_FILES=(setup.md plan.md continue.md)
 AGENT_FILES=(
   tdd-guardian.md ts-enforcer.md refactor-scan.md docs-guardian.md adr.md
-  learn.md pr-reviewer.md use-case-data-patterns.md progress-guardian.md
+  learn.md use-case-data-patterns.md progress-guardian.md
   twelve-factor-audit.md
 )
 CLAUDE_AGENT_FILES=("${AGENT_FILES[@]}" README.md)
@@ -776,11 +777,11 @@ if [[ "$INSTALL_PONYTAIL" == true ]]; then
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} commands/ (5 slash commands: /setup, /pr, /plan, /continue, /generate-pr-review)"
+  echo -e "  ${GREEN}✓${NC} commands/ (3 slash commands: /setup, /plan, /continue)"
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} agents/ (10 Claude Code agents + README)"
+  echo -e "  ${GREEN}✓${NC} agents/ (9 Claude Code agents + README)"
 fi
 
 if [[ "$INSTALL_OPENCODE" == true ]]; then
@@ -812,7 +813,7 @@ echo -e "${BLUE}Next steps:${NC}"
 echo ""
 if [[ "$INSTALL_CLAUDE" == true || "$INSTALL_COMMANDS" == true || "$INSTALL_AGENTS" == true ]]; then
   echo -e "  Verify Claude Code artifacts: ${YELLOW}ls -la ~/.claude/${NC}"
-  [[ "$INSTALL_COMMANDS" == true ]] && echo -e "  Try a command: ${YELLOW}/pr${NC}"
+  [[ "$INSTALL_SKILLS" == true ]] && echo -e "  Try a multi-lens PR review: ${YELLOW}/panel-review${NC}"
   echo ""
 elif [[ "$INSTALL_OPENCODE" == true ]]; then
   echo -e "  Verify OpenCode artifacts: ${YELLOW}ls -la ~/.config/opencode/${NC}"

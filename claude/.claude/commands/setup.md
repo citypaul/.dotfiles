@@ -75,20 +75,12 @@ Generate a PostToolUse hook for typecheck after Write/Edit on .ts/.tsx files:
 
 Use the actual typecheck command detected from the project (e.g., `pnpm typecheck`, `npx tsc --noEmit`, `yarn tsc --noEmit`).
 
-### 3. Project /pr command (`.claude/commands/pr.md`)
+### 3. PR workflow notes (in the project CLAUDE.md)
 
-Generate a project-specific PR command that runs the detected quality gates before creating a PR:
-- Typecheck command
-- Lint command
-- Test command
-- Build command (if applicable)
-- Preserve the global `/pr` topology rules: use the current slice's delivery mode when a plan exists; otherwise default to one PR against the detected default branch unless stack intent or metadata is explicit; target and verify the immediate parent for a stacked boundary
-- Confirm native stacks evaluate CI against the stack trunk; for unlinked dependent PRs, confirm feature-base workflows run; verify `merge_group` when the repository uses a merge queue
-- For intended native stacks, confirm exact affected branches, PRs, bases, and draft states before using current `gh stack link` or `gh stack submit` behavior; stop if the boundary remains unlinked, and never assume native stack semantics before linking
+Do not generate a project `/pr` command or a project PR-review agent — PR creation is ordinary agent-led work gated by the global `panel-review` skill's `references/pr-readiness.md`, and reviews run through the global `/panel-review` skill, which auto-detects project traits. Instead, record in the generated project CLAUDE.md:
 
-### 4. Project pr-reviewer agent (`.claude/agents/pr-reviewer.md`)
-
-Run `/generate-pr-review` to create a project-specific PR review agent, OR generate one directly using detected project conventions.
+- The detected quality-gate commands (typecheck, lint, test, build) so the PR-readiness gate can run them
+- Any project-specific review lenses `/panel-review` should include by default (e.g. `hexagonal-architecture`, `domain-driven-design`) based on the detected architecture
 
 ## Constraints
 
