@@ -41,6 +41,13 @@ INSTALL_PONYTAIL=true
 BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 SKILLS_CLI_VERSION="1.5.22" # https://github.com/vercel-labs/skills/tree/v1.5.22
 
+# The Skills CLI refuses source downloads larger than 10MB unless
+# SKILLS_DOWNLOAD_MAX_BYTES raises the cap. Several pinned community repos
+# (impeccable, herdr, next-skills) ship archives above that, so raise it to
+# 100MB while letting an explicit caller-provided cap win.
+SKILLS_DOWNLOAD_MAX_BYTES="${SKILLS_DOWNLOAD_MAX_BYTES:-104857600}"
+export SKILLS_DOWNLOAD_MAX_BYTES
+
 # Reviewed immutable source revisions. Every source is pinned to a commit and
 # every selected name is declared before mutation. The Skills CLI clones
 # `repo#<ref>` sources with `git clone --branch`, which only accepts branch or
