@@ -41,26 +41,23 @@ INSTALL_PONYTAIL=true
 BASE_URL="https://raw.githubusercontent.com/citypaul/.dotfiles"
 SKILLS_CLI_VERSION="1.5.22" # https://github.com/vercel-labs/skills/tree/v1.5.22
 
-# The Skills CLI refuses source downloads larger than 10MB unless
-# SKILLS_DOWNLOAD_MAX_BYTES raises the cap. Several pinned community repos
-# (impeccable, herdr, next-skills) ship archives above that, so raise it to
-# 100MB while letting an explicit caller-provided cap win.
-SKILLS_DOWNLOAD_MAX_BYTES="${SKILLS_DOWNLOAD_MAX_BYTES:-104857600}"
-export SKILLS_DOWNLOAD_MAX_BYTES
-
 # Reviewed immutable source revisions. Every source is pinned to a commit and
-# every selected name is declared before mutation. The Skills CLI clones
-# `repo#<ref>` sources with `git clone --branch`, which only accepts branch or
-# tag names, so commit pins are rewritten to GitHub commit-archive URLs before
-# install (see resolve_pinned_source).
+# every selected name is declared before mutation. The Skills CLI cannot fetch
+# a commit pin itself (`git clone --branch` only accepts branch or tag names,
+# and its archive downloader enforces small size caps), so each commit pin is
+# fetched locally with a shallow pinned `git fetch` and handed to the CLI as a
+# local path (see fetch_pinned_source). A subpath entry limits the fetch to
+# one directory for repos far larger than their skills.
 OWN_SKILLS_REPO_BASE="citypaul/.dotfiles"
 WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills#95d6e255afe1596b557d7a8498517884438f5b3a"
-NEXT_SKILLS_REPO="vercel-labs/next-skills#b76d687cf3e026eac3b1032f610f06b47a56377c"
-# React performance and composition rule catalogues. Pinned separately from
-# next-skills because they live in a different Vercel repository with its own
+NEXT_SKILLS_REPO="vercel/next.js#ae1e53a11f5379e715096b829178f4df92d35044"
+NEXT_SKILLS_SUBPATH="skills"
+# React performance and composition rule catalogues. Pinned separately from the
+# Next.js skills because they live in a different Vercel repository with its own
 # release cadence. The first-party `react-performance` skill owns the method
 # and routes into these; they own the rules.
 VERCEL_REACT_SKILLS_REPO="vercel-labs/agent-skills#b8caa260a420a73042e35521de4b5c8baf6446cc"
+VERCEL_REACT_SKILLS_SUBPATH="skills"
 IMPECCABLE_SKILLS_REPO="pbakaus/impeccable#5d10bc842cbccd2ae7d3a88296d87d3be0b125b3"
 MATTPOCOCK_SKILLS_REPO="https://github.com/mattpocock/skills#84fdeffd12f2ee307994d1eb6feb48173b6e0502"
 MARKETING_SKILLS_REPO="coreyhaines31/marketingskills#7868cb9251fad80a73d26e488a5ad5f6c4a9f335"
@@ -68,6 +65,7 @@ HERDR_SKILLS_REPO="herdrdev/herdr#1777e9bba32b953ed1ad203b4a16d01105539000"
 # Anthropic's own skill-authoring skill: drafting, evals, benchmarking, and
 # description-trigger optimisation. Apache 2.0 (LICENSE.txt ships in the skill).
 ANTHROPIC_SKILLS_REPO="anthropics/skills#f17010c9bb483898c1d9c9f42dde2b3a98889434"
+ANTHROPIC_SKILLS_SUBPATH="skills"
 
 FIRST_PARTY_SKILLS=(
   acceptance-review api-design bff-design bff-entry-points
@@ -87,7 +85,11 @@ FIRST_PARTY_SKILLS=(
 WEB_QUALITY_SKILLS=(
   accessibility best-practices core-web-vitals performance seo web-quality-audit
 )
-NEXT_SKILLS=(next-best-practices next-cache-components next-upgrade)
+# vercel-labs/next-skills was retired: next-best-practices and next-upgrade
+# now ship inside Next.js itself (bundled docs + generated AGENTS.md), and
+# next-cache-components split into the two workflow skills below, which live
+# in the vercel/next.js repo under skills/.
+NEXT_SKILLS=(next-cache-components-optimizer next-cache-components-adoption)
 VERCEL_REACT_SKILLS=(vercel-react-best-practices vercel-composition-patterns)
 IMPECCABLE_SKILLS=(
   adapt animate audit bolder clarify colorize critique delight distill
@@ -211,7 +213,7 @@ Options:
                        (use with --agent to target other agents only)
   --with-opencode      Shorthand for --agent opencode + install OpenCode config
   --opencode-only      Install only OpenCode config plus projected agents/commands (no Claude artifacts or skills)
-  --no-external        Skip all external community skills (web-quality-skills + next-skills + agent-skills + impeccable + grill-me + writing-for-agents + seo-audit + skill-creator + herdr)
+  --no-external        Skip all external community skills (web-quality-skills + Next.js skills + agent-skills + impeccable + grill-me + writing-for-agents + seo-audit + skill-creator + herdr)
   --no-impeccable      Skip impeccable design skills only
   --no-ponytail        Skip the ponytail plugin (Claude Code + Codex)
   --version REF        Exact reviewed release tag or commit for first-party artifacts.
@@ -221,7 +223,7 @@ Options:
 Default external skill sources are pinned to reviewed commits; the installer
 selects only the declared names from each source:
   addyosmani/web-quality-skills#95d6e25
-  vercel-labs/next-skills#b76d687
+  vercel/next.js#ae1e53a --skill next-cache-components-optimizer + next-cache-components-adoption
   vercel-labs/agent-skills#b8caa26 --skill vercel-react-best-practices --skill vercel-composition-patterns
   pbakaus/impeccable#5d10bc8
   mattpocock/skills#84fdeff --skill grill-me --skill writing-for-agents
@@ -513,15 +515,28 @@ validate_unique_skill_names() {
   done
 }
 
-# The pinned Skills CLI fetches `repo#<ref>` sources with
-# `git clone --branch <ref>`, and git only accepts branch or tag names there —
-# a commit-SHA pin always dies with "Remote branch <sha> not found in upstream
-# origin". GitHub's commit-archive endpoint serves the same immutable revision
-# as a tarball, and the CLI installs archive URLs without cloning, so
-# commit-pinned GitHub sources are rewritten to that form. Anything else
-# (branch/tag refs, non-GitHub URLs) passes through untouched.
-resolve_pinned_source() {
+# The pinned Skills CLI cannot fetch a commit pin on its own: it clones
+# `repo#<ref>` sources with `git clone --branch <ref>`, and git only accepts
+# branch or tag names there, so a commit-SHA pin always dies with "Remote
+# branch <sha> not found in upstream origin". Rather than downloading a whole
+# repository archive to work around that, fetch exactly the pinned commit
+# (and, when a subpath is declared, only that directory's files) with a
+# shallow sparse `git fetch`, then hand the CLI the local path — local
+# sources need no cloning and no download-size overrides. Branch/tag refs
+# and non-GitHub URLs pass through to the CLI untouched.
+SKILL_FETCH_DIRS=()
+
+cleanup_skill_fetch_dirs() {
+  local dir
+  for dir in "${SKILL_FETCH_DIRS[@]}"; do
+    rm -rf "$dir"
+  done
+}
+trap cleanup_skill_fetch_dirs EXIT
+
+fetch_pinned_source() {
   local source="$1"
+  local subpath="$2"
   local repo="${source%%#*}"
   local ref="${source##*#}"
 
@@ -537,18 +552,32 @@ resolve_pinned_source() {
       return 0
       ;;
   esac
+  repo="${repo%.git}"
 
-  echo "https://github.com/${repo%.git}/archive/$ref.tar.gz"
+  local dest
+  dest="$(mktemp -d "${TMPDIR:-/tmp}/skills-src-${repo//\//-}.XXXXXX")" || return 1
+  SKILL_FETCH_DIRS+=("$dest")
+
+  git -C "$dest" init --quiet &&
+    git -C "$dest" remote add origin "https://github.com/$repo.git" &&
+    { [[ -z "$subpath" ]] ||
+      git -C "$dest" sparse-checkout set --no-cone "$subpath"; } &&
+    git -C "$dest" fetch --quiet --depth 1 \
+      ${subpath:+--filter=blob:none} origin "$ref" &&
+    git -C "$dest" checkout --quiet FETCH_HEAD || return 1
+
+  echo "$dest${subpath:+/$subpath}"
 }
 
-# Install skills from a skills.sh source for the selected agents
+# Install skills from a skills.sh source for the selected agents. A non-empty
+# subpath narrows the pinned fetch to the one directory holding the skills.
 install_skills_from() {
   local source="$1"
   local label="$2"
-  shift 2
+  local subpath="$3"
+  shift 3
   local skills=("$@")
   local install_source
-  install_source="$(resolve_pinned_source "$source")"
 
   if [[ ${#skills[@]} -eq 0 ]]; then
     echo -e "${RED}✗${NC} No reviewed skill names declared for $source"
@@ -556,6 +585,11 @@ install_skills_from() {
   fi
 
   echo -e "${YELLOW}→${NC} Installing $label from $source for: ${SKILL_AGENTS[*]}"
+
+  if ! install_source="$(fetch_pinned_source "$source" "$subpath")"; then
+    echo -e "${RED}✗${NC} Failed to fetch pinned revision for $label from $source"
+    return 1
+  fi
 
   # Build -a flags from the SKILL_AGENTS array
   local agent_args=()
@@ -653,24 +687,24 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
 
   backup_selected_skills "${install_manifest[@]}"
 
-  install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)" "${FIRST_PARTY_SKILLS[@]}"
+  install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)" "" "${FIRST_PARTY_SKILLS[@]}"
 
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
-    install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)" "${WEB_QUALITY_SKILLS[@]}"
-    install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel-labs/next-skills)" "${NEXT_SKILLS[@]}"
-    install_optional_skills_from "$VERCEL_REACT_SKILLS_REPO" "React skills (vercel-labs/agent-skills)" "${VERCEL_REACT_SKILLS[@]}"
-    install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me + writing-for-agents skills (mattpocock/skills)" "${MATTPOCOCK_SKILLS[@]}"
-    install_optional_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "${SEO_AUDIT_SKILLS[@]}"
-    install_optional_skills_from "$ANTHROPIC_SKILLS_REPO" "skill-creator skill (anthropics/skills)" "${ANTHROPIC_SKILLS[@]}"
+    install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)" "" "${WEB_QUALITY_SKILLS[@]}"
+    install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel/next.js)" "$NEXT_SKILLS_SUBPATH" "${NEXT_SKILLS[@]}"
+    install_optional_skills_from "$VERCEL_REACT_SKILLS_REPO" "React skills (vercel-labs/agent-skills)" "$VERCEL_REACT_SKILLS_SUBPATH" "${VERCEL_REACT_SKILLS[@]}"
+    install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me + writing-for-agents skills (mattpocock/skills)" "" "${MATTPOCOCK_SKILLS[@]}"
+    install_optional_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "" "${SEO_AUDIT_SKILLS[@]}"
+    install_optional_skills_from "$ANTHROPIC_SKILLS_REPO" "skill-creator skill (anthropics/skills)" "$ANTHROPIC_SKILLS_SUBPATH" "${ANTHROPIC_SKILLS[@]}"
     # Lets an agent drive the terminal multiplexer it is running inside —
     # split a pane, run a command in it, read the output back, and wait on a
     # sibling agent without stealing focus. Installed for every target agent
     # because each one benefits from it independently.
-    install_optional_skills_from "$HERDR_SKILLS_REPO" "herdr skill (herdrdev/herdr)" "${HERDR_SKILLS[@]}"
+    install_optional_skills_from "$HERDR_SKILLS_REPO" "herdr skill (herdrdev/herdr)" "" "${HERDR_SKILLS[@]}"
   fi
 
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
-    install_optional_skills_from "$IMPECCABLE_SKILLS_REPO" "impeccable design skills (pbakaus/impeccable)" "${IMPECCABLE_SKILLS[@]}"
+    install_optional_skills_from "$IMPECCABLE_SKILLS_REPO" "impeccable design skills (pbakaus/impeccable)" "" "${IMPECCABLE_SKILLS[@]}"
   fi
 
   echo ""
@@ -779,7 +813,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "     • citypaul/.dotfiles — auto-discovered patterns (tdd, testing, typescript-strict, ...)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "     • addyosmani/web-quality-skills — accessibility, performance, SEO, ..."
-    echo -e "     • vercel-labs/next-skills — Next.js best practices, Cache Components, upgrades"
+    echo -e "     • vercel/next.js — Cache Components optimizer + adoption workflow skills"
     echo -e "     • vercel-labs/agent-skills — React performance rules + composition patterns"
     echo -e "     • mattpocock/skills — relentless plan interviewing + writing for agents"
     echo -e "     • anthropics/skills/skill-creator — authoring, evaluating, and tuning skills"
@@ -883,8 +917,8 @@ echo ""
 echo -e "  • ${YELLOW}Addy Osmani${NC} — web quality skills"
 echo -e "    ${BLUE}https://github.com/addyosmani/web-quality-skills${NC} (MIT)"
 echo ""
-echo -e "  • ${YELLOW}Vercel Labs${NC} — Next.js skills"
-echo -e "    ${BLUE}https://skills.sh/vercel-labs/next-skills${NC}"
+echo -e "  • ${YELLOW}Vercel${NC} — Next.js skills"
+echo -e "    ${BLUE}https://github.com/vercel/next.js/tree/canary/skills${NC}"
 echo ""
 echo -e "  • ${YELLOW}Vercel Labs${NC} — React performance and composition skills"
 echo -e "    ${BLUE}https://skills.sh/vercel-labs/agent-skills${NC}"

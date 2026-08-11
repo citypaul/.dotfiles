@@ -30,8 +30,9 @@ pass() {
 
 mkdir -p "$TMPDIR/bin" "$TMPDIR/home"
 NPX_LOG="$TMPDIR/npx.log"
-touch "$NPX_LOG"
-export NPX_LOG
+GIT_LOG="$TMPDIR/git.log"
+touch "$NPX_LOG" "$GIT_LOG"
+export NPX_LOG GIT_LOG
 
 # Record every skills.sh invocation instead of hitting the network
 cat > "$TMPDIR/bin/npx" <<'STUB'
@@ -54,7 +55,21 @@ cat > "$TMPDIR/bin/codex" <<'STUB'
 exit 0
 STUB
 
-chmod +x "$TMPDIR/bin/npx" "$TMPDIR/bin/curl" "$TMPDIR/bin/claude" "$TMPDIR/bin/codex"
+# Record pinned-source fetches instead of hitting the network, while local
+# read-only queries (version resolution) still reach the real git.
+cat > "$TMPDIR/bin/git" <<'STUB'
+#!/usr/bin/env bash
+for arg in "$@"; do
+  case "$arg" in
+    rev-parse|show-ref) exec /usr/bin/git "$@" ;;
+  esac
+done
+printf '%s
+' "$*" >> "$GIT_LOG"
+exit 0
+STUB
+
+chmod +x "$TMPDIR/bin/npx" "$TMPDIR/bin/curl" "$TMPDIR/bin/claude" "$TMPDIR/bin/codex" "$TMPDIR/bin/git"
 
 echo "Testing herdr skill installation..."
 echo ""
@@ -63,8 +78,9 @@ HOME="$TMPDIR/home" \
 PATH="$TMPDIR/bin:/usr/bin:/bin" \
   "$REPO_ROOT/install-claude.sh" --no-agents > "$TMPDIR/output"
 
-if grep -Fq -- "skills@1.5.22 add https://github.com/herdrdev/herdr/archive/1777e9bba32b953ed1ad203b4a16d01105539000.tar.gz -g -a claude-code -s herdr --copy -y" "$NPX_LOG"; then
-  pass "installs the herdr skill for claude-code"
+if grep -Eq -- "skills@1.5.22 add [^ ]*skills-src-herdrdev-herdr[^ ]* -g -a claude-code -s herdr --copy -y" "$NPX_LOG" &&
+   grep -q "fetch --quiet --depth 1 origin 1777e9bba32b953ed1ad203b4a16d01105539000" "$GIT_LOG"; then
+  pass "installs the herdr skill for claude-code from a local pinned fetch"
 else
   fail "missing herdr skill install for claude-code"
 fi
@@ -79,7 +95,7 @@ HOME="$TMPDIR/home" \
 PATH="$TMPDIR/bin:/usr/bin:/bin" \
   "$REPO_ROOT/install-claude.sh" --no-agents --agent codex > "$TMPDIR/output-codex"
 
-if grep -Fq -- "skills@1.5.22 add https://github.com/herdrdev/herdr/archive/1777e9bba32b953ed1ad203b4a16d01105539000.tar.gz -g -a claude-code -a codex -s herdr --copy -y" "$NPX_LOG"; then
+if grep -Eq -- "skills@1.5.22 add [^ ]*skills-src-herdrdev-herdr[^ ]* -g -a claude-code -a codex -s herdr --copy -y" "$NPX_LOG"; then
   pass "installs the herdr skill for claude-code and codex"
 else
   fail "herdr skill did not target both agents"
@@ -95,7 +111,7 @@ HOME="$TMPDIR/home" \
 PATH="$TMPDIR/bin:/usr/bin:/bin" \
   "$REPO_ROOT/install-claude.sh" --no-agents --no-external > "$TMPDIR/output-no-external"
 
-if grep -Fq -- "herdrdev/herdr" "$NPX_LOG"; then
+if grep -Eq -- "herdr" "$NPX_LOG"; then
   fail "--no-external still installed the herdr skill"
 else
   pass "--no-external makes no herdr skill install call"
