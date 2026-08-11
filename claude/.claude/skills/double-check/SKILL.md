@@ -11,6 +11,8 @@ The reviewer advises; the primary agent owns the outcome. Convergence requires a
 
 Use `acceptance-review` instead when the primary question is whether an implementation satisfies each criterion in one authoritative artifact. Use `double-check` for an independent general second opinion; the two may be combined for high-risk acceptance work without merging their verdicts.
 
+Phase matters. When the work under double-check is finished implementation approaching a PR and an authoritative requirements artifact exists — a spec, acceptance criteria, an issue, a plan slice — also run `acceptance-review` against that artifact as part of the same pre-PR gate, where the skill is installed. Its criterion-by-criterion proof and the double-check reviewer's findings are complementary and reported as separate verdicts, never merged into one. When double-checking earlier-phase work — a plan, a design, an approach, mid-cycle code — a general second opinion alone is appropriate; do not force an acceptance pass where there is no finished implementation to prove.
+
 ## When to Use This Skill
 
 Use it when the user requests verification, before shipping a substantial change, or when a mistake would be expensive: security, permissions, money, destructive operations, concurrency, migrations, or consequential design decisions.
@@ -77,6 +79,8 @@ Every review must compare the finished work against the original scope, not just
 Behavior-preserving refactoring is not scope drift. Refactoring the code the work touches is an expected part of finished work even when nobody asked for it; judge a refactor on whether it is justified and genuinely preserves behavior, never on whether the scope requested it. A claimed refactor that changes observable behavior is not a refactor — judge it under the addition and removal checks above. The reviewer should also look the other way: flag valuable refactoring opportunities the work missed in the code it touched, normally as `minor` or `nit` findings, applying the criteria of this repository's `refactoring` and `reduce-system-complexity` skills where installed.
 
 These checks are mandatory in every round, not optional extras. A response that omits them is incomplete, and `VERDICT: no-issues` is invalid without an explicit clean result on all three. If the brief does not state the original scope well enough to run them, the reviewer must say so as a finding rather than guessing.
+
+Scope fidelity is not a substitute for `acceptance-review`: that skill proves each criterion of the contract is satisfied, while these checks catch what lies outside the contract — additions and removals no criterion ever mentions. At the pre-PR phase run both, as described above.
 
 ### 5. Require Actionable Findings
 
