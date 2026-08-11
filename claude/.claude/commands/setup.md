@@ -77,10 +77,10 @@ Use the actual typecheck command detected from the project (e.g., `pnpm typechec
 
 ### 3. PR workflow notes (in the project CLAUDE.md)
 
-Do not generate a project `/pr` command or a project PR-review agent — PR creation is ordinary agent-led work gated by the global `review` skill's `references/pr-readiness.md`, and reviews run through the global `/review` skill, which auto-detects project traits. Instead, record in the generated project CLAUDE.md:
+Do not generate a project `/pr` command or a project PR-review agent — PR creation is ordinary agent-led work gated by the global `panel-review` skill's `references/pr-readiness.md`, and reviews run through the global `/panel-review` skill, which auto-detects project traits. Instead, record in the generated project CLAUDE.md:
 
 - The detected quality-gate commands (typecheck, lint, test, build) so the PR-readiness gate can run them
-- Any project-specific review lenses `/review` should include by default (e.g. `hexagonal-architecture`, `domain-driven-design`) based on the detected architecture
+- Any project-specific review lenses `/panel-review` should include by default (e.g. `hexagonal-architecture`, `domain-driven-design`) based on the detected architecture
 
 ## Constraints
 

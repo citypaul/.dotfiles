@@ -218,7 +218,7 @@ progress-guardian (orchestrates)
     │   └─→ adr (architectural decisions)
     │
     ├─► Before merge:
-    │   └─→ /review skill (multi-lens skill-composed review)
+    │   └─→ /panel-review skill (multi-lens skill-composed review)
     │
     ├─► At end:
     │   ├─→ learn (route durable learnings to their owners)
@@ -230,7 +230,7 @@ progress-guardian (orchestrates)
 
 ### Typical Workflow
 
-**Recommended delivery flow:** `/plan` → chosen single-PR or stack delivery → applicable evidence path → agent-led PR creation (PR-readiness gate) + `/review` → `/continue` → repeat
+**Recommended delivery flow:** `/plan` → chosen single-PR or stack delivery → applicable evidence path → agent-led PR creation (PR-readiness gate) + `/panel-review` → `/continue` → repeat
 
 1. **Onboard project when explicitly requested** (once)
    - Run `/setup` only with authorization to inspect and generate project-level configuration
@@ -264,9 +264,9 @@ progress-guardian (orchestrates)
    - Confirm implementation and applicable refactoring/reduction assessment are complete
    - Run mutation testing once for the actual review boundary where meaningful—trunk for one PR, the immediate parent for a stacked boundary—or review the documented alternate evidence and `N/A`
    - Address valuable survivors and re-run focused/diff mutation checks within that same gate
-   - Run `/review`: multi-lens self-review of the boundary
+   - Run `/panel-review`: multi-lens self-review of the boundary
    - Fix any issues found
-   - Create the PR as ordinary agent-led work — the quality gates (TDD evidence + mutation testing + refactoring assessment + typecheck + lint + tests + build) live in the `review` skill's PR-readiness reference
+   - Create the PR as ordinary agent-led work — the quality gates (TDD evidence + mutation testing + refactoring assessment + typecheck + lint + tests + build) live in the `panel-review` skill's PR-readiness reference
 
 8. **Continue to next step**
    - Independent slice: after its PR merges, run `/continue` to update trunk and branch the next independent slice
@@ -288,7 +288,7 @@ Quick decision table for all agents:
 | "How do I work with X?" | `learn` | After discovering patterns/gotchas |
 | "Why did we choose X?" | `adr` | When making/documenting architecture decisions |
 | "Is this type-safe?" | `ts-enforcer` | During development (proactive) |
-| "Is this PR ready?" | `/review` skill (a skill, not an agent) | At review time (reactive) |
+| "Is this PR ready?" | `/panel-review` skill (a skill, not an agent) | At review time (reactive) |
 | "Should I refactor this?" | `refactor-scan` | After GREEN or another passing baseline |
 | "Was TDD followed?" | `tdd-guardian` | During TDD cycle |
 | "Is this documented?" | `docs-guardian` | At feature completion |
@@ -356,7 +356,7 @@ Commands complement agents by encoding common workflows into single invocations.
 | `/plan` | Create a plan document on a branch with a PR — no code | When planning work before implementation |
 | `/continue` | Pull merged PR, create new branch, update plan | After a PR is merged and you want to continue |
 
-PR review comes from the `review` skill (`/review`), not a command; PR creation is agent-led work gated by that skill's PR-readiness reference.
+PR review comes from the `panel-review` skill (`/panel-review`), not a command; PR creation is agent-led work gated by that skill's PR-readiness reference.
 
 ## Using These Agents
 
@@ -402,7 +402,7 @@ These agents work together to create a comprehensive development workflow:
 - **Compliance**: twelve-factor-audit assesses 12-factor methodology adherence
 - **Quality**: tdd-guardian + ts-enforcer ensure code quality
 - **Improvement**: refactor-scan assesses code after GREEN or another passing proportionate preservation baseline; mutation testing verifies the accumulated result later at PR readiness
-- **Review**: the `/review` skill fans skill-lens sub-agents out over the boundary before merge
+- **Review**: the `/panel-review` skill fans skill-lens sub-agents out over the boundary before merge
 - **Knowledge**: learn + adr + docs-guardian preserve knowledge
 - **Progress**: progress-guardian tracks work through the repository's declared plan owner
 

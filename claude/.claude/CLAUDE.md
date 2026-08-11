@@ -142,7 +142,7 @@ For adversarial review of plans, acceptance criteria, stories, or design mocks �
 For relentless decision-tree interrogation before story splitting, planning, or implementation, load `grill-me` when installed; otherwise use `specification` or the host's one-question mechanism.
 For a rigorous second opinion on finished work, load `double-check`. It selects an available reviewer dynamically, prefers a different provider when possible, labels a same-provider fresh-context fallback honestly, and bounds unresolved disagreement rather than requiring artificial consensus.
 For composing several installed skills into one orchestrated multi-agent run — an agent graph where each sub-agent node loads exactly one skill, with fan-out, adversarial verification, and synthesis stages — load the `graph-engineering` skill.
-For reviewing any change boundary — uncommitted work-in-progress, a branch, a stacked layer, a diff, or a pull request — through composable skill lenses (`/review`, one sub-agent per lens, verified findings, one ranked report), or for the PR-readiness evidence gate before creating a PR, load the `review` skill.
+For reviewing any change boundary — uncommitted work-in-progress, a branch, a stacked layer, a diff, or a pull request — through composable skill lenses (`/panel-review`, one sub-agent per lens, verified findings, one ranked report), or for the PR-readiness evidence gate before creating a PR, load the `panel-review` skill.
 
 **Project onboarding:** Run `/setup` only when the user asks to onboard or
 configure a project and authorizes the generated project files. Ordinary

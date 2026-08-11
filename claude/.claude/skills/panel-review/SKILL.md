@@ -1,9 +1,9 @@
 ---
-name: review
-description: "Composable multi-agent code review of any change boundary — the working tree mid-development, a branch diff, a stacked layer, or a pull request: one orchestrator fans out sub-agents, each loading exactly one installed skill as a review lens (hexagonal-architecture, domain-driven-design, structure-codebase, typescript-strict, ...), then adversarially verifies findings and synthesizes one ranked report. Invoked as /review with an optional target (defaults to the current branch's work, committed or not) and lens names — sensible defaults plus project-trait auto-detection, add or remove lenses freely. Also owns the PR-readiness evidence gate (change-path classification, mutation-evidence freshness) for when a boundary is heading to a PR. Use when reviewing in-progress work, a branch, a diff, or a PR, before merging, or when the user asks to review through named skills. Built on graph-engineering (the generic machinery); for a cross-provider second opinion on finished work use double-check; for Anthropic's fixed-lens hosted review use /code-review."
+name: panel-review
+description: "Composable multi-agent code review of any change boundary — the working tree mid-development, a branch diff, a stacked layer, or a pull request: one orchestrator fans out sub-agents, each loading exactly one installed skill as a review lens (hexagonal-architecture, domain-driven-design, structure-codebase, typescript-strict, ...), then adversarially verifies findings and synthesizes one ranked report. Invoked as /panel-review with an optional target (defaults to the current branch's work, committed or not) and lens names — sensible defaults plus project-trait auto-detection, add or remove lenses freely. Also owns the PR-readiness evidence gate (change-path classification, mutation-evidence freshness) for when a boundary is heading to a PR. Use when reviewing in-progress work, a branch, a diff, or a PR, before merging, or when the user asks to review through named skills. Built on graph-engineering (the generic machinery); for a cross-provider second opinion on finished work use double-check; for Anthropic's fixed-lens hosted review use /code-review."
 ---
 
-# Review — Skills as Review Lenses
+# Panel Review — Skills as Review Lenses
 
 Review one diff through N lenses, where **every lens is an installed skill** and every lens runs as its own sub-agent with an isolated context. The orchestrator composes the roster, fans the lens nodes out, adversarially verifies every finding against the actual code, and synthesizes one severity-ranked report. No lens is hardcoded: the defaults are conventions, the roster is yours.
 
@@ -19,7 +19,7 @@ This skill is an instance of `graph-engineering` — load that skill for the gen
 
 ## Invocation Grammar
 
-`/review [target] [modifiers] [lens...]`
+`/panel-review [target] [modifiers] [lens...]`
 
 | Token | Meaning |
 |---|---|
@@ -32,7 +32,7 @@ This skill is an instance of `graph-engineering` — load that skill for the gen
 | `thorough` | Widen the roster (include all detected conditional lenses) and use multi-vote adversarial verification |
 | `post` | After review, post the report to the GitHub PR (requires a PR target) |
 
-Examples: `/review` · `/review #482 thorough` · `/review hexagonal-architecture domain-driven-design structure-codebase` · `/review only xstate react-testing` · `/review -testing post`
+Examples: `/panel-review` · `/panel-review #482 thorough` · `/panel-review hexagonal-architecture domain-driven-design structure-codebase` · `/panel-review only xstate react-testing` · `/panel-review -testing post`
 
 Unknown tokens that don't match an installed skill: say so and list near-matches; don't guess.
 
@@ -93,12 +93,12 @@ Recommendation rules: any confirmed `critical` → REQUEST CHANGES; unresolved l
 
 ### 7. Post (only when asked)
 
-With the `post` token and a PR target: write the report to a scratch file and post it with `gh pr comment <number> --body-file <file>` (or a formal `gh pr review --comment/--request-changes --body-file <file>`), headed `## 🤖 /review` with the roster named — never interpolate the report body through shell arguments. Never post without the explicit token; never use `--approve` on the user's behalf.
+With the `post` token and a PR target: write the report to a scratch file and post it with `gh pr comment <number> --body-file <file>` (or a formal `gh pr review --comment/--request-changes --body-file <file>`), headed `## 🤖 /panel-review` with the roster named — never interpolate the report body through shell arguments. Never post without the explicit token; never use `--approve` on the user's behalf.
 
 ## Boundaries
 
 - **During development**, use the focused agents (`tdd-guardian`, `ts-enforcer`, `refactor-scan`) — this skill is the whole-boundary review at the end.
-- **`double-check`** answers a different question. This skill is **breadth through your own standards**: many same-provider sub-agents, each applying one of *your* installed skills to the diff, findings verified and merged into one report — wide coverage, but every node shares the host model's blind spots. `double-check` is **independence**: one strong reviewer, preferably from a *different provider*, starting cold with no inherited context, checking scope fidelity against the original requirements and arguing findings across rounds until genuine convergence. Fan out with `/review` for coverage; bring in `double-check` when the risk is that *you* (and every sub-agent you spawn) are wrong the same way — high stakes, contested calls, or a final independent gate before shipping. They compose: `/review` first, `double-check` last.
+- **`double-check`** answers a different question. This skill is **breadth through your own standards**: many same-provider sub-agents, each applying one of *your* installed skills to the diff, findings verified and merged into one report — wide coverage, but every node shares the host model's blind spots. `double-check` is **independence**: one strong reviewer, preferably from a *different provider*, starting cold with no inherited context, checking scope fidelity against the original requirements and arguing findings across rounds until genuine convergence. Fan out with `/panel-review` for coverage; bring in `double-check` when the risk is that *you* (and every sub-agent you spawn) are wrong the same way — high stakes, contested calls, or a final independent gate before shipping. They compose: `/panel-review` first, `double-check` last.
 - **`/code-review`** (built-in) runs Anthropic's fixed issue-class lenses; this skill exists precisely to compose *your* skills instead.
 - The review reads the target repository's own conventions (its CLAUDE.md, glossary, ADRs) as part of the scout; a lens finding that contradicts an explicit local convention is reported as a conflict, not enforced.
 

@@ -2,7 +2,7 @@
 "@citypaul/dotfiles": minor
 ---
 
-Replace the legacy PR machinery with two new skills: graph-engineering and review
+Replace the legacy PR machinery with two new skills: graph-engineering and panel-review
 
 `graph-engineering` is a generic multi-agent orchestration skill: compose any
 installed skills into one agent graph where each node is a sub-agent that loads
@@ -31,14 +31,14 @@ render-and-approve gate before dispatching write graphs, one-workflow-per-
 checkpoint execution, and what the Workflow runtime does not enforce
 (integration, exclusion, approval).
 
-`review` is the flagship instance: a composable multi-agent code review of any change boundary — working tree, branch, stacked layer, or PR —
-invoked as `/review [target] [lens...]` where every review lens is an installed
+`panel-review` is the flagship instance: a composable multi-agent code review of any change boundary — working tree, branch, stacked layer, or PR —
+invoked as `/panel-review [target] [lens...]` where every review lens is an installed
 skill (hexagonal-architecture, domain-driven-design, structure-codebase, ...).
 Defaults plus project-trait auto-detection, `only`/remove/`thorough`/`post`
 modifiers, one sub-agent per lens with isolated context, adversarial
 per-finding verification (unverifiable ≠ refuted), cross-lens conflict
 surfacing, and one severity-ranked report with explicit clean/not-covered
-accounting. The skill is deliberately named `review`, not
+accounting. The skill is deliberately named `panel-review`, not
 `pr-review`: a PR is one kind of target, not a precondition — a `wip` token
 reviews uncommitted work mid-development, and the built-in `readiness` lens
 runs only for boundaries actually heading to a PR. It also owns the
@@ -56,7 +56,7 @@ pr-readiness reference). All cross-references updated: CLAUDE.md routing and
 skills list, README catalogs and counts (3 commands, 9 agents), agents/README,
 sibling agent descriptions, /setup generation steps, double-check, tdd,
 planning, install-claude.sh arrays, and the mutation-workflow/tdd-watch test
-assertions now point at the review skill's pr-readiness reference.
+assertions now point at the panel-review skill's pr-readiness reference.
 
 Note for existing installs: the installer no longer ships the removed files but
 does not delete previously installed copies of ~/.claude/commands/pr.md,

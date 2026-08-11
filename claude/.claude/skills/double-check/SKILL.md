@@ -21,7 +21,7 @@ Skip it for trivial edits and unfinished drafts unless the draft itself is the r
 
 ## Review Modes
 
-This skill verifies *finished* work. It is not a substitute for `tdd` (drive the work with tests first), `find-gaps` (tighten an artifact before building), or `review` (multi-lens review of the boundary). Use it *after* those, as the final second-opinion check. The division of labor with `review`: that skill is breadth — many same-provider sub-agents applying your own installed skills in parallel, sharing the host model's blind spots; this skill is independence — one reviewer from outside that lineage, cold context, arguing to convergence. `review` catches what your standards catch; `double-check` catches what you and your sub-agents would all miss the same way.
+This skill verifies *finished* work. It is not a substitute for `tdd` (drive the work with tests first), `find-gaps` (tighten an artifact before building), or `panel-review` (multi-lens review of the boundary). Use it *after* those, as the final second-opinion check. The division of labor with `panel-review`: that skill is breadth — many same-provider sub-agents applying your own installed skills in parallel, sharing the host model's blind spots; this skill is independence — one reviewer from outside that lineage, cold context, arguing to convergence. `panel-review` catches what your standards catch; `double-check` catches what you and your sub-agents would all miss the same way.
 
 | Mode | Use when | Required label |
 |------|----------|----------------|

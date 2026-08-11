@@ -3,8 +3,8 @@ name: ts-enforcer
 description: >
   Review changed TypeScript for evidence-backed type-safety defects. Use when
   defining types or schemas, or before committing TypeScript changes. Scope:
-  type safety only; use the TDD or refactoring agents, or the review skill
-  (/review), for their respective concerns.
+  type safety only; use the TDD or refactoring agents, or the panel-review skill
+  (/panel-review), for their respective concerns.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 color: red

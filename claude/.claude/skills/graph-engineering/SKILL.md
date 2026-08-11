@@ -1,6 +1,6 @@
 ---
 name: graph-engineering
-description: "Compose installed agent skills into one orchestrated multi-agent run: an agent graph where each node is a sub-agent that loads exactly one skill, edges carry structured data, and stages fan work out, adversarially verify it, and synthesize one deliverable. Claude Code calls the executable form a dynamic workflow; the pattern is Anthropic's orchestrator-workers. Use when a task needs several skills applied in parallel (multi-lens review, multi-angle audit or research, migration sweeps), when the user says graph engineering, agent graph, fan out sub-agents, or orchestrate skills, or when designing any workflow where sub-agents each own one skill. For PR review specifically use review (an instance of this skill); for a single second opinion on finished work use double-check; do not use for tasks one skill handles in one context."
+description: "Compose installed agent skills into one orchestrated multi-agent run: an agent graph where each node is a sub-agent that loads exactly one skill, edges carry structured data, and stages fan work out, adversarially verify it, and synthesize one deliverable. Claude Code calls the executable form a dynamic workflow; the pattern is Anthropic's orchestrator-workers. Use when a task needs several skills applied in parallel (multi-lens review, multi-angle audit or research, migration sweeps), when the user says graph engineering, agent graph, fan out sub-agents, or orchestrate skills, or when designing any workflow where sub-agents each own one skill. For PR review specifically use panel-review (an instance of this skill); for a single second opinion on finished work use double-check; do not use for tasks one skill handles in one context."
 ---
 
 # Graph Engineering
@@ -19,7 +19,7 @@ Do NOT build a graph when:
 
 - One skill in one context does the job — a graph of one node is ceremony.
 - The task is one chain where each step needs the previous step's full context — stay in one agent and load skills in sequence. Interdependent *write* work is different: when some units depend on others, the ordering **is** the work — model it with typed edges (`references/topologies.md`, Dependent-Write Graphs), don't force it into a fan-out. A fan-out is not a graph; launching N agents at one scope is scatter-gather.
-- The user has not opted into multi-agent scale. Fan-outs cost real tokens; a graph run needs explicit user intent, a skill/command invocation that implies it (like `/review`), or a direct request. Say what the graph will roughly cost (N nodes + verification) before launching a large one.
+- The user has not opted into multi-agent scale. Fan-outs cost real tokens; a graph run needs explicit user intent, a skill/command invocation that implies it (like `/panel-review`), or a direct request. Say what the graph will roughly cost (N nodes + verification) before launching a large one.
 - You would be composing the graph to avoid deciding. A graph amplifies a clear question; it cannot rescue a vague one.
 
 ## The Design Protocol

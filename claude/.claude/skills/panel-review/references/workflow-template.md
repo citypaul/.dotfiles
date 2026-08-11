@@ -1,6 +1,6 @@
 # Workflow Template — Executing the Review Graph
 
-The concrete dynamic-workflow script for `/review`. Runtime selection, fallback behavior, and script rules live in `graph-engineering/references/execution.md`; this file is the review instance.
+The concrete dynamic-workflow script for `/panel-review`. Runtime selection, fallback behavior, and script rules live in `graph-engineering/references/execution.md`; this file is the review instance.
 
 ## Orchestrator responsibilities before the script runs
 
