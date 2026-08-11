@@ -2,8 +2,9 @@
 "@citypaul/dotfiles": minor
 ---
 
-Make scope-fidelity checks a mandatory part of the double-check skill, and
-wire it to acceptance-review at the pre-PR phase
+Harden the double-check skill: mandatory scope-fidelity checks,
+acceptance-review at the pre-PR phase, and research-backed reviewer-bias
+mitigations
 
 Motivated by real reviews where an agent took clear requirements and silently
 removed features that were not asked for, added things that were not asked
@@ -39,6 +40,28 @@ separately; for earlier-phase work (plans, designs, mid-cycle code) a general
 second opinion alone applies. Scope fidelity and acceptance-review are
 explicitly complementary — one proves the contract's criteria are satisfied,
 the other catches work outside the contract.
+
+Research-backed mitigations for documented LLM-reviewer failure modes:
+
+- **Anti-capitulation protocol** — the host presents rebuttals as evidence at
+  a file and line, never as a desired disposition; a finding closes only when
+  the reviewer restates its strongest surviving form and names the evidence
+  that defeated it, and deference-only withdrawals stay open.
+- **Mandatory coverage statement** — every response lists what was read and
+  run plus an explicit not-checked list, turning `no-issues` from a global
+  claim into a bounded, auditable one.
+- **Evidence tiers** — each finding is tagged `executed`, `read`, or
+  `inferred`; read-only is clarified to permit safe non-destructive checks
+  (tests, typecheck, build), and `no-issues` is not accepted while the
+  riskiest claims rest on inference alone.
+- **Severity anchors** — `blocker`/`major`/`minor`/`nit` defined by impact if
+  shipped, never effort-to-fix or reviewer certainty.
+- **Fix-diff sweep** — the final round reviews the fixes themselves as fresh
+  unreviewed code, not just the ledger.
+- **Per-claim dispositions** — the named claim and each scrutinize-hardest
+  area gets an explicit `holds`/`broken`/`could not verify` line.
+- **Secret-echo prohibition** — the reviewer references credentials by
+  location only and reports exposure as a finding, never quoting values.
 
 The verifier brief gains an "Original scope" section (the authoritative
 requirements, verbatim or by exact reference) and a mandatory scope-fidelity
