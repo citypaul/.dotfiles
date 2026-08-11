@@ -24,6 +24,10 @@ not every sentence that happens to use the imperative mood.
 
 (One or two sentences: what this work was supposed to achieve — the original requirement, not a summary of the solution.)
 
+## The original scope
+
+(The authoritative statement of what was asked for: the requirements, spec, acceptance criteria, issue text, or user request — verbatim where short, or an exact path/reference where long. This is the yardstick for the mandatory scope-fidelity checks below, so it must state what the work was supposed to add, change, and leave alone. Do not paraphrase it into a description of the solution.)
+
 ## The claim being checked
 
 (What the author asserts is now true. e.g. "This fixes the race condition in `OrderQueue` without changing throughput." Be precise — this is what you're testing.)
@@ -54,6 +58,18 @@ Be explicit about which case this is, so there's no chance of reviewing the wron
 
 (The riskiest parts. e.g. concurrency, the auth boundary, the migration's rollback path, the off-by-one-prone loop, the money math.)
 
+## Scope fidelity — mandatory checks
+
+Compare the finished work against **The original scope** above. Run all three checks in every round and report each outcome explicitly, even when clean:
+
+1. **Unrequested additions** — anything present in the work that the original scope did not ask for: features, behaviors, endpoints, options, dependencies, or config. List each one as a finding; do not assume extra work is a bonus.
+2. **Unrequested removals** — anything the original scope required, or that existed before this work, that is now missing or weakened: features, behaviors, validations, error handling, guarantees. Removing something the scope did not ask to remove is a defect even if the remaining code is correct.
+3. **Removed or weakened tests** — diff the test files yourself; do not rely on the author's summary. Enumerate every test that was deleted, skipped, or had its assertions loosened, and for each one judge whether the original scope required that change. Treat a test deleted or weakened to let an unrequested behavior change pass silently as a `blocker` — that test was the guardrail keeping a requested feature in place.
+
+Behavior-preserving refactoring is expected as part of finished work, not scope drift. Do not flag a refactor merely because the scope did not request it; judge whether it is justified and genuinely preserves behavior. If a claimed refactor changes observable behavior, report it under checks 1 and 2. Also flag valuable refactoring opportunities the work missed in the code it touched — duplication left in place, unclear names, tangled structure — normally as `minor` or `nit` findings.
+
+If the brief's statement of the original scope is too thin to run these checks, report that as a finding instead of guessing.
+
 ## How to respond
 
 Return your findings as a list. For each:
@@ -63,9 +79,17 @@ Return your findings as a list. For each:
 - **Evidence** — `file:line` or a concrete failing scenario (inputs → wrong output). Not "this feels off."
 - **Suggested direction** — how you'd fix it (don't apply changes; advise).
 
+After the findings, report the three scope-fidelity outcomes explicitly, one line each, even when clean:
+
+```text
+Scope fidelity — unrequested additions: none | <finding IDs>
+Scope fidelity — unrequested removals: none | <finding IDs>
+Scope fidelity — removed/weakened tests: none | <finding IDs>
+```
+
 End with an overall verdict on its own line after reviewing the named state:
 
-- `VERDICT: no-issues` — you tried hard to break it and couldn't, you can say why it's sound, and you are reporting **zero** findings of *any* severity (including minor/nit).
+- `VERDICT: no-issues` — you tried hard to break it and couldn't, you can say why it's sound, all three scope-fidelity lines report `none`, and you are reporting **zero** findings of *any* severity (including minor/nit). A response missing the scope-fidelity lines is incomplete and must not end in `no-issues`.
 - `VERDICT: issues-found` — **any** finding stands, at any severity. A response that lists even one nit must not end in `no-issues`.
 
 Review only; do not edit files, run destructive commands, or commit.

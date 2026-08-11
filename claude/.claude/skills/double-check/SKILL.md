@@ -1,6 +1,6 @@
 ---
 name: double-check
-description: Get a rigorous read-only second opinion on finished work through the host's available reviewer capabilities, preferably from a different model provider. Falls back to a fresh same-provider agent only when necessary and labels the reduced independence. Use when asked to double-check, verify, cross-check, or get a second opinion, and before shipping high-stakes or complex work.
+description: Get a rigorous read-only second opinion on finished work through the host's available reviewer capabilities, preferably from a different model provider. Falls back to a fresh same-provider agent only when necessary and labels the reduced independence. Every review includes a mandatory scope-fidelity check against the original requirements — unrequested additions, unrequested removals, and deleted or weakened tests. Use when asked to double-check, verify, cross-check, or get a second opinion, and before shipping high-stakes or complex work.
 ---
 
 # Double Check
@@ -55,6 +55,7 @@ Read `resources/providers.md` for capability requirements and selection rules. U
 Use `resources/brief-template.md`. Include:
 
 - the original objective, not a solution-shaped paraphrase;
+- the original scope: the requirements, spec, acceptance criteria, or request the work was meant to satisfy, verbatim or by exact reference — scope fidelity cannot be judged without it;
 - every applicable project and user constraint;
 - the exact changed-file scope and where the work lives;
 - the relevant diff or a precise command/path for obtaining it;
@@ -65,7 +66,19 @@ Use `resources/brief-template.md`. Include:
 
 Materialize in-conversation work in a scratch artifact before review. Make it unambiguous whether the reviewer should inspect committed state, a working-tree diff, a staged diff, or a proposed artifact.
 
-### 4. Require Actionable Findings
+### 4. Always Check Scope Fidelity
+
+Every review must compare the finished work against the original scope, not just judge the changed code on its own merits. Correct-looking work that silently drops a requested feature or smuggles in an unrequested one is a defect. The reviewer must affirmatively check, and report the outcome of, all three:
+
+- **Unrequested additions** — features, behaviors, endpoints, options, dependencies, or configuration present in the work but absent from the original scope. Report each one; the author must justify or remove it.
+- **Unrequested removals** — features, behaviors, error handling, or guarantees that existed before or were required by the scope and are now gone or weakened without the scope asking for it.
+- **Removed or weakened tests** — enumerate every test that the work deletes, skips, or whose assertions it loosens (diff the test files directly; do not rely on the author's summary). Inspect each one closely and judge whether the removal or update is required by the original scope. A test deleted or weakened to make an unrequested behavior change pass silently is a `blocker`, because it removes the guardrail that was keeping the requested behavior in place.
+
+Behavior-preserving refactoring is not scope drift. Refactoring the code the work touches is an expected part of finished work even when nobody asked for it; judge a refactor on whether it is justified and genuinely preserves behavior, never on whether the scope requested it. A claimed refactor that changes observable behavior is not a refactor — judge it under the addition and removal checks above. The reviewer should also look the other way: flag valuable refactoring opportunities the work missed in the code it touched, normally as `minor` or `nit` findings, applying the criteria of this repository's `refactoring` and `reduce-system-complexity` skills where installed.
+
+These checks are mandatory in every round, not optional extras. A response that omits them is incomplete, and `VERDICT: no-issues` is invalid without an explicit clean result on all three. If the brief does not state the original scope well enough to run them, the reviewer must say so as a finding rather than guessing.
+
+### 5. Require Actionable Findings
 
 Each finding must include:
 
@@ -79,7 +92,7 @@ The response ends with exactly one machine-recognizable verdict:
 - `VERDICT: issues-found` when any finding remains;
 - `VERDICT: no-issues` only when the reviewer reports zero findings.
 
-### 5. Resolve Every Finding
+### 6. Resolve Every Finding
 
 For each finding, record one host action:
 
@@ -95,7 +108,7 @@ Keep a stable ledger:
 
 A finding closes only when it is fixed and accepted, rejected with reviewer agreement, or explicitly deferred to the user. Silence in a later round is not closure.
 
-### 6. Review the Final State
+### 7. Review the Final State
 
 After fixes or rebuttals, give the reviewer the updated work, validation evidence, and point-by-point ledger. Resume the isolated review context when the host supports safe continuity; otherwise launch a new read-only round with the complete ledger.
 
@@ -103,20 +116,22 @@ After fixes or rebuttals, give the reviewer the updated work, validation evidenc
 
 - every prior finding is closed;
 - the reviewer has inspected the final state after the last change;
-- the final round reports zero findings of every severity; and
+- the final round reports zero findings of every severity;
+- the final round reports an explicit clean scope-fidelity result (no unrequested additions, no unrequested removals, no unjustified test removals or weakenings); and
 - the primary agent agrees no real issue remains.
 
 Cap ordinary review at about three or four rounds. If a substantive disagreement does not converge, present both arguments and a recommendation to the user instead of declaring success.
 
 ## Reporting
 
-Report the review mode, reviewer capability, number of rounds, closed findings, deferred items, and exact final verdict. Never call a same-provider fallback independent or cross-provider.
+Report the review mode, reviewer capability, number of rounds, closed findings, deferred items, the scope-fidelity outcome, and exact final verdict. Never call a same-provider fallback independent or cross-provider.
 
 Example:
 
 ```text
 Double-check complete — same-provider fresh-context fallback, 2 rounds.
 F1 major: fixed and accepted.
+Scope fidelity: clean — no unrequested additions or removals; no tests removed or weakened.
 VERDICT: no-issues
 ```
 
@@ -125,7 +140,9 @@ VERDICT: no-issues
 - Reusing the authoring conversation as the reviewer context.
 - Selecting a second executable backed by the same provider and calling it independent.
 - Allowing reviewer writes because read-only invocation is inconvenient.
-- Omitting the objective, constraints, diff scope, or validation evidence.
+- Omitting the objective, original scope, constraints, diff scope, or validation evidence.
+- Reviewing only the changed code's correctness while ignoring what was silently added to or removed from the requested scope.
+- Accepting a test deletion because the code it covered was also deleted, without checking that removing that behavior was itself in scope.
 - Accepting or dismissing findings based on confidence rather than evidence.
 - Treating the first clean response as convergence after later changes.
 - Baking one provider's commands, model aliases, authentication behavior, or project workflow into this global skill.
