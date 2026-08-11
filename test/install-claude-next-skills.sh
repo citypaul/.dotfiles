@@ -102,16 +102,22 @@ assert_output() {
   fi
 }
 
-assert_npx_call "--yes skills@1.5.22 add vercel-labs/next-skills#b76d687cf3e026eac3b1032f610f06b47a56377c -g -a codex -s next-best-practices next-cache-components next-upgrade --copy -y"
+assert_npx_call "--yes skills@1.5.22 add https://github.com/vercel-labs/next-skills/archive/b76d687cf3e026eac3b1032f610f06b47a56377c.tar.gz -g -a codex -s next-best-practices next-cache-components next-upgrade --copy -y"
 assert_output "vercel-labs/next-skills"
 
-if grep -Eq 'add (addyosmani/web-quality-skills|vercel-labs/next-skills|pbakaus/impeccable|https://github.com/mattpocock/skills|coreyhaines31/marketingskills|herdrdev/herdr)[^ ]* .* -s \* ' "$NPX_LOG"; then
+if grep -Eq 'add [^ ]*(addyosmani/web-quality-skills|vercel-labs/next-skills|pbakaus/impeccable|mattpocock/skills|coreyhaines31/marketingskills|herdrdev/herdr)[^ ]* .* -s \* ' "$NPX_LOG"; then
   fail "external sources must never install an undeclared wildcard set"
 else
   pass "external sources install only reviewed names"
 fi
 
-FIRST_PARTY_CALL=$(grep 'add citypaul/.dotfiles#' "$NPX_LOG" || true)
+if grep -Eq 'add [^ ]*#[0-9a-f]{40}( |$)' "$NPX_LOG"; then
+  fail "commit-pinned sources must reach the skills CLI as archive URLs (git clone --branch rejects SHAs)"
+else
+  pass "no source is passed as a repo#sha ref the skills CLI cannot clone"
+fi
+
+FIRST_PARTY_CALL=$(grep 'add https://github.com/citypaul/.dotfiles/archive/' "$NPX_LOG" || true)
 while IFS= read -r skill_file; do
   skill_name=$(basename "$(dirname "$skill_file")")
   if [[ " $FIRST_PARTY_CALL " != *" $skill_name "* ]]; then
@@ -119,7 +125,7 @@ while IFS= read -r skill_file; do
   fi
 done < <(find "$REPO_ROOT/claude/.claude/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print)
 
-if [[ "$FIRST_PARTY_CALL" == *"#"* ]] && [[ "$FIRST_PARTY_CALL" != *" -s * "* ]]; then
+if [[ "$FIRST_PARTY_CALL" == *"archive/$EXACT_COMMIT.tar.gz"* ]] && [[ "$FIRST_PARTY_CALL" != *" -s * "* ]]; then
   pass "first-party source revision and complete name set are explicit"
 else
   fail "first-party install must use a pinned source and declared names"

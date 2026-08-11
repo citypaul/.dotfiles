@@ -1677,7 +1677,7 @@ The installer used to `curl` every `SKILL.md` straight from this repo into `~/.c
 
 **Trade-offs:**
 - Requires Node.js for `npx`. `--claude-only` and `--agents-only` still work without it.
-- The executable CLI is pinned to [`skills@1.5.22`](https://github.com/vercel-labs/skills/tree/v1.5.22). Every repository source uses the CLI's `#<git-ref>` syntax, and every selected skill name is declared before installation; source changes require an explicit pin update and re-audit. `--version` pins first-party skills, `CLAUDE.md`, commands, and agents to the same reviewed release/commit.
+- The executable CLI is pinned to [`skills@1.5.22`](https://github.com/vercel-labs/skills/tree/v1.5.22). Every repository source is pinned to a commit, and the installer hands each pin to the CLI as a GitHub commit-archive URL (the CLI's `#<git-ref>` syntax clones with `git clone --branch`, which rejects commit SHAs). Every selected skill name is declared before installation; source changes require an explicit pin update and re-audit. `--version` pins first-party skills, `CLAUDE.md`, commands, and agents to the same reviewed release/commit.
 - Skills used to ship at the same `v3.x` tag as everything else in this repo; now they roll independently. Use `npx skills@1.5.22 list -g --json` if you want to snapshot what's installed.
 
 `CLAUDE.md`, slash commands, and Claude-Code agents are still `curl`ed directly from this repo — they aren't skills and aren't part of the skills.sh ecosystem.
