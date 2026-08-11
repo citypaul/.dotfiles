@@ -14,6 +14,8 @@ A usable reviewer must provide:
 
 Reject a candidate that cannot guarantee read-only operation. Do not solve missing isolation by granting broad permissions.
 
+Read-only means no file writes, commits, pushes, messages, or external state mutation. It does not forbid safe, non-destructive execution: a reviewer that can run the test suite, a typecheck, or a build produces `executed` evidence instead of inference, so prefer a sandboxed candidate that permits it.
+
 ## Selection Order
 
 1. Prefer a reviewer backed by a different model provider from the host.
