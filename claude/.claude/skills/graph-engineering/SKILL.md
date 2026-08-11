@@ -18,7 +18,7 @@ Use a graph when the task genuinely decomposes into **independent skill-shaped r
 Do NOT build a graph when:
 
 - One skill in one context does the job — a graph of one node is ceremony.
-- The task is sequential by nature and each step needs the previous step's full context — stay in one agent and load skills in sequence.
+- The task is one chain where each step needs the previous step's full context — stay in one agent and load skills in sequence. Interdependent *write* work is different: when some units depend on others, the ordering **is** the work — model it with typed edges (`references/topologies.md`, Dependent-Write Graphs), don't force it into a fan-out. A fan-out is not a graph; launching N agents at one scope is scatter-gather.
 - The user has not opted into multi-agent scale. Fan-outs cost real tokens; a graph run needs explicit user intent, a skill/command invocation that implies it (like `/review`), or a direct request. Say what the graph will roughly cost (N nodes + verification) before launching a large one.
 - You would be composing the graph to avoid deciding. A graph amplifies a clear question; it cannot rescue a vague one.
 
@@ -38,7 +38,7 @@ Map responsibilities to installed skills, one skill per node. Read [`references/
 
 ### 4. Choose the topology
 
-Pick stage patterns from [`references/topologies.md`](references/topologies.md): fan-out/fan-in, pipeline, adversarial verify, dedup barrier, judge panel, loop-until-dry. The default review/audit shape is **scout → fan-out → verify → merge → synthesize**. Use a barrier only when a stage genuinely needs *all* prior results at once (dedup, early-exit); otherwise pipeline so fast nodes flow ahead.
+Pick stage patterns from [`references/topologies.md`](references/topologies.md): fan-out/fan-in, pipeline, adversarial verify, dedup barrier, judge panel, loop-until-dry. The default review/audit shape is **scout → fan-out → verify → merge → synthesize**. Use a barrier only when a stage genuinely needs *all* prior results at once (dedup, early-exit); otherwise pipeline so fast nodes flow ahead. When nodes write, type the edges — `needs` (verified **and integrated**), `informs`, `excludes` — and schedule by frontier: writes serial by default, reads parallel freely.
 
 ### 5. Define the contracts
 
@@ -69,13 +69,14 @@ Run the graph. Then earn the synthesis:
 - **Read-only nodes for review graphs.** Reviewing and auditing nodes must not edit files. Only give write access to nodes whose job is transformation, and isolate parallel writers (worktrees) so they cannot conflict.
 - **Honest accounting.** Report node failures, skipped work, and roster caps in the final deliverable. A graph that quietly dropped a node reads as coverage it didn't deliver.
 - **Cost proportionality.** A quick check gets a small roster and single-vote verification; "audit this thoroughly" gets a wide roster and multi-vote adversarial verification. Match the user's words.
+- **Render before dispatching write graphs.** For any graph whose nodes write, and for large rosters generally, render the graph first — a Mermaid diagram with each node's deliverable and skill, thick `==>` for `needs`, dotted `-.->` for `informs` — and get explicit approval before launching. A reviewable picture beats a cost sentence; re-render at checkpoints as states change.
 
 ## References
 
 | Reference | Read when... |
 |-----------|--------------|
 | [`references/node-design.md`](references/node-design.md) | Writing node briefs — the skill-loading preamble, scope framing, output schemas, evidence bar, severity taxonomy, model/effort choice |
-| [`references/topologies.md`](references/topologies.md) | Choosing stage patterns — fan-out, pipeline vs barrier, adversarial verify, judge panel, loop-until-dry, conflict surfacing |
+| [`references/topologies.md`](references/topologies.md) | Choosing stage patterns — fan-out, pipeline vs barrier, adversarial verify, judge panel, loop-until-dry, conflict surfacing, dependent-write graphs (needs/informs/excludes, frontier scheduling) |
 | [`references/execution.md`](references/execution.md) | Running the graph — Workflow-tool script authoring, Agent-tool fallback, degraded sequential mode, resume and diagnosis |
 
 ## Completion Check

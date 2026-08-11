@@ -45,6 +45,18 @@ For unknown-size discovery (bugs, edge cases, affected call sites): keep launchi
 
 A final node asks: "What's missing — a lens not run, a claim unverified, a scope not inspected?" Its findings become either the next round of work or an honest "not covered" section in the deliverable. Cheap, and it catches the orchestrator's own blind spot: believing the roster it chose was the whole job.
 
+## Dependent-Write Graphs (needs / informs / excludes)
+
+The patterns above are read-mostly: nodes analyze and report. When nodes *write* — implementation slices, migrations, generated artifacts — a fan-out is not a graph: launching N writers at one scope is scatter-gather, and a graph exists only when some units depend on others. Then the ordering **is** the work. Type every edge and record the reason:
+
+- **`needs`** — B cannot start until A's output is verified **and integrated** into B's base. An approval, a green check, or an open PR does not satisfy `needs`; merged-into-the-base does.
+- **`informs`** — B is better with A's output but correct without it. Never blocks scheduling.
+- **`excludes`** — no data dependency, but A and B cannot run concurrently: overlapping owned paths, a shared undecided architectural question, a single-writer resource.
+
+Schedule by **frontier**: dispatch only nodes whose `needs` are all integrated and which exclude no running node. **Writes are serial by default; reads parallel freely.** Run two writers concurrently only when all four conditions hold: disjoint owned paths (including lockfiles, generated files, and migrations), no shared open decision, independently verifiable outputs, and workspace isolation (worktrees). Absence of a data dependency is not independence — check `excludes` before parallelizing.
+
+Write nodes close with the structured handoff in `node-design.md`, and a failed verification feeds the repair loop there — back to the worker that holds the context, not to a fresh node.
+
 ## Choosing Scale
 
 | User's words | Roster | Verification |

@@ -17,6 +17,20 @@ multi-agent research-system guidance, ultrareview's per-finding verification,
 and LangGraph's agent-graph vocabulary; the skills-as-nodes mechanic was
 verified live against this distribution.
 
+Beyond read-mostly analysis graphs, graph-engineering also covers dependent
+*write* work, adapting mintuz's graph-engineering skill (MIT, credited in
+skills/REFERENCES.md): a typed edge taxonomy (`needs` releases only on
+verified-and-integrated, `informs` never blocks, `excludes` bars co-running),
+frontier scheduling with writes-serial-by-default and four explicit
+concurrency conditions, a structured write-node handoff (real exit codes —
+a claimed check is not a check; all-empty honesty signal), a repair loop that
+sends the largest gap back to the context-holding worker and judges with a
+fresh verifier, static-vs-behavioral verification lanes
+(tests-written-alongside-implementation as weakest evidence), a Mermaid
+render-and-approve gate before dispatching write graphs, one-workflow-per-
+checkpoint execution, and what the Workflow runtime does not enforce
+(integration, exclusion, approval).
+
 `review` is the flagship instance: a composable multi-agent code review of any change boundary — working tree, branch, stacked layer, or PR —
 invoked as `/review [target] [lens...]` where every review lens is an installed
 skill (hexagonal-architecture, domain-driven-design, structure-codebase, ...).

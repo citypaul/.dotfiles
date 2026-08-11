@@ -54,6 +54,16 @@ Rules that keep workflow scripts working:
 - To iterate, edit the persisted script file and re-invoke with `{scriptPath, resumeFromRunId}` — unchanged `agent()` calls replay from cache.
 - The Workflow tool needs explicit user opt-in. A skill instructing you to call it (this one, or an instance like `review` that the user invoked) is that opt-in; a task merely *benefiting* from a graph is not.
 
+### What the runtime does not enforce
+
+Three graph semantics have no Workflow-tool mechanism — the orchestrator owns them or nobody does:
+
+- **Integration.** `agent()` returning is not a `needs` edge releasing. Only verified-and-integrated-into-the-base releases a dependency; an approval, a green check, or an open PR does not.
+- **Exclusion.** Two `agent()` calls in one `parallel()` will happily write the same path. Serialize writers deliberately — a `for…of await` loop with a `log()` line so it doesn't read as a stall — unless all four concurrency conditions in `topologies.md` hold.
+- **Approval.** A running script cannot pause for the user. Get approval before dispatch, and split long write graphs at checkpoints: **one workflow per checkpoint, not one per run.** Integrate, re-plan, and re-render inline between Workflow calls, so a bad cut costs one checkpoint rather than the whole graph. Expect the first pass at a checkpoint to fail — follow-up nodes are the normal output of verification, not a surprise.
+
+For long runs, check usage headroom before each checkpoint. When near a limit: drain running nodes rather than killing them mid-write (accept partial handoffs), persist the ledger, and resume later with `resumeFromRunId` — re-deriving state from the repository, never from memory.
+
 ## Runtime 2: Agent-tool Fan-out
 
 No Workflow tool, but an Agent/Task mechanism exists: launch all independent nodes **in a single message** so they run concurrently, each with a complete brief (skill preamble + scope + schema stated in prose). Collect results as they complete; run verification as a second fan-out over surviving findings.
