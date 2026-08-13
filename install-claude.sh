@@ -257,14 +257,33 @@ EOF
 done
 
 # The installer must work for anyone, anywhere: inside a checkout, from a
-# stray copy of this file, or piped straight from curl. It pins to an exact
+# stray copy of this file, or piped straight from a download. It pins to an exact
 # immutable revision either way — it just works out which one on its own.
 #
 #   --version REF   what you asked for, always wins
-#   HEAD            when run inside a checkout AND that commit is on the remote,
-#                   so a contributor installs exactly what they inspected
+#   HEAD            only when run inside a checkout OF THIS REPOSITORY and that
+#                   commit is on the remote, so a contributor installs exactly
+#                   what they inspected
 #   latest release  everyone else
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+#
+# A piped install leaves BASH_SOURCE unset, and `dirname ""` resolves to `.` —
+# the directory the user happens to be standing in. Inferring a checkout from
+# that once pinned an install to an unrelated private repository's HEAD, so the
+# script's own location only counts when it is a real file inside a real
+# checkout of this repository.
+script_dir=""
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+
+# True only for a git checkout of this repository. Any other repo — including
+# whatever directory a piped install was launched from — is not a version source.
+own_checkout() {
+  [[ -n "$script_dir" ]] || return 1
+  command -v git >/dev/null 2>&1 || return 1
+  git -C "$script_dir" rev-parse --git-dir >/dev/null 2>&1 || return 1
+  git -C "$script_dir" remote -v 2>/dev/null | grep -qF "$OWN_SKILLS_REPO_BASE"
+}
 
 # Newest published release tag, resolved straight from the remote so it works
 # with no checkout at all. Prints the tag's commit; empty if none can be read.
@@ -277,32 +296,42 @@ resolve_latest_release() {
     cut -d' ' -f1
 }
 
-# Is this commit actually reachable from the remote? An unpushed local commit
-# is not, and pinning to it would fail later with a bare git error.
+# Resolve a tag name to its commit on the remote, so `--version v4.12.1` works
+# without a checkout.
+resolve_remote_tag() {
+  command -v git >/dev/null 2>&1 || return 1
+  git ls-remote --tags --refs "https://github.com/$OWN_SKILLS_REPO_BASE.git" \
+    "refs/tags/$1" 2>/dev/null | cut -f1
+}
+
+# Is this commit actually on this repository's remote? An unpushed local commit
+# is not, and neither is a commit belonging to some other repository entirely.
 remote_has_commit() {
   local sha="$1"
   git ls-remote "https://github.com/$OWN_SKILLS_REPO_BASE.git" 2>/dev/null |
     grep -q "^$sha[[:space:]]" && return 0
-  # Not at a ref tip, but it may still be reachable behind one.
+  # Not at a ref tip, but a checkout of THIS repository can prove reachability.
+  own_checkout || return 1
   git -C "$script_dir" merge-base --is-ancestor "$sha" \
     "$(git -C "$script_dir" rev-parse --verify "refs/remotes/origin/main" 2>/dev/null || echo "$sha")" \
     2>/dev/null
 }
 
 if [[ -n "$VERSION" ]]; then
-  # An explicit --version is validated against the checkout, as before.
   if [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]]; then
     : # already immutable
-  elif command -v git >/dev/null 2>&1 &&
+  elif own_checkout &&
        git -C "$script_dir" show-ref --verify --quiet "refs/tags/$VERSION"; then
     VERSION="$(git -C "$script_dir" rev-parse --verify "refs/tags/${VERSION}^{commit}")"
+  elif tag_sha="$(resolve_remote_tag "$VERSION")" && [[ -n "$tag_sha" ]]; then
+    VERSION="$tag_sha"
   else
-    echo -e "${RED}Error: '$VERSION' is not a full commit SHA or a tag in the inspected checkout${NC}"
+    echo -e "${RED}Error: '$VERSION' is not a full commit SHA or a tag in this repository${NC}"
     exit 1
   fi
 else
   head_sha=""
-  if command -v git >/dev/null 2>&1; then
+  if own_checkout; then
     head_sha="$(git -C "$script_dir" rev-parse --verify HEAD 2>/dev/null || true)"
   fi
 

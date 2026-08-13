@@ -59,6 +59,14 @@ STUB
 # read-only queries (version resolution) still reach the real git.
 cat > "$TMPDIR/bin/git" <<'STUB'
 #!/usr/bin/env bash
+# The installer resolves the latest release from the remote when it cannot use
+# a checkout HEAD, so the stub has to publish one tag.
+case "$*" in
+  *ls-remote*--tags*)
+    printf '%s\n' "$*" >> "$GIT_LOG"
+    echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	refs/tags/v4.12.1"
+    exit 0 ;;
+esac
 for arg in "$@"; do
   case "$arg" in
     rev-parse|show-ref) exec /usr/bin/git "$@" ;;
