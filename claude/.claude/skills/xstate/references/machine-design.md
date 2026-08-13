@@ -78,6 +78,7 @@ Pure, synchronous, boolean, side-effect-free. Named in `setup({ guards })`, comb
 | Smell | Diagnosis | Fix |
 |-------|-----------|-----|
 | God machine modeling the whole app | Flows forced into one chart | One machine per flow; actor system for coordination |
+| Machine per entity kind | The same add/edit/delete states copied for every type of thing | One machine; the kind is context or input — states are the invariant |
 | Context as dumping ground, 1–2 states | Machine-as-reducer (Pocock's tell: every event does the same thing in every state) | Demote to `@xstate/store` |
 | Boolean flags accumulating in context, gating behavior via guards | Hidden finite states | Promote to explicit states |
 | One event, five guarded transitions on the same field | Same as above | Promote the field to states |

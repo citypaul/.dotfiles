@@ -46,6 +46,8 @@ A submission flag sitting beside a machine that already dispatches the command, 
 
 Search the feature for an existing machine, actor, or `createActorContext` provider before adding flow state to a component.
 
+The same override applies across entity kinds. If a machine already models this lifecycle for a *sibling kind of thing* — the add/edit/delete shape is usually identical for every kind a surface manages — the answer is to generalize that machine so the kind becomes context or input, not to author a per-kind copy whose states repeat it. Copied states drift apart exactly the way split state does; the machine that already exists is the owner, ungeneralized.
+
 ## The Complexity Ladder
 
 Stop at the first rung that genuinely holds — but apply both overrides above first, and read the signals table below; flow logic almost always climbs past rung 2.
@@ -104,4 +106,4 @@ The reverse tell — a machine that should be demoted — is one where the state
 
 **Check the repository before applying any default here.** Architecture or boundary tests, import/lint rules, an established `machine`/`actor` directory convention, `CLAUDE.md`, or the project's own layout guidance all outrank this section — a correct machine in a layer the repository forbids still fails the build, and finding that out from CI costs a round trip. `structure-codebase` owns the general question of which layer owns what.
 
-Absent a repository rule, colocate the machine with the feature it drives: `feature/checkoutMachine.ts` beside the components that render it — a machine *is* feature logic. Large machines may become a folder (`checkout/machine/` with the `setup()` assembly plus actions/actors/guards modules). Avoid a global `machines/` dumping ground for the same reason a global `utils/` fails — it hides feature boundaries. One machine per *flow* (checkout, auth, upload), never per component and never one app-god-machine; cross-flow coordination is an actor-system concern (`references/actors-and-systems.md`).
+Absent a repository rule, colocate the machine with the feature it drives: `feature/checkoutMachine.ts` beside the components that render it — a machine *is* feature logic. Large machines may become a folder (`checkout/machine/` with the `setup()` assembly plus actions/actors/guards modules). Avoid a global `machines/` dumping ground for the same reason a global `utils/` fails — it hides feature boundaries. One machine per *flow* (checkout, auth, upload), never per component, never per entity kind when the flows differ only in the kind of thing they manage, and never one app-god-machine; cross-flow coordination is an actor-system concern (`references/actors-and-systems.md`).

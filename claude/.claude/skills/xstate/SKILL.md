@@ -99,7 +99,9 @@ Before adding flow state to a component, search the feature for an existing mach
 
 When a new machine *is* justified, the boundary is **a distinct unit of functionality with its own inputs and outputs** — typically its own connection, resource, or authority. In a real actor-based front end that produced one machine per SSE stream, one for canvas interaction, one for the workshop's node-adding rules, and one for media-connection management: each owns a different external edge, so each fails and reconnects independently.
 
-The question to answer explicitly, and out loud, is not "does this deserve a machine?" but **"why does this not belong to the machine that already owns this edge?"** A small new machine sitting beside a larger one that shares its inputs and outputs is usually a state that should have been added to the larger one. Where the answer is genuinely close, ask rather than guess.
+**Machines model lifecycles, not entity kinds.** Before the edge question, run the shape question: does an actor already model this same lifecycle for a *sibling kind of thing*? Adding, editing, and deleting are usually the same states for every kind a surface manages — compose, submit, wait for the authoritative answer, settle or refuse. When flows differ only in the kind of thing they operate on, that is one machine with the kind carried as context or input, not a machine per kind. A per-kind copy is the plural form of the escaped-state bug: the finite states get duplicated instead of shared, every copy drifts and is tested separately, and the design hides that the lifecycle was the invariant all along. Found a sibling-kind machine? Generalize it — promote the kind to data — rather than cloning it.
+
+The question to answer explicitly, and out loud, is not "does this deserve a machine?" but **"why does this not belong to the machine that already owns this edge — or to the one that already models this lifecycle for a sibling kind?"** A small new machine sitting beside a larger one that shares its inputs and outputs is usually a state that should have been added to the larger one; a new machine that repeats a sibling's states for a different kind is usually that machine, ungeneralized. Where the answer is genuinely close, ask rather than guess.
 
 ### Sweeping for the same violation elsewhere
 
@@ -114,7 +116,7 @@ Once one hand-rolled statechart is found, the same pattern is usually repeated a
 5. **Name everything in `setup()`.** Named actions, guards, actors, and delays make string references type-checked, the chart readable, and `machine.provide()` the universal test seam.
 6. **All v5 transitions are internal by default.** Targetless self-transitions for "update and stay"; `reenter: true` only when you truly want exit/entry re-run and invocations restarted.
 7. **Machines complete like functions.** Flows that end declare final states and `output`; parents consume `onDone`/`onError`. Error paths are modeled states, not console noise.
-8. **One machine per flow — and one owner per lifecycle.** Cross-flow coordination is an actor system (parent machines, `systemId`), never a god machine. Equally, a lifecycle already owned by an actor does not get a second copy of itself in a component's `useState`.
+8. **One machine per flow — and one owner per lifecycle.** Cross-flow coordination is an actor system (parent machines, `systemId`), never a god machine. Equally, a lifecycle already owned by an actor does not get a second copy of itself in a component's `useState` — and flows that differ only in the kind of thing they manage are one flow: the kind is context, not a reason for another machine.
 9. **Test the machine headlessly, the component through the DOM.** The snapshot is the machine's contract; it is implementation detail one level up. Never assert machine state from a component test.
 10. **Validate at the trust boundary.** Events from outside the process (sockets, storage, URLs) are schema-parsed before `send`; persisted snapshots are restored only with a versioning story.
 
@@ -167,6 +169,7 @@ stateDiagram-v2
 **Modeling done wrong:**
 
 - Boolean flags accumulating in context, gating behavior through guards — hidden finite states.
+- A machine per entity kind whose states are the same chart over and over — adding, editing, and deleting one kind of thing at a time. The lifecycle is the invariant; the kind belongs in context or input, and the copies belong merged.
 - Form field *values* mirrored into machine context on every keystroke — the machine owns the submission lifecycle, the form layer owns the current text. (Note the split: `values` stay local, `submitting` does not.)
 - `sendParent` coupling children to parent shapes — pass the parent ref via `input` and use `sendTo`.
 - Spawned actors never stopped; `stopChild` without clearing the context ref.
