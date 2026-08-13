@@ -64,8 +64,10 @@ retries and errors. Six changes address it:
 
 Anti-patterns now lead with under-modeling rather than over-modeling, matching
 how agents actually fail, and a violation-sweep procedure covers finding the
-same mistake across a feature. Adds an optional Mermaid `stateDiagram-v2`
-render of a machine, offered on request rather than automatically.
+same mistake across a feature. A Mermaid `stateDiagram-v2` render is
+regenerated from the final definition whenever a machine is designed or
+changed, not just when asked for, because a committed diagram the code has
+moved past is worse than none.
 
 Registration completes the skill: it was previously reachable only as a
 `panel-review` lens and shipped to nobody. It is now selected by
@@ -87,6 +89,6 @@ lifetime test, the precise negative test, the "presentation *of* temporal state"
 phrasing, four further smells (ignore-flag cleanup, timers something must clear,
 document listeners needing unbinding, responses arriving after cancel or
 unmount), the verdict-and-ask-on-ties rule, and the named ownership-guard tools.
-His practitioner review supplied the new-machine criteria. Local divergence: the
-diagram is offered on request here rather than regenerated on every machine
-change. No content vendored; full attribution in `skills/REFERENCES.md`.
+His practitioner review supplied the new-machine criteria, and his diagram
+policy — regenerate on every machine change rather than on request — is matched
+here. No content vendored; full attribution in `skills/REFERENCES.md`.

@@ -854,8 +854,12 @@ require_match "xstate leads its anti-patterns with under-modeling" \
   'Under-modeling — the common failure' "$XSTATE"
 require_match "the form-value split does not cover the submission lifecycle" \
   'submission lifecycle does not|submitting. flag in component' "$XSTATE_REACT"
-require_match "xstate offers an optional machine diagram" \
+require_match "xstate renders machines as Mermaid statecharts" \
   'stateDiagram-v2' "$XSTATE"
+require_match "xstate regenerates the diagram on every machine change" \
+  'whenever a machine is designed or changed, even when nobody asked' "$XSTATE"
+reject_match "xstate does not treat the machine diagram as optional" \
+  'optional Mermaid|diagram is offered on request' "$XSTATE"
 
 # Performance work stays measured and does not buy speed with test edits.
 require_match "react-performance baselines before changing code" \

@@ -1,6 +1,6 @@
 ---
 name: xstate
-description: "Model front-end and workflow logic as XState v5 statecharts and actors — when finite states earn their place (and when @xstate/store or a discriminated union is honest), event-first machine design, guards/actions/delays, invoke vs spawn, app-level actor systems, persistence, @xstate/react integration, behavior-driven machine testing including model-based path generation via xstate/graph, and an optional Mermaid stateDiagram-v2 render of the machine. Fires on ordinary React code that is already a hand-rolled statechart, not only on files that import xstate — a submitting or isLoading useState, a then/catch chain that sets state in sequence, a double-submit guard such as an early return while submitting, an error cleared just before a retry, a useEffect needing an ignore flag in its cleanup, a timer something must clear, or a drag or gesture handler binding document listeners it must unbind. Two tests decide ownership, never how the value renders: an external answer changed it, or the interaction has an interruptible middle. A disabled button or spinner is the presentation of temporal state, not presentation state. State stays in React only when both tests come back empty — one event sets it completely, with no phase to interrupt and nothing to dispose. Use when building or reviewing wizards, checkout/auth/upload flows, async orchestration with retries or timeouts, canvas and editor interactions, anything sent to a BFF or server, boolean-flag state bugs, or any XState or state-machine code. For general test patterns see testing; for component tests see react-testing; for store-only state see the when-to-model reference first."
+description: "Model front-end and workflow logic as XState v5 statecharts and actors — when finite states earn their place (and when @xstate/store or a discriminated union is honest), event-first machine design, guards/actions/delays, invoke vs spawn, app-level actor systems, persistence, @xstate/react integration, behavior-driven machine testing including model-based path generation via xstate/graph, and a Mermaid stateDiagram-v2 render regenerated whenever a machine is designed or changed. Fires on ordinary React code that is already a hand-rolled statechart, not only on files that import xstate — a submitting or isLoading useState, a then/catch chain that sets state in sequence, a double-submit guard such as an early return while submitting, an error cleared just before a retry, a useEffect needing an ignore flag in its cleanup, a timer something must clear, or a drag or gesture handler binding document listeners it must unbind. Two tests decide ownership, never how the value renders: an external answer changed it, or the interaction has an interruptible middle. A disabled button or spinner is the presentation of temporal state, not presentation state. State stays in React only when both tests come back empty — one event sets it completely, with no phase to interrupt and nothing to dispose. Use when building or reviewing wizards, checkout/auth/upload flows, async orchestration with retries or timeouts, canvas and editor interactions, anything sent to a BFF or server, boolean-flag state bugs, or any XState or state-machine code. For general test patterns see testing; for component tests see react-testing; for store-only state see the when-to-model reference first."
 ---
 
 # XState
@@ -120,9 +120,13 @@ Once one hand-rolled statechart is found, the same pattern is usually repeated a
 
 ## Rendering the Machine as a Diagram
 
-A statechart's main advantage over scattered handlers is that a human can *look* at it. Offer a diagram whenever a machine is created or materially changed — but render it on request or by agreement, not automatically on every touch, since a diagram nobody asked for is noise and a stale committed one is worse than none.
+A statechart's main advantage over scattered handlers is that a human can *look* at it — which is worth nothing if the picture and the machine have drifted apart.
 
-Render as Mermaid `stateDiagram-v2`, derived from the machine source rather than from memory of it:
+**Render or update the diagram whenever a machine is designed or changed, even when nobody asked for one**, and render on request at any time. The cost of a diagram is small; the cost of a stale one is a reviewer trusting a picture that no longer describes the code. Regenerating on every change is what keeps that from happening, so it is not optional work at the end — it is part of changing the machine.
+
+Derive it from the machine source, never from memory of it, and regenerate from the *final* definition once the change is complete. Report the validation result honestly: say whether the diagram was checked to render, and never claim a render that was not performed.
+
+Render as Mermaid `stateDiagram-v2`:
 
 ```mermaid
 stateDiagram-v2
@@ -140,7 +144,9 @@ stateDiagram-v2
 - Show `onDone`/`onError` for invoked actors — the error path is the half reviewers most need to see.
 - Keep it to one flow. A diagram spanning an actor system is a system diagram, and belongs in the `diagrams` skill's care.
 
-`diagrams` owns format choice, validation, and the accessible text explanation that must accompany any committed diagram. Stately Studio and `@statelyai/inspect` render the live machine and remain the better loop for exploration; a checked-in Mermaid render is for review and documentation, where it must be regenerated whenever the machine changes or deleted.
+- Keep composite and concurrent boundaries legal, and keep parser-sensitive labels safe — an event name containing a colon, a guard containing a bracket, or a state name Mermaid reads as a keyword all need escaping or renaming in the label.
+
+`diagrams` owns format choice, validation, and the accessible text explanation that must accompany any committed diagram. Stately Studio and `@statelyai/inspect` render the live machine and remain the better loop for interactive exploration — Mermaid loses that interactivity, which is the one real thing it costs — but a checked-in Mermaid render is what makes the machine reviewable in a diff.
 
 ## Anti-Patterns
 
@@ -167,6 +173,8 @@ stateDiagram-v2
 - Asserting transient `always` states, or component tests reading `actorRef.getSnapshot()`.
 - v4 idioms in new code (`cond`, `services`, `interpret`, typegen) — translate before shipping.
 - Inspector or `@statelyai/inspect` wired into production builds.
+- A committed diagram left behind after the machine changed — a picture a reviewer will trust and the code no longer matches.
+- Claiming a diagram renders without having checked it.
 
 ## Completion Check
 
@@ -179,4 +187,5 @@ stateDiagram-v2
 - Does the machine suite cover every guard boundary, ignored event, error path, and timeout headlessly — and do component tests touch only the DOM?
 - Are external events schema-validated before `send`, and is persisted-snapshot compatibility across releases either tested or explicitly not needed?
 - Is everything v5 idiom — `setup()`, named implementations, `createActor` — with no v4 vocabulary?
+- Does every designed or changed machine have a diagram regenerated from its final definition, with composite and concurrent boundaries legal, parser-sensitive labels safe, and the validation result reported accurately?
 - Would the next reviewer learn the flow faster from the chart than from the diff? If not, the model is not carrying its weight yet.
