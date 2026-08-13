@@ -1,0 +1,4 @@
+interface:
+  display_name: "React Performance"
+  short_description: "Measure-first React and Next.js performance work"
+  default_prompt: "Use $react-performance to work this performance problem — baseline the symptom, attribute the cost with evidence, apply one rule from the pinned catalogue at a time, then re-measure and keep the before/after."

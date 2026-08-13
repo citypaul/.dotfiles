@@ -56,10 +56,18 @@ export SKILLS_DOWNLOAD_MAX_BYTES
 OWN_SKILLS_REPO_BASE="citypaul/.dotfiles"
 WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills#95d6e255afe1596b557d7a8498517884438f5b3a"
 NEXT_SKILLS_REPO="vercel-labs/next-skills#b76d687cf3e026eac3b1032f610f06b47a56377c"
+# React performance and composition rule catalogues. Pinned separately from
+# next-skills because they live in a different Vercel repository with its own
+# release cadence. The first-party `react-performance` skill owns the method
+# and routes into these; they own the rules.
+VERCEL_REACT_SKILLS_REPO="vercel-labs/agent-skills#b8caa260a420a73042e35521de4b5c8baf6446cc"
 IMPECCABLE_SKILLS_REPO="pbakaus/impeccable#5d10bc842cbccd2ae7d3a88296d87d3be0b125b3"
 MATTPOCOCK_SKILLS_REPO="https://github.com/mattpocock/skills#84fdeffd12f2ee307994d1eb6feb48173b6e0502"
 MARKETING_SKILLS_REPO="coreyhaines31/marketingskills#7868cb9251fad80a73d26e488a5ad5f6c4a9f335"
 HERDR_SKILLS_REPO="herdrdev/herdr#1777e9bba32b953ed1ad203b4a16d01105539000"
+# Anthropic's own skill-authoring skill: drafting, evals, benchmarking, and
+# description-trigger optimisation. Apache 2.0 (LICENSE.txt ships in the skill).
+ANTHROPIC_SKILLS_REPO="anthropics/skills#f17010c9bb483898c1d9c9f42dde2b3a98889434"
 
 FIRST_PARTY_SKILLS=(
   acceptance-review api-design bff-design bff-entry-points
@@ -69,22 +77,27 @@ FIRST_PARTY_SKILLS=(
   folder-structure front-end-testing functional graph-engineering
   hexagonal-architecture
   improve-codebase-architecture mutation-testing observability panel-review planning
-  production-parity-skill-builder react-testing reduce-system-complexity
-  refactoring secure-oauth-oidc specification stack-pull-requests
+  production-parity-skill-builder react-performance react-testing
+  reduce-system-complexity refactoring render-code-shape
+  secure-oauth-oidc specification stack-pull-requests
   story-splitting storyboard structure-codebase tdd teach-me technical-writing
   test-design-reviewer testing twelve-factor typescript-strict
-  ubiquitous-language wtf
+  ubiquitous-language wtf xstate
 )
 WEB_QUALITY_SKILLS=(
   accessibility best-practices core-web-vitals performance seo web-quality-audit
 )
 NEXT_SKILLS=(next-best-practices next-cache-components next-upgrade)
+VERCEL_REACT_SKILLS=(vercel-react-best-practices vercel-composition-patterns)
 IMPECCABLE_SKILLS=(
   adapt animate audit bolder clarify colorize critique delight distill
   impeccable layout optimize overdrive polish quieter shape typeset
 )
-GRILL_ME_SKILLS=(grill-me)
+# grill-me and writing-for-agents both exist at the pinned MATTPOCOCK revision,
+# so adding the writing skill needs no new audit of the grill-me pin.
+MATTPOCOCK_SKILLS=(grill-me writing-for-agents)
 SEO_AUDIT_SKILLS=(seo-audit)
+ANTHROPIC_SKILLS=(skill-creator)
 HERDR_SKILLS=(herdr)
 COMMAND_FILES=(setup.md plan.md continue.md)
 AGENT_FILES=(
@@ -198,7 +211,7 @@ Options:
                        (use with --agent to target other agents only)
   --with-opencode      Shorthand for --agent opencode + install OpenCode config
   --opencode-only      Install only OpenCode config plus projected agents/commands (no Claude artifacts or skills)
-  --no-external        Skip all external community skills (web-quality-skills + next-skills + impeccable + grill-me + seo-audit + herdr)
+  --no-external        Skip all external community skills (web-quality-skills + next-skills + agent-skills + impeccable + grill-me + writing-for-agents + seo-audit + skill-creator + herdr)
   --no-impeccable      Skip impeccable design skills only
   --no-ponytail        Skip the ponytail plugin (Claude Code + Codex)
   --version REF        Exact reviewed release tag or commit for first-party artifacts.
@@ -209,9 +222,11 @@ Default external skill sources are pinned to reviewed commits; the installer
 selects only the declared names from each source:
   addyosmani/web-quality-skills#95d6e25
   vercel-labs/next-skills#b76d687
+  vercel-labs/agent-skills#b8caa26 --skill vercel-react-best-practices --skill vercel-composition-patterns
   pbakaus/impeccable#5d10bc8
-  mattpocock/skills#84fdeff --skill grill-me
+  mattpocock/skills#84fdeff --skill grill-me --skill writing-for-agents
   coreyhaines31/marketingskills#7868cb9 --skill seo-audit
+  anthropics/skills#f17010c --skill skill-creator
   herdrdev/herdr#1777e9b --skill herdr
 
 Examples:
@@ -626,7 +641,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
 
   install_manifest=("${FIRST_PARTY_SKILLS[@]}")
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
-    install_manifest+=("${WEB_QUALITY_SKILLS[@]}" "${NEXT_SKILLS[@]}" "${GRILL_ME_SKILLS[@]}" "${SEO_AUDIT_SKILLS[@]}" "${HERDR_SKILLS[@]}")
+    install_manifest+=("${WEB_QUALITY_SKILLS[@]}" "${NEXT_SKILLS[@]}" "${VERCEL_REACT_SKILLS[@]}" "${MATTPOCOCK_SKILLS[@]}" "${SEO_AUDIT_SKILLS[@]}" "${ANTHROPIC_SKILLS[@]}" "${HERDR_SKILLS[@]}")
   fi
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
     install_manifest+=("${IMPECCABLE_SKILLS[@]}")
@@ -643,8 +658,10 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)" "${WEB_QUALITY_SKILLS[@]}"
     install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel-labs/next-skills)" "${NEXT_SKILLS[@]}"
-    install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me skill (mattpocock/skills)" "${GRILL_ME_SKILLS[@]}"
+    install_optional_skills_from "$VERCEL_REACT_SKILLS_REPO" "React skills (vercel-labs/agent-skills)" "${VERCEL_REACT_SKILLS[@]}"
+    install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me + writing-for-agents skills (mattpocock/skills)" "${MATTPOCOCK_SKILLS[@]}"
     install_optional_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "${SEO_AUDIT_SKILLS[@]}"
+    install_optional_skills_from "$ANTHROPIC_SKILLS_REPO" "skill-creator skill (anthropics/skills)" "${ANTHROPIC_SKILLS[@]}"
     # Lets an agent drive the terminal multiplexer it is running inside —
     # split a pane, run a command in it, read the output back, and wait on a
     # sibling agent without stealing focus. Installed for every target agent
@@ -763,7 +780,9 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "     • addyosmani/web-quality-skills — accessibility, performance, SEO, ..."
     echo -e "     • vercel-labs/next-skills — Next.js best practices, Cache Components, upgrades"
-    echo -e "     • mattpocock/skills/grill-me — relentless plan and design interviewing"
+    echo -e "     • vercel-labs/agent-skills — React performance rules + composition patterns"
+    echo -e "     • mattpocock/skills — relentless plan interviewing + writing for agents"
+    echo -e "     • anthropics/skills/skill-creator — authoring, evaluating, and tuning skills"
     echo -e "     • coreyhaines31/marketingskills/seo-audit — SEO audit workflow"
   fi
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
@@ -867,11 +886,17 @@ echo ""
 echo -e "  • ${YELLOW}Vercel Labs${NC} — Next.js skills"
 echo -e "    ${BLUE}https://skills.sh/vercel-labs/next-skills${NC}"
 echo ""
+echo -e "  • ${YELLOW}Vercel Labs${NC} — React performance and composition skills"
+echo -e "    ${BLUE}https://skills.sh/vercel-labs/agent-skills${NC}"
+echo ""
 echo -e "  • ${YELLOW}Paul Bakaus${NC} — impeccable frontend design skills"
 echo -e "    ${BLUE}https://impeccable.style/skills/${NC} (Apache 2.0)"
 echo ""
-echo -e "  • ${YELLOW}Matt Pocock${NC} — grill-me planning interview skill"
-echo -e "    ${BLUE}https://skills.sh/mattpocock/skills/grill-me${NC}"
+echo -e "  • ${YELLOW}Matt Pocock${NC} — grill-me planning interview + writing-for-agents skills"
+echo -e "    ${BLUE}https://skills.sh/mattpocock/skills${NC} (MIT)"
+echo ""
+echo -e "  • ${YELLOW}Anthropic${NC} — skill-creator authoring and evaluation skill"
+echo -e "    ${BLUE}https://github.com/anthropics/skills${NC} (Apache 2.0)"
 echo ""
 echo -e "  • ${YELLOW}Corey Haines${NC} — seo-audit marketing skill"
 echo -e "    ${BLUE}https://skills.sh/coreyhaines31/marketingskills/seo-audit${NC} (MIT)"

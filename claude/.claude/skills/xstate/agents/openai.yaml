@@ -1,0 +1,4 @@
+interface:
+  display_name: "XState"
+  short_description: "Model flows as XState v5 statecharts and actors"
+  default_prompt: "Use $xstate to model this flow as an XState v5 statechart — decide machine vs store, design states and actors, wire React integration, and test the machine headlessly."

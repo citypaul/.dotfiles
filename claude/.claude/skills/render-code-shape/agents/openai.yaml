@@ -1,0 +1,4 @@
+interface:
+  display_name: "Render Code Shape"
+  short_description: "Render module boundaries, signatures, and a cited call graph"
+  default_prompt: "Use $render-code-shape to render how this composes — entry points, frame edge, types crossing boundaries, signatures, and a cited call graph per wiring. Read-only: return the render, do not change code."

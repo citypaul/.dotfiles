@@ -799,4 +799,115 @@ for projection in \
 done
 echo "PASS: canonical skill content has no unchecked duplicate projection tree"
 
+# --- Front-end flow, performance, and code-shape skills -----------------------
+#
+# These guard the integration points that a partially-registered skill silently
+# breaks (it installs to nobody), plus the specific rules added after a
+# production misclassification: a `submitting` flag was kept in component
+# `useState` because it *rendered* as a disabled button, while an actor already
+# owned that command's lifecycle.
+
+XSTATE="$SKILLS/xstate/SKILL.md"
+XSTATE_WHEN="$SKILLS/xstate/references/when-to-model.md"
+XSTATE_REACT="$SKILLS/xstate/references/react-integration.md"
+REACT_PERFORMANCE="$SKILLS/react-performance/SKILL.md"
+RENDER_CODE_SHAPE="$SKILLS/render-code-shape/SKILL.md"
+RENDER_CODE_SHAPE_SOURCE="$SKILLS/render-code-shape/references/source-notes.md"
+RENDER_CODE_SHAPE_LICENSE="$SKILLS/render-code-shape/LICENSE"
+REVIEW_LENSES_FILE="$SKILLS/panel-review/references/lenses.md"
+
+# Every first-party skill directory must be selected by the installer, or it
+# ships to nobody. This caught `xstate` shipping only as a review lens.
+for skill_dir in "$SKILLS"/*/; do
+  skill_name="$(basename "$skill_dir")"
+  [[ -f "$skill_dir/SKILL.md" ]] || continue
+  if ! grep -Eq "(^|[[:space:]])${skill_name}([[:space:]]|\)|$)" "$INSTALLER"; then
+    echo "FAIL: skill '$skill_name' exists but is not selected in install-claude.sh"
+    exit 1
+  fi
+done
+echo "PASS: every first-party skill is selected by the installer"
+
+require_match "Vercel React catalogues are pinned to a full commit" \
+  'VERCEL_REACT_SKILLS_REPO="vercel-labs/agent-skills#[0-9a-f]{40}"' "$INSTALLER"
+require_match "Vercel React catalogues are installed by name" \
+  'VERCEL_REACT_SKILLS=\(vercel-react-best-practices vercel-composition-patterns\)' "$INSTALLER"
+
+# The rules added after the misclassification.
+require_match "xstate classifies state by lifetime, not appearance" \
+  'never by what the value renders|Two tests decide ownership' "$XSTATE" "$XSTATE_WHEN"
+require_match "xstate names external answers as temporal however they render" \
+  'external answer.*temporal whatever it looks like|external answer changed it' "$XSTATE" "$XSTATE_WHEN"
+require_match "xstate fires before XState is chosen, on ordinary React code" \
+  'already at step 1|fires on ordinary React code' "$XSTATE"
+require_match "xstate lists the hand-rolled statechart smells" \
+  'submitting.*isLoading|isLoading.*submitting' "$XSTATE"
+require_match "xstate treats a double-submit guard as a transition" \
+  'double-submit guard' "$XSTATE" "$XSTATE_WHEN"
+require_match "xstate checks repository machine ownership before writing" \
+  'Find out who owns machines in this repository' "$XSTATE"
+require_match "xstate defers placement to repository rules" \
+  'Check the repository before applying any default' "$XSTATE_WHEN"
+require_match "an existing owner ends the ladder discussion" \
+  'existing owner ends the discussion|ladder does not reopen' "$XSTATE_WHEN"
+require_match "xstate leads its anti-patterns with under-modeling" \
+  'Under-modeling — the common failure' "$XSTATE"
+require_match "the form-value split does not cover the submission lifecycle" \
+  'submission lifecycle does not|submitting. flag in component' "$XSTATE_REACT"
+require_match "xstate renders machines as Mermaid statecharts" \
+  'stateDiagram-v2' "$XSTATE"
+require_match "xstate regenerates the diagram on every machine change" \
+  'whenever a machine is designed or changed, even when nobody asked' "$XSTATE"
+reject_match "xstate does not treat the machine diagram as optional" \
+  'optional Mermaid|diagram is offered on request' "$XSTATE"
+
+# Performance work stays measured and does not buy speed with test edits.
+require_match "react-performance baselines before changing code" \
+  'Establish the baseline' "$REACT_PERFORMANCE"
+require_match "react-performance reverts unmeasured optimizations" \
+  'reverted, not kept' "$REACT_PERFORMANCE"
+require_match "react-performance forbids editing behavior tests for speed" \
+  'Behavior tests do not change to accommodate a performance change' "$REACT_PERFORMANCE"
+require_match "react-performance routes to the pinned Vercel catalogue" \
+  'vercel-react-best-practices' "$REACT_PERFORMANCE"
+
+# The render is a read-only, cited deliverable.
+require_match "render-code-shape stays read-only" \
+  'never authorizes changing production code' "$RENDER_CODE_SHAPE"
+require_match "render-code-shape cites or marks every name" \
+  'cited by file and line, or marked' "$RENDER_CODE_SHAPE"
+require_match "render-code-shape forbids recalled signatures" \
+  'is a fabrication even when it happens to be right' "$RENDER_CODE_SHAPE"
+require_match "render-code-shape routes judgement elsewhere" \
+  'A render is not a verdict' "$RENDER_CODE_SHAPE"
+require_match "render-code-shape preserves upstream provenance" \
+  '976d4a0ccda4fc8468ffd2e96e0c6f7db5f42324' "$RENDER_CODE_SHAPE_SOURCE" "$RENDER_CODE_SHAPE_LICENSE"
+require_match "render-code-shape preserves the upstream MIT notice" \
+  'Copyright \(c\) 2025 Adam Bulmer' "$RENDER_CODE_SHAPE_LICENSE"
+
+require_match "review lenses detect hand-rolled statecharts in React diffs" \
+  'hand-rolls one' "$REVIEW_LENSES_FILE"
+
+# The second lifetime test. An external-cause test alone misfiles a drag as
+# presentational, because a drag is user-driven with no external answer.
+require_match "xstate applies a second interruptible-middle test" \
+  'interruptible middle' "$XSTATE" "$XSTATE_WHEN"
+require_match "xstate treats a spinner as presentation of temporal state" \
+  'presentation .of. temporal state' "$XSTATE" "$XSTATE_WHEN"
+require_match "React only owns state when both tests come back empty" \
+  'both tests come back empty|both come back empty' "$XSTATE" "$XSTATE_WHEN"
+require_match "xstate catches ignore-flag cleanup and unbound listeners" \
+  'ignore flag in its cleanup' "$XSTATE"
+require_match "xstate states the verdict and asks on genuine ties" \
+  'put the choice to the user before building|ask rather than guess' "$XSTATE"
+require_match "xstate gives criteria for a genuinely new machine" \
+  'why does this not belong to the machine that already owns this edge' "$XSTATE"
+
+require_match "Anthropic skill-creator is pinned to a full commit" \
+  'ANTHROPIC_SKILLS_REPO="anthropics/skills#[0-9a-f]{40}"' "$INSTALLER"
+require_match "the writing skill installs from the audited Pocock pin" \
+  'MATTPOCOCK_SKILLS=\(grill-me writing-for-agents\)' "$INSTALLER"
+require_match "agent-facing and human-facing writing skills are routed apart" \
+  'technical-writing. owns human-facing prose' "$CLAUDE_POLICY"
+
 echo "Architecture guidance checks passed"
