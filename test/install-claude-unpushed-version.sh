@@ -45,6 +45,7 @@ case "\$args" in
   *ls-remote*)
     echo "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	refs/heads/main"
     exit 0 ;;
+  *"remote -v"*) exec /usr/bin/git "\$@" ;;
   *merge-base*) exit 1 ;;
   *fetch*)
     [[ -n "\${FETCH_MUST_FAIL:-}" ]] && { echo "fatal: remote error: upload-pack: not our ref" >&2; exit 128; }
@@ -153,6 +154,43 @@ if [[ ! -s "$NPX_LOG" ]]; then
   pass "the Skills CLI is never invoked for an unreachable pin"
 else
   fail "install must abort before invoking the Skills CLI"
+fi
+
+# --- 4. Piped from curl while standing inside some other repository ---------
+# A piped install leaves BASH_SOURCE unset. `dirname ""` resolves to `.`, so the
+# script once treated the user's current directory as its own checkout and
+# pinned the install to an unrelated repository's HEAD.
+HOME_DIR="$TMPDIR/home4"; NPX_LOG="$TMPDIR/npx4.log"
+FOREIGN="$TMPDIR/foreign"; mkdir -p "$FOREIGN" "$HOME_DIR"; : > "$NPX_LOG"
+/usr/bin/git -C "$FOREIGN" init --quiet
+/usr/bin/git -C "$FOREIGN" remote add origin "https://example.invalid/someone/other-repo.git"
+echo hi > "$FOREIGN/f"
+/usr/bin/git -C "$FOREIGN" add f
+/usr/bin/git -C "$FOREIGN" -c user.email=t@t -c user.name=t commit --quiet -m "foreign commit"
+FOREIGN_SHA="$(/usr/bin/git -C "$FOREIGN" rev-parse HEAD)"
+
+set +e
+OUT4=$( cd "$FOREIGN" && HOME="$HOME_DIR" PATH="$TMPDIR/bin:$PATH" NPX_LOG="$NPX_LOG" \
+  bash -s -- --skills-only --no-external --no-impeccable < "$REPO_ROOT/install-claude.sh" 2>&1 )
+STATUS4=$?
+set -e
+
+if ! printf '%s' "$OUT4" | grep -q "$FOREIGN_SHA"; then
+  pass "a piped install never pins to the surrounding repository's HEAD"
+else
+  fail "piped install pinned to an unrelated repository's commit"
+fi
+
+if printf '%s' "$OUT4" | grep -q "$RELEASE_SHA"; then
+  pass "a piped install pins to the latest release"
+else
+  fail "piped install must resolve the latest release"
+fi
+
+if [[ $STATUS4 -eq 0 ]]; then
+  pass "a piped install from inside another repository succeeds"
+else
+  fail "piped install must not be blocked by the surrounding directory"
 fi
 
 echo ""
