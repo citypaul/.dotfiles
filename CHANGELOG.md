@@ -1,5 +1,195 @@
 # Changelog
 
+## 4.12.0
+
+### Minor Changes
+
+- 96cdd38: Add the react-performance skill and pin Vercel's React rule catalogues
+
+  Installs `vercel-react-best-practices` (72 impact-ordered React/Next.js
+  performance rules) and `vercel-composition-patterns` (compound components,
+  boolean-prop proliferation, React 19 API changes) from
+  `vercel-labs/agent-skills` at reviewed commit `b8caa26`. Installed from upstream
+  rather than vendored: Vercel maintains the rule set, and the repository
+  publishes no `LICENSE` file to vendor under — each skill declares `license: MIT`
+  in its own frontmatter only.
+
+  Adds a first-party `react-performance` skill that owns the _method_ while those
+  catalogues own the _rules_, because a prioritized rule list is a search order,
+  not a diagnosis:
+
+  - **Baseline, attribute, one rule per diff, re-measure.** A change that does not
+    move the number is reverted rather than kept as good practice — unmeasured
+    optimization is mechanism without benefit.
+  - **Routing across the overlap.** Names which of `vercel-react-best-practices`,
+    `vercel-composition-patterns`, `next-best-practices`, `next-cache-components`,
+    `core-web-vitals`, `performance`, `react-testing` and `xstate` owns a given
+    question, and resolves disagreement toward the more specific source.
+  - **Where house rules win.** Behavior tests never change to accommodate a
+    performance change; immutability holds until a measurement says otherwise and
+    then only locally inside a proven hot path; no `any` or unjustified assertion
+    bought for speed; memoization is earned rather than reflexive; removing
+    mechanism beats adding a cache; a re-render storm caused by flow logic
+    scattered across effects is an `xstate` problem, not a memoization one.
+
+  `CLAUDE.md` carries the measure-first rule directly, so it applies without
+  loading the skill. Registered in the installer, README catalogue and decision
+  table, `panel-review` lenses, and `skills/REFERENCES.md`.
+
+- 96cdd38: Add the render-code-shape skill for cited, read-only renders of how code composes
+
+  Renders the _shape_ of code — entry points, the frame edge, module boundaries,
+  the types crossing them, signatures, and an annotated call graph per wiring —
+  while collapsing everything below the waterline to one line of intent. Only
+  bodies are pseudo: every name, type, and path is read from source and cited by
+  file and line, or marked `[NEW]`. That citation discipline is what separates the
+  render from a remembered summary.
+
+  Use it to understand an unfamiliar path, trace what a request actually touches,
+  or pseudocode a change before building it. A `[NEW]` render is an input to a
+  `planning` slice and the shape an implementation can be checked against — never
+  a substitute for the failing behavior test `tdd` requires.
+
+  Read-only by construction: producing a render never authorizes changing
+  production code, tests, or configuration, and it states facts rather than
+  verdicts. Findings route to the skill that owns the decision — `codebase-design`
+  for boundary quality, `structure-codebase` for placement,
+  `improve-codebase-architecture` for ranked investment, `finding-seams` and
+  `characterisation-tests` for untested or untestable paths.
+
+  An attributed adaptation of Adam Bulmer's MIT-licensed `pseudocode` skill at
+  pinned commit `976d4a0c`. Retains the waterline metaphor, the cite-or-mark-`[NEW]`
+  rule, the five-step workflow, the wiring concept, the four path-termination
+  conditions, the above/below cut table, and the annotated call-graph format.
+  Renamed for trigger accuracy — "pseudocode" reads as throwaway sketching and
+  under-fires on "how does this compose?" — following the same precedent as
+  `reducer` → `reduce-system-complexity`, with the original vocabulary kept in the
+  description so it still discovers the skill. Adds a fabrication guard against
+  recalled or inferred signatures, a narrowest-frame proportionality rule,
+  glossary binding via `ubiquitous-language`, an anti-pattern catalog, and a
+  completion check. The upstream MIT notice and full provenance are preserved in
+  `LICENSE` and `references/source-notes.md`.
+
+- 96cdd38: Add the writing-for-agents and skill-creator external skills
+
+  Two pinned external skills for writing and evaluating the skills in this
+  distribution — the gap that let a badly triggered skill ship in the first place.
+
+  - **`writing-for-agents`** (Matt Pocock, MIT) — writing documents an _agent_
+    consumes: a SKILL.md, `CLAUDE.md`/`AGENTS.md`, or a doc reached by a pointer.
+    Context pointers and the fact that a pointer's wording rather than its target
+    decides when material gets reached; the context-load versus cognitive-load
+    split; the information hierarchy and progressive disclosure; and completion
+    criteria whose clarity resists premature completion. Installs from the
+    **existing** reviewed `84fdeff` pin — `writing-for-agents` is already present
+    at that revision, so `grill-me` needs no re-audit.
+  - **`skill-creator`** (Anthropic, Apache 2.0, pinned `f17010c`) — the authoring
+    loop: draft, write test prompts, run the skill against them, evaluate
+    qualitatively and quantitatively, rewrite, expand the test set. Ships eval and
+    benchmark tooling plus `improve_description.py` for tuning trigger accuracy,
+    which is directly the failure class behind the xstate trigger rewrite.
+
+  Routed rather than merely installed, because overlapping skills confuse which
+  one fires: `technical-writing` owns human-facing prose, `writing-for-agents`
+  owns agent-facing instruction — the split is by audience, not by file type — and
+  `skill-creator` owns the authoring and measurement loop around the words.
+  `CLAUDE.md` carries that routing directly. Registered in the installer manifest,
+  `--no-external` help, README catalogue and external-source lists,
+  acknowledgements, and `skills/REFERENCES.md`. New test guards assert the
+  Anthropic pin is a full commit SHA, that the writing skill installs from the
+  audited Pocock pin, and that the two writing skills stay routed apart.
+
+- 96cdd38: Add the xstate skill and register it everywhere it has to be registered
+
+  Models front-end flow logic as XState v5 statecharts and actors. Prefers
+  statecharts by default for wizards, checkout/auth/upload flows, and async
+  orchestration with retries and timeouts on AI-assisted-development grounds:
+  machines are headlessly provable before any UI exists, impossible states become
+  unrepresentable, the whole behavior surface is one reviewable artifact, and
+  humans get the Stately diagram for free.
+
+  Six deep-dive references: the when-to-model complexity ladder (useState →
+  @xstate/store → discriminated union → machine → actor system) with flag-smell
+  signals and the finite-state vs context split; event-first machine design with
+  naming conventions, v5 transition/re-entry semantics, and an anti-pattern
+  catalog; actors and systems (invoke vs spawn, spawn hygiene, systemId
+  receptionist, persistence semantics, inspection); @xstate/react integration
+  (hook selection, createActorContext, StrictMode, @xstate/store tier);
+  behavior-driven machine testing (provide() as the seam, SimulatedClock, pure
+  transition, model-based paths via xstate/graph, mutation-score guidance); and
+  the setup() typing model with the full v4→v5 migration table.
+
+  The skill is now aimed at the failure that actually happens. Field review of a
+  production actor-based front end found a `submitting` flag left in component
+  `useState` — classified as presentational because it rendered as a disabled
+  button, while an existing actor already owned that command's lifecycle,
+  retries and errors. Six changes address it:
+
+  - **It fires before XState is chosen.** A write-time smell list triggers on
+    ordinary React: a `submitting`/`isLoading` `useState`, a promise chain
+    setting state in sequence, a double-submit guard, an error cleared before a
+    retry, a `useEffect` sequencing the next step or needing an ignore flag in its
+    cleanup, a timer something must clear, a gesture handler binding document
+    listeners it must unbind, or handling for a response arriving after cancel or
+    unmount. Any one is the entry point, however small the request, and whether or
+    not the file imports `xstate`. A skill that only loads inside machine files
+    can never catch the decision to hand-roll one.
+  - **Two lifetime tests, never appearance.** Test 1: did an external answer
+    change it — server, BFF, socket, timer, another actor? Test 2: does the
+    interaction have an interruptible middle — a drag holding pointer capture
+    that cancels on Escape, a panel with a closing animation, a gesture binding
+    document listeners it must unbind? A disabled button or spinner is the
+    presentation _of_ temporal state. State stays in React only when both come
+    back empty: one event sets it completely, nothing to interrupt or dispose.
+    Test 2 matters because a drag is user-driven, so an external-cause test alone
+    misfiles it.
+  - **State the verdict, ask on genuine ties.** Run both tests over every
+    `useState` and report the call in one line so the user can overrule it. Where
+    it is genuinely close, name the state and the phase that makes it a lifecycle
+    and put the choice to the user before building.
+  - **Criteria for when a new machine is justified** — a distinct unit of
+    functionality with its own inputs and outputs, typically its own connection,
+    resource, or authority. The question to answer out loud is not "does this
+    deserve a machine?" but "why does this not belong to the machine that already
+    owns this edge?"
+  - **An existing owner ends the ladder discussion.** The complexity ladder
+    answers a greenfield question; when an actor already owns the lifecycle, the
+    state goes in it. Rungs 1 and 3 no longer read as permission to hand-roll.
+  - **Step zero checks who owns machines here.** Repository architecture tests,
+    import rules, and conventions outrank the skill's colocation default; a
+    correct machine in a forbidden layer still fails CI.
+
+  Anti-patterns now lead with under-modeling rather than over-modeling, matching
+  how agents actually fail, and a violation-sweep procedure covers finding the
+  same mistake across a feature. A Mermaid `stateDiagram-v2` render is
+  regenerated from the final definition whenever a machine is designed or
+  changed, not just when asked for, because a committed diagram the code has
+  moved past is worse than none.
+
+  Registration completes the skill: it was previously reachable only as a
+  `panel-review` lens and shipped to nobody. It is now selected by
+  `install-claude.sh`, routed from `CLAUDE.md` (which carries the classify-by-cause
+  rule directly, so it applies even when the skill is not loaded), catalogued in
+  the README, and documented in `skills/REFERENCES.md`. `structure-codebase` now
+  owns declaring which layer may hold machines, and `react-testing` points at
+  `xstate` when a component holds a flow flag. A new test guard fails the build
+  when any first-party skill directory exists without being selected by the
+  installer.
+
+  Grounded in primary sources (Harel 1987, statecharts.dev, Stately v5 docs
+  verified against xstate 5.32.x and the npm registry, SCXML, Khourshid, Dodds,
+  Pocock, Shevlin, Redux Style Guide).
+
+  Adam Bulmer fixed the same trigger inversion upstream on the same day, from the
+  same incident (mintuz/skills PR #47). His merged version contributed the second
+  lifetime test, the precise negative test, the "presentation _of_ temporal state"
+  phrasing, four further smells (ignore-flag cleanup, timers something must clear,
+  document listeners needing unbinding, responses arriving after cancel or
+  unmount), the verdict-and-ask-on-ties rule, and the named ownership-guard tools.
+  His practitioner review supplied the new-machine criteria, and his diagram
+  policy — regenerate on every machine change rather than on request — is matched
+  here. No content vendored; full attribution in `skills/REFERENCES.md`.
+
 ## 4.11.0
 
 ### Minor Changes
