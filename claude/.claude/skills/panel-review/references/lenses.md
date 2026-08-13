@@ -40,7 +40,9 @@ Include when the scout finds the signal (and the diff touches the concern). Dete
 | `bff-design` | BFF ownership/aggregation/identity-mediation concerns in the diff |
 | `secure-oauth-oidc` | OAuth/OIDC flows, tokens, redirect URIs, ID token validation |
 | `front-end-testing` / `react-testing` | UI tests changed; React components/hooks (prefer `react-testing` when React) |
-| `xstate` | State machines, statecharts, XState imports, or boolean-flag flow logic in the diff |
+| `xstate` | State machines, statecharts, XState imports, or boolean-flag flow logic in the diff — and equally when React code in the diff hand-rolls one: a `submitting`/`isLoading` `useState`, a promise chain setting state in sequence, a double-submit guard, or an error cleared before a retry |
+| `react-performance` | The diff claims a performance win, or touches data fetching, bundle/import shape, memoization, RSC serialization, or hydration |
+| `render-code-shape` | The reviewer needs the composition of an unfamiliar path made explicit before judging it — call graph, boundaries, and what crosses them |
 | `twelve-factor` | Env config, backing-service wiring, startup/shutdown, process signals |
 | `observability` | Logging/tracing/metrics/SLO/alerting changes |
 | `cli-design` | CLI entry points, argument parsing, output formatting, exit codes |

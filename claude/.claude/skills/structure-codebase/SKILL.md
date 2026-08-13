@@ -151,6 +151,8 @@ Load `domain-driven-design` instead of duplicating aggregate, entity, value-obje
 
 Treat frontend architecture as a first-class mode. Read `references/frontend-patterns.md` and classify route ownership, product-feature cohesion, UI reuse level, state/data ownership, runtime boundaries, and package ownership before choosing a tree. Preserve an established frontend only when the requested scope or evidence supports preservation; redesign it when that is the task. Do not project backend `hexagon/`, ports, adapters, DDD entities, or composition-root vocabulary onto client code unless the frontend explicitly adopts those patterns for a real boundary. In a full-stack repository, classify client and server modules independently and enforce the framework's client/server graph.
 
+When the frontend uses statecharts, state/data ownership includes **which layer owns machines and actors**. Declare it explicitly and enforce it the same way as any other import rule, because an agent producing an otherwise correct machine in a forbidden layer is a routine failure — and one this repository would rather catch in a boundary test than in CI. `xstate` defers to whatever this skill and the repository declare.
+
 ## Composition Roots
 
 Only executable applications have composition roots. Keep concrete selection near the entry point and nowhere else.

@@ -7,6 +7,8 @@ description: React component testing patterns including components, hooks, conte
 
 For general UI testing patterns (queries, events, async, accessibility, MSW), load the `front-end-testing` skill. For TDD workflow, load the `tdd` skill.
 
+For flow logic driving the component, load `xstate`: the machine is tested headlessly and the component test touches only the DOM, so a component test must never assert machine state. If the component under test holds a `submitting`/`isLoading` flag in `useState`, that is the signal the flow escaped its machine — `xstate` owns that call. For performance changes to the same code, load `react-performance`, whose rule is that behaviour tests stay unchanged and green.
+
 Follow the `tdd` skill's canonical fast-feedback and watcher-lifecycle policy plus the `front-end-testing` skill's browser-specific differences. React adds no separate Vitest graph guarantee: prefer the repository-owned watcher, use diff-selected watch only under the canonical version/configuration proof, and keep every affected app/package consumer eligible through the root graph. Exact files remain RED/debug-only. At PR readiness, stop watchers and apply the target repository's mutation policy plus complete non-watch UI/project gate.
 
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:

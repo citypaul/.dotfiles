@@ -596,3 +596,76 @@ Sources grounding `graph-engineering` and `panel-review` (both first-party; patt
 - Jesse Vincent (obra) — [superpowers `requesting-code-review`](https://github.com/obra/superpowers/blob/main/skills/requesting-code-review/SKILL.md) — reviewer context isolation (crafted briefs, never session history) → node-brief discipline in `graph-engineering/references/node-design.md`.
 - Adam Bulmer (mintuz) — [`graph-engineering`](https://github.com/mintuz/skills/tree/main/src/core/skills/graph-engineering) (MIT; patterns adapted conceptually, no vendored content) — the needs/informs/excludes edge taxonomy, frontier scheduling with serial-writes-default and the four concurrency conditions, the verified-and-integrated release rule, the structured write-node handoff (real exit codes; all-empty-is-a-signal), the repair loop (largest gap back to the context-holding worker, fresh verifier per round), static-vs-behavioral verification lanes, render-and-approve before dispatch, one-workflow-per-checkpoint, and lead-plus-supporting skill composition for build nodes → `graph-engineering/references/topologies.md` (Dependent-Write Graphs), `references/node-design.md` (handoff, repair loop, verification lanes), and `references/execution.md` (what the runtime does not enforce).
 - **Local origination** → the skills-as-nodes mechanic (each sub-agent loads exactly one installed skill via the Skill tool, verified against this distribution), the composable `/panel-review` lens grammar with trait auto-detection, and the migrated PR-readiness evidence gate (`review/references/pr-readiness.md`, formerly `commands/pr.md`) are original to this repository.
+
+## Code Shape Rendering
+
+### Adam Bulmer (`mintuz`) — [`pseudocode/SKILL.md`](https://github.com/mintuz/skills/blob/976d4a0ccda4fc8468ffd2e96e0c6f7db5f42324/src/core/skills/pseudocode/SKILL.md) (pinned commit `976d4a0c`, MIT)
+
+- **The waterline** — shape (boundaries, types, signatures, call order) above it; syntax and statement-level bodies below → `render-code-shape/SKILL.md`
+- **Only bodies are pseudo** — every name, type, and path cited from source or marked `[NEW]` → step 2 and the fabrication guard
+- **Wirings** — production plus any composition root substituting a dependency, each drawn separately → steps 1 and 4
+- **Four path-termination conditions** — boundary crossing, pure leaf, frame edge, already-recorded function → step 2
+- **The above/below cut table and the annotation vocabulary** (`[if …]`, `[each …]`, `[async]`, `[error …]`, `[boundary: …]`, `[NEW]`) → steps 3 and 4
+- **Closing with observable facts rather than judgements** → step 5
+- **Local adaptation** → renamed `pseudocode` → `render-code-shape` for trigger accuracy (the same rename-for-clarity precedent as `reducer` → `reduce-system-complexity`), while keeping "pseudocode" in the description so the original vocabulary still discovers it; hardened the read-only boundary to this repository's `debugging` wording; routed each class of finding to the skill that owns the decision instead of judging in place; added a fabrication guard, a narrowest-frame proportionality rule, glossary binding via `ubiquitous-language`, the `[NEW]`-render-as-planning-input relationship, and an anti-pattern catalog plus completion check
+- **License and exact provenance** → `render-code-shape/LICENSE` and `references/source-notes.md`
+
+---
+
+## Front-End Statecharts
+
+Sources grounding the first-party `xstate` skill (original bundle; no vendored content).
+
+- **David Harel — ["Statecharts: A Visual Formalism for Complex Systems"](https://www.sciencedirect.com/science/article/pii/0167642387900359) (1987)** — hierarchy, orthogonality, and broadcast as the answer to state explosion; the "3 states × 5 events = 15 implicit combinations" argument → `when-to-model.md` and `machine-design.md`
+- **[statecharts.dev](https://statecharts.dev/)** — handlers should *inform* the chart rather than decide; the catalogue of what flags cost → the implicit-machine signals table
+- **[Stately XState v5 documentation](https://stately.ai/docs)** (verified against `xstate` 5.32.x and the npm registry) — `setup()`, `createActor`, actor logic types, `invoke` vs `spawn`, `systemId`, persistence, inspection, internal-by-default transitions → `machine-design.md`, `actors-and-systems.md`, `typescript-and-migration.md`
+- **[W3C SCXML](https://www.w3.org/TR/scxml/)** — the standard the transition and entry/exit semantics derive from
+- **David Khourshid** — statecharts as executable specifications; "your front-end app is always a distributed system" → the default stance and the actor-system rung
+- **Kent C. Dodds** — ["Stop using isLoading booleans"](https://kentcdodds.com/blog/stop-using-isloading-booleans) — "Use a state machine or an enum. Not a boolean." → the flag-smell signals
+- **Matt Pocock** — most state belongs in context; states are for visual logic and event gating; the machine-as-reducer negative test → the finite-state/context split and the `@xstate/store` rung
+- **Kyle Shevlin** — the enumerability test → "When NOT to Use a Machine"
+- **[Redux Style Guide](https://redux.js.org/style-guide/)** — "treat reducers as state machines": an action's validity depends on current state → the no-op-action signal
+- **Adam Bulmer (`mintuz`)** — [`xstate/SKILL.md`](https://github.com/mintuz/skills/blob/976d4a0ccda4fc8468ffd2e96e0c6f7db5f42324/src/web/skills/xstate/SKILL.md) (MIT), inspected as prior art at the revision merged by [PR #47](https://github.com/mintuz/skills/pull/47), *"make the xstate skill fire before a machine exists"*. That upstream fix and this skill's revision were made independently on the same day from the same production incident, and the following came from Adam's version:
+  - **The second lifetime test — an interruptible middle.** Direct user input still creates a lifecycle when a phase between start and end can be interrupted, cancelled, or must be disposed: a drag holding pointer capture that cancels on Escape and releases on unmount, a panel with a closing animation. An external-cause test alone misfiles a drag as presentational → the two-test table in `SKILL.md` and `when-to-model.md`
+  - **The precise negative test** — React owns the value only when both tests come back empty, meaning one event sets it completely with no phase to interrupt and nothing to dispose
+  - **"A disabled button or a spinner is the presentation *of* temporal state, not presentation state"** → the phrasing retained near-verbatim as the sharpest available statement of the rule
+  - **Four additional smells** — a `useEffect` needing an ignore flag in cleanup, a timer for retry/debounce/polling that something must clear, a gesture handler binding document listeners it must unbind, and handling for a response arriving after cancel or unmount
+  - **State the verdict and ask on genuine ties** — run both tests over every `useState`, report the call in one line so the user can overrule it, and put a genuinely close call to the user before building
+  - **Naming the actual ownership-guard tools** — `eslint-plugin-boundaries`, `dependency-cruiser`, ADRs, and the directory already holding machines
+  - Practitioner guidance from production review of an actor-based front end: the functionality-boundary criteria for when a *new* machine is justified (one per SSE stream, one for canvas interaction, one for node-adding rules, one for media connections — each owning a distinct external edge), and the request for a machine diagram. **Local divergence**: the diagram is offered on request here rather than regenerated on every machine change, per this repository's owner. No content vendored.
+- **Local origination** → the existing-owner override that ends the complexity-ladder discussion when an actor already owns the lifecycle (and the resulting void on ladder rungs 1 and 3); the "why does this not belong to the machine that already owns this edge?" framing; the violation-sweep procedure for finding the same misclassification across a feature; and the under-modeling-first anti-pattern ordering, which inverts the usual emphasis to match how agents actually fail. The write-time smell list and the step-zero ownership check were reached independently and also appear upstream
+
+---
+
+## React and Next.js Performance
+
+Sources grounding the first-party `react-performance` skill, which owns the *method* and routes into externally maintained rule catalogues that own the *rules*.
+
+- **Vercel Engineering — [`vercel-react-best-practices`](https://skills.sh/vercel-labs/agent-skills/vercel-react-best-practices)** (installed pinned at [`b8caa26`](https://github.com/vercel-labs/agent-skills/tree/b8caa260a420a73042e35521de4b5c8baf6446cc/skills/react-best-practices)) — 72 impact-ordered rules across waterfalls, bundle size, server-side cost, client fetching, re-renders, rendering, JavaScript, and advanced patterns. Installed from upstream rather than vendored: the repository publishes no `LICENSE` file, and Vercel maintains the rule set. Announced in ["Introducing: React Best Practices"](https://vercel.com/blog/introducing-react-best-practices).
+- **Vercel Engineering — [`vercel-composition-patterns`](https://skills.sh/vercel-labs/agent-skills/vercel-composition-patterns)** (same pinned commit) — compound components, boolean-prop proliferation, React 19 API changes → routed to when a re-render problem is really a component-API problem
+- **Vercel — ["How we optimized package imports in Next.js"](https://vercel.com/blog/how-we-optimized-package-imports-in-next-js)** and **["How we made the Vercel dashboard twice as fast"](https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast)** — the barrel-import and waterfall evidence behind the CRITICAL tiers
+- **web.dev — [Core Web Vitals](https://web.dev/articles/vitals)** — the field metrics that decide whether a component-level win is a user-visible win; owned by the external `core-web-vitals` skill
+- **Local origination** → the measure-first method (baseline, attribute, one rule per diff, re-measure, revert what does not move the number); the routing table across the overlapping catalogues; and the "Where House Rules Win" reconciliation, which resolves the collisions between general performance advice and this repository's behavior-testing, immutability, and type-safety rules
+
+---
+
+## Skill Authoring
+
+Sources for writing and evaluating the skills in this distribution. Both install unmodified from pinned upstream revisions rather than being vendored.
+
+### Matt Pocock — [`writing-for-agents`](https://github.com/mattpocock/skills/tree/84fdeffd12f2ee307994d1eb6feb48173b6e0502/skills/productivity/writing-for-agents) (pinned commit `84fdeff`, MIT)
+
+- **Context pointers** — a reference held in context that names out-of-context material and encodes the condition for reaching it; the pointer's *wording*, not its target, decides when and how reliably the agent reaches the material. A must-have target behind a weakly worded pointer is a variance bug
+- **The two loads** — context load (always-loaded tokens and attention, spent every turn) versus cognitive load (which documents exist and when to reach for each; the price of human agency, to be spent where judgement matters)
+- **The information hierarchy** — in-file step, in-file reference, disclosed reference — and progressive disclosure as the move down the ladder that protects it
+- **Completion criteria** — clarity (can the agent tell done from not-done?) resisting premature completion, and demand driving legwork
+- **Co-location and sprawl** as the within-file and whole-file failure modes
+- Ships with a companion `SKILL-MECHANICS.md` covering frontmatter, invocation choice, and router skills
+- **Routing note** → `technical-writing` owns human-facing prose; this skill owns agent-facing instruction. The split is by audience, not by file type
+
+### Anthropic — [`skill-creator`](https://github.com/anthropics/skills/tree/f17010c9bb483898c1d9c9f42dde2b3a98889434/skills/skill-creator) (pinned commit `f17010c`, Apache 2.0)
+
+- The authoring loop: decide scope, draft, write test prompts, run the skill against them, evaluate qualitatively and quantitatively, rewrite, repeat, then expand the test set
+- Eval and benchmark tooling (`aggregate_benchmark.py`, `generate_report.py`, the eval viewer) and analyzer/comparator/grader sub-agents
+- `improve_description.py` for optimising a description's trigger accuracy — directly relevant to the class of failure that motivated the `xstate` trigger rewrite
+- Licence: [Apache 2.0](https://github.com/anthropics/skills/blob/f17010c9bb483898c1d9c9f42dde2b3a98889434/skills/skill-creator/LICENSE.txt), shipped inside the skill bundle

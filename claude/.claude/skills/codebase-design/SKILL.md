@@ -119,6 +119,7 @@ Ask:
   an ownership boundary. Ordinary in-process component props remain with this
   skill and the applicable framework/design-system guidance.
 - Use `structure-codebase` for file/package placement and mechanical dependency enforcement.
+- Use `render-code-shape` first when the current composition is not yet visible: it returns cited boundaries, signatures, and a call graph, which is the evidence this skill's judgements need.
 - Use `reduce-system-complexity` when the accepted outcome must remove total branches, states, dependencies, layers, or operational moving parts rather than only improve caller leverage.
 - Use `evaluate-existing-solutions` when a material generic implementation choice remains unresolved after the responsibility and constraints are known.
 - Use `hexagonal-architecture` only for an opted-in ports-and-adapters system with purposeful actor conversations.
