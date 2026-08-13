@@ -217,7 +217,8 @@ Options:
   --no-impeccable      Skip impeccable design skills only
   --no-ponytail        Skip the ponytail plugin (Claude Code + Codex)
   --version REF        Exact reviewed release tag or commit for first-party artifacts.
-                       Defaults to the current checkout's exact HEAD. Moving refs are rejected.
+                       Defaults to this checkout's HEAD when that commit is on the
+                       remote, otherwise the latest release. Moving refs are rejected.
   --help, -h           Show this help message
 
 Default external skill sources are pinned to reviewed commits; the installer
@@ -255,27 +256,72 @@ EOF
   esac
 done
 
-# A checkout gives us an exact source revision without executing a moving
-# remote script. Standalone copies must receive one explicitly.
+# The installer must work for anyone, anywhere: inside a checkout, from a
+# stray copy of this file, or piped straight from curl. It pins to an exact
+# immutable revision either way — it just works out which one on its own.
+#
+#   --version REF   what you asked for, always wins
+#   HEAD            when run inside a checkout AND that commit is on the remote,
+#                   so a contributor installs exactly what they inspected
+#   latest release  everyone else
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ -z "$VERSION" ]] && command -v git >/dev/null 2>&1; then
-  VERSION="$(git -C "$script_dir" rev-parse --verify HEAD 2>/dev/null || true)"
-fi
+# Newest published release tag, resolved straight from the remote so it works
+# with no checkout at all. Prints the tag's commit; empty if none can be read.
+resolve_latest_release() {
+  command -v git >/dev/null 2>&1 || return 1
+  git ls-remote --tags --refs "https://github.com/$OWN_SKILLS_REPO_BASE.git" 'v*' 2>/dev/null |
+    sed 's#^\([0-9a-f]*\)[[:space:]]*refs/tags/#\1 #' |
+    sort -k2 -V |
+    tail -1 |
+    cut -d' ' -f1
+}
 
-if [[ -z "$VERSION" ]]; then
-  echo -e "${RED}Error: --version requires an exact reviewed release tag or commit outside a git checkout${NC}"
-  exit 1
-fi
+# Is this commit actually reachable from the remote? An unpushed local commit
+# is not, and pinning to it would fail later with a bare git error.
+remote_has_commit() {
+  local sha="$1"
+  git ls-remote "https://github.com/$OWN_SKILLS_REPO_BASE.git" 2>/dev/null |
+    grep -q "^$sha[[:space:]]" && return 0
+  # Not at a ref tip, but it may still be reachable behind one.
+  git -C "$script_dir" merge-base --is-ancestor "$sha" \
+    "$(git -C "$script_dir" rev-parse --verify "refs/remotes/origin/main" 2>/dev/null || echo "$sha")" \
+    2>/dev/null
+}
 
-if [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]]; then
-  : # already immutable
-elif command -v git >/dev/null 2>&1 &&
-     git -C "$script_dir" show-ref --verify --quiet "refs/tags/$VERSION"; then
-  VERSION="$(git -C "$script_dir" rev-parse --verify "refs/tags/${VERSION}^{commit}")"
+if [[ -n "$VERSION" ]]; then
+  # An explicit --version is validated against the checkout, as before.
+  if [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]]; then
+    : # already immutable
+  elif command -v git >/dev/null 2>&1 &&
+       git -C "$script_dir" show-ref --verify --quiet "refs/tags/$VERSION"; then
+    VERSION="$(git -C "$script_dir" rev-parse --verify "refs/tags/${VERSION}^{commit}")"
+  else
+    echo -e "${RED}Error: '$VERSION' is not a full commit SHA or a tag in the inspected checkout${NC}"
+    exit 1
+  fi
 else
-  echo -e "${RED}Error: '$VERSION' is not a full commit SHA or a tag in the inspected checkout${NC}"
-  exit 1
+  head_sha=""
+  if command -v git >/dev/null 2>&1; then
+    head_sha="$(git -C "$script_dir" rev-parse --verify HEAD 2>/dev/null || true)"
+  fi
+
+  if [[ -n "$head_sha" ]] && remote_has_commit "$head_sha"; then
+    VERSION="$head_sha"
+  else
+    VERSION="$(resolve_latest_release || true)"
+    if [[ -n "$head_sha" && -n "$VERSION" ]]; then
+      echo -e "${YELLOW}→${NC} This checkout's HEAD (${head_sha:0:7}) is not on the remote — probably not pushed yet."
+      echo -e "${YELLOW}→${NC} Installing the latest release (${VERSION:0:7}) instead. Pass --version to override."
+      echo ""
+    fi
+  fi
+
+  if [[ -z "$VERSION" ]]; then
+    echo -e "${RED}Error: could not reach https://github.com/$OWN_SKILLS_REPO_BASE to find the latest release${NC}"
+    echo "Check your network, or pass --version <tag-or-commit> explicitly."
+    exit 1
+  fi
 fi
 
 OWN_SKILLS_REPO="$OWN_SKILLS_REPO_BASE#$VERSION"
@@ -596,14 +642,9 @@ verify_own_skills_source() {
 
   echo -e "${RED}✗${NC} Cannot reach pinned revision $VERSION in $OWN_SKILLS_REPO_BASE"
   echo ""
-  echo -e "${YELLOW}This usually means the commit has not been pushed.${NC} The installer pins"
-  echo "first-party skills to this checkout's exact HEAD, so a local-only commit"
-  echo "cannot be fetched back from GitHub."
-  echo ""
-  echo "Fix it with one of:"
-  echo "  • git push                              # publish this commit, then re-run"
-  echo "  • $0 --version \$(git rev-parse origin/main)   # install a pushed commit"
-  echo "  • $0 --version v4.12.0                  # install a released tag"
+  echo "That revision is not on the remote. If you passed --version, check the tag"
+  echo "or commit and try again, or omit it to install the latest release. If you"
+  echo "did not, the network or the repository may be unreachable."
   echo ""
   echo -e "${GREEN}Nothing was changed.${NC} Your installed skills are untouched."
   return 1

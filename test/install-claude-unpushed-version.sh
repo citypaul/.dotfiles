@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 #
-# The first-party pin defaults to the current checkout's HEAD. When that commit
-# has never been pushed, the remote rejects it ("upload-pack: not our ref").
+# The installer has to work for anyone, anywhere: inside a checkout, from a
+# stray copy of the script, or piped from curl. It still pins to an exact
+# immutable revision — it just works out which one itself.
 #
-# Two things must hold:
-#   1. Nothing is mutated first. The installer used to back up every selected
-#      skill *before* fetching, so an unpushed HEAD stranded the user's whole
-#      skills directory in a backup while the install aborted.
-#   2. The error must name the actual cause. A bare git error sends the reader
-#      hunting for a network or permissions problem rather than an unpushed
-#      commit.
+#   --version REF   what you asked for, always wins
+#   HEAD            only when that commit is actually on the remote
+#   latest release  everyone else
+#
+# The regression this guards: the default was the checkout's HEAD unconditionally,
+# so a checkout with an unpushed commit — or no checkout at all — aborted the
+# install, and did so only *after* every selected skill had been backed up.
 #
 
 set -e
@@ -29,85 +30,129 @@ NC='\033[0m'
 fail() { echo -e "${RED}FAIL${NC}: $1"; FAILURES=$((FAILURES + 1)); }
 pass() { echo -e "${GREEN}PASS${NC}: $1"; }
 
-HOME_DIR="$TMPDIR/home"
-mkdir -p "$TMPDIR/bin" "$HOME_DIR/.claude/skills/tdd" "$HOME_DIR/.agents/skills/tdd"
-echo "# existing" > "$HOME_DIR/.claude/skills/tdd/SKILL.md"
-echo "# existing" > "$HOME_DIR/.agents/skills/tdd/SKILL.md"
+RELEASE_SHA="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+mkdir -p "$TMPDIR/bin"
 
-# git: real for local queries, but any fetch of the pinned commit fails the way
-# GitHub fails an unpushed SHA.
-cat > "$TMPDIR/bin/git" <<'STUB'
+# git stub: the remote publishes one release tag and never lists the local HEAD,
+# which is exactly what an unpushed commit looks like. Local queries stay real.
+cat > "$TMPDIR/bin/git" <<STUB
 #!/usr/bin/env bash
-for arg in "$@"; do
-  if [[ "$arg" == "fetch" ]]; then
-    echo "fatal: remote error: upload-pack: not our ref" >&2
-    exit 128
-  fi
-done
-case "$1" in
-  -C) sub="$3" ;;
-  *)  sub="$1" ;;
+args="\$*"
+case "\$args" in
+  *ls-remote*--tags*)
+    echo "$RELEASE_SHA	refs/tags/v4.12.1"
+    exit 0 ;;
+  *ls-remote*)
+    echo "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	refs/heads/main"
+    exit 0 ;;
+  *merge-base*) exit 1 ;;
+  *fetch*)
+    [[ -n "\${FETCH_MUST_FAIL:-}" ]] && { echo "fatal: remote error: upload-pack: not our ref" >&2; exit 128; }
+    exit 0 ;;
+  *rev-parse*|*show-ref*) exec /usr/bin/git "\$@" ;;
 esac
-case "$sub" in
-  rev-parse|show-ref|ls-remote|branch) exec /usr/bin/git "$@" ;;
-esac
+# init / remote add / sparse-checkout / checkout: no-ops, no network.
 exit 0
 STUB
 
-# npx must never run: the install should abort before reaching the Skills CLI.
 cat > "$TMPDIR/bin/npx" <<'STUB'
 #!/usr/bin/env bash
-touch "$NPX_MARKER"
+printf '%s\n' "$*" >> "$NPX_LOG"
 exit 0
 STUB
 chmod +x "$TMPDIR/bin/git" "$TMPDIR/bin/npx"
 
-echo "Testing unpushed pinned-revision handling..."
+run_installer() {
+  local dir="$1"; shift
+  ( cd "$dir" && HOME="$HOME_DIR" PATH="$TMPDIR/bin:$PATH" NPX_LOG="$NPX_LOG" \
+      "$dir/install-claude.sh" --skills-only --no-external --no-impeccable "$@" 2>&1 )
+}
+
+echo "Testing version resolution from anywhere..."
 echo ""
 
+# --- 1. A checkout whose HEAD was never pushed -------------------------------
+HOME_DIR="$TMPDIR/home1"; NPX_LOG="$TMPDIR/npx1.log"
+mkdir -p "$HOME_DIR/.claude/skills/tdd"; : > "$NPX_LOG"
+echo "# mine" > "$HOME_DIR/.claude/skills/tdd/SKILL.md"
+
 set +e
-OUTPUT=$(HOME="$HOME_DIR" PATH="$TMPDIR/bin:$PATH" NPX_MARKER="$TMPDIR/npx-called" \
-  "$REPO_ROOT/install-claude.sh" --skills-only --no-external --no-impeccable 2>&1)
-STATUS=$?
+OUT=$(run_installer "$REPO_ROOT"); STATUS=$?
 set -e
 
-if [[ $STATUS -ne 0 ]]; then
-  pass "an unfetchable first-party pin fails the install"
+if [[ $STATUS -eq 0 ]]; then
+  pass "an unpushed HEAD does not abort the install"
 else
-  fail "install must not report success when the pinned revision is unreachable"
+  fail "an unpushed HEAD must fall back instead of failing"
 fi
 
-# 1. Nothing mutated.
-if ! compgen -G "$HOME_DIR/.claude/skills.before-install.*" > /dev/null &&
-   ! compgen -G "$HOME_DIR/.agents/skills.before-install.*" > /dev/null; then
+if printf '%s' "$OUT" | grep -q "not on the remote"; then
+  pass "the fallback is announced rather than silent"
+else
+  fail "the user must be told the pin changed"
+fi
+
+if grep -q "$RELEASE_SHA" "$NPX_LOG" 2>/dev/null ||
+   printf '%s' "$OUT" | grep -q "$RELEASE_SHA"; then
+  pass "the unpushed checkout installs the latest release"
+else
+  fail "the fallback must pin to the latest release commit"
+fi
+
+# --- 2. No checkout at all (a stray copy, or curl | bash) --------------------
+HOME_DIR="$TMPDIR/home2"; NPX_LOG="$TMPDIR/npx2.log"
+LOOSE="$TMPDIR/loose"; mkdir -p "$LOOSE" "$HOME_DIR"; : > "$NPX_LOG"
+cp "$REPO_ROOT/install-claude.sh" "$LOOSE/"
+
+set +e
+OUT2=$(run_installer "$LOOSE"); STATUS2=$?
+set -e
+
+if [[ $STATUS2 -eq 0 ]]; then
+  pass "a copy outside any checkout installs"
+else
+  fail "the installer must work outside a git checkout"
+fi
+
+if printf '%s' "$OUT2" | grep -q "$RELEASE_SHA"; then
+  pass "no checkout pins to the latest release"
+else
+  fail "outside a checkout the pin must be the latest release"
+fi
+
+# --- 3. An explicit --version that the remote cannot serve ------------------
+# The pin is the user's own choice here, so it must fail — but only before
+# anything on disk has been touched.
+HOME_DIR="$TMPDIR/home3"; NPX_LOG="$TMPDIR/npx3.log"
+mkdir -p "$HOME_DIR/.claude/skills/tdd"; : > "$NPX_LOG"
+echo "# keep me" > "$HOME_DIR/.claude/skills/tdd/SKILL.md"
+
+set +e
+OUT3=$(FETCH_MUST_FAIL=1 run_installer "$REPO_ROOT" --version "$RELEASE_SHA"); STATUS3=$?
+set -e
+
+if [[ $STATUS3 -ne 0 ]]; then
+  pass "an unreachable explicit --version fails the install"
+else
+  fail "an unreachable explicit pin must not report success"
+fi
+
+if ! compgen -G "$HOME_DIR/.claude/skills.before-install.*" > /dev/null; then
   pass "no skills are backed up before the pin is verified"
 else
   fail "an unreachable pin must not strand skills in a backup directory"
 fi
 
-if [[ -f "$HOME_DIR/.claude/skills/tdd/SKILL.md" ]]; then
-  pass "existing skills are left in place"
+if grep -q "# keep me" "$HOME_DIR/.claude/skills/tdd/SKILL.md"; then
+  pass "existing skills are left untouched"
 else
   fail "existing skills must survive a failed pin verification"
 fi
 
-if [[ ! -e "$TMPDIR/npx-called" ]]; then
+if [[ ! -s "$NPX_LOG" ]]; then
   pass "the Skills CLI is never invoked for an unreachable pin"
 else
   fail "install must abort before invoking the Skills CLI"
-fi
-
-# 2. The error names the cause.
-if printf '%s' "$OUTPUT" | grep -qi "not been pushed\|not pushed"; then
-  pass "the error explains that the commit is not on the remote"
-else
-  fail "the error must name the unpushed commit as the cause"
-fi
-
-if printf '%s' "$OUTPUT" | grep -q -- "--version"; then
-  pass "the error points at the --version remedy"
-else
-  fail "the error must tell the reader how to recover"
 fi
 
 echo ""
