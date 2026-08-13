@@ -50,6 +50,19 @@ exit 0
 STUB
 chmod +x "$TMPDIR/bin/npx"
 
+# Stub git so pinned-source fetches never hit the network; local read-only
+# queries (version resolution) still reach the real git.
+cat > "$TMPDIR/bin/git" <<'STUB'
+#!/usr/bin/env bash
+for arg in "$@"; do
+  case "$arg" in
+    rev-parse|show-ref) exec /usr/bin/git "$@" ;;
+  esac
+done
+exit 0
+STUB
+chmod +x "$TMPDIR/bin/git"
+
 # 1. Old-CLI layout: a symlink into the universal ~/.agents/skills cache.
 echo "# linked" > "$AGENTS_DIR/skills/linked-skill/SKILL.md"
 ln -s "../../.agents/skills/linked-skill" "$SKILLS_DIR/linked-skill"

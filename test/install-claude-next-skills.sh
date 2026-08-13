@@ -29,7 +29,8 @@ pass() {
 
 mkdir -p "$TMPDIR/bin" "$TMPDIR/home"
 NPX_LOG="$TMPDIR/npx.log"
-touch "$NPX_LOG"
+GIT_LOG="$TMPDIR/git.log"
+touch "$NPX_LOG" "$GIT_LOG"
 
 cat > "$TMPDIR/bin/npx" <<'STUB'
 #!/usr/bin/env bash
@@ -37,10 +38,22 @@ printf '%s\n' "$*" >> "$NPX_LOG"
 STUB
 chmod +x "$TMPDIR/bin/npx"
 
+# Record pinned-source fetches instead of hitting the network. show-ref must
+# fail so the installer still rejects refs that are not tags in the checkout.
+cat > "$TMPDIR/bin/git" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$GIT_LOG"
+for arg in "$@"; do
+  [[ "$arg" == "show-ref" ]] && exit 1
+done
+exit 0
+STUB
+chmod +x "$TMPDIR/bin/git"
+
 echo "Testing Next.js external skill installation..."
 echo ""
 
-export NPX_LOG
+export NPX_LOG GIT_LOG
 
 EXACT_COMMIT=$(git -C "$REPO_ROOT" rev-parse --verify HEAD)
 
@@ -102,22 +115,33 @@ assert_output() {
   fi
 }
 
-assert_npx_call "--yes skills@1.5.22 add https://github.com/vercel-labs/next-skills/archive/b76d687cf3e026eac3b1032f610f06b47a56377c.tar.gz -g -a codex -s next-best-practices next-cache-components next-upgrade --copy -y"
-assert_output "vercel-labs/next-skills"
+if grep -Eq 'add [^ ]*skills-src-vercel-next\.js[^ ]*/skills -g -a codex -s next-cache-components-optimizer next-cache-components-adoption --copy -y' "$NPX_LOG"; then
+  pass "Next.js skills install from the fetched skills/ directory with the reviewed names"
+else
+  fail "Next.js skills must install from a local pinned fetch of vercel/next.js skills/"
+fi
+assert_output "vercel/next.js"
 
-if grep -Eq 'add [^ ]*(addyosmani/web-quality-skills|vercel-labs/next-skills|pbakaus/impeccable|mattpocock/skills|coreyhaines31/marketingskills|herdrdev/herdr)[^ ]* .* -s \* ' "$NPX_LOG"; then
+if grep -q 'sparse-checkout set --no-cone skills' "$GIT_LOG" &&
+   grep -q 'fetch --quiet --depth 1 --filter=blob:none origin ae1e53a11f5379e715096b829178f4df92d35044' "$GIT_LOG"; then
+  pass "vercel/next.js fetch is sparse, shallow, and pinned to the reviewed commit"
+else
+  fail "vercel/next.js must be fetched sparsely at the reviewed commit, never as the whole repository"
+fi
+
+if grep -Eq 'add [^ ]*(addyosmani/web-quality-skills|vercel|pbakaus/impeccable|mattpocock/skills|coreyhaines31/marketingskills|herdrdev/herdr)[^ ]* .* -s \* ' "$NPX_LOG"; then
   fail "external sources must never install an undeclared wildcard set"
 else
   pass "external sources install only reviewed names"
 fi
 
-if grep -Eq 'add [^ ]*#[0-9a-f]{40}( |$)' "$NPX_LOG"; then
-  fail "commit-pinned sources must reach the skills CLI as archive URLs (git clone --branch rejects SHAs)"
+if grep -Eq 'add [^ ]*#[0-9a-f]{40}( |$)' "$NPX_LOG" || grep -Eq 'add https?://' "$NPX_LOG"; then
+  fail "commit-pinned sources must reach the skills CLI as local fetched paths (clone rejects SHAs; archives hit size caps)"
 else
-  pass "no source is passed as a repo#sha ref the skills CLI cannot clone"
+  pass "every source reaches the skills CLI as a local pinned fetch"
 fi
 
-FIRST_PARTY_CALL=$(grep 'add https://github.com/citypaul/.dotfiles/archive/' "$NPX_LOG" || true)
+FIRST_PARTY_CALL=$(grep -E 'add [^ ]*skills-src-citypaul-\.dotfiles' "$NPX_LOG" || true)
 while IFS= read -r skill_file; do
   skill_name=$(basename "$(dirname "$skill_file")")
   if [[ " $FIRST_PARTY_CALL " != *" $skill_name "* ]]; then
@@ -125,7 +149,7 @@ while IFS= read -r skill_file; do
   fi
 done < <(find "$REPO_ROOT/claude/.claude/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print)
 
-if [[ "$FIRST_PARTY_CALL" == *"archive/$EXACT_COMMIT.tar.gz"* ]] && [[ "$FIRST_PARTY_CALL" != *" -s * "* ]]; then
+if [[ -n "$FIRST_PARTY_CALL" ]] && grep -q "fetch --quiet --depth 1 origin $EXACT_COMMIT" "$GIT_LOG" && [[ "$FIRST_PARTY_CALL" != *" -s * "* ]]; then
   pass "first-party source revision and complete name set are explicit"
 else
   fail "first-party install must use a pinned source and declared names"

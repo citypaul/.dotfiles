@@ -54,7 +54,19 @@ cat > "$TMPDIR/bin/codex" <<'STUB'
 printf 'codex %s\n' "$*" >> "$CLI_LOG"
 STUB
 
-chmod +x "$TMPDIR/bin/npx" "$TMPDIR/bin/curl" "$TMPDIR/bin/claude" "$TMPDIR/bin/codex"
+# Stub git so pinned-source fetches never hit the network; local read-only
+# queries (version resolution) still reach the real git.
+cat > "$TMPDIR/bin/git" <<'STUB'
+#!/usr/bin/env bash
+for arg in "$@"; do
+  case "$arg" in
+    rev-parse|show-ref) exec /usr/bin/git "$@" ;;
+  esac
+done
+exit 0
+STUB
+
+chmod +x "$TMPDIR/bin/npx" "$TMPDIR/bin/curl" "$TMPDIR/bin/claude" "$TMPDIR/bin/codex" "$TMPDIR/bin/git"
 
 echo "Testing ponytail plugin installation..."
 echo ""
