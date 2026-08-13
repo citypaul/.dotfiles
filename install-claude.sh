@@ -534,11 +534,25 @@ cleanup_skill_fetch_dirs() {
 }
 trap cleanup_skill_fetch_dirs EXIT
 
+SKILL_FETCH_KEYS=()
+SKILL_FETCH_PATHS=()
+
 fetch_pinned_source() {
   local source="$1"
   local subpath="$2"
   local repo="${source%%#*}"
   local ref="${source##*#}"
+  local key="$source|$subpath"
+  local i
+
+  # Reuse an earlier fetch of the same pinned source (the preflight below
+  # fetches the first-party pin before anything is mutated).
+  for ((i = 0; i < ${#SKILL_FETCH_KEYS[@]}; i++)); do
+    if [[ "${SKILL_FETCH_KEYS[$i]}" == "$key" ]]; then
+      echo "${SKILL_FETCH_PATHS[$i]}"
+      return 0
+    fi
+  done
 
   if [[ "$source" != *"#"* ]] || ! [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
     echo "$source"
@@ -566,7 +580,33 @@ fetch_pinned_source() {
       ${subpath:+--filter=blob:none} origin "$ref" &&
     git -C "$dest" checkout --quiet FETCH_HEAD || return 1
 
+  SKILL_FETCH_KEYS+=("$key")
+  SKILL_FETCH_PATHS+=("$dest${subpath:+/$subpath}")
   echo "$dest${subpath:+/$subpath}"
+}
+
+# Fetch the first-party pin before anything is mutated. The pin defaults to the
+# current checkout's HEAD, which is unreachable from the remote whenever that
+# commit has not been pushed — and the failure used to surface only after every
+# selected skill had already been moved into a backup directory.
+verify_own_skills_source() {
+  if fetch_pinned_source "$OWN_SKILLS_REPO" "" >/dev/null; then
+    return 0
+  fi
+
+  echo -e "${RED}✗${NC} Cannot reach pinned revision $VERSION in $OWN_SKILLS_REPO_BASE"
+  echo ""
+  echo -e "${YELLOW}This usually means the commit has not been pushed.${NC} The installer pins"
+  echo "first-party skills to this checkout's exact HEAD, so a local-only commit"
+  echo "cannot be fetched back from GitHub."
+  echo ""
+  echo "Fix it with one of:"
+  echo "  • git push                              # publish this commit, then re-run"
+  echo "  • $0 --version \$(git rev-parse origin/main)   # install a pushed commit"
+  echo "  • $0 --version v4.12.0                  # install a released tag"
+  echo ""
+  echo -e "${GREEN}Nothing was changed.${NC} Your installed skills are untouched."
+  return 1
 }
 
 # Install skills from a skills.sh source for the selected agents. A non-empty
@@ -682,6 +722,10 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   fi
 
   if ! validate_unique_skill_names "${install_manifest[@]}"; then
+    exit 1
+  fi
+
+  if ! verify_own_skills_source; then
     exit 1
   fi
 
