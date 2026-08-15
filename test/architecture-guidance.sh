@@ -836,6 +836,16 @@ require_match "Effect skill source is pinned to a full commit" \
   'EFFECT_SKILLS_REPO="Effect-TS/skills#[0-9a-f]{40}"' "$INSTALLER"
 require_match "Effect skill is selected for installation" \
   'install_optional_skills_from "\$EFFECT_SKILLS_REPO".*"\${EFFECT_SKILLS\[@\]}"' "$INSTALLER"
+require_match "Effect skill install commands are adapted to the v4 RC dist-tag" \
+  "sed 's/effect@beta/effect@rc/g'" "$INSTALLER"
+require_match "Effect RC adaptation runs on the fetched skill before installation" \
+  'adapt_effect_skill_to_v4_rc "\$install_source"' "$INSTALLER"
+require_match "Effect RC adaptation fails when the reviewed upstream marker is absent" \
+  'Cannot adapt the reviewed Effect skill to the v4 RC dist-tag' "$INSTALLER"
+require_match "Effect documentation recommends the v4 RC dist-tag" \
+  'Installs the `effect@rc` v4 line' "$README"
+reject_match "Effect documentation does not recommend the old beta dist-tag" \
+  'Installs the `effect@beta` v4 line' "$README"
 
 # The rules added after the misclassification.
 require_match "xstate classifies state by lifetime, not appearance" \

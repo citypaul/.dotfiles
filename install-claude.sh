@@ -58,6 +58,9 @@ NEXT_SKILLS_SUBPATH="skills"
 # and routes into these; they own the rules.
 VERCEL_REACT_SKILLS_REPO="vercel-labs/agent-skills#b8caa260a420a73042e35521de4b5c8baf6446cc"
 VERCEL_REACT_SKILLS_SUBPATH="skills"
+# The reviewed upstream skill still names the old v4 beta dist-tag. The
+# installer rewrites only that tag to the current RC after fetching this pin;
+# the installed package's AGENTS.md remains the API source of truth.
 EFFECT_SKILLS_REPO="Effect-TS/skills#28822c9e19998876a6b0e0d97877442012ed4391"
 EFFECT_SKILLS_SUBPATH="skills"
 IMPECCABLE_SKILLS_REPO="pbakaus/impeccable#5d10bc842cbccd2ae7d3a88296d87d3be0b125b3"
@@ -229,7 +232,7 @@ selects only the declared names from each source:
   addyosmani/web-quality-skills#95d6e25
   vercel/next.js#ae1e53a --skill next-cache-components-optimizer + next-cache-components-adoption
   vercel-labs/agent-skills#b8caa26 --skill vercel-react-best-practices --skill vercel-composition-patterns
-  Effect-TS/skills#28822c9 --skill effect-ts
+  Effect-TS/skills#28822c9 --skill effect-ts (adapted to effect@rc)
   pbakaus/impeccable#5d10bc8
   mattpocock/skills#84fdeff --skill grill-me --skill writing-for-agents
   coreyhaines31/marketingskills#7868cb9 --skill seo-audit
@@ -683,6 +686,22 @@ verify_own_skills_source() {
   return 1
 }
 
+adapt_effect_skill_to_v4_rc() {
+  local skill_file="$1/effect-ts/SKILL.md"
+  local patched_file="${skill_file}.rc"
+
+  if [[ ! -f "$skill_file" ]] || ! grep -Fq 'effect@beta' "$skill_file"; then
+    echo -e "${RED}✗${NC} Cannot adapt the reviewed Effect skill to the v4 RC dist-tag"
+    return 1
+  fi
+
+  if ! sed 's/effect@beta/effect@rc/g' "$skill_file" > "$patched_file" ||
+     ! mv "$patched_file" "$skill_file"; then
+    rm -f "$patched_file"
+    return 1
+  fi
+}
+
 # Install skills from a skills.sh source for the selected agents. A non-empty
 # subpath narrows the pinned fetch to the one directory holding the skills.
 install_skills_from() {
@@ -702,6 +721,11 @@ install_skills_from() {
 
   if ! install_source="$(fetch_pinned_source "$source" "$subpath")"; then
     echo -e "${RED}✗${NC} Failed to fetch pinned revision for $label from $source"
+    return 1
+  fi
+
+  if [[ "$source" == "$EFFECT_SKILLS_REPO" ]] &&
+     ! adapt_effect_skill_to_v4_rc "$install_source"; then
     return 1
   fi
 
@@ -811,7 +835,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)" "" "${WEB_QUALITY_SKILLS[@]}"
     install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel/next.js)" "$NEXT_SKILLS_SUBPATH" "${NEXT_SKILLS[@]}"
     install_optional_skills_from "$VERCEL_REACT_SKILLS_REPO" "React skills (vercel-labs/agent-skills)" "$VERCEL_REACT_SKILLS_SUBPATH" "${VERCEL_REACT_SKILLS[@]}"
-    install_optional_skills_from "$EFFECT_SKILLS_REPO" "Effect v4 TypeScript skill (Effect-TS/skills)" "$EFFECT_SKILLS_SUBPATH" "${EFFECT_SKILLS[@]}"
+    install_optional_skills_from "$EFFECT_SKILLS_REPO" "Effect v4 RC TypeScript skill (Effect-TS/skills)" "$EFFECT_SKILLS_SUBPATH" "${EFFECT_SKILLS[@]}"
     install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me + writing-for-agents skills (mattpocock/skills)" "" "${MATTPOCOCK_SKILLS[@]}"
     install_optional_skills_from "$MARKETING_SKILLS_REPO" "seo-audit skill (coreyhaines31/marketingskills)" "" "${SEO_AUDIT_SKILLS[@]}"
     install_optional_skills_from "$ANTHROPIC_SKILLS_REPO" "skill-creator skill (anthropics/skills)" "$ANTHROPIC_SKILLS_SUBPATH" "${ANTHROPIC_SKILLS[@]}"
@@ -934,7 +958,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
     echo -e "     • addyosmani/web-quality-skills — accessibility, performance, SEO, ..."
     echo -e "     • vercel/next.js — Cache Components optimizer + adoption workflow skills"
     echo -e "     • vercel-labs/agent-skills — React performance rules + composition patterns"
-    echo -e "     • Effect-TS/skills — version-matched Effect v4 setup guidance"
+    echo -e "     • Effect-TS/skills — version-matched Effect v4 RC setup guidance"
     echo -e "     • mattpocock/skills — relentless plan interviewing + writing for agents"
     echo -e "     • anthropics/skills/skill-creator — authoring, evaluating, and tuning skills"
     echo -e "     • coreyhaines31/marketingskills/seo-audit — SEO audit workflow"
@@ -1043,7 +1067,7 @@ echo ""
 echo -e "  • ${YELLOW}Vercel Labs${NC} — React performance and composition skills"
 echo -e "    ${BLUE}https://skills.sh/vercel-labs/agent-skills${NC}"
 echo ""
-echo -e "  • ${YELLOW}Effect${NC} — Effect v4 TypeScript setup skill"
+echo -e "  • ${YELLOW}Effect${NC} — Effect v4 RC TypeScript setup skill"
 echo -e "    ${BLUE}https://skills.sh/effect-ts/skills/effect-ts${NC} (no repository licence published)"
 echo ""
 echo -e "  • ${YELLOW}Paul Bakaus${NC} — impeccable frontend design skills"
