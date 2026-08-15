@@ -832,6 +832,10 @@ require_match "Vercel React catalogues are pinned to a full commit" \
   'VERCEL_REACT_SKILLS_REPO="vercel-labs/agent-skills#[0-9a-f]{40}"' "$INSTALLER"
 require_match "Vercel React catalogues are installed by name" \
   'VERCEL_REACT_SKILLS=\(vercel-react-best-practices vercel-composition-patterns\)' "$INSTALLER"
+require_match "Effect skill source is pinned to a full commit" \
+  'EFFECT_SKILLS_REPO="Effect-TS/skills#[0-9a-f]{40}"' "$INSTALLER"
+require_match "Effect skill is selected for installation" \
+  'install_optional_skills_from "\$EFFECT_SKILLS_REPO".*"\${EFFECT_SKILLS\[@\]}"' "$INSTALLER"
 
 # The rules added after the misclassification.
 require_match "xstate classifies state by lifetime, not appearance" \
