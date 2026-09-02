@@ -57,6 +57,7 @@ prepare_workspace() {
   mkdir -p "$dir/.claude"
   ln -s "$skills" "$dir/.claude/skills"
   (cd "$dir" && pnpm install --frozen-lockfile --silent)
+  printf '\n.pnpm-store/\n' >> "$dir/.gitignore"
   (
     cd "$dir" &&
       git init --quiet &&

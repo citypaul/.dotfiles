@@ -55,7 +55,7 @@ const extensionHook = async (hookName, context) => {
     const dir = resolve(__dirname, "results", suite());
     mkdirSync(dir, { recursive: true });
     git("add -A");
-    const diff = git("diff --cached --no-ext-diff --no-color");
+    const diff = git("diff --cached --no-ext-diff --no-color -- . ':(exclude).pnpm-store' ':(exclude)node_modules'");
     writeFileSync(resolve(dir, `${slug(description)}--${slug(label)}.diff`), diff);
     git("reset --hard --quiet");
     git("clean -fdq");

@@ -121,13 +121,14 @@ exports.useCaseTestsUseFakes = (output, context) => {
 };
 
 // 8. The composition root is the only production file that both imports an
-//    SDK and imports the use case: wiring happens in one place.
-exports.wiringOnlyInCompositionRoot = (output, context) => {
-  const useCaseNames = useCaseFiles(context).map((file) => lib.basename(file).replace(/\.ts$/, ""));
+//    SDK and value-imports anything inside the hexagon: wiring happens in
+//    one place.
+exports.wiringOnlyInCompositionRoot = () => {
+  const insideNames = inside().map((file) => lib.basename(file).replace(/\.ts$/, ""));
   const valueImportsOf = (text) => [...text.matchAll(/import\s+(?!type\b)[^;]*?from\s*["']([^"']+)["']/g)].map((m) => m[1]);
-  const wiring = production().filter((file) => !isSdk(file) && importsSdk(file) && valueImportsOf(lib.read(file)).some((spec) => useCaseNames.includes(lib.basename(spec).replace(/\.ts$/, ""))));
+  const wiring = production().filter((file) => !isSdk(file) && importsSdk(file) && valueImportsOf(lib.read(file)).some((spec) => insideNames.includes(lib.basename(spec).replace(/\.ts$/, ""))));
   const stray = wiring.filter((file) => !isRoot(file));
-  return lib.verdict(stray.length === 0 && wiring.length > 0, wiring.length === 0 ? "nothing wires the use case to an SDK-backed adapter" : stray.length === 0 ? "wired only in src/index.ts" : `wiring outside the root: ${list(stray)}`);
+  return lib.verdict(stray.length === 0 && wiring.length > 0, wiring.length === 0 ? "nothing wires the hexagon to an SDK-backed adapter" : stray.length === 0 ? "wired only in src/index.ts" : `wiring outside the root: ${list(stray)}`);
 };
 
 // 9. Case: the transport swap. Exactly one production file imports the mail
