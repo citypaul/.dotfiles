@@ -2,48 +2,65 @@
 "@citypaul/dotfiles": minor
 ---
 
-Evaluate skill routing with promptfoo, and fix the two descriptions it caught
+Evaluate skills with promptfoo, and fix the five skills the evals caught
 
-Fifty skills with deliberately overlapping remits only work if each `description:`
-wins the requests it should and stays quiet on the rest. Until now that was checked
-by reading the descriptions and guessing. `evals/skills/` is a
-[promptfoo](https://github.com/promptfoo/promptfoo) suite that measures it: it runs
-the real Claude Code agent (the `anthropic:claude-agent-sdk` provider) inside a small
-fixture project with this bundle mounted at `.claude/skills`, sends it 48 realistic
-developer requests that never name a skill, and asserts on the `Skill` tool calls —
-`skill-used` for the owner, `not-skill-used` for the neighbour most likely to steal
-the request, and "no skill at all" for two trivial asks.
+Fifty skills with deliberately overlapping remits only work if each one loads when it
+should and, once loaded, changes what the agent does. Until now both were checked by
+reading and guessing. `evals/skills/` is a [promptfoo](https://github.com/promptfoo/promptfoo)
+harness that measures both by running the real Claude Code agent (the Claude Agent SDK
+provider) with this bundle mounted:
+
+- **Routing** — 48 realistic developer requests that never name a skill, asserted with
+  `skill-used` / `not-skill-used` against the neighbour most likely to steal each one.
+- **Quality** — for `tdd`, `hexagonal-architecture` and `domain-driven-design`, a small
+  fixture project that *declares* the practice but shows as little of it as possible,
+  product asks the agent implements with write and shell access in a sandbox, and
+  deterministic graders that read the agent's tool-call trail (test edited before
+  production? failure observed?) and the workspace it left (inside imports only inside?
+  money in whole pence?), plus hidden acceptance tests for behaviour. Every case runs in
+  three arms — `with-skills`, `no-skills` (verified to see no skills, CLAUDE.md or
+  memory) and `skill-forced` — so forced-vs-none is what the skill body is worth and
+  with-vs-forced is whether the description routes on its own. Every grader and hidden
+  test was proven against a hand-written reference implementation before the first
+  agent run; `regrade.mjs` re-grades saved runs offline.
 
 ```bash
-cd evals/skills && pnpm install && ./run.sh     # ~10 minutes, your Claude Code login
+cd evals/skills && pnpm install
+./run.sh                                             # routing, ~10 min
+./run-quality.sh tdd                                 # or hexagonal, ddd
+SKILL_EVAL_BASELINE_REF=origin/main ./run-quality.sh tdd   # old vs new skill in one eval
 ```
 
-`run.sh` builds a throwaway workspace in a temp directory (fixture + a symlink to the
-live skills) so nothing inside the repository gains a nested `.claude/skills`, and
-prints a per-case report of what loaded versus what was expected. The suite spends
-tokens and samples a non-deterministic decision, so it is not part of `npm test`;
-`test/skill-evals-routing.sh` is the offline guard that keeps every case pointing at
-a real skill.
+The suites are not part of `npm test`; `.github/workflows/skill-evals.yml` runs them on
+demand, weekly, or on a PR labelled `run-evals`. Offline guards keep the wiring honest
+on every push. `COVERAGE.md` tracks every skill's status and the batch plan;
+`AUTHORING.md` is the brief for adding a suite.
 
-**What the first run found.** 36 of 48 cases passed outright; every one of the
-"for X use Y" hand-offs between adjacent skills held. Nine cases only failed because
-the harness capped the agent at eight turns before it had finished reading (fixed:
-cap raised to 30, all nine pass 3/3), and two failed because the fixture was missing
-files the request referred to (fixed: they pass 3/3). Two were real:
+**What the evals caught, and what changed** (every edit anchored, verified by an
+independent refuter node, and re-measured):
 
-- **`expectations` fired one time in three** on "I just discovered X — where should
-  that be recorded so we don't lose it?". Its description spoke in abstractions
-  ("documenting a discovery, recording a decision"); the agent answered from general
-  knowledge instead. The description now names what people actually say — just
-  discovered/learned/found out, where should this go or be written down, keep it for
-  the next person or the next agent session, does it belong in CLAUDE.md / README /
-  ADR / tests / a skill — and hands prose off to `technical-writing`.
-- **`technical-writing` fired two times in three** on "rewrite README.md so a new
-  developer can get productive in ten minutes". The description now says to load it
-  *before* drafting, rewriting, or restructuring a document and names README rewrites
-  explicitly, and gains the reverse hand-off to `expectations` for "where should this
-  be recorded".
+- `tdd` — with the skill loaded, replies named the passing run but not the RED failure
+  and never stated the mutation-gate outcome; "it's probably a one-liner, please fix
+  it" never loaded the skill and no test was written. Now: the final reply names the
+  RED run and states the gate outcome in one line; the checklist item is unconditional;
+  the description fires on quick-fix bug reports. 34 → 44 of 44 (with-skills), 40 → 44
+  (forced), on two consecutive runs.
+- `hexagonal-architecture` — with the skill force-loaded, agents still wrote a feature
+  as one file importing the SDKs, edited a tangled use case in place when asked to make
+  the next transport swap a one-file job, parked the adapter beside the vendor SDKs and
+  kept `vi.fn` mocks; the forced arm scored below no-skills. Now: a short "Before You
+  Write Code" procedure (an SDK client type is never a port; the order of work; what to
+  do when touching a use case that still imports an SDK; where adapters and fakes go;
+  fakes not mocks), the port-method rule extended to vendor DTOs, and a description that
+  loads the skill for every change once a repo has opted in. 19 → 32 of 33
+  (with-skills), 14 → 31 (forced).
+- `domain-driven-design` — a derived branded value was re-branded with a second `as`,
+  tests were titled after helpers, and the request's word "fee" became a `Fee` type
+  although the glossary declares `Fine`. Now: one `as` per branded type inside its
+  factory and derived values go back through it; `describe`/`it` titles name the
+  business rule; the glossary outranks the request's wording.
+- `expectations` and `technical-writing` — descriptions that fired one and two times
+  in three on their own requests now use the words people actually say.
 
-Both re-run at 5/5 after the edits. The README documents how to read a failure, add
-a case, compare two versions of one skill side by side, and extend the suite to grade
-answer quality rather than only routing.
+Known gap left for the next batch: `functional` lost a mutation-bug request to `tdd`
+in one of two routing runs.
