@@ -1,6 +1,6 @@
 ---
 name: expectations
-description: Capture learnings, gotchas, and decisions in their durable owner while context is fresh. Use when documenting a discovery, recording a decision, deciding whether guidance is reusable or project-local, or routing knowledge to code, tests, a glossary, an ADR, active plans, or repository guidance.
+description: "Decide where a learning, gotcha, or decision should live so it is not lost, and capture it there while context is fresh. Use when the user says they just discovered, learned, or found out something non-obvious, asks where a fact should be recorded, written down, or go, wants a setup gotcha, workaround, or decision kept for the next person or the next agent session, or asks whether something belongs in CLAUDE.md, a README, an ADR, tests, a glossary, or a reusable skill. Routes each fact to its durable owner and decides whether it is reusable or project-local. For the prose of the document itself see technical-writing; for recording a domain term see ubiquitous-language."
 ---
 
 # Expectations: Capturing Learnings

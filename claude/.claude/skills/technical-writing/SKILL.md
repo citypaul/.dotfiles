@@ -1,6 +1,6 @@
 ---
 name: technical-writing
-description: "Writing developer-facing prose that can be skimmed first and trusted enough to finish — READMEs, guides, tutorials, reference docs, proposals, PR descriptions, release notes. Use when creating or editing any technical document, when a doc reads as a wall of text, when claims need receipts, or when docs must serve AI agents as well as humans. Covers reader-first structure, falsifiable claims, docs-as-behavior verification, and agent-readable reference shape. For diagram choice and syntax see diagrams; for API reference semantics see api-design; for CLI help text see cli-design."
+description: "Writing developer-facing prose that can be skimmed first and trusted enough to finish — READMEs, guides, tutorials, reference docs, proposals, PR descriptions, release notes. Load before drafting, rewriting, restructuring, or editing any technical document, including a request to rewrite or improve a README, when a doc reads as a wall of text, when claims need receipts, or when docs must serve AI agents as well as humans. Covers reader-first structure, falsifiable claims, docs-as-behavior verification, and agent-readable reference shape. For deciding where a learning, gotcha, or decision should be recorded see expectations; for diagram choice and syntax see diagrams; for API reference semantics see api-design; for CLI help text see cli-design."
 ---
 
 # Technical Writing: Skimmed First, Trusted Enough to Finish

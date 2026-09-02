@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# hexagonal-architecture quality evaluation. See promptfooconfig.tdd.yaml for
+# the shape; graders live in hex-assertions.js. Run with
+# ./run-quality.sh hexagonal.
+description: hexagonal-architecture quality — does the agent keep the hexagon the way the skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: bypassPermissions
+  allow_dangerously_skip_permissions: true
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `hexagonal-architecture` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://hex-assertions.js:useCaseInsideHexagon', metric: use-case-inside-hexagon, weight: 2 }
+    - { type: javascript, value: 'file://hex-assertions.js:portsOwnedInsideNamedByRole', metric: ports-owned-inside-named-by-role }
+    - { type: javascript, value: 'file://hex-assertions.js:adaptersCarryNoBusinessRule', metric: adapters-carry-no-business-rule }
+    - { type: javascript, value: 'file://hex-assertions.js:noIoInside', metric: no-io-inside }
+    - { type: javascript, value: 'file://hex-assertions.js:portsHaveTestInteractors', metric: ports-have-test-interactors }
+    - { type: javascript, value: 'file://hex-assertions.js:useCaseTestsUseFakes', metric: use-case-tests-use-fakes }
+    - { type: javascript, value: 'file://hex-assertions.js:wiringOnlyInCompositionRoot', metric: wiring-only-in-composition-root }
+    - { type: javascript, value: 'file://hex-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://hex-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://hex-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/hexagonal-quality.yaml

@@ -20,6 +20,7 @@
 - [Documentation](#-documentation)
 - [Who This Is For](#-who-this-is-for)
 - [Philosophy](#-philosophy)
+- [Evaluating the Skills](#-evaluating-the-skills)
 - [Continuous Improvement](#-continuous-improvement)
 - [Personal Dotfiles](#-personal-dotfiles-the-original-purpose)
 - [Contributing](#-contributing)
@@ -1870,6 +1871,7 @@ change before release.
 - **[CLAUDE.md](claude/.claude/CLAUDE.md)** - Core development principles (~160 lines)
 - **[Skills](claude/.claude/skills/)** - Auto-discovered patterns from this repo, 6 from [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills), 2 from [vercel/next.js](https://github.com/vercel/next.js/tree/canary/skills), 2 from [vercel-labs/agent-skills](https://skills.sh/vercel-labs/agent-skills), 18 from [pbakaus/impeccable](https://github.com/pbakaus/impeccable), optional `grill-me` and `writing-for-agents` from [mattpocock/skills](https://skills.sh/mattpocock/skills), `skill-creator` from [anthropics/skills](https://github.com/anthropics/skills), `seo-audit` from [coreyhaines31/marketingskills](https://skills.sh/coreyhaines31/marketingskills/seo-audit), and `herdr` from [herdrdev/herdr](https://skills.sh/herdrdev/herdr) — all installed via [skills.sh](https://skills.sh) for multi-agent portability.
 - **[Commands](claude/.claude/commands/)** - Slash commands (/setup, /plan, /continue)
+- **[Skill evaluations](evals/skills/README.md)** - promptfoo routing suite that checks each skill fires on the requests it claims and stays quiet on its neighbours'
 - **[Agents README](claude/.claude/agents/README.md)** - Detailed agent documentation with examples
 - **[Agent Definitions](claude/.claude/agents/)** - Individual agent configuration files (9 agents: tdd-guardian, ts-enforcer, refactor-scan, docs-guardian, learn, progress-guardian, adr, use-case-data-patterns, twelve-factor-audit)
 
@@ -1901,6 +1903,40 @@ This system is based on several key insights:
    then put durable knowledge with the source that can keep it true.
 
 6. **Explicit "no refactoring"** - Saying "code is already clean" prevents the feeling that the refactor step was skipped.
+
+---
+
+## 🧪 Evaluating the Skills
+
+[`evals/skills`](evals/skills/) is a [promptfoo](https://github.com/promptfoo/promptfoo)
+harness that runs the real Claude Code agent (via the Claude Agent SDK provider) with
+this bundle mounted and measures two things:
+
+- **Routing** — 48 realistic developer requests that never name a skill; the
+  assertion is which skill the agent loads (`skill-used`), which neighbour stays quiet
+  (`not-skill-used`), and that trivial asks load nothing. This is where a `description`
+  earns its place.
+- **Quality** — for `tdd`, `hexagonal-architecture` and `domain-driven-design`, a
+  small fixture project that has opted into the practice plus product asks the agent
+  implements with write and shell access. Deterministic graders read the agent's
+  tool-call trail (test edited before production? failure observed?) and the
+  workspace it left (inside imports only inside? money in whole pence?), and hidden
+  acceptance tests check the behaviour. Every case runs **with the skills and
+  without**, so the gap is what the skill is worth on that case.
+
+```bash
+cd evals/skills && pnpm install
+./run.sh                   # routing, ~10 minutes, uses your Claude Code login
+./run-quality.sh tdd       # or hexagonal, ddd
+pnpm exec promptfoo view   # every transcript and per-metric score
+```
+
+Neither is part of `npm test`: they spend tokens and sample non-deterministic
+decisions. The offline guard `test/skill-evals-routing.sh` keeps the routing cases
+pointing at real skills. When a case fails, the fix is in the skill — a `description`
+line for routing, the body for quality — and the case stays as the regression check.
+See [the suite's README](evals/skills/README.md) for how to read a failure, add a case,
+and add a quality suite for another skill.
 
 ---
 

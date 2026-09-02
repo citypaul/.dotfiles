@@ -1,0 +1,44 @@
+# tdd quality cases. Each is a real behaviour change to the fixture's
+# src/notes.ts, phrased the way a developer would ask for it. The graders in
+# tdd-assertions.js check the order and shape of what the agent did, and a
+# hidden acceptance test (vars.acceptance) checks that the behaviour works.
+#
+# The request names the function signature so the hidden test can call it;
+# everything else — data shape, test design, sequencing — is the agent's.
+
+- description: archive a note
+  vars:
+    acceptance: archive.test.ts
+    request: >-
+      Add the ability to archive a note. Add `archiveNote(state, id)` to
+      src/notes.ts. An archived note must drop out of `searchNotes` results
+      (with or without a query) but must stay in `state.notes`. Archiving an
+      id that doesn't exist leaves the state unchanged. Implement it and make
+      sure it's tested properly.
+
+- description: search matches tags
+  vars:
+    acceptance: tag-search.test.ts
+    request: >-
+      Bug: searching notes for "urgent" doesn't find notes tagged `urgent`.
+      `searchNotes` in src/notes.ts only looks at the title and body. Make
+      search also match tags, case-insensitively like the other fields, without
+      returning the same note twice. Fix it properly.
+
+- description: pin a note
+  vars:
+    acceptance: pin.test.ts
+    request: >-
+      Add `pinNote(state, id)` to src/notes.ts. Pinned notes should come first
+      in `searchNotes` results, whether or not there is a query; otherwise the
+      existing order is kept, both among pinned and among unpinned notes.
+      Pinning an unknown id leaves the state unchanged. Implement it.
+
+- description: addTag corrupts earlier state
+  vars:
+    acceptance: addtag-immutable.test.ts
+    request: >-
+      Bug: after `addTag(state, id, tag)` the *previous* state object shows
+      the tag too — our undo feature keeps old state snapshots and they are
+      getting corrupted. It's in src/notes.ts and it's probably a one-liner.
+      Please fix it.

@@ -20,7 +20,8 @@
     "test": "./test/run.sh",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "eval:skills": "./evals/skills/run.sh"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1"

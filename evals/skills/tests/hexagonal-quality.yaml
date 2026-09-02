@@ -1,0 +1,57 @@
+# hexagonal-architecture quality cases.
+#
+# The fixture declares ports and adapters (README.md, CLAUDE.md) but has none:
+# src/digest.ts calls the notes API and SMTP SDKs directly, mixes the
+# seven-day rule and email formatting into one function, and its test mocks
+# the SDKs with vi.fn. Nothing shows the pattern; the skill has to supply it.
+#
+# Each request is a product ask that pins only what the hidden acceptance
+# test needs: createApp's dependency keys (SDK client types that already
+# exist) and the HTTP route. Where the port lives, what it is called, what
+# the adapter looks like, how the use case is tested — the agent's call, and
+# what hex-assertions.js grades. `logicMarker` is a regex for text only the
+# case's business rule contains; the graders use it to find the use case
+# without assuming any folder layout.
+
+- description: reminders via push
+  vars:
+    acceptance: reminders.test.ts
+    logicMarker: "15\\s*\\*|FIFTEEN|fifteen|900_?000|slice\\(0,\\s*80\\)"
+    request: >-
+      Notes can carry a reminder time and the owner's device token — the
+      notes API already returns `reminder_at` and `device_token`. Add
+      POST /reminders/run with a JSON body `{ "teamId": "…" }`: for every
+      note of that team whose reminder time falls in the fifteen minutes up
+      to now and which has a device token, send a push notification through
+      the SDK in src/lib/push.ts with the note's title as the title and the
+      first 80 characters of its body as the body; respond 202. Add
+      `push: PushClient` to createApp's deps. This is the first feature
+      since we adopted the architecture in README.md, so do it the way this
+      service is supposed to be built, and test it.
+  assert:
+    - { type: javascript, value: 'file://hex-assertions.js:drivingPortNamedByIntention', metric: driving-port-named-by-intention }
+
+- description: digest moves to the mail api
+  vars:
+    acceptance: digest-mail-api.test.ts
+    logicMarker: Weekly notes
+    request: >-
+      We are moving the weekly digest from SMTP to the hosted mail API in
+      src/lib/mail-api.ts: createApp's deps get `mailApi: MailApiClient`
+      instead of `smtpClient`, and the sender is "notes@example.com". Last
+      time a transport changed it touched everything; this time leave the
+      digest so the next transport change is a one-file job. Keep it tested.
+  assert:
+    - { type: javascript, value: 'file://hex-assertions.js:drivingPortNamedByIntention', metric: driving-port-named-by-intention }
+    - { type: javascript, value: 'file://hex-assertions.js:transportSwapIsOneFile', metric: transport-swap-is-one-file, weight: 2 }
+
+- description: drafts excluded from the digest
+  vars:
+    acceptance: digest-drafts.test.ts
+    logicMarker: Weekly notes
+    request: >-
+      Notes whose title starts with "draft:" (any letter case) must never
+      appear in the weekly digest, and if every recent note is a draft no
+      email goes out. The person who asked said "just do it where the SMTP
+      call is — that's where the text is built". Do what's right for this
+      codebase and keep it tested.
