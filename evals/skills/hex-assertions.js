@@ -57,8 +57,9 @@ exports.drivingPortNamedByIntention = () => {
 // 4. Adapters translate; they carry no business rule. The SDK-importing
 //    files contain none of the digest/reminder logic or email content.
 exports.adaptersCarryNoBusinessRule = (output, context) => {
-  const files = outside();
-  if (files.length === 0) return lib.verdict(false, "no adapter file (nothing outside imports an SDK besides src/index.ts)");
+  const touched = lib.touchedBy(context);
+  const files = outside().filter(touched);
+  if (files.length === 0) return lib.verdict(false, "the agent wrote or changed no adapter (no touched file outside src/index.ts imports an SDK)");
   const hits = files.flatMap((file) => {
     const text = lib.read(file);
     return [
@@ -94,17 +95,19 @@ exports.portsHaveTestInteractors = () => {
   const declared = interfacesIn(inside());
   if (declared.length === 0) return lib.verdict(false, "no ports to check");
   const testText = tests().map(lib.read).join("\n");
-  const untested = declared.filter((d) => !new RegExp(`\\b${d.name}\\b`).test(testText)).map((d) => d.name);
+  const testImports = tests().flatMap((file) => lib.importsOf(lib.read(file)).map((spec) => lib.basename(spec).replace(/\.ts$/, "")));
+  const untested = declared
+    .filter((d) => !new RegExp(`\\b${d.name}\\b`).test(testText) && !testImports.includes(lib.basename(d.file).replace(/\.ts$/, "")))
+    .map((d) => d.name);
   return lib.verdict(untested.length === 0, untested.length === 0 ? `every port has a test interactor (${declared.length})` : `ports with no test interactor: ${untested.join(", ")}`);
 };
 
-// 7. Use-case tests use fakes, not mocks or the SDKs: any test the agent
-//    touched or that imports the use case.
+// 7. Use-case tests use fakes, not mocks or the SDKs. Only tests that import
+//    the use case are held to this; adapter tests may exercise the SDK.
 exports.useCaseTestsUseFakes = (output, context) => {
-  const touched = lib.touchedBy(context);
   const useCaseNames = useCaseFiles(context).map((file) => lib.basename(file).replace(/\.ts$/, ""));
-  const relevant = tests().filter((file) => touched(file) || lib.importsOf(lib.read(file)).some((spec) => useCaseNames.includes(lib.basename(spec).replace(/\.ts$/, ""))));
-  if (relevant.length === 0) return lib.verdict(false, "no test touched or importing the use case");
+  const relevant = tests().filter((file) => lib.importsOf(lib.read(file)).some((spec) => useCaseNames.includes(lib.basename(spec).replace(/\.ts$/, ""))));
+  if (relevant.length === 0) return lib.verdict(false, "no test imports the use case");
   const smells = relevant.flatMap((file) => {
     const text = lib.read(file);
     return [
@@ -121,7 +124,8 @@ exports.useCaseTestsUseFakes = (output, context) => {
 //    SDK and imports the use case: wiring happens in one place.
 exports.wiringOnlyInCompositionRoot = (output, context) => {
   const useCaseNames = useCaseFiles(context).map((file) => lib.basename(file).replace(/\.ts$/, ""));
-  const wiring = production().filter((file) => !isSdk(file) && importsSdk(file) && lib.importsOf(lib.read(file)).some((spec) => useCaseNames.includes(lib.basename(spec).replace(/\.ts$/, ""))));
+  const valueImportsOf = (text) => [...text.matchAll(/import\s+(?!type\b)[^;]*?from\s*["']([^"']+)["']/g)].map((m) => m[1]);
+  const wiring = production().filter((file) => !isSdk(file) && importsSdk(file) && valueImportsOf(lib.read(file)).some((spec) => useCaseNames.includes(lib.basename(spec).replace(/\.ts$/, ""))));
   const stray = wiring.filter((file) => !isRoot(file));
   return lib.verdict(stray.length === 0 && wiring.length > 0, wiring.length === 0 ? "nothing wires the use case to an SDK-backed adapter" : stray.length === 0 ? "wired only in src/index.ts" : `wiring outside the root: ${list(stray)}`);
 };

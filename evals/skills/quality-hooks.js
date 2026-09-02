@@ -13,7 +13,15 @@ const { resolve } = require("node:path");
 
 const workspace = () => process.env.SKILL_EVAL_WORKSPACE;
 const suite = () => process.env.SKILL_EVAL_SUITE ?? "quality";
-const git = (args) => execSync(`git ${args}`, { cwd: workspace(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+// Bypass any external diff driver, pager or colouring the user has configured,
+// so the saved diff is a plain patch `git apply` (and regrade.mjs) can consume.
+const git = (args) =>
+  execSync(`git --no-pager -c diff.external= -c core.pager=cat -c color.ui=false ${args}`, {
+    cwd: workspace(),
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, GIT_EXTERNAL_DIFF: "", GIT_PAGER: "cat" },
+  });
 
 const slug = (text) =>
   String(text)
@@ -47,7 +55,7 @@ const extensionHook = async (hookName, context) => {
     const dir = resolve(__dirname, "results", suite());
     mkdirSync(dir, { recursive: true });
     git("add -A");
-    const diff = git("diff --cached");
+    const diff = git("diff --cached --no-ext-diff --no-color");
     writeFileSync(resolve(dir, `${slug(description)}--${slug(label)}.diff`), diff);
     git("reset --hard --quiet");
     git("clean -fdq");
