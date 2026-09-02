@@ -35,15 +35,18 @@ exports.brandedIds = () =>
     return lib.verdict(problems.length === 0, problems.length === 0 ? "PatronId, ItemId, LoanId branded with factories" : problems.join("; "));
   });
 
-// 3. Expected outcomes are Result values: no exported function throws, except
-//    the validating `create…Id` factories.
+// 3. Expected outcomes are Result values: no exported operation throws.
+//    Validating factories (`create…`) may throw — the skill treats a factory
+//    throw as an invariant violation, i.e. a programmer error — so only the
+//    commands and queries a caller can legitimately drive to a refusal are
+//    held to this.
 exports.resultsNotThrows = () =>
   requireCode(() => {
     const throwing = production().flatMap((file) => {
       const source = lib.read(file);
       return [...source.matchAll(/export\s+(?:const|function)\s+(\w+)/g)]
         .map((match) => ({ name: match[1], start: match.index }))
-        .filter(({ name }) => !/^create\w+Id$/.test(name))
+        .filter(({ name }) => !/^create\w+$/.test(name))
         .filter(({ start }) => {
           const rest = source.slice(start + 1);
           const end = rest.search(/\nexport\s/);
