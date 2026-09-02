@@ -58,7 +58,8 @@ independent refuter node, and re-measured):
   tests were titled after helpers, and the request's word "fee" became a `Fee` type
   although the glossary declares `Fine`. Now: one `as` per branded type inside its
   factory and derived values go back through it; `describe`/`it` titles name the
-  business rule; the glossary outranks the request's wording.
+  business rule; the glossary outranks the request's wording. 21 → 22 of 22 (with-skills),
+  18 → 22 (forced).
 - `expectations` and `technical-writing` — descriptions that fired one and two times
   in three on their own requests now use the words people actually say.
 

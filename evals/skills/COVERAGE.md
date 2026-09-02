@@ -22,7 +22,7 @@ meta-skill, or one-liner); routing coverage only.
 |---|---|---|---|---|
 | tdd | A | max | 1 | 4 cases; no-skills 27/44, forced 40→44/44, with-skills 34→44/44 after four edits (RED named in reply, mutation gate stated, checklist unconditional, description fires on "one-liner fix"); 44/44 in both arms on two consecutive runs |
 | hexagonal-architecture | A | improved | 1 | 3 cases on a declared-but-not-hexagonal fixture; with-skills 19→32/33, forced 14→31/33 after a "Before You Write Code" procedure, SDK-client-is-not-a-port rule, adapter placement, fakes-not-mocks, and a description that fires on every change in an opted-in repo |
-| domain-driven-design | A | improved | 1 | 2 cases on a greenfield lending domain with a glossary; with-skills 21/22, no-skills 18/22, forced 18/22 before edits (assertion budget, test titles by concept, glossary over request wording); re-run pending |
+| domain-driven-design | A | improved | 1 | 2 cases on a greenfield lending domain with a glossary; no-skills 18/22; with-skills 21→22/22, forced 18→22/22 after three edits (assertion budget, test titles by concept, glossary over request wording); confirmation run pending |
 | testing | A | todo | 2 | factories, behaviour over implementation, no 1:1 file mirroring |
 | typescript-strict | A | todo | 2 | schema at trust boundary, no any/assertions, branded types |
 | functional | A | todo | 2 | immutability violations catalogue, early returns, options objects |
