@@ -130,8 +130,9 @@ exports.referencesById = () =>
 exports.moneyInWholePence = () =>
   requireCode(() => {
     const all = text();
-    const pence = /\bpence\b/.test(all) && /\b20\b/.test(all) && /\b500\b/.test(all);
-    const floaty = /\b0\.2\b|\b5\.0\b|\b5\.00\b|toFixed\(|\/\s*100\b|\*\s*100\b/.test(all);
+    const code = all.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "").replace(/(["'`])(?:\\.|(?!\1).)*\1/g, '""');
+    const pence = /\bpence\b/.test(all) && /\b20\b/.test(code) && /\b500\b/.test(code);
+    const floaty = /\b0\.2\b|\b5\.0\b|\b5\.00\b|toFixed\(|\/\s*100\b|\*\s*100\b/.test(code);
     return lib.verdict(pence && !floaty, `pence with 20 and 500: ${pence}; pound/float arithmetic: ${floaty}`);
   });
 

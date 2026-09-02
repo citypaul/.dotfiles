@@ -159,9 +159,10 @@ at a time; `quality-hooks.js` saves each case's diff under `results/<suite>/` an
 resets the workspace between cases. The report at the end is a metric-by-provider
 scoreboard followed by the failing metrics per case, each with the grader's reason.
 
-To iterate on graders without spending tokens, `node regrade.mjs <suite>
-[results file]` rebuilds every case's workspace from its saved diff and re-runs all
-graders with the saved trail and reply.
+Every run gets a directory, `results/<suite>/<timestamp>/`, holding `results.json` and
+one `.diff` per case. To iterate on graders without spending tokens, `node regrade.mjs
+<suite> [run directory]` rebuilds every case's workspace from its saved diff and
+re-runs all graders with the saved trail, reply and the *current* case vars.
 
 ### Reading a quality failure
 

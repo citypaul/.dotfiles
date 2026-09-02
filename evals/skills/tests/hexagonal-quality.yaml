@@ -34,7 +34,7 @@
 - description: digest moves to the mail api
   vars:
     acceptance: digest-mail-api.test.ts
-    logicMarker: Weekly notes
+    logicMarker: "7\\s*\\*\\s*24|SEVEN|seven|7\\s*days|WEEK_|weekAgo|oneWeek|lastWeek|DAYS\\s*=\\s*7"
     request: >-
       We are moving the weekly digest from SMTP to the hosted mail API in
       src/lib/mail-api.ts: createApp's deps get `mailApi: MailApiClient`
@@ -48,7 +48,7 @@
 - description: drafts excluded from the digest
   vars:
     acceptance: digest-drafts.test.ts
-    logicMarker: Weekly notes
+    logicMarker: draft
     request: >-
       Notes whose title starts with "draft:" (any letter case) must never
       appear in the weekly digest, and if every recent note is a draft no

@@ -3,8 +3,8 @@
 // Every case runs in the same workspace (the Claude Agent SDK provider has one
 // working_dir), so cases run one at a time and the workspace is reset to its
 // committed state after each. Before resetting, the agent's diff is saved
-// under results/<suite>/ so a grade can be traced back to the code that
-// earned it. SKILL_EVAL_SUITE and SKILL_EVAL_WORKSPACE are set by
+// under the run directory (SKILL_EVAL_RUN_DIR) so a grade can be traced back
+// to the code that earned it and re-graded later. SKILL_EVAL_SUITE and SKILL_EVAL_WORKSPACE are set by
 // run-quality.sh.
 
 const { execSync } = require("node:child_process");
@@ -52,7 +52,7 @@ const extensionHook = async (hookName, context) => {
     selectWorkspace(context.result?.provider?.label ?? context.result?.provider?.id ?? "");
     const label = context.result?.provider?.label ?? context.result?.provider?.id ?? "provider";
     const description = context.test?.description ?? "case";
-    const dir = resolve(__dirname, "results", suite());
+    const dir = process.env.SKILL_EVAL_RUN_DIR ?? resolve(__dirname, "results", suite());
     mkdirSync(dir, { recursive: true });
     git("add -A");
     const diff = git("diff --cached --no-ext-diff --no-color -- . ':(exclude).pnpm-store' ':(exclude)node_modules'");

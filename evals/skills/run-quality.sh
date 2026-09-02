@@ -19,8 +19,8 @@
 # every case against it — promptfoo's side-by-side skill-version comparison,
 # in one eval, for the viewer and for PR review.
 #
-# Results: results/<suite>-latest.json, plus one .diff per case under
-# results/<suite>/.
+# Results: results/<suite>-latest.json, and a run directory
+# results/<suite>/<timestamp>/ holding results.json plus one .diff per case.
 
 set -euo pipefail
 
@@ -67,8 +67,8 @@ prepare_workspace() {
 }
 
 prepare_workspace "$WORKSPACE" "$SKILLS_DIR"
-mkdir -p "$RESULTS_DIR/$SUITE"
-rm -f "$RESULTS_DIR/$SUITE"/*.diff
+RUN_DIR="$RESULTS_DIR/$SUITE/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$RUN_DIR"
 
 BASELINE_WORKSPACE=""
 if [ -n "${SKILL_EVAL_BASELINE_REF:-}" ]; then
@@ -105,6 +105,7 @@ fi
 
 cd "$SCRIPT_DIR"
 SKILL_EVAL_SUITE="$SUITE" \
+SKILL_EVAL_RUN_DIR="$RUN_DIR" \
 SKILL_EVAL_WORKSPACE="$WORKSPACE" \
 SKILL_EVAL_CURRENT_WORKSPACE="$WORKSPACE" \
 SKILL_EVAL_BASELINE_WORKSPACE="$BASELINE_WORKSPACE" \
@@ -116,6 +117,8 @@ PROMPTFOO_DISABLE_TELEMETRY=1 \
     -o "$RESULTS_DIR/$SUITE-latest.json" \
     "$@" && status=0 || status=$?
 
+cp "$RESULTS_DIR/$SUITE-latest.json" "$RUN_DIR/results.json" 2>/dev/null || true
 echo ""
+echo "run directory: $RUN_DIR"
 node "$SCRIPT_DIR/report-quality.mjs" "$RESULTS_DIR/$SUITE-latest.json"
 exit "$status"

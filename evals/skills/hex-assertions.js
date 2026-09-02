@@ -9,8 +9,12 @@
 
 const lib = require("./quality-lib");
 
-const production = () => lib.sourceFiles(lib.resolve(lib.workspace(), "src")).filter((file) => !lib.isTestPath(file));
+const production = () => lib.sourceFiles(lib.resolve(lib.workspace(), "src")).filter((file) => !lib.isTestPath(file) && !/\/(testing|test-support|test-utils|__tests__)\//.test(file) && !/fakes?\.ts$/.test(file));
 const tests = () => lib.sourceFiles(lib.resolve(lib.workspace(), "src")).filter(lib.isTestPath);
+// Test interactors (fakes, drivers) may live in a test-support module rather
+// than a *.test.ts file; the skill lists them as their own role.
+const isTestSupport = (file) => /\/(testing|test-support|test-utils|__tests__|fakes?)\//.test(file) || /fakes?\.ts$/.test(file);
+const interactorFiles = () => [...tests(), ...lib.sourceFiles(lib.resolve(lib.workspace(), "src")).filter(isTestSupport)];
 const importsSdk = (file) => lib.importsOf(lib.read(file)).some((spec) => /(^|\/)lib\//.test(spec));
 const isRoot = (file) => /\/src\/index\.ts$/.test(file);
 const isSdk = (file) => /\/src\/lib\//.test(file);
@@ -94,8 +98,8 @@ exports.noIoInside = () => {
 exports.portsHaveTestInteractors = () => {
   const declared = interfacesIn(inside());
   if (declared.length === 0) return lib.verdict(false, "no ports to check");
-  const testText = tests().map(lib.read).join("\n");
-  const testImports = tests().flatMap((file) => lib.importsOf(lib.read(file)).map((spec) => lib.basename(spec).replace(/\.ts$/, "")));
+  const testText = interactorFiles().map(lib.read).join("\n");
+  const testImports = interactorFiles().flatMap((file) => lib.importsOf(lib.read(file)).map((spec) => lib.basename(spec).replace(/\.ts$/, "")));
   const untested = declared
     .filter((d) => !new RegExp(`\\b${d.name}\\b`).test(testText) && !testImports.includes(lib.basename(d.file).replace(/\.ts$/, "")))
     .map((d) => d.name);
