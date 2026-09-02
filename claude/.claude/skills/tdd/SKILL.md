@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: RED-GREEN-REFACTOR for production behavior changes, followed by mutation testing or alternate evidence once at the end-of-phase PR-readiness gate. Use before implementing new features, bug fixes, or any changed observable behavior, and as the governing workflow for mixed implementation work. Do not use for pure behavior-preserving refactoring or mechanism reduction; those start from passing proportionate evidence via refactoring or reduce-system-complexity, never fabricated RED or structural mutants. Not for plan-only requests; use planning first for significant multi-slice work.
+description: RED-GREEN-REFACTOR for production behavior changes, followed by mutation testing or alternate evidence once at the end-of-phase PR-readiness gate. Use before implementing new features, bug fixes, or any changed observable behavior, and as the governing workflow for mixed implementation work. Load it for any request to add, implement, or fix production code, including a bug report that calls the fix a one-liner or a quick change in a named file — a small fix still starts from a failing behavior test, not from an edit. Do not use for pure behavior-preserving refactoring or mechanism reduction; those start from passing proportionate evidence via refactoring or reduce-system-complexity, never fabricated RED or structural mutants. Not for plan-only requests; use planning first for significant multi-slice work.
 ---
 
 # Test-Driven Development
@@ -119,7 +119,7 @@ Repository-specific test, coverage, mutation, and evidence-freshness rules take 
 - Obtain approval for the working-baseline commit before refactoring when the workflow uses commits as safety checkpoints
 - Keep focused and affected tests green after each small refactor; run the full suite at the pre-PR gate
 
-Repeat RED-GREEN-REFACTOR as needed until the phase's PR scope is complete. Do not run the automated mutation harness after each increment, refactor, or commit.
+Repeat RED-GREEN-REFACTOR as needed until the phase's PR scope is complete. Do not run the automated mutation harness after each increment, refactor, or commit. Whether or not the harness ran, the final reply must state the mutation gate outcome in one line — `Mutation: ran, X killed / Y survived (score Z%)`, `Mutation: N/A — <rationale> ; alternate evidence: <what>`, or `Mutation: deferred to the PR gate — this slice is not yet PR-ready`. An unstated gate is an unrecorded gate.
 
 ## End-of-Phase PR-Readiness Gate
 
@@ -134,7 +134,7 @@ Run this gate once the implementation and refactoring phase is complete and the 
 
 ## Evidence, History, And Coverage
 
-Capture the expected RED failure, the GREEN pass, and the final non-watch verification. Existing commit history may corroborate the sequence, but do not reshape commits merely to perform TDD theatre; follow the repository's delivery policy.
+Capture the expected RED failure, the GREEN pass, and the final non-watch verification, and state all three in the final reply: name the RED run (the selector used and the failure it produced, e.g. `pinNote is not a function`), the GREEN run, and the completed non-watch full run. A reply that reports only passing counts has not reported TDD evidence. Existing commit history may corroborate the sequence, but do not reshape commits merely to perform TDD theatre; follow the repository's delivery policy.
 
 Coverage is a diagnostic, not a universal target. Run the repository's coverage command when policy requires it or when making a coverage claim. Verify the exact lines, branches, statements, and functions claimed, then ask whether any gap represents untested behavior. A high percentage does not prove test quality; use the `testing` skill's coverage-theatre checks and mutation or alternate evidence where proportionate.
 
@@ -282,7 +282,7 @@ Before marking work complete:
 - [ ] The watcher was stopped and no watcher process or temporary fixture was left behind
 - [ ] A completed non-watch full-suite run passes before PR
 - [ ] Any coverage claim or repository threshold was verified with the repository-owned command
-- [ ] If the work is ready for a PR, the end-of-phase mutation gate ran once for the accumulated scope and valuable survivors were addressed where meaningful, or explicit `N/A` plus proportionate alternate evidence was reviewed
+- [ ] The final reply states the mutation gate outcome — ran once for the accumulated scope with valuable survivors addressed, explicit `N/A` plus proportionate alternate evidence, or explicitly deferred to the PR gate because this slice is not yet PR-ready; never left unstated
 - [ ] Test state is isolated; fixtures or factories are used where they improve clarity
 - [ ] Tests verify behavior (not implementation details)
 - [ ] Refactoring assessed when applicable and applied if valuable, or explicitly `N/A`

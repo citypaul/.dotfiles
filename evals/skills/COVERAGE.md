@@ -20,7 +20,7 @@ meta-skill, or one-liner); routing coverage only.
 
 | Skill | Tier | Status | Batch | Notes |
 |---|---|---|---|---|
-| tdd | A | baseline | 1 | 4 cases; discriminates on test-first and RED-observed |
+| tdd | A | improved | 1 | 4 cases; no-skills 27/44, forced 40→44/44, with-skills 34→44/44 after four edits (RED named in reply, mutation gate stated, checklist unconditional, description fires on "one-liner fix") |
 | hexagonal-architecture | A | proven | 1 | rebuilt: declared-but-not-hexagonal fixture, 3 cases |
 | domain-driven-design | A | proven | 1 | rebuilt: greenfield lending domain with glossary, 2 cases |
 | testing | A | todo | 2 | factories, behaviour over implementation, no 1:1 file mirroring |
