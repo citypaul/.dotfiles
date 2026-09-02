@@ -26,6 +26,28 @@ const sameFile = (a, b) => {
   return tail(a) !== "" && tail(a) === tail(b);
 };
 
+// promptfoo hands every JavaScript assertion its provider; when run-quality.sh
+// mounted a baseline workspace, graders for the `skills-at-<ref>` provider
+// must read that workspace. Assertion modules wrap their exports with
+// `withWorkspace` so the switch happens before any grader reads a file.
+const selectWorkspace = (context) => {
+  const baseline = process.env.SKILL_EVAL_BASELINE_WORKSPACE;
+  const current = process.env.SKILL_EVAL_CURRENT_WORKSPACE ?? process.env.SKILL_EVAL_WORKSPACE;
+  const label = context?.provider?.label ?? context?.provider?.id ?? "";
+  process.env.SKILL_EVAL_WORKSPACE = baseline && /^skills-at-/.test(String(label)) ? baseline : current;
+};
+
+const withWorkspace = (graders) =>
+  Object.fromEntries(
+    Object.entries(graders).map(([name, grader]) => [
+      name,
+      (output, context) => {
+        selectWorkspace(context);
+        return grader(output, context);
+      },
+    ]),
+  );
+
 const trail = (context) =>
   (context?.providerResponse?.metadata?.toolCalls ?? []).map((call, index) => ({
     index,
@@ -100,6 +122,8 @@ const typecheckClean = () => {
 
 module.exports = {
   verdict,
+  selectWorkspace,
+  withWorkspace,
   sameFile,
   touchedBy,
   workspace,

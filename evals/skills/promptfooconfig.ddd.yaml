@@ -13,8 +13,13 @@ x-agent: &agent
   apiKeyRequired: false
   working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
   append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
-  permission_mode: bypassPermissions
-  allow_dangerously_skip_permissions: true
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+  web_search_enabled: false
   max_turns: 80
   persist_session: false
 

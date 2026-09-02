@@ -140,3 +140,5 @@ exports.behaviourDelivered = (output, context) =>
 
 exports.suiteGreen = lib.suiteGreen;
 exports.typecheckClean = lib.typecheckClean;
+
+module.exports = lib.withWorkspace(module.exports);

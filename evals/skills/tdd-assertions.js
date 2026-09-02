@@ -200,3 +200,5 @@ exports.mutationGateRecorded = (output) => {
   const mentioned = /mutation/i.test(text);
   return verdict(mentioned, mentioned ? "reply addresses the mutation gate" : "reply does not mention mutation testing (ran or N/A)");
 };
+
+module.exports = require("./quality-lib").withWorkspace(module.exports);

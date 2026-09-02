@@ -143,9 +143,10 @@ first agent run, so a failure points at the agent's work, not the harness.
 
 ```bash
 cd evals/skills
-./run-quality.sh tdd                                # both providers, all cases
+./run-quality.sh tdd                                # all three arms, all cases
 ./run-quality.sh hexagonal --filter-providers with-skills
 ./run-quality.sh ddd --repeat 3
+SKILL_EVAL_BASELINE_REF=origin/main ./run-quality.sh tdd   # + skills-at-<ref> arm: old vs new skill in one eval
 pnpm exec promptfoo view                           # transcripts, per-metric scores
 ```
 
@@ -171,6 +172,30 @@ scoreboard followed by the failing metrics per case, each with the grader's reas
 
 The fix for a skill defect is an edit to `SKILL.md`; re-run the suite to show it
 took, and keep the case.
+
+## How this follows promptfoo's guidance
+
+promptfoo's [Test Agent Skills](https://www.promptfoo.dev/docs/guides/test-agent-skills/)
+and [Evaluate Coding Agents](https://www.promptfoo.dev/docs/guides/evaluate-coding-agents/)
+guides, and the [Claude Agent SDK provider](https://www.promptfoo.dev/docs/providers/claude-agent-sdk/)
+reference, are the basis for the harness. Where and how each recommendation is met:
+
+| Recommendation | Here |
+|---|---|
+| Discover skills from the fixture with `setting_sources: ['project']`, mount `.claude/skills` | `run.sh` / `run-quality.sh` symlink the live skills into a throwaway workspace |
+| "Start by verifying that Claude actually invoked the skill" with `skill-used` | routing suite; and `report.mjs` prints what loaded for every quality case |
+| Assert siblings stay quiet with `not-skill-used`; pair broad and narrow prompts | every routing case names the neighbour most likely to steal it; two negative cases |
+| Compare skill versions side by side in one eval (v1/v2 fixtures) | `SKILL_EVAL_BASELINE_REF=<git ref>` adds a `skills-at-<ref>` provider: the bundle at that ref, routing left to the agent, i.e. `with-skills` for the old version |
+| Use a plain baseline so capability gaps are visible | the `no-skills` arm, verified to see no skills, CLAUDE.md or memory |
+| Verify the path, not only the final answer | trail graders read `metadata.toolCalls` (order of edits, which test runs, watch mode) |
+| Prefer deterministic assertions; `skill-used` over raw JavaScript | `skill-used` for routing; JavaScript only where the rule needs a path predicate (a test file edited before a source file) that `trajectory:*` cannot express |
+| Minimal permissions: read-only tools by default, sandbox Bash, no network | routing runs read-only; quality runs use `acceptEdits` with the SDK sandbox and `web_search_enabled: false`, and `pnpm install` runs before the eval |
+| Serial execution and reset between cases when agents write | `maxConcurrency: 1`; `quality-hooks.js` saves the diff and `git reset --hard` after each case |
+| Structured output when the answer itself is graded | not needed: nothing here grades the prose; the transform shows the routing decision instead |
+| `--repeat` for non-determinism; "if a prompt fails 50% of the time, fix the instructions" | re-run failures with `--repeat 3` before editing; `max` status in `COVERAGE.md` needs two consecutive clean runs |
+| `--no-cache` while iterating; `-o` and `view` for results | both runners; `results/` is gitignored |
+| `cost` / `latency` guards | not used: runs bill a Claude Code login, so cost is not reported; latency is dominated by the fixture, not the skill |
+| Keep the working directory disposable; never real credentials | temp directories outside the repository, removed on exit; SDK stand-ins in `src/lib/`, no real services |
 
 ## Extending
 

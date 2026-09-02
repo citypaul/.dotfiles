@@ -22,10 +22,26 @@ const slug = (text) =>
     .replace(/^-|-$/g, "")
     .slice(0, 60);
 
+// Two workspaces may be mounted: the current skills (SKILL_EVAL_CURRENT_WORKSPACE)
+// and, when run-quality.sh was given a baseline ref, the skills at that ref
+// (SKILL_EVAL_BASELINE_WORKSPACE) for the `skills-at-<ref>` provider. Cases run
+// one at a time, so pointing SKILL_EVAL_WORKSPACE at the right one before each
+// case is enough for every grader.
+const selectWorkspace = (label) => {
+  const baseline = process.env.SKILL_EVAL_BASELINE_WORKSPACE;
+  const current = process.env.SKILL_EVAL_CURRENT_WORKSPACE ?? process.env.SKILL_EVAL_WORKSPACE;
+  process.env.SKILL_EVAL_WORKSPACE = baseline && /^skills-at-/.test(String(label)) ? baseline : current;
+};
+
 const extensionHook = async (hookName, context) => {
+  if (hookName === "beforeEach") {
+    selectWorkspace(context.test?.provider?.label ?? context.provider?.label ?? "");
+    return;
+  }
   if (!workspace()) return;
 
   if (hookName === "afterEach") {
+    selectWorkspace(context.result?.provider?.label ?? context.result?.provider?.id ?? "");
     const label = context.result?.provider?.label ?? context.result?.provider?.id ?? "provider";
     const description = context.test?.description ?? "case";
     const dir = resolve(__dirname, "results", suite());
