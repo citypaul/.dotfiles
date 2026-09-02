@@ -65,7 +65,7 @@ exports.adaptersCarryNoBusinessRule = (output, context) => {
     return [
       [marker(context), "business text"],
       [/7\s*\*\s*24|15\s*\*\s*60|days?\b.*\bago|draft/i, "time window or draft rule"],
-      [/@example\.com/, "email addressing"],
+      [/team-\$\{|team-\s*\+|recipients?\s*:\s*\[\s*`team-/, "recipient addressing rule"],
     ]
       .filter(([pattern]) => pattern.test(text))
       .map(([, label]) => `${lib.rel(file)}: ${label}`);

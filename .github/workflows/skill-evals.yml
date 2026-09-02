@@ -1,0 +1,86 @@
+name: Skill evals
+
+# The promptfoo skill evaluations spend real tokens and sample a
+# non-deterministic decision, so they do not run on every push. They run:
+#   - on demand (workflow_dispatch: choose a suite, model and repeat count);
+#   - weekly, as a drift check;
+#   - on a pull request that changes a skill or the harness AND carries the
+#     `run-evals` label.
+# The offline guards in test/run.sh (suite wiring, routing cases) run in ci.yml
+# on every push. Needs the ANTHROPIC_API_KEY secret; the harness uses it in
+# place of a local Claude Code login.
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "routing, or a quality suite: tdd | hexagonal | ddd | all"
+        default: all
+        type: string
+      model:
+        description: "Claude Agent SDK model alias"
+        default: sonnet
+        type: string
+      repeat:
+        description: "promptfoo --repeat"
+        default: "1"
+        type: string
+  schedule:
+    - cron: "0 6 * * 1"
+  pull_request:
+    types: [labeled, synchronize]
+    paths:
+      - "claude/.claude/skills/**"
+      - "evals/skills/**"
+
+jobs:
+  evals:
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'run-evals')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      PROMPTFOO_DISABLE_TELEMETRY: "1"
+      SKILL_EVAL_MODEL: ${{ inputs.model || 'sonnet' }}
+      SUITE: ${{ inputs.suite || 'all' }}
+      REPEAT: ${{ inputs.repeat || '1' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: evals/skills/pnpm-lock.yaml
+      - name: Install the harness
+        working-directory: evals/skills
+        run: pnpm install --frozen-lockfile
+      - name: Routing suite
+        if: env.SUITE == 'all' || env.SUITE == 'routing'
+        working-directory: evals/skills
+        run: ./run.sh --no-progress-bar --repeat "$REPEAT" | tee results/routing-report.txt
+      - name: Quality suites
+        if: env.SUITE != 'routing'
+        working-directory: evals/skills
+        run: |
+          suites="$SUITE"
+          if [ "$suites" = "all" ]; then suites="tdd hexagonal ddd"; fi
+          status=0
+          for suite in $suites; do
+            ./run-quality.sh "$suite" --no-progress-bar --repeat "$REPEAT" | tee "results/$suite-report.txt" || status=1
+          done
+          exit $status
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-eval-results-${{ github.run_id }}
+          path: |
+            evals/skills/results/*.json
+            evals/skills/results/*-report.txt
+            evals/skills/results/**/*.diff
+          if-no-files-found: warn

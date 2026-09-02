@@ -54,9 +54,12 @@ Authentication uses your local Claude Code login (`apiKeyRequired: false`). Set
 tokens: the system prompt, all 50 skill descriptions, the loaded skill body and a
 handful of file reads.
 
-The suite is deliberately **not** part of `npm test` or CI: it spends real tokens and
-is non-deterministic. `test/skill-evals-routing.sh` is the cheap, offline guard that
-keeps the cases honest (every skill a case names must exist).
+The suite is deliberately **not** part of `npm test` or the per-push CI: it spends
+real tokens and is non-deterministic. `test/skill-evals-routing.sh` is the cheap,
+offline guard that keeps the cases honest (every skill a case names must exist).
+`.github/workflows/skill-evals.yml` runs the suites on demand, weekly, or on a pull
+request labelled `run-evals` that touches a skill or the harness, using the
+`ANTHROPIC_API_KEY` secret and uploading results as artifacts.
 
 ### Reading a failure
 
