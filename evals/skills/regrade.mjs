@@ -49,7 +49,7 @@ for (const result of results.results) {
   const workspace = mkdtempSync(join(tmpdir(), `regrade-${suite}-`));
   try {
     cpSync(fixture, workspace, { recursive: true });
-    execSync("git init -q && git -c user.name=r -c user.email=r@r add -A && git -c user.name=r -c user.email=r@r commit -qm fixture", { cwd: workspace, stdio: "ignore" });
+    execSync("git init -q && git -c user.name=r -c user.email=r@r add -A && git -c user.name=r -c user.email=r@r -c commit.gpgsign=false commit -qm fixture", { cwd: workspace, stdio: "ignore" });
     execSync(`git apply --whitespace=nowarn --exclude=".pnpm-store/*" --exclude="node_modules/*" "${diff}"`, { cwd: workspace, stdio: ["ignore", "ignore", "pipe"] });
     process.env.SKILL_EVAL_WORKSPACE = workspace;
     process.env.SKILL_EVAL_CURRENT_WORKSPACE = workspace;

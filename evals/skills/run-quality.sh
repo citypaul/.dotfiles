@@ -62,7 +62,7 @@ prepare_workspace() {
     cd "$dir" &&
       git init --quiet &&
       git -c user.name=eval -c user.email=eval@example.com add -A &&
-      git -c user.name=eval -c user.email=eval@example.com commit --quiet -m "fixture"
+      git -c user.name=eval -c user.email=eval@example.com -c commit.gpgsign=false commit --quiet -m "fixture"
   )
 }
 
