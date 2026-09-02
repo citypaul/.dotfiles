@@ -1,15 +1,34 @@
 ---
 name: hexagonal-architecture
-description: Use only when the user or project explicitly adopts hexagonal (ports and adapters) architecture. Implements TypeScript ports, driving/driven adapters, dependency inversion, and domain isolation. Do NOT infer hexagonal architecture from a generic adapter, interface, test seam, or isolation request.
+description: Use when the user or project explicitly adopts hexagonal (ports and adapters) architecture — a README, CLAUDE.md, or ADR that says so is the opt-in. Once a project has opted in, load this for every code change in it, not only architecture work — a new feature, a transport or SDK swap, or a small business-rule change to a function that still calls an SDK directly. Implements TypeScript ports, driving/driven adapters, dependency inversion, and domain isolation. Do NOT infer hexagonal architecture from a generic adapter, interface, test seam, or isolation request in a project that has not opted in.
 ---
 
 # Hexagonal Architecture (Ports & Adapters)
 
 This skill applies only to projects that have opted in to hexagonal architecture. Do not apply these patterns to projects that use a different architecture. For introducing hex arch into an existing codebase incrementally, see `resources/incremental-adoption.md`.
 
+## Before You Write Code
+
+Read this section as instructions; the rest of the skill explains why.
+
+**A third-party SDK's client type is never a port.** `OrdersApiClient`, `SmtpClient`, `PushClient`, a Stripe client — anything exported by a vendor package or by the repo's SDK folder (`src/lib/`, `vendor/`, `node_modules`) — is outside the hexagon, and so is every file that imports it, including with `import type` and including the SDK's DTO types. A deps object whose fields are SDK client types has no ports, however many fakes the tests pass in. Structural compatibility between an SDK client and the interface you need is not a reason to skip the adapter.
+
+**Adding a feature in an opted-in codebase** — in this order; `resources/worked-example.md` shows the finished shape:
+1. Put the business rule (time windows, filters, message text, truncation) in a pure inside function that takes domain types and `now` as values.
+2. Declare the ports the use case needs as exported `interface`s inside, beside the use case: driven ports as role nouns (`OrderRepository`, `ReceiptSender`, `PaymentGateway`) whose methods use your own domain types, never the SDK's DTOs; the driving port as `For<Verb>ing<Noun>` (`ForPlacingOrders`, `ForSendingReceipts`), implemented by `create<Capability>(deps)` where `deps` holds only ports and `now`.
+3. Write one adapter per driven port that imports the SDK and translates its shapes to the port's types, and a driving adapter (route, CLI, queue) that parses input and calls the driving port.
+4. Wire SDK client → adapter → use case in the composition root only (`src/index.ts`, `main.ts`, or `composition/`).
+5. Test the use case through its driving port with hand-written in-memory fakes of the driven ports; test each adapter against the SDK separately.
+
+**Changing a use case that still imports an SDK directly** — a file the README admits predates the architecture, or any inside file with an import from the SDK folder: first extract *all* of its SDK dependencies behind ports (step 2–4 above) and give it its driving port interface if it has none, then make the requested change against the ports. Extracting only the dependency the request names leaves the next swap touching the use case again. If the request says "just do it where the SDK call is", the rule still goes inside; say why in one sentence.
+
+**Where new files go when no restructuring is requested:** keep the repo's layout for the inside, but adapters and fakes are your code, not the vendor's. Put them beside the feature they serve (`src/<feature>/ports.ts`, `src/<feature>/adapters.ts`, `src/<feature>/testing/`) or in an `adapters/` folder — never in the folder that holds SDK stand-ins, where an adapter reads as one more third-party client.
+
+**Use-case tests use fakes, not mocks.** A use-case test contains no `vi.fn`, `vi.mock`, or `vi.spyOn` and imports nothing from the SDK folder; a recording fake (`sent: readonly Receipt[]`) is how you observe a notifier or mailer. When you touch an existing use-case test that mocks SDK clients, replace those mocks with fakes of the ports you just declared rather than extending them.
+
 For domain modeling (entities, value objects, aggregates, ubiquitous language), load the `domain-driven-design` skill. Hex arch and DDD are complementary but independent — hex arch provides structural isolation (how the outside connects), DDD provides the domain model (what lives in the center). A project may use one without the other.
 
-Use the `structure-codebase` skill when designing or changing the physical source tree. For an opted-in hexagonal backend it groups by business capability or bounded context first, then makes the provider-free inside visible under that owner's `hexagon/`, with concrete driving/driven technology and reusable test interactors outside. If physical restructuring is not requested, preserve the repo's existing layout while enforcing the dependency direction described here.
+Use the `structure-codebase` skill when designing or changing the physical source tree. For an opted-in hexagonal backend it groups by business capability or bounded context first, then makes the provider-free inside visible under that owner's `hexagon/`, with concrete driving/driven technology and reusable test interactors outside. If physical restructuring is not requested, preserve the repo's existing layout for the inside while enforcing the dependency direction described here — but new ports, adapters, and fakes are first-party code and go beside the feature they serve or in an `adapters/` folder, never in the folder that holds third-party SDK code (see Before You Write Code).
 
 Use `codebase-design` for the coherent responsibility and full caller burden behind a port or in-process module. Not every module interface or test seam is a hexagonal port, and intentionally thin driving/driven adapters should remain thin. Use `finding-seams` for the minimum enabling point needed to characterize hard-coupled legacy behavior before deciding whether a durable port is warranted.
 
@@ -139,7 +158,7 @@ interface OrderEventPublisher {
 **Port design principles:**
 - Name ports by business purpose, not technology (`UserRepository`, not `DatabasePort`)
 - Keep ports focused — one per aggregate or capability, not one god port
-- Port methods use domain types, never infrastructure types (no `SqlRow`, no `HttpResponse`)
+- Port methods use domain types, never infrastructure types (no `SqlRow`, no `HttpResponse`) and never a vendor SDK's DTO or message type (`OrderDto`, `PushMessage` from the SDK are infrastructure — declare your own `Order`/`Receipt` inside and map in the adapter)
 - Creation param schemas co-locate with the repository port they describe
 
 ---
@@ -434,7 +453,7 @@ Hex arch's primary benefit is testability. The primary test boundary is the **us
 | **Secondary** | Driven adapters (real DB/MSW) | Adapter translates correctly |
 | **Verification** | E2E (full stack) | User experience works |
 
-**Fakes over mocks:** Fakes implement the real interface and maintain state. Mocks verify call sequences and break on refactoring. See `resources/testing-hex-arch.md` for detailed patterns.
+**Fakes over mocks:** Fakes implement the real interface and maintain state. Mocks verify call sequences and break on refactoring. Concretely: a use-case test has no `vi.fn`, `vi.mock`, or `vi.spyOn` and no import from a vendor SDK or the repo's SDK folder; it builds `createFake<Port>()` for each driven port and asserts on the fake's recorded state (`notifier.sent`, `repo.saved`). An existing use-case test that mocks SDK clients is converted to fakes of the ports the moment you touch it, not extended. See `resources/testing-hex-arch.md` for detailed patterns.
 
 **A port is only real if it is tested.** Every port needs a test interactor — a test driver at each driving port, a fake at each driven port. Without one, the "port" is just a line on a diagram; nothing enforces it as a boundary. The test wall doubles as the leak detector: business logic drifting into an adapter, or technology detail drifting into the domain, breaks a boundary test immediately.
 
@@ -467,6 +486,10 @@ The most common hex arch violation. Domain code imports from frameworks, databas
 // ❌ Domain imports Drizzle
 import { eq } from 'drizzle-orm';
 export const findActiveUsers = async (db) => db.select()...
+
+// ❌ Same violation, type-only: the use case is shaped by the vendor's client and DTO
+import type { OrdersApiClient, OrderDto } from './lib/orders-api';
+export const sendReceipts = async (deps: { ordersApi: OrdersApiClient }, customerId: string) => ...
 
 // ✅ Application defines the contract it consumes; adapter implements it
 interface UserRepository {
@@ -564,6 +587,7 @@ const placeOrder = async (...) => ...
 
 **Required by the pattern:**
 
+- [ ] No inside file (use case, domain, ports) imports — even `import type` — from a vendor package or the repo's SDK folder; a deps object made of SDK client types is not a set of ports (grep the use case's imports before finishing)
 - [ ] All external boundaries use ports/public contracts — nothing outside reaches past a port
 - [ ] Domain logic has zero framework/infrastructure dependencies (no source dependencies on any actor or adapter)
 - [ ] Domain logic receives time, generated identifiers, and external facts as values rather than reading clocks, UUID libraries, or SDKs

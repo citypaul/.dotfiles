@@ -23,8 +23,9 @@
       patronId, itemId, patronOpenLoans, itemOnLoan, openedOn })`,
       `renewLoan({ loan, holdsOnItem, renewedOn })`, `returnItem({ loan,
       returnedOn })`, where `patronOpenLoans` is a count, `itemOnLoan` a
-      boolean, and `holdsOnItem` a count. A Loan exposes `id`, `patronId`,
-      `itemId`, `openedOn`, `dueOn`, `renewals` and `status`. Successful
+      boolean, and `holdsOnItem` a count, and every date a JavaScript `Date`. A Loan
+      exposes `id`, `patronId`, `itemId`, `openedOn`, `dueOn` (a `Date`),
+      `renewals` and `status`. Successful
       results carry `{ loan, events }`. Export everything from
       src/lending/index.ts and test it.
   assert:
@@ -41,8 +42,9 @@
       returnedOn })` reports it in its result value as `fine` alongside the
       loan. You will need `openLoan({ loanId, patronId, itemId,
       patronOpenLoans, itemOnLoan, openedOn })` to exist first — keep it to
-      what the fee needs. A Loan exposes `id`, `patronId`, `itemId`,
-      `openedOn`, `dueOn` and `status`; a fee exposes `pence`. There is a
+      what the fee needs. Dates are JavaScript `Date` values. A Loan
+      exposes `id`, `patronId`, `itemId`, `openedOn`, `dueOn` (a `Date`) and
+      `status`; a fee exposes `pence`. There is a
       domain glossary in docs/glossary.md. Export everything from
       src/lending/index.ts and test it.
   assert:
