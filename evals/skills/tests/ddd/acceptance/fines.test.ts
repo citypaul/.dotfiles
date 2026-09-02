@@ -10,6 +10,9 @@ import {
 
 const day = (iso: string) => new Date(iso);
 
+// A success may carry its payload under `value` or at the top level.
+const payload = <T extends Record<string, unknown>>(result: { value?: T } & Partial<T>): T => (result.value ?? result) as T;
+
 const openedOnFirstOfMarch = () => {
   const result = openLoan({
     loanId: createLoanId("l1"),

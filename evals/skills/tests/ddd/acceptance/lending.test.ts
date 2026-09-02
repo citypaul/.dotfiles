@@ -21,12 +21,11 @@ const open = (overrides: Partial<Parameters<typeof openLoan>[0]> = {}) =>
     ...overrides,
   });
 
-const unwrap = <T>(
-  result: { success: true; value: T } | { success: false; reason: string },
-): T => {
-  if (!result.success)
-    throw new Error(`expected success, got ${result.reason}`);
-  return result.value;
+// The glossary fixes `{ success, reason }` for refusals; a success may carry its
+// payload under `value` or at the top level — both are honest readings.
+const unwrap = <T extends Record<string, unknown>>(result: { success: boolean; value?: T; reason?: string } & Partial<T>): T => {
+  if (!result.success) throw new Error(`expected success, got ${result.reason}`);
+  return (result.value ?? result) as T;
 };
 
 describe("acceptance: Loans", () => {

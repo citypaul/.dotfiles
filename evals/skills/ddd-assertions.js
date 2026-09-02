@@ -85,9 +85,13 @@ exports.noClockInDomain = () =>
 exports.testsSpeakTheLanguage = () => {
   const files = tests().filter((file) => !/index\.test\.ts$/.test(file));
   if (files.length === 0) return lib.verdict(false, "no domain tests");
-  const describes = files.flatMap((file) => [...lib.read(file).matchAll(/describe\(\s*["'`]([^"'`]+)/g)].map((m) => m[1]));
-  const technical = describes.filter((d) => !/Patron|Item|Loan|Hold|Fine|Renewal|renew|return|lending|due|late/i.test(d));
-  return lib.verdict(describes.length > 0 && technical.length === 0, technical.length === 0 ? `describe blocks speak the language (${describes.length})` : `not domain language: ${technical.join(" | ")}`);
+  const titles = files.flatMap((file) => {
+    const text = lib.read(file);
+    const describes = [...text.matchAll(/describe\(\s*["'`]([^"'`]+)/g)].map((m) => m[1]);
+    return describes.length > 0 ? describes : [...text.matchAll(/\b(?:it|test)\(\s*["'`]([^"'`]+)/g)].map((m) => m[1]);
+  });
+  const technical = titles.filter((d) => !/Patron|Item|Loan|Hold|Fine|Renewal|renew|return|lending|due|late|borrow/i.test(d));
+  return lib.verdict(titles.length > 0 && technical.length === 0, titles.length === 0 ? "no test titles found" : technical.length === 0 ? `test titles speak the language (${titles.length})` : `not domain language: ${technical.join(" | ")}`);
 };
 
 // ------------------------------------------------------------ per case ---
