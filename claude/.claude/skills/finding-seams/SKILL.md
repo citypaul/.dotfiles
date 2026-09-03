@@ -53,6 +53,8 @@ Work through this before writing a single test:
 3. Write the test by passing fakes in as arguments. If the test needs `vi.mock()`, `vi.stubEnv()` or fake timers to run, a dependency is still hidden: go back to step 2 instead of reaching for them.
 4. Remove any module mock of that dependency the existing tests carry -- the seam replaces it, and leaving both means the old test still cannot see what the mock hides.
 
+When you hand the work back, name the seam type you introduced and where its enabling point is (file and line of the parameter default, the `??` fallback, or the factory call), and confirm the existing call sites are unchanged.
+
 ## How to Find Seams
 
 Look for these in the code you need to test:

@@ -1,6 +1,6 @@
 ---
 name: functional
-description: Functional programming patterns with immutable data. Use when writing logic, data transformations, or encountering mutation bugs. Covers immutability violations catalog, pure functions, composition, early returns, and options objects. Do NOT over-apply heavy FP abstractions (monads, fp-ts) unless the project requires them.
+description: Functional programming patterns with immutable data. Use when writing logic, data transformations, or encountering mutation bugs — including any feature request that builds, merges, filters, sorts, prices or otherwise reshapes records, lists, baskets or orders, even when it never mentions immutability; load it alongside tdd for such changes, not instead of it. Covers immutability violations catalog, pure functions, composition, early returns, and options objects. Do NOT over-apply heavy FP abstractions (monads, fp-ts) unless the project requires them.
 ---
 
 # Functional Patterns
