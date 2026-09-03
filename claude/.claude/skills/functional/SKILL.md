@@ -24,7 +24,7 @@ Small pure functions are an implementation technique, not a mandate to publish o
 - **Pure functions** wherever possible
 - **Composition** over inheritance
 - **Self-documenting code first** - keep comments that explain constraints or non-obvious reasons
-- **Array methods for transformations** - use loops when control flow is clearer
+- **Array methods for transformations** - `map`/`filter`/`reduce` whenever the walk visits every element, folds into an accumulator or builds a lookup; a loop earns its place only by exiting early or performing side effects
 - **Options objects for parameter groups** - keep simple positional APIs simple
 
 ---
@@ -148,7 +148,7 @@ Imperative loops are fine when:
 - Performance critical (measure first!)
 - Side effects are necessary (logging, DOM manipulation)
 
-Choose `Array.find()`, `Array.some()`, or `Array.every()` when those operations express the intent more directly; do not replace a clear loop merely to satisfy a style rule.
+A loop that runs to completion is none of those cases, however clear it reads and whatever it accumulates into. Folding each element into a value you declared just above the loop, grouping by key, building a lookup, or tallying a total is `reduce` — including a fold that calls a helper, where the accumulator is the helper's return value. A one-to-one rewrite is `map`; keeping a subset is `filter`; a lookup keyed by a field is `Object.groupBy` or a `Map` built with `reduce`, not a `for...of` that `set`s into one. Choose `Array.find()`, `Array.some()`, or `Array.every()` when those operations express the intent more directly. Keep a loop that already `break`s or `return`s out of its body rather than contorting an early exit into a method chain.
 
 ---
 
