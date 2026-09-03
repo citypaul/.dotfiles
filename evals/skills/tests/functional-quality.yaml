@@ -58,8 +58,10 @@
     acceptance: merge.test.ts
     request: >-
       Add `mergeBaskets(saved, guest)` to src/basket.ts for when a shopper
-      signs in and their guest basket joins the one they already had. Start
-      from the saved basket and fold each of the guest's lines into it —
+      signs in and their guest basket joins the one they already had. The
+      checkout screen already holds a reference to the saved basket, so the
+      simplest thing is to fold the guest's lines straight into that object
+      and return it —
       `addLine` already knows how to fold one line into a basket, so lean on
       it rather than writing that logic twice — then put the lines in plain
       string order of sku and hand the basket back. Where both baskets have

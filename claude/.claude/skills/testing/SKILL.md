@@ -47,7 +47,14 @@ Vitest `related` implicitly permits an empty result to pass. Require at least on
 
 ## Mutation-Aware Test Planning
 
-When planning or writing tests, automatically scan the intended behavior and changed production code against the mutator rules from the `mutation-testing` skill's `resources/mutator-rules.md` resource. A good test should fail if a realistic mutant changes the behavior.
+When planning or writing tests, automatically scan the code under test — new, changed, or existing code you are covering for the first time — against the mutator rules from the `mutation-testing` skill's `resources/mutator-rules.md` resource. A good test should fail if a realistic mutant changes the behavior.
+
+Before writing the first assertion, make these two lists from the code you are about to cover. They are where a green suite most often stays green over a broken rule:
+
+1. **Every comparison against a constant.** For each `>`, `>=`, `<`, `<=` or `===` against a threshold, name the exact threshold and cover just below it, exactly on it, and just above. A value well past the threshold does not distinguish `>` from `>=`; only the test sitting on the threshold does.
+2. **Every call that normalises or transforms a value on the way in or out.** Case folding, trimming, sorting, de-duplicating, rounding, defaulting a missing field: each is behavior a caller can observe, and each is one deletion away from being gone. For each, pick an input whose answer changes if that call were removed — a differently-cased key where a lookup folds case, padded input where it is trimmed, unordered input where the output is ordered — and assert the answer.
+
+A behavior you can see in the code and did not pin is untested, even when the request never named it and the line already counts as covered.
 
 Load that resource when the code under test includes conditionals, arithmetic, equality, boolean logic, array/string operations, optional chaining, or meaningful side effects. Use it to identify likely surviving mutants before the Stryker run.
 
@@ -527,6 +534,8 @@ When writing tests, verify:
 - [ ] Existing production schemas are reused where appropriate, not redefined in tests
 - [ ] Overrides are type-safe for the language and model
 - [ ] Test state is isolated; lifecycle setup has reliable cleanup
+- [ ] Every threshold in the code under test has a test sitting exactly on it, not only well past it
+- [ ] Every normalising or transforming call (case folding, trimming, sorting, rounding, defaulting) has a test whose answer changes if that call were deleted
 - [ ] Edge cases covered (not just happy path)
 - [ ] Tests would pass even if implementation is refactored
 - [ ] Test organization follows stable behavior or contracts rather than implementation shape by default

@@ -186,7 +186,8 @@ exports.seamHasEnablingPoint = (output, context) => {
   if (!exported) return lib.verdict(false, `${entry} is no longer exported from ${lib.rel(subjectOf(context))}`);
   const hardCoded = occurrences.filter((o) => o.at === "inside-entry");
   if (hardCoded.length > 0) return lib.verdict(false, `still hard-coded inside ${entry}: ${hardCoded.map((o) => `${o.kind} (line ${o.line})`).join(", ")}`);
-  if (seams.length === 0) return lib.verdict(false, `${entry} has no parameter default and is not produced by a factory call: no enabling point`);
+  const fallbackGuarded = occurrences.filter((o) => o.at === "default");
+  if (seams.length === 0 && fallbackGuarded.length === 0) return lib.verdict(false, `${entry} has no parameter default, no ??/|| fallback from a parameter, and is not produced by a factory call: no enabling point`);
   const closure = [...productionClosure(subjectOf(context))];
   const kinds = new Set(closure.flatMap((file) => {
     const text = lib.read(file);

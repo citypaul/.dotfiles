@@ -29,7 +29,9 @@ const VALUE_COLUMN = /\b(?:risk|impact|effort|severity|likelihood|confidence|cos
 const LABELLED_VALUE = /[A-Za-z]\**\s*[:=]\s*(?:\*\*|`|_)?\s*$/;
 const STRONG_TERMINATOR = /^(?:\*\*|`|_)?\s*(?:\(|→|\||—|–|priority\b)/;
 const WEAK_TERMINATOR = /^(?:\*\*|`|_)?\s*(?::|\.|$)/;
-const ASSESSMENT_SECTION = /^[^\n]*\b(?:assessment|priorit|classif)/im;
+// A heading or a short label line ("## Assessment", "Priority classification:",
+// "**Refactoring assessment**"), not any sentence that happens to use the word.
+const ASSESSMENT_SECTION = /^\s*(?:#{1,6}\s+|\*\*|__)?[^\n]{0,40}\b(?:assessment|priorit(?:y|ies|ised|ized)?|classif\w*)\b[^\n]{0,40}(?:\*\*|__)?\s*:?\s*$/im;
 
 const looksLikeTestRun = (command) => /\b(vitest|pnpm test|npm test|pnpm run test|npm run test)\b/.test(command);
 const testRuns = (calls) => calls.filter((call) => call.name === "Bash" && looksLikeTestRun(call.command));

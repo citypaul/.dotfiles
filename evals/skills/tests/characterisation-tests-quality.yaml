@@ -48,7 +48,8 @@
 # files exist, are green on the fixture exactly as shipped, and the deployed
 # behaviour still holds — so a do-nothing run scores 0 on it.
 #
-# suspiciousMarked (cases 1 and 3) grades one named quirk, vars.suspicious:
+# suspiciousMarked (case 1 only — case 3's grace-days fix reddens unrelated
+# tests, so the marker cannot be attributed) grades one named quirk, vars.suspicious:
 # case 1 the cancellation before the period start that is charged the full
 # month (the request says support flagged it), case 3 the grace days billed
 # retroactively — three days overdue costs nothing, four days overdue costs
@@ -100,11 +101,9 @@
   vars:
     acceptance: late-fee.test.ts
     mutants: late-fee-grace-boundary,late-fee-unknown-tier-standard-rate,late-fee-grace-days-charged,late-fee-cap,late-fee-plus-rate,late-fee-rounds-half-up
-    suspicious: late-fee-grace-days-charged
     request: >-
       Late fees are moving from a daily percentage to a flat charge per tier.
       `lateFee` in src/late-fee.ts is what runs tonight and it has no tests.
       Before we touch it, make sure we would notice if any part of what it
       does now changed by accident.
   assert:
-    - { type: javascript, value: 'file://characterisation-tests-assertions.js:suspiciousMarked', metric: suspicious-marked }

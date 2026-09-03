@@ -60,7 +60,10 @@ for (const result of results.results) {
     cpSync(fixture, workspace, { recursive: true });
     appendFileSync(join(workspace, ".gitignore"), "\n.pnpm-store/\n");
     execSync("git init -q && git -c user.name=r -c user.email=r@r add -A && git -c user.name=r -c user.email=r@r -c commit.gpgsign=false commit -qm fixture", { cwd: workspace, stdio: "ignore" });
-    execSync(`git apply --whitespace=nowarn --exclude=".pnpm-store/*" --exclude="node_modules/*" "${diff}"`, { cwd: workspace, stdio: ["ignore", "ignore", "pipe"] });
+    // An arm that edited nothing leaves an empty diff; the pristine fixture is the workspace.
+    if (readFileSync(diff, "utf8").trim().length > 0) {
+      execSync(`git apply --whitespace=nowarn --exclude=".pnpm-store/*" --exclude="node_modules/*" "${diff}"`, { cwd: workspace, stdio: ["ignore", "ignore", "pipe"] });
+    }
     process.env.SKILL_EVAL_WORKSPACE = workspace;
     process.env.SKILL_EVAL_CURRENT_WORKSPACE = workspace;
     delete process.env.SKILL_EVAL_BASELINE_WORKSPACE;
