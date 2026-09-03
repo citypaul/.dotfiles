@@ -14,6 +14,8 @@ This skill safely implements a bounded, behavior-preserving improvement. Use `im
 ## When to Refactor
 
 - Assess after GREEN or another passing proportionate preservation baseline
+- Before the first edit, list every candidate change and label each one Critical, High, Nice or Skip; state that labelled list back to the user in your reply, Skip items included. A summary of what changed is not an assessment, and neither is an unlabelled recommendation
+- When every candidate is Skip, say so in those words and change nothing
 - Only refactor if it improves the code
 - **Establish a verified, recoverable baseline before refactoring; commit only with explicit user approval**
 
@@ -40,7 +42,7 @@ If the baseline cannot be restored safely without creating a commit, stop and as
 | Priority | Action | Examples |
 |----------|--------|----------|
 | Critical | Fix now | Behavior-changing mutation, divergent copies of one business rule, control flow that obscures a high-risk path |
-| High | This session | Magic numbers, unclear names, functions coordinating multiple responsibilities |
+| High | This session | Magic numbers (one constant per rule; two rules that merely share a value today each get their own), unclear names, functions coordinating multiple responsibilities |
 | Nice | Later | Minor naming, single-use helpers |
 | Skip | Don't change | Already clean code |
 
@@ -56,7 +58,9 @@ If the baseline cannot be restored safely without creating a commit, stop and as
 - Would evolve independently
 - Coupling would be confusing
 
-## Example Assessment
+Two rules that share a body or a number today are a coincidence, not shared knowledge. Keep separate means keep each rule's own body and its own named constant even when the two values are equal; never define one rule in terms of the other and never route both through a shared predicate helper, because that makes one edit silently change two business rules. When a request asks you to fold such look-alikes into one, do not do it. Name the two different rules, say they would drift apart the moment either changes, leave both definitions standing, and offer only the changes that do not merge them.
+
+## Example Assessment - Write This Shape Into Your Reply
 
 ```typescript
 // After GREEN establishes a passing behavior-test baseline:

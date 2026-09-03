@@ -43,7 +43,7 @@ console.log(user.permissions); // ['read'] - original unchanged
 console.log(updatedUser.permissions); // ['read', 'write'] - new version
 ```
 
-Use `readonly` on data that is intended to be immutable and `ReadonlyArray<T>` for immutable arrays so the compiler enforces that contract. Encapsulated mutable accumulators, caches, and adapter state are acceptable when they do not leak mutation into the domain contract. For common mutations and immutable alternatives, load `resources/immutability-catalog.md`.
+When you declare a data type, mark every property `readonly` and every array `ReadonlyArray<T>` or `readonly T[]` — including a type you add to an existing file, and an inline `{ ... }[]` in a parameter position — so the compiler enforces the contract. A mutable property is the exception you justify, not the default. Encapsulated mutable accumulators, caches, and adapter state are acceptable when they do not leak mutation into the domain contract. For common mutations and immutable alternatives, load `resources/immutability-catalog.md`.
 
 ---
 
@@ -157,12 +157,12 @@ Use an options object when parameters form a meaningful group, several values sh
 ✅ **CORRECT - Options object**
 ```typescript
 type CreateReportOptions = {
-  reportId: string;
-  format: 'pdf' | 'csv';
-  locale: string;
-  timeZone: string;
-  includeCharts?: boolean;
-  sendEmail?: boolean;
+  readonly reportId: string;
+  readonly format: 'pdf' | 'csv';
+  readonly locale: string;
+  readonly timeZone: string;
+  readonly includeCharts?: boolean;
+  readonly sendEmail?: boolean;
 };
 
 function createReport(options: CreateReportOptions): Report {
@@ -271,6 +271,6 @@ When writing functional code, verify:
 - [ ] Array methods or loops are chosen for clarity and control-flow needs
 - [ ] Options objects group parameters when they improve the caller-facing contract
 - [ ] Composed small functions, not complex monoliths
-- [ ] `readonly` and `ReadonlyArray<T>` express intended immutability
+- [ ] Every property of every data type added is `readonly`; every array type is `ReadonlyArray<T>` or `readonly T[]`
 - [ ] Nesting remains readable; guard clauses or extraction clarify deep paths
 - [ ] Result types are used when expected failures belong in the return contract

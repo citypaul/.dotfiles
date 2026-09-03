@@ -10,6 +10,7 @@ description: TypeScript strict mode patterns including schema-first development,
 1. **Use `unknown` at untrusted boundaries.** Contain unavoidable `any` in external declarations or interop shims and explain it
 2. **No type assertions** (`as Type`) without justification
 3. **Follow the repository's `type`/`interface` convention.** Choose from language semantics when no convention exists
+4. **Derive a value set that already has an owner; never spell it a second time.** Before writing a literal union, an enum list, or a `===`/`||` chain over fixed values, search the codebase for that set — if a type, an `as const` list, or a schema already declares it, derive from that one owner
 
 ---
 
@@ -45,6 +46,23 @@ Define a schema once per owned contract, version, and bounded context, then
 import it within that boundary. Do not couple independently deployed consumers
 or contexts merely because their fields happen to match today; validate and
 translate at each trust boundary, with contract tests where drift matters.
+
+Inside one boundary this is a search, not a judgement call. When a compile-time
+type and a runtime schema both need the same fixed set of values, one `as const`
+list owns it and both derive from that list. If the set is already declared as a
+hand-written union, widen that declaration and derive from it — do not leave a
+second copy of the members behind in the schema.
+
+```typescript
+// ✅ One owner; the type and the schema both derive from it
+export const ORDER_STATES = ['draft', 'placed', 'shipped'] as const;
+export type OrderState = (typeof ORDER_STATES)[number];
+export const OrderStateSchema = z.enum(ORDER_STATES);
+
+// ❌ Two owners for one set; they drift apart the first time a value is added
+export type OrderState = 'draft' | 'placed' | 'shipped';
+export const OrderStateSchema = z.enum(['draft', 'placed', 'shipped']);
+```
 
 ```typescript
 // ✅ Define once for this API contract
@@ -179,7 +197,13 @@ interface UserService {
 
 ## Branded Types
 
-For type-safe primitives:
+Brand a primitive when two values of the same underlying type can be passed in
+each other's place and the compiler would not notice — two kinds of identifier,
+an amount and a rate, a raw and a normalised string. Validating each one at the
+boundary is not enough on its own: if the parsed values are still `string`
+afterwards, a swapped pair compiles everywhere downstream. Give each kind its
+own brand, confer it only where the value is validated, and declare the
+functions that consume them in terms of the brands rather than the primitive.
 
 ```typescript
 type UserId = string & { readonly brand: unique symbol };
@@ -231,5 +255,7 @@ When writing TypeScript code, verify:
 - [ ] No type assertions without justification
 - [ ] `type` and `interface` follow repository convention or the required language semantics
 - [ ] Schemas have one owner per contract/version/context; independent boundaries are not coupled by convenience
+- [ ] A fixed value set the codebase already declares is derived from, never spelled a second time
+- [ ] Interchangeable same-typed primitives (identifiers, amounts, codes) are branded, each brand conferred only where the value is validated
 - [ ] `strict` is enabled; additional compiler checks follow the repository's adopted policy
 - [ ] For immutability, pure functions, composition: see `functional` skill
