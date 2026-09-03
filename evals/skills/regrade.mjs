@@ -12,7 +12,7 @@
 // per-case diffs; it defaults to the newest one for the suite.
 
 import { execSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -46,6 +46,7 @@ const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").re
 const { results } = JSON.parse(readFileSync(file, "utf8"));
 const fixture = resolve(here, `fixtures/${suite}-workspace`);
 const tally = {};
+const regraded = [];
 
 for (const result of results.results) {
   const label = result.provider?.label ?? result.provider?.id;
@@ -58,8 +59,12 @@ for (const result of results.results) {
   const workspace = mkdtempSync(join(tmpdir(), `regrade-${suite}-`));
   try {
     cpSync(fixture, workspace, { recursive: true });
+    appendFileSync(join(workspace, ".gitignore"), "\n.pnpm-store/\n");
     execSync("git init -q && git -c user.name=r -c user.email=r@r add -A && git -c user.name=r -c user.email=r@r -c commit.gpgsign=false commit -qm fixture", { cwd: workspace, stdio: "ignore" });
-    execSync(`git apply --whitespace=nowarn --exclude=".pnpm-store/*" --exclude="node_modules/*" "${diff}"`, { cwd: workspace, stdio: ["ignore", "ignore", "pipe"] });
+    // An arm that edited nothing leaves an empty diff; the pristine fixture is the workspace.
+    if (readFileSync(diff, "utf8").trim().length > 0) {
+      execSync(`git apply --whitespace=nowarn --exclude=".pnpm-store/*" --exclude="node_modules/*" "${diff}"`, { cwd: workspace, stdio: ["ignore", "ignore", "pipe"] });
+    }
     process.env.SKILL_EVAL_WORKSPACE = workspace;
     process.env.SKILL_EVAL_CURRENT_WORKSPACE = workspace;
     delete process.env.SKILL_EVAL_BASELINE_WORKSPACE;
@@ -80,6 +85,7 @@ for (const result of results.results) {
       if (verdict.pass) tally[key].pass += 1;
       else failed.push(`${metric}: ${String(verdict.reason).replace(/\x1b\[[0-9;]*m/g, "").slice(0, 160)}`);
     }
+    regraded.push({ provider: label, description, failed });
     console.log(`${failed.length ? "FAIL" : "PASS"}  ${label.padEnd(13)} ${description}`);
     for (const line of failed) console.log(`      ↳ ${line}`);
   } finally {
@@ -95,3 +101,7 @@ console.log("metric".padEnd(width) + labels.map((l) => l.padEnd(14)).join(""));
 for (const metric of metrics) {
   console.log(metric.padEnd(width) + labels.map((l) => { const t = tally[`${l}|${metric}`]; return (t ? `${t.pass}/${t.total}` : "-").padEnd(14); }).join(""));
 }
+
+// Persist the regrade beside the run so evidence builders can use current graders.
+import { writeFileSync } from "node:fs";
+writeFileSync(join(runDir, "regrade.json"), JSON.stringify({ tally, cases: regraded }, null, 1));

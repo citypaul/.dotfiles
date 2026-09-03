@@ -1,0 +1,58 @@
+# mutation-testing quality cases.
+#
+# The fixture (checkout-core) has 100% line coverage and a test file that is
+# weak in every way the skill's mutator rules describe: identity values
+# (quantity 1), an all-true boolean case, one side of each boundary,
+# `toBeGreaterThan(0)`, `toBeTypeOf("number")` and `not.toThrow()`. README
+# and CLAUDE.md declare mutation testing, and @stryker-mutator/core plus the
+# vitest runner sit in the lockfile (the eval sandbox has no network), but
+# the fixture withholds everything else: no Stryker config, no scripts, no
+# .gitignore entries, no report, no run. Baseline as committed: 44 mutants,
+# 20 survived, one of them equivalent (see mutation-testing-assertions.js).
+#
+# Case 1 exercises "run the harness, do not reason about it": the request
+# invites reading the tests and adding a few, which a capable agent does
+# without the skill; the skill says run Stryker first, kill or classify every
+# survivor, and present the report. Case 2 exercises the setup rules: vitest
+# runner, production-only scope, no break threshold before a baseline, the
+# diff run as a Node helper that refuses a dirty tree and parses NUL-delimited
+# paths, .gitignore for Stryker output, and a full run with a triaged report.
+# Requests pin only the entry points the hidden tests call. Neither hidden
+# test passes on the fixture as committed: boundaries.test.ts puts the bug
+# that shipped (and three other baseline survivors) back into src/checkout.ts
+# and expects the agent's own suite to go red; diff-script.test.ts drives
+# `pnpm mutation:diff` on a dirty tree and expects a refusal.
+
+- description: coverage is 100% but a bug shipped
+  vars:
+    acceptance: boundaries.test.ts
+    request: >-
+      Last week a customer whose basket came to exactly £100.00 was charged
+      full price: the bulk discount only kicked in above £100, not at it.
+      That is fixed now — `discountPence` in src/checkout.ts uses `>=` — and
+      the pricing rules are right as they are. What bothers me is that line
+      coverage was 100% the whole time and every test in src/checkout.test.ts
+      stayed green, so the tests clearly weren't protecting anything. Find out
+      which of our tests are that weak and fix them so a change like that
+      cannot slip through again, then tell me what you found.
+  assert:
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:survivorsBelowBaseline', metric: survivors-below-baseline, weight: 2 }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:rerunsAreFocused', metric: reruns-are-focused }
+
+- description: set up the check that proves the tests catch bugs
+  vars:
+    acceptance: diff-script.test.ts
+    request: >-
+      Our suite is green and coverage is 100%, but after last week's incident
+      I don't trust either number. Put a check in place that proves the tests
+      in src/ would actually catch bugs, not just execute the lines.
+      `pnpm mutation` should check the whole repo and `pnpm mutation:diff
+      [base]` should check only the production files the current branch
+      changed against the base (main by default). Run the whole-repo one and
+      tell me what it found.
+  assert:
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:mutationScriptsAdded', metric: mutation-scripts-added }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:diffScriptIsNodeHelper', metric: diff-script-is-node-helper }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:diffHelperNulDelimited', metric: diff-helper-nul-delimited }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:diffHelperExcludesTests', metric: diff-helper-excludes-tests }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:diffHelperNoShell', metric: diff-helper-no-shell }

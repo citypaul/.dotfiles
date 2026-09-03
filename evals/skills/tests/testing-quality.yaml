@@ -1,0 +1,65 @@
+# testing quality cases.
+#
+# The fixture is a small pricing package (src/index.ts is the declared public
+# interface; validation, discounts, shipping, VAT and receipt text sit behind
+# it in internal modules) with real behaviour and one placeholder test that
+# shares a `let` order through `beforeEach`. README.md and CLAUDE.md say tests
+# are behaviour tests through the public interface and say nothing else: no
+# factory, no example of testing through `quoteOrder`, no guidance on where a
+# test file goes or what it may import. The skill has to supply all of that.
+#
+# Every request asks for tests, names only what already exists in the fixture
+# (`quoteOrder`, the files), and tempts the default: import the internal
+# module the request points at, continue the placeholder's shared-state
+# style, stub the rate table, or write one test file per internal module.
+# testing-assertions.js grades the tests the agent wrote: fresh state through
+# factories with overrides, the real schema reused, imports only through the
+# public interface, no mocks of the package's own modules, no reflex
+# one-file-per-module mirroring (a file named after a module counts only when
+# it also imports that module), and whether the tests catch planted bugs
+# (`mutants` names the planted bugs in testing-assertions.js). Case 1 also
+# plants a bug that boundary values alone do not reach (a promo code sent in
+# another letter case), so a literal-factory rewrite of the placeholder with
+# the obvious boundaries is not enough; cases 2 and 3 discriminate through
+# the rule graders, since each names an internal file the default answer
+# imports directly.
+#
+# On the untouched fixture the rule graders fail only because the tool-call
+# trail is empty (no test file written), not because the fixture's content
+# breaks a rule. The hidden acceptance test (behaviourDelivered) passes on
+# the untouched fixture too: it is a regression guard against an agent that
+# rewrites production code, not a measure of the agent's tests.
+
+- description: cover the pricing
+  vars:
+    acceptance: pricing.test.ts
+    mutants: tier-one-boundary,promo-does-not-stack,promo-code-case,free-shipping-boundary
+    request: >-
+      `quoteOrder` in src/index.ts prices a basket, but the only test we have
+      is a placeholder. Give the pricing real coverage: a straightforward
+      basket, the discount tiers in src/discounts.ts and how a promo code
+      interacts with them (including a code we don't recognise), and the
+      point at which GB delivery becomes free in src/shipping.ts. The amounts
+      matter — check the numbers, not just that it worked.
+
+- description: cover the VAT handling
+  vars:
+    acceptance: tax.test.ts
+    mutants: irish-rate,round-to-penny,vat-on-delivery
+    request: >-
+      Nothing covers how VAT is applied. Write tests for it: each region we
+      ship to gets its own rate (the table is in src/tax.ts), somewhere we
+      don't ship to is turned away with a clear message, VAT is charged on
+      delivery as well as the goods, and it rounds to a whole penny. If it is
+      easier to pin the rates by stubbing that table, fine by me.
+
+- description: cover the three untested files
+  vars:
+    acceptance: validation.test.ts
+    mutants: quantity-boundary,duplicate-sku,tier-two-boundary,international-shipping
+    request: >-
+      src/validate-order.ts, src/discounts.ts and src/shipping.ts have no
+      tests at all. Get each of them covered — the rejections (bad input, a
+      repeated SKU, a quantity that should go to sales), both discount tiers,
+      and domestic versus international delivery — so we can refactor that
+      code safely.

@@ -40,9 +40,20 @@ A seam is not automatically a public module interface, port, or permanent abstra
 | Seam Type | Mechanism | Enabling Point | Prefer When |
 |-----------|-----------|---------------|-------------|
 | **Function Parameter** | Pass dependency as argument | The argument list | **Default choice.** Functional code, pure functions, explicit contracts |
-| **Configuration** | Env vars, feature flags, config objects | The config source | Infrastructure-level concerns |
-| **Module** | `vi.mock()` / `jest.mock()` replaces imports | Test file mock configuration | **Last resort.** Quick scaffolding only -- bypasses type safety, implicit, requires cleanup |
+| **Configuration** | Receive config/env values as arguments | The argument list of the function that receives them | Infrastructure-level concerns. A `process.env` read left inside the function under test is a hidden dependency, not a Configuration seam -- move it out and let the default do the reading |
+| **Module** | `vi.mock()` / `jest.mock()` replaces imports | Test file mock configuration | **Last resort.** Quick scaffolding only -- bypasses type safety, implicit, requires cleanup. Do not write a new one when you can change the signature, and do not copy one from a neighbouring test: an existing module mock is scaffolding to migrate away from, not the house pattern |
 | **Object** | Subclass and override, or DI via constructor | Where the object is created | Legacy class-based code (see `resources/oop-patterns.md`) |
+
+## Putting Existing Code Under Test
+
+Work through this before writing a single test:
+
+1. List **every** hidden dependency the function reaches for -- collaborators it constructs, `Date.now()` / `new Date()`, `process.env`, singletons. All of them, not just the one that annoys you most.
+2. Move each one to the argument list with a production default that reproduces today's behaviour exactly -- the `new` and the env read now live in the default, so production is unchanged. When you are done the function under test constructs nothing and reads no global.
+3. Write the test by passing fakes in as arguments. A fake is a stand-in you hand-write in the test and fully control: a literal like `() => 1_700_000_000_000`, or a small object implementing only the methods the seam's narrow type names. Never pass the real collaborator through the seam -- not the production client, driver or service object, however cheap, local or in-memory its implementation happens to be, and whatever its own comments claim. A test built on the real collaborator still breaks when that collaborator's shape changes, which is the coupling the seam exists to cut. If the test needs `vi.mock()`, `vi.stubEnv()` or fake timers to run, a dependency is still hidden: go back to step 2 instead of reaching for them.
+4. Remove any module mock of that dependency the existing tests carry -- the seam replaces it, and leaving both means the old test still cannot see what the mock hides.
+
+When you hand the work back, name the seam type you introduced and where its enabling point is (file and line of the parameter default, the `??` fallback, or the factory call), and confirm the existing call sites are unchanged.
 
 ## How to Find Seams
 

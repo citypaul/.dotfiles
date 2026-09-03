@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# mutation-testing quality evaluation. See promptfooconfig.tdd.yaml for the
+# shape; graders live in mutation-testing-assertions.js and the fixture is
+# fixtures/mutation-testing-workspace (100% line coverage, weak tests, Stryker
+# in the lockfile but not set up). Run with ./run-quality.sh mutation-testing.
+description: mutation-testing quality — does the agent prove test effectiveness the way the mutation-testing skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+    network:
+      allowLocalBinding: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `mutation-testing` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:strykerConfigUsesVitestRunner', metric: stryker-config-uses-vitest-runner }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:mutatesProductionOnly', metric: mutates-production-only }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:noBreakThresholdBeforeBaseline', metric: no-break-threshold-before-baseline }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:harnessRun', metric: harness-run }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:reportPresented', metric: report-presented }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:survivorsTriaged', metric: survivors-triaged }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:gitignoreCoversStrykerOutput', metric: gitignore-covers-stryker-output }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://mutation-testing-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/mutation-testing-quality.yaml

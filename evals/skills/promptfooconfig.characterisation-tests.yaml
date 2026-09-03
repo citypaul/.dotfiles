@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# characterisation-tests quality evaluation. See promptfooconfig.tdd.yaml for
+# the shape; graders live in characterisation-tests-assertions.js. Run with
+# ./run-quality.sh characterisation-tests.
+#
+# The fixture is a deployed billing library with three untested legacy
+# functions, each carrying a quirk callers depend on. Every case asks for the
+# function to be made safe to change before a coming change. The graders ask
+# whether the agent pinned the code as it is — no production file touched,
+# tests green on the untouched fixture, each quirk's hidden "fix" caught — and
+# whether the tests are recognisable as characterisation tests the way the
+# skill says: file suffix, test names, lifecycle comment, suspicious
+# behaviour marked, the oracle observed before it was written down.
+description: characterisation-tests quality — does the agent pin the legacy code the way the skill promises, without changing it?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+    network:
+      allowLocalBinding: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `characterisation-tests` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:noProductionEdits', metric: no-production-edits, weight: 2 }
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:testsPassOnUnmodifiedFixture', metric: tests-pass-on-unmodified-fixture }
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:quirksPinned', metric: quirks-pinned, weight: 2 }
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:recognisableAsCharacterisation', metric: recognisable-as-characterisation }
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:lifecycleDocumented', metric: lifecycle-documented }
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:oracleObserved', metric: oracle-observed }
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/characterisation-tests-quality.yaml

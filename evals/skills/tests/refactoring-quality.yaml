@@ -1,0 +1,80 @@
+# refactoring quality cases.
+#
+# The fixture (fixtures/refactoring-workspace) declares that restructuring is
+# behaviour-preserving refactoring backed by the existing tests (README.md,
+# CLAUDE.md) but shows none of the discipline: src/quote.ts is a fully tested
+# but messy pricing module — loops with `let`, nested if/else, magic numbers,
+# the subtotal loop copy-pasted into quoteOrder, and two functions
+# (qualifiesForFreeDelivery, qualifiesForBulkDiscount) whose bodies are
+# identical today but that express different business rules. Its behaviour
+# has quirks the tests pin: loyalty tiers use strict `>`, the discount rounds
+# down, the promo code is case-sensitive, islands never get free delivery,
+# and an empty basket still pays delivery. src/money.ts is already clean.
+# Nothing in the fixture says how to assess, sequence, or decline a refactor;
+# the skill has to supply that.
+#
+# Each request uses everyday words and pins only the exported names the
+# hidden acceptance test imports. What to change, in what order, what to
+# leave alone and what to report is the agent's — and what
+# refactoring-assertions.js grades.
+#
+# - "tidy up the pricing module": the whole of src/quote.ts. Exercises the
+#   recoverable baseline (a test run before the first edit), behaviour
+#   preservation including the quirks, same-knowledge duplication removed
+#   (the subtotal loop), look-alike functions kept separate, no commit, and
+#   an explicit priority-classified assessment in the reply.
+# - "collapse the two look-alikes": asks for the thing the skill says not to
+#   do — DRY is knowledge, not code. Exercises keeping structurally similar
+#   but semantically different rules apart, saying so, and not committing.
+# - "tidy the money module": already clean. The honest answer is that no
+#   refactoring adds value; the skill's Skip class. Exercises assessing
+#   before editing, leaving clean code alone, and saying so explicitly.
+#
+# What discriminates, honestly. behaviourDelivered is a preservation oracle:
+# it re-runs the fixture's behaviour against the agent's code, so it passes on
+# the pristine workspace by construction and can only fail when an agent
+# changes behaviour. It is not evidence that a case requires work. On the
+# untouched fixture only sameKnowledgeUnified (case 1) and baselineBeforeEdit
+# fail; for cases 2 and 3 every workspace grader — lookAlikesKeptSeparate,
+# noValueDeclined, behaviourDelivered, suiteGreen, typecheckClean — passes on
+# the fixture as given. Those two cases therefore discriminate through the
+# trail and reply graders (baselineBeforeEdit, assessmentClassified) and
+# through lookAlikesKeptSeparate and noValueDeclined firing negatively when
+# the agent does the tempting thing the request invites: folding the two
+# look-alikes onto one threshold, or tidying already-clean money.ts.
+
+- description: tidy up the pricing module
+  vars:
+    acceptance: quote-behaviour.test.ts
+    request: >-
+      src/quote.ts has grown by accretion and is hard to read: loops and
+      `let` everywhere, nested if/else, numbers with no names, and the same
+      thing done twice in places. Please clean it up so it's ready to ship.
+      Keep every export it has today (`subtotalPence`,
+      `qualifiesForFreeDelivery`, `qualifiesForBulkDiscount`,
+      `discountPence`, `deliveryPence`, `quoteOrder` and the types) — other
+      packages import them.
+  assert:
+    - { type: javascript, value: 'file://refactoring-assertions.js:sameKnowledgeUnified', metric: same-knowledge-unified }
+    - { type: javascript, value: 'file://refactoring-assertions.js:lookAlikesKeptSeparate', metric: look-alikes-kept-separate, weight: 2 }
+
+- description: collapse the two look-alikes
+  vars:
+    acceptance: quote-behaviour.test.ts
+    request: >-
+      In src/quote.ts, `qualifiesForFreeDelivery` and
+      `qualifiesForBulkDiscount` are copy-pasted — same body, same number.
+      Can you fold them into one thing so we only maintain it once? Both
+      names have to stay exported because other packages import them.
+  assert:
+    - { type: javascript, value: 'file://refactoring-assertions.js:lookAlikesKeptSeparate', metric: look-alikes-kept-separate, weight: 2 }
+
+- description: tidy the money module
+  vars:
+    acceptance: money-behaviour.test.ts
+    request: >-
+      While you're in this repo, can you give src/money.ts a tidy as well?
+      Simplify whatever you can. `formatPence` and `parsePounds` must keep
+      their names — they're imported elsewhere.
+  assert:
+    - { type: javascript, value: 'file://refactoring-assertions.js:noValueDeclined', metric: no-value-declined, weight: 2 }

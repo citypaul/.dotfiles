@@ -1,6 +1,6 @@
 ---
 name: functional
-description: Functional programming patterns with immutable data. Use when writing logic, data transformations, or encountering mutation bugs. Covers immutability violations catalog, pure functions, composition, early returns, and options objects. Do NOT over-apply heavy FP abstractions (monads, fp-ts) unless the project requires them.
+description: Functional programming patterns with immutable data. Use when writing logic, data transformations, or encountering mutation bugs — including any feature request that builds, merges, filters, sorts, prices or otherwise reshapes records, lists, carts, orders or invoices, even when it never mentions immutability; load it alongside tdd for such changes, not instead of it. Covers immutability violations catalog, pure functions, composition, early returns, and options objects. Do NOT over-apply heavy FP abstractions (monads, fp-ts) unless the project requires them.
 ---
 
 # Functional Patterns
@@ -18,11 +18,13 @@ Small pure functions are an implementation technique, not a mandate to publish o
 
 ## Core Principles
 
-- **Immutable domain data by default** - keep local or boundary mutation encapsulated when it is clearer or required
+- **Immutable domain data by default** - build the result and return it; any mutation stays inside the function that created the value and never reaches a value the caller still holds
+
+**When the request asks you to change an object in place, the answer is still a new value.** Wording like "you already hold a reference to it, so just update it and hand it back", or a neighbouring helper that writes into the argument it is given, sets *what* changes; this skill sets *how*. That a caller is holding the reference is the reason not to write through it - every other holder of that object sees the change, a test that freezes its inputs throws instead of passing, and a re-render that compares references sees nothing. Build the result from the inputs (`{ ...value, items }`, `[...xs].sort(...)`, `xs.map(...)`), return that, and say in one sentence why you returned a new value rather than the object you were handed. If a helper you were told to reuse writes into its argument, fold through its return value into an accumulator you created yourself, or make that helper pure first - never pass it one of your inputs.
 - **Pure functions** wherever possible
 - **Composition** over inheritance
 - **Self-documenting code first** - keep comments that explain constraints or non-obvious reasons
-- **Array methods for transformations** - use loops when control flow is clearer
+- **Array methods for transformations** - `map`/`filter`/`reduce` whenever the walk visits every element, folds into an accumulator or builds a lookup; a loop earns its place only by exiting early or performing side effects
 - **Options objects for parameter groups** - keep simple positional APIs simple
 
 ---
@@ -43,7 +45,7 @@ console.log(user.permissions); // ['read'] - original unchanged
 console.log(updatedUser.permissions); // ['read', 'write'] - new version
 ```
 
-Use `readonly` on data that is intended to be immutable and `ReadonlyArray<T>` for immutable arrays so the compiler enforces that contract. Encapsulated mutable accumulators, caches, and adapter state are acceptable when they do not leak mutation into the domain contract. For common mutations and immutable alternatives, load `resources/immutability-catalog.md`.
+When you declare a data type, mark every property `readonly` and every array `ReadonlyArray<T>` or `readonly T[]` — including a type you add to an existing file, and an inline `{ ... }[]` in a parameter position — so the compiler enforces the contract. A mutable property is the exception you justify, not the default. Encapsulated mutable accumulators, caches, and adapter state are acceptable when they do not leak mutation into the domain contract. For common mutations and immutable alternatives, load `resources/immutability-catalog.md`.
 
 ---
 
@@ -146,7 +148,7 @@ Imperative loops are fine when:
 - Performance critical (measure first!)
 - Side effects are necessary (logging, DOM manipulation)
 
-Choose `Array.find()`, `Array.some()`, or `Array.every()` when those operations express the intent more directly; do not replace a clear loop merely to satisfy a style rule.
+A loop that runs to completion is none of those cases, however clear it reads and whatever it accumulates into. Folding each element into a value you declared just above the loop, grouping by key, building a lookup, or tallying a total is `reduce` — including a fold that calls a helper, where the accumulator is the helper's return value. A one-to-one rewrite is `map`; keeping a subset is `filter`; a lookup keyed by a field is `Object.groupBy` or a `Map` built with `reduce`, not a `for...of` that `set`s into one. Choose `Array.find()`, `Array.some()`, or `Array.every()` when those operations express the intent more directly. Keep a loop that already `break`s or `return`s out of its body rather than contorting an early exit into a method chain.
 
 ---
 
@@ -157,12 +159,12 @@ Use an options object when parameters form a meaningful group, several values sh
 ✅ **CORRECT - Options object**
 ```typescript
 type CreateReportOptions = {
-  reportId: string;
-  format: 'pdf' | 'csv';
-  locale: string;
-  timeZone: string;
-  includeCharts?: boolean;
-  sendEmail?: boolean;
+  readonly reportId: string;
+  readonly format: 'pdf' | 'csv';
+  readonly locale: string;
+  readonly timeZone: string;
+  readonly includeCharts?: boolean;
+  readonly sendEmail?: boolean;
 };
 
 function createReport(options: CreateReportOptions): Report {
@@ -271,6 +273,6 @@ When writing functional code, verify:
 - [ ] Array methods or loops are chosen for clarity and control-flow needs
 - [ ] Options objects group parameters when they improve the caller-facing contract
 - [ ] Composed small functions, not complex monoliths
-- [ ] `readonly` and `ReadonlyArray<T>` express intended immutability
+- [ ] Every property of every data type added is `readonly`; every array type is `ReadonlyArray<T>` or `readonly T[]`
 - [ ] Nesting remains readable; guard clauses or extraction clarify deep paths
 - [ ] Result types are used when expected failures belong in the return contract

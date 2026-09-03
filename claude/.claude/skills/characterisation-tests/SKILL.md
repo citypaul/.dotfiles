@@ -12,7 +12,7 @@ For making untestable code testable first, load the `finding-seams` skill. For t
 | Resource | Load when... |
 |----------|-------------|
 | `writing-process.md` | Need a worked example of the full characterisation process with targeted testing, async code, and when-to-stop guidance |
-| `modern-tooling.md` | Need guidance on Vitest snapshots, combination testing, approval testing, or handling non-determinism |
+| `modern-tooling.md` | The code under test returns multi-line text, a rendered document or a large object (snapshot and approval testing), you want to sweep many input combinations, or the behaviour is non-deterministic |
 
 ## Core Concept
 
@@ -102,9 +102,11 @@ it('characterises negative activity handling -- SUSPICIOUS: returns negative bon
 
 1. **Use** a piece of code in a test harness
 2. **Write an assertion you know will fail** (use a dummy value like `"PLACEHOLDER"`)
-3. **Let the failure tell you the behavior** -- the test runner shows the actual value
+3. **Run the tests and let the failure tell you the behavior** -- the test runner shows the actual value
 4. **Change the test** so it expects the behavior the code actually produces
 5. **Repeat** -- let curiosity guide you; the code itself suggests what to test next
+
+**Never type an expected value you have not watched a run produce.** Every expected value comes from executing the real module: the failing placeholder assertion, a recorded snapshot, or a scratch test that imports it. Working the answer out by reading the code, or copying the function into a throwaway script and running the copy, is not characterisation -- it pins your reading of the code, and a misreading becomes a test that certifies the mistake. Write the placeholders, run, then paste in what the runner printed: the test file is written at least twice, with a run in between.
 
 Keep oracle discovery focused with the characterisation file/name or its targeted one-shot. Any reusable watcher follows the `tdd` skill's canonical seed, lifecycle, cleanup, and proof policy; do not assume a clean-baseline `--changed` watcher has loaded the implementation graph. Once the oracle is stable, use the repository-owned or runner-derived affected scope from the monorepo root so transitive consumers remain eligible. At PR readiness, stop watchers and apply the target repository's mutation policy plus complete non-watch gate across all configured projects.
 
@@ -120,6 +122,8 @@ it('characterises formatPrice', () => {
   expect(formatPrice(1999)).toBe('$19.99');
 });
 ```
+
+**Output longer than a line -- rendered text, a formatted document, a large object -- is pinned with an inline snapshot, not a hand-typed string.** Call `toMatchInlineSnapshot()` with no argument, run once, and the runner writes the observed output into the test file: the algorithm above, automated, and it fails on a single wrong character. Type an expectation by hand only when it is short enough to read at a glance. Load `modern-tooling.md` before pinning multi-line output, for the inline/file snapshot choice, combination sweeps and non-determinism.
 
 ## Heuristics
 
@@ -211,6 +215,7 @@ it('characterises order processor events', async () => {
 | "Fixing" bugs in characterisation tests | Document the actual behavior, mark as suspicious, escalate |
 | Trying to characterise the entire codebase | Focus on the area you're about to change + one layer out |
 | Writing characterisation tests based on what code *should* do | Let the code tell you what it does -- use the algorithm above |
+| Calculating the expected values by reading the code, or from a copy of the function in a scratch script | Run the real module and take every expected value from the runner's output or a recorded snapshot |
 | Treating coverage as proof of test strength | Add assertions for likely mutant risks; use an accumulated-scope mutation run when repository policy or change risk calls for it |
 | Using characterisation tests for new code | New code should be test-driven (see `tdd` skill) |
 | Using `vi.mock()` for sensing instead of parameter injection | Pass a sensing function as a parameter (see `finding-seams` skill) |

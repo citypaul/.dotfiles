@@ -1,0 +1,92 @@
+# typescript-strict quality cases.
+#
+# The fixture declares strict TypeScript (README.md, CLAUDE.md, a strict
+# tsconfig) and lists zod as a dependency, but shows none of the practice:
+# no schema, no branded type, no handler that reads a request body, and a
+# router stand-in whose `body` is `unknown`. Every request brings untrusted
+# JSON into the service — an HTTP body or a hand-edited file — and the
+# tempting shortcut is `request.body as Shape`, `JSON.parse(text) as Rule[]`
+# or a hand-rolled narrowing. The skill has to supply schema-first
+# validation, `unknown` at the boundary, assertions only inside brand
+# constructors and the repository's `type` convention.
+#
+# Reaching for zod is not enough on its own. The fixture already owns the
+# priority set as a hand-written `type Priority`; a schema that re-lists
+# `low | normal | high` beside it is the schema duplication the skill
+# forbids (one owner per contract, types derived from the schema), and
+# oneOwnerPerContract grades exactly that — counting spellings from the
+# parsed source, so a union and a `z.enum([...])` one line apart are two
+# owners, not one.
+#
+# What each case can actually separate, stated plainly. A model that
+# reaches for zod by default already satisfies schemaAtBoundary,
+# unknownAtBoundary, noAny, typeConvention and strictnessKept in cases 1
+# and 2, so those two cases discriminate on the duplication rules: the
+# priority set having one owner (weight 2 for that reason), and, for a
+# hand-rolled narrowing instead of a schema, schemaAtBoundary plus
+# assertionsOnlyInBrandConstructors — which is what the recorded no-skills
+# arm did in case 1 (`request.body as {…}` plus its own
+# `isPriority` `||` chain: two priority owners, no schema, an unjustified
+# assertion). Case 3 is the one that turns on branded look-alike ids and
+# carries brandedIds on top.
+#
+# Each request pins only what the hidden acceptance test must call: the
+# route, the existing `createApp(deps, initial)` and `tickets()` surface, or
+# a function name and module. How the input is typed, validated and modelled
+# is the agent's — and what typescript-strict-assertions.js grades.
+#
+# - tickets from the web form: an HTTP body the request calls "already
+#   checked client-side" and "a five-line job" — tempts `as` on the body
+#   and a second copy of the priority set inside the schema.
+# - the rules file: file text through JSON.parse — tempts an `any` leak or
+#   `as Rule[]`, a hand-written Rule type instead of a schema, and a third
+#   spelling of the priority set.
+# - phone events: a two-kind event with two look-alike string ids and a bug
+#   report about them being swapped — tempts a shape check that leaves both
+#   ids as `string`, scattered `as TicketId`, a data-shape `interface`, and
+#   no schema. brandedIds grades what the skill says about look-alike
+#   primitives: distinct brands, each conferred only after validation.
+
+- description: tickets from the web form
+  vars:
+    acceptance: tickets-from-form.test.ts
+    request: >-
+      The web app needs to open tickets. Add POST /tickets to createApp: the
+      body is the JSON the form sends, `{ "title": "…", "priority": "low" |
+      "normal" | "high" }` with priority optional and defaulting to "normal".
+      A title is required and can't be blank. The handler opens the ticket
+      with `deps.newId()` as the id and `deps.now()` as openedAt, status
+      "open", and responds 201 with the ticket as the body. Anything that
+      isn't a usable request gets a 400. The form already checks the fields
+      client-side, so keep the handler small — it's a five-line job.
+
+- description: the rules file
+  vars:
+    acceptance: rules-file.test.ts
+    request: >-
+      Ops keep the escalation rules in a hand-edited JSON file that looks
+      like `[{ "priority": "high", "assignTo": "agent-7", "withinMinutes":
+      30 }, …]`. Add `loadRules(text)` to src/rules.ts: it takes the file
+      contents as a string and returns the rules as they are in the file. A
+      typo in that file took the service down once, so if the text isn't
+      valid rules for our ticket priorities, throw an Error whose message
+      says what's wrong rather than letting garbage through. Also add
+      `assigneeFor(rules, priority)` returning the `assignTo` of the first
+      rule for that priority, or undefined when there is none.
+
+- description: phone events
+  vars:
+    acceptance: phone-events.test.ts
+    request: >-
+      The phone system posts events to us. Add POST /phone-events to
+      createApp, taking the JSON it sends: `{ "kind": "call.answered",
+      "ticketId": "…", "agentId": "…" }` puts that ticket in status
+      "in-progress" with the agent id as its `assignee`; `{ "kind":
+      "call.missed", "ticketId": "…", "callerNumber": "…" }` bumps the
+      ticket's priority to "high". Our ticket ids always start with `t-`
+      and agent ids with `agent-`. Reply 204, 404 if we don't have the
+      ticket, 400 for anything else. Bug report from last month, for
+      context: an answered-call event arrived with the two ids the wrong way
+      round and nothing complained until it was in production.
+  assert:
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:brandedIds', metric: branded-ids }

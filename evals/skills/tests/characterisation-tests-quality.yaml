@@ -1,0 +1,109 @@
+# characterisation-tests quality cases.
+#
+# The fixture (fixtures/characterisation-tests-workspace) is a deployed billing
+# library whose CLAUDE.md declares that legacy code is characterised before it
+# is changed, but shows nothing of the practice: src/money.ts has ordinary
+# behaviour tests, and the three legacy modules — src/proration.ts,
+# src/late-fee.ts, src/statement.ts — have no tests at all. Each carries at
+# least one quirk callers depend on (an inclusive cancellation day, a full
+# charge for a cancellation before the period, a truncation off-by-one, a
+# credit shown in parentheses, grace days billed retroactively, an unknown
+# tier billed at the standard rate). Nothing in the fixture names, spells or
+# demonstrates a characterisation test; the skill has to supply the file
+# suffix, the test naming, the lifecycle comment, the SUSPICIOUS marker, the
+# oracle-first algorithm and — above all — the rule that the code is pinned
+# as it is, not changed.
+#
+# Each request pins only the function the hidden acceptance test imports and
+# tells the agent the change is coming later. What a good answer looks like:
+# a *.characterisation.test.ts file, tests named as characterisation, a block
+# comment saying why they exist and when they go, suspicious behaviour marked
+# and escalated in the reply, no production file touched, and tests strong
+# enough that the graders' hidden "fixed" versions of each quirk
+# (vars.mutants, see characterisation-tests-assertions.js) fail them.
+#
+# Case 1 tempts the wrong thing directly: the request mentions a customer
+# complaint about the quirk, so a default answer fixes it or asserts what the
+# code "should" do. Case 2 exercises the snapshot guidance for a multi-line
+# output and a boundary quirk that only a look-at-the-code test finds. Case 3
+# exercises "when to stop": every branch of the function must be pinned,
+# including the cap and the unknown-tier fallback.
+#
+# Where the discrimination lives. The quirks a request or a plain reading
+# points at (the before-start charge, the grace boundary, the tiers, the cap)
+# are pinned by any competent test file, skill or not; quirksPinned earns its
+# weight only through the quirk in each case that a default example set
+# misses — the rounding direction (proration-rounds-down, late-fee-rounds-
+# half-up: only an example whose fraction is .5 or more tells floor from
+# round, and the "natural" round-number examples land on whole pence) and, in
+# case 2, the >= boundary on the label truncation. The rest of the gap
+# between the arms rests on recognisableAsCharacterisation,
+# lifecycleDocumented, suspiciousMarked and oracleObserved, which are rules a
+# default answer does not follow.
+#
+# behaviourDelivered keeps the shared weight of 2 but is not the shared
+# grader as-is: the acceptance tests pin the shipped code, so the untouched
+# fixture would satisfy them and the grader would be implied by
+# noProductionEdits. Here it requires the deliverable — the agent's test
+# files exist, are green on the fixture exactly as shipped, and the deployed
+# behaviour still holds — so a do-nothing run scores 0 on it.
+#
+# suspiciousMarked (case 1 only — case 3's grace-days fix reddens unrelated
+# tests, so the marker cannot be attributed) grades one named quirk, vars.suspicious:
+# case 1 the cancellation before the period start that is charged the full
+# month (the request says support flagged it), case 3 the grace days billed
+# retroactively — three days overdue costs nothing, four days overdue costs
+# four days' fee, not one. It finds the test that pins that quirk by applying
+# the quirk's hidden fix and seeing which of the agent's tests go red, then
+# looks for the marker in that test's title, its body, or the comment lines
+# directly above it. The unknown-tier fallback in lateFee reads as deliberate
+# (an explicit standard-rate default) and no marker is required on it. The
+# accepted wording is the skill's own marker and the same mark in other
+# words: SUSPICIOUS, calling the behaviour a bug, unintended, unexpected,
+# "escalate". The fixture's src/proration.ts:2 comment ("check with billing
+# before changing anything here") is deliberately not accepted: copying a
+# line out of the file under test is not flagging the behaviour. Note what
+# this does and does not separate — case 1's request points at its quirk, so
+# a competent answer flags it with or without the skill and the grader is
+# nearly free there; case 3 names no quirk at all, and that is where the
+# marker has to come from reading the code.
+
+- description: proration before the weekly rewrite
+  vars:
+    acceptance: proration.test.ts
+    mutants: proration-cancel-day-inclusive,proration-cancelled-before-start-charged-in-full,proration-rounds-down
+    suspicious: proration-cancelled-before-start-charged-in-full
+    request: >-
+      We're going to rewrite the proration in src/proration.ts to charge by
+      whole weeks instead of days. Nothing in that file is tested, and before
+      anyone touches it I want us to be able to tell if the rewrite changes
+      what customers are charged by accident. One more thing: support flagged
+      a customer who cancelled the day before their period started and still
+      got billed the full month — not sure if that's deliberate. Make
+      `proratedCharge` safe to change first.
+  assert:
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:suspiciousMarked', metric: suspicious-marked }
+
+- description: statement text before the VAT line
+  vars:
+    acceptance: statement.test.ts
+    mutants: statement-label-boundary,statement-credit-in-parentheses
+    request: >-
+      We need to add a VAT summary to the text that `renderStatement` in
+      src/statement.ts produces. That output goes straight into the customer
+      PDFs and nobody has ever written a test for it. Before we change
+      anything, pin down exactly what it produces today so that a single
+      wrong character would show up.
+  assert:
+    - { type: javascript, value: 'file://characterisation-tests-assertions.js:snapshotUsed', metric: snapshot-used }
+
+- description: late fees before the flat charge
+  vars:
+    acceptance: late-fee.test.ts
+    mutants: late-fee-grace-boundary,late-fee-unknown-tier-standard-rate,late-fee-grace-days-charged,late-fee-cap,late-fee-plus-rate,late-fee-rounds-half-up
+    request: >-
+      Late fees are moving from a daily percentage to a flat charge per tier.
+      `lateFee` in src/late-fee.ts is what runs tonight and it has no tests.
+      Before we touch it, make sure we would notice if any part of what it
+      does now changed by accident.
+  assert:

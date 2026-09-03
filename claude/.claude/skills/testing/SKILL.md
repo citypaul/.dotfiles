@@ -47,7 +47,14 @@ Vitest `related` implicitly permits an empty result to pass. Require at least on
 
 ## Mutation-Aware Test Planning
 
-When planning or writing tests, automatically scan the intended behavior and changed production code against the mutator rules from the `mutation-testing` skill's `resources/mutator-rules.md` resource. A good test should fail if a realistic mutant changes the behavior.
+When planning or writing tests, automatically scan the code under test — new, changed, or existing code you are covering for the first time — against the mutator rules from the `mutation-testing` skill's `resources/mutator-rules.md` resource. A good test should fail if a realistic mutant changes the behavior.
+
+Before writing the first assertion, make these two lists from the code you are about to cover. They are where a green suite most often stays green over a broken rule:
+
+1. **Every comparison against a constant.** For each `>`, `>=`, `<`, `<=` or `===` against a threshold, name the exact threshold and cover just below it, exactly on it, and just above. A value well past the threshold does not distinguish `>` from `>=`; only the test sitting on the threshold does.
+2. **Every call that normalises or transforms a value on the way in or out.** Case folding, trimming, sorting, de-duplicating, rounding, defaulting a missing field: each is behavior a caller can observe, and each is one deletion away from being gone. For each, pick an input whose answer changes if that call were removed — a differently-cased key where a lookup folds case, padded input where it is trimmed, unordered input where the output is ordered — and assert the answer.
+
+A behavior you can see in the code and did not pin is untested, even when the request never named it and the line already counts as covered.
 
 Load that resource when the code under test includes conditionals, arithmetic, equality, boolean logic, array/string operations, optional chaining, or meaningful side effects. Use it to identify likely surviving mutants before the Stryker run.
 
@@ -221,14 +228,18 @@ it('returns claimed gifts in yourClaims and unclaimed in available', async () =>
 ## Test Factory Pattern
 
 Use factory functions with optional overrides when test data is repeated, nested,
-or otherwise clearer behind a named fixture builder. Keep one-off values inline.
+or otherwise clearer behind a named fixture builder. Keep genuinely single-use
+scalars inline. The trigger is mechanical, not a matter of taste: if more than one
+test in a file constructs the same object shape — including the same shape spread
+into `it.each` rows, or spread out of another object to change one field — that
+shape gets a factory, and the fields that differ become overrides.
 
 ### Core Principles
 
 1. Return objects valid for the scenario, with intentional invalidity made explicit
 2. Use typed overrides when that fits the language and model
-3. Reuse a production schema when the contract already has one; do not invent a schema only for a factory
-4. Prefer fresh state per test. Lifecycle hooks are fine when setup is isolated and cleanup is reliable
+3. Before writing a factory body, check what the module under test exports for that type. If it exports a schema for the object, build the object by calling that schema's parse. A factory returning a type-annotated literal misses the production contract exactly as a redefined schema does — the annotation is checked by the compiler against a type, and nothing checks the fixture against the boundary the code actually validates at. Return a plain literal only when no schema exists; never invent one just to have something to parse
+4. Prefer fresh state per test: every test builds its own data from a factory call. Lifecycle hooks are fine when setup is isolated and cleanup is reliable, but shared `let`-bound data rebuilt for each test is not — that is the anti-pattern below wearing a hook. When you add tests to a file that already holds its data in a shared `let` or a `beforeEach` that rebuilds it, replace that setup with a factory as part of the same change instead of writing new tests that spread it. Once you touch a test file, its whole state discipline is yours, not just the lines you added
 
 ### Basic Pattern
 
@@ -523,6 +534,8 @@ When writing tests, verify:
 - [ ] Existing production schemas are reused where appropriate, not redefined in tests
 - [ ] Overrides are type-safe for the language and model
 - [ ] Test state is isolated; lifecycle setup has reliable cleanup
+- [ ] Every threshold in the code under test has a test sitting exactly on it, not only well past it
+- [ ] Every normalising or transforming call (case folding, trimming, sorting, rounding, defaulting) has a test whose answer changes if that call were deleted
 - [ ] Edge cases covered (not just happy path)
 - [ ] Tests would pass even if implementation is refactored
 - [ ] Test organization follows stable behavior or contracts rather than implementation shape by default

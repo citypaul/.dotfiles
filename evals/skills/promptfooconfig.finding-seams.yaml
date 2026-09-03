@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# finding-seams quality evaluation.
+#
+# The routing suite (promptfooconfig.yaml) asks whether the right skill loads.
+# This suite asks what the agent then does: given a legacy function that
+# constructs its database driver inside, reads process.env and Date.now()
+# directly, and is called from two call sites, does it work the way the
+# finding-seams skill promises — an explicit seam (parameter or factory)
+# with a production default, call sites untouched, fakes injected through
+# the seam rather than vi.mock / fake timers / env stubs, the narrowest
+# substitution point rather than a rewrite — and do the callers still work.
+#
+# Three providers run every case: the skills bundle as installed, the same
+# agent with no skills at all, and the bundle with the skill under test
+# force-loaded. forced vs no-skills is what the skill body is worth;
+# with-skills vs forced is whether routing fires on its own.
+#
+# Run it with ./run-quality.sh finding-seams. Cases run one at a time in a
+# shared workspace that quality-hooks.js resets between cases.
+description: finding-seams quality — does the agent put legacy code under test through an explicit seam the way the skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+    network:
+      allowLocalBinding: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `finding-seams` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://finding-seams-assertions.js:seamHasEnablingPoint', metric: seam-has-enabling-point, weight: 2 }
+    - { type: javascript, value: 'file://finding-seams-assertions.js:callSitesUnchanged', metric: call-sites-unchanged }
+    - { type: javascript, value: 'file://finding-seams-assertions.js:noModuleMock', metric: no-module-mock }
+    - { type: javascript, value: 'file://finding-seams-assertions.js:testsInjectFakesThroughSeam', metric: tests-inject-fakes-through-seam }
+    - { type: javascript, value: 'file://finding-seams-assertions.js:narrowestSeam', metric: narrowest-seam }
+    - { type: javascript, value: 'file://finding-seams-assertions.js:seamTypeNamed', metric: seam-type-named }
+    - { type: javascript, value: 'file://finding-seams-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://finding-seams-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://finding-seams-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/finding-seams-quality.yaml

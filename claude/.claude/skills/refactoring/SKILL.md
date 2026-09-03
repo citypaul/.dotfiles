@@ -1,6 +1,6 @@
 ---
 name: refactoring
-description: Refactoring assessment and behavior-preserving patterns for code with a passing baseline and proportionate preservation evidence. Use when the user asks to clean up, simplify, or restructure a selected area, or after GREEN establishes the passing baseline for a TDD increment. Mutation testing verifies the accumulated result later at the end-of-phase PR-readiness gate. Covers recoverable-baseline discipline, when refactoring adds value vs when to skip it, and priority classification; commits always require explicit user approval. For any slice in a selected whole-path reduction program—transition or terminal—use reduce-system-complexity as the governing skill; refactoring may be secondary when applicable. For repository-wide architecture discovery use improve-codebase-architecture; for a module contract use codebase-design. Do NOT use for insufficiently evidenced code or adding behavior.
+description: Refactoring assessment and behavior-preserving patterns for code with a passing baseline and proportionate preservation evidence. Use when the user asks to clean up, tidy, simplify, restructure, deduplicate, collapse, or merge look-alike code in a selected area, or after GREEN establishes the passing baseline for a TDD increment. Mutation testing verifies the accumulated result later at the end-of-phase PR-readiness gate. Covers recoverable-baseline discipline, when refactoring adds value vs when to skip it, and priority classification; commits always require explicit user approval. For any slice in a selected whole-path reduction program—transition or terminal—use reduce-system-complexity as the governing skill; refactoring may be secondary when applicable. For repository-wide architecture discovery use improve-codebase-architecture; for a module contract use codebase-design. Do NOT use for insufficiently evidenced code or adding behavior.
 ---
 
 # Refactoring
@@ -14,6 +14,10 @@ This skill safely implements a bounded, behavior-preserving improvement. Use `im
 ## When to Refactor
 
 - Assess after GREEN or another passing proportionate preservation baseline
+- Run the applicable tests yourself before you assess, before your first edit, and before any reply that declines to edit. Declining a request, or classifying every candidate Skip, is still an assessment, and an assessment that rests on no test run rests on nothing
+- Before the first edit, list every candidate change and label each one Critical, High, Nice or Skip
+- Whether you changed everything, one thing, or nothing, the final reply must carry that labelled list, Skip items included, as one line per candidate — `Critical: <what and why>`, `High: <what and why>`, `Nice: <what and why>`, `Skip: <what and why>` — closed by a `Decision: <what you did or did not do>` line. A summary of what changed is not an assessment, and neither is an unlabelled recommendation. An unstated assessment is an unmade assessment
+- When every candidate is Skip, say so in those words and change nothing
 - Only refactor if it improves the code
 - **Establish a verified, recoverable baseline before refactoring; commit only with explicit user approval**
 
@@ -32,7 +36,7 @@ If the baseline cannot be restored safely without creating a commit, stop and as
 2. CHECKPOINT: Record the baseline and preservation evidence. Create a baseline commit only when the user explicitly approves it
 3. REFACTOR: Improve structure in small steps under the `tdd` skill's canonical fast-feedback policy. From a clean baseline, prefer a proven repository-owned graph-complete watcher; use diff-selected Vitest watch only when the installed version/configuration has passed the canonical clean-start live proof, otherwise repeat the affected one-shot. In monorepos use the root graph so transitive consumers remain eligible
 4. VERIFY: Keep focused and affected tests plus other proportionate evidence green after each step; do not rerun the full suite after every edit
-5. CHECKPOINT: Present the verified refactor. Commit it only after explicit user approval
+5. CHECKPOINT: Present the verified refactor together with the labelled `Critical:`/`High:`/`Nice:`/`Skip:` assessment lines and the closing `Decision:` line; a summary of what changed does not close this step. Commit it only after explicit user approval
 6. PRE-PR GATE: When the phase is otherwise ready for a PR, run mutation testing once for the accumulated scope where meaningful, or record explicit `N/A` plus proportionate alternate evidence; address valuable survivors within that gate
 
 ## Priority Classification
@@ -40,7 +44,7 @@ If the baseline cannot be restored safely without creating a commit, stop and as
 | Priority | Action | Examples |
 |----------|--------|----------|
 | Critical | Fix now | Behavior-changing mutation, divergent copies of one business rule, control flow that obscures a high-risk path |
-| High | This session | Magic numbers, unclear names, functions coordinating multiple responsibilities |
+| High | This session | Magic numbers (one constant per rule; two rules that merely share a value today each get their own), unclear names, functions coordinating multiple responsibilities |
 | Nice | Later | Minor naming, single-use helpers |
 | Skip | Don't change | Already clean code |
 
@@ -56,7 +60,9 @@ If the baseline cannot be restored safely without creating a commit, stop and as
 - Would evolve independently
 - Coupling would be confusing
 
-## Example Assessment
+Two rules that share a body or a number today are a coincidence, not shared knowledge. Keep separate means keep each rule's own body and its own named constant even when the two values are equal; never define one rule in terms of the other and never route both through a shared predicate helper, because that makes one edit silently change two business rules. When a request asks you to fold such look-alikes into one, do not do it. Run the applicable tests before you answer even though you are changing nothing — the refusal is an assessment and needs the same green baseline as an edit. Then name the two different rules, say they would drift apart the moment either changes, leave both definitions standing, and offer only the changes that do not merge them.
+
+## Example Assessment - Write This Shape Into Your Reply
 
 ```typescript
 // After GREEN establishes a passing behavior-test baseline:
