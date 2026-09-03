@@ -51,15 +51,16 @@ independent refuter node, and re-measured):
   kept `vi.fn` mocks; the forced arm scored below no-skills. Now: a short "Before You
   Write Code" procedure (an SDK client type is never a port; the order of work; what to
   do when touching a use case that still imports an SDK; where adapters and fakes go;
-  fakes not mocks), the port-method rule extended to vendor DTOs, and a description that
-  loads the skill for every change once a repo has opted in. 19 → 32 of 33
-  (with-skills), 14 → 31 (forced).
+  fakes not mocks; porting every SDK dependency of a touched file is a REFACTOR step
+  before the RED, not scope creep), the port-method rule extended to vendor DTOs, and a
+  description that loads the skill for every change once a repo has opted in.
+  19 → 33 of 33 (with-skills), 14 → 33 (forced), on two consecutive runs.
 - `domain-driven-design` — a derived branded value was re-branded with a second `as`,
   tests were titled after helpers, and the request's word "fee" became a `Fee` type
   although the glossary declares `Fine`. Now: one `as` per branded type inside its
   factory and derived values go back through it; `describe`/`it` titles name the
   business rule; the glossary outranks the request's wording. 21 → 22 of 22 (with-skills),
-  18 → 22 (forced).
+  18 → 22 (forced), on two consecutive runs.
 - `expectations` and `technical-writing` — descriptions that fired one and two times
   in three on their own requests now use the words people actually say.
 
