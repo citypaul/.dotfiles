@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# refactoring quality evaluation.
+#
+# The routing suite (promptfooconfig.yaml) asks whether the right skill loads.
+# This suite asks what the agent does when asked to clean up, simplify or
+# restructure code the fixture already tests: does it work the way the
+# refactoring skill promises — a passing baseline before the first edit,
+# behaviour preserved quirks and all, DRY applied to knowledge rather than to
+# look-alike code, no commit without approval, an explicit priority-classified
+# assessment, and the honesty to leave clean code alone.
+#
+# Three providers run every case: the skills bundle as installed, the same
+# agent with no skills at all, and the bundle with the skill under test
+# force-loaded. forced vs no-skills is what the skill body is worth;
+# with-skills vs forced is whether routing fires on its own.
+#
+# Run it with ./run-quality.sh refactoring. Cases run one at a time in a shared
+# workspace that quality-hooks.js resets between cases.
+description: refactoring quality — does the agent assess, preserve and decline the way the refactoring skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `refactoring` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://refactoring-assertions.js:baselineBeforeEdit', metric: baseline-before-edit }
+    - { type: javascript, value: 'file://refactoring-assertions.js:verifiedAfterLastEdit', metric: verified-after-last-edit }
+    - { type: javascript, value: 'file://refactoring-assertions.js:noCommitWithoutApproval', metric: no-commit-without-approval }
+    - { type: javascript, value: 'file://refactoring-assertions.js:testsNotWeakened', metric: tests-not-weakened }
+    - { type: javascript, value: 'file://refactoring-assertions.js:assessmentClassified', metric: assessment-classified }
+    - { type: javascript, value: 'file://refactoring-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://refactoring-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://refactoring-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/refactoring-quality.yaml

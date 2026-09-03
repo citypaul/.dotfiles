@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# typescript-strict quality evaluation. See promptfooconfig.tdd.yaml for
+# the shape; graders live in typescript-strict-assertions.js. Run with
+# ./run-quality.sh typescript-strict.
+description: typescript-strict quality — does the agent type untrusted input the way the skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `typescript-strict` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:schemaAtBoundary', metric: schema-at-boundary, weight: 2 }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:oneOwnerPerContract', metric: one-owner-per-contract }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:unknownAtBoundary', metric: unknown-at-boundary }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:noAny', metric: no-any }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:assertionsOnlyInBrandConstructors', metric: assertions-only-in-brand-constructors }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:typeConvention', metric: type-convention }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:strictnessKept', metric: strictness-kept }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/typescript-strict-quality.yaml

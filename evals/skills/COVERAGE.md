@@ -23,13 +23,13 @@ meta-skill, or one-liner); routing coverage only.
 | tdd | A | max | 1 | 4 cases; no-skills 27/44, forced 40→44/44, with-skills 34→44/44 after four edits (RED named in reply, mutation gate stated, checklist unconditional, description fires on "one-liner fix"); 44/44 in both arms on two consecutive runs |
 | hexagonal-architecture | A | max | 1 | 3 cases on a declared-but-not-hexagonal fixture; no-skills 16/33; with-skills 19→33/33, forced 14→33/33 after a "Before You Write Code" procedure (SDK client is never a port, order of work, port every SDK dep of a touched file as a REFACTOR step before RED, adapters beside the feature, fakes not mocks, composition root keeps its SDK-client signature) and a description that fires on every change in an opted-in repo; 33/33 in both arms on two consecutive runs |
 | domain-driven-design | A | max | 1 | 2 cases on a greenfield lending domain with a glossary; no-skills 18/22; with-skills 21→22/22, forced 18→22/22 after three edits (assertion budget, test titles by concept, glossary over request wording); 22/22 in both arms on two consecutive runs |
-| testing | A | todo | 2 | factories, behaviour over implementation, no 1:1 file mirroring |
-| typescript-strict | A | todo | 2 | schema at trust boundary, no any/assertions, branded types |
-| functional | A | todo | 2 | immutability violations catalogue, early returns, options objects |
-| refactoring | A | todo | 2 | preservation evidence first, semantic vs structural, priority classes |
-| mutation-testing | A | todo | 2 | Stryker setup, diff run, survivor triage |
-| characterisation-tests | A | todo | 2 | pin current behaviour before change, no "should" tests |
-| finding-seams | A | todo | 2 | seam types, no edits at call site |
+| testing | A | proven | 2 | 3 cases; graders: fresh state, factories, real schema, public interface, no own-module mocks, no 1:1 mirror, tests catch planted mutants; verifier confirmed |
+| typescript-strict | A | authored | 2 | 3 cases; verifier refuted once more on a grader edge case (one-owner clustering); repair pending |
+| functional | A | authored | 2 | 3 cases; verifier refuted: case 2 wording lets a copy-then-mutate shape pass; repair pending |
+| refactoring | A | authored | 2 | 3 cases; verifier refuted on classification-marker parsing; repair pending |
+| mutation-testing | A | proven | 2 | 2 cases; Stryker pre-installed in the fixture; graders: config with vitest runner, stryker ran, score reported, survivors drop below baseline; verifier confirmed |
+| characterisation-tests | A | authored | 2 | 3 cases; verifier refuted: fixture comment leaks the accepted phrasing; repair pending |
+| finding-seams | A | authored | 2 | 3 cases; verifier refuted: enabling-point detection misses `options.x ?? default`; repair pending |
 | event-sourcing | A | todo | 3 | decider, event store concurrency, projections, upcasting |
 | xstate | A | todo | 3 | hand-rolled statechart detection, machine tests, mermaid render |
 | react-testing | A | todo | 3 | browser mode vs RTL by claim, role queries |

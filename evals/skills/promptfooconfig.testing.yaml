@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# testing quality evaluation.
+#
+# The routing suite (promptfooconfig.yaml) asks whether the right skill loads.
+# This suite asks what the agent then does: asked for tests on a small pricing
+# package that declares behaviour tests through its public interface but
+# shows none, does it write them the way the testing skill promises — fresh
+# state through factories with overrides, the real schema reused, imports
+# only through the public interface, no mocks of the package's own modules,
+# no reflex one-file-per-module mirroring — and do those tests catch planted
+# bugs.
+#
+# Three providers run every case: the skills bundle as installed, the same
+# agent with no skills at all, and the bundle with the skill under test
+# force-loaded. forced vs no-skills is what the skill body is worth;
+# with-skills vs forced is whether routing fires on its own.
+#
+# Run it with ./run-quality.sh testing. Cases run one at a time in a shared
+# workspace that quality-hooks.js resets between cases.
+description: testing quality — does the agent write tests the way the testing skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `testing` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://testing-assertions.js:freshStatePerTest', metric: fresh-state-per-test }
+    - { type: javascript, value: 'file://testing-assertions.js:factoriesWithOverrides', metric: factories-with-overrides }
+    - { type: javascript, value: 'file://testing-assertions.js:realSchemaReused', metric: real-schema-reused }
+    - { type: javascript, value: 'file://testing-assertions.js:publicInterfaceOnly', metric: public-interface-only }
+    - { type: javascript, value: 'file://testing-assertions.js:noMocksOfOwnModules', metric: no-mocks-of-own-modules }
+    - { type: javascript, value: 'file://testing-assertions.js:noOneToOneMirror', metric: no-one-to-one-mirror }
+    - { type: javascript, value: 'file://testing-assertions.js:testsCatchPlantedBugs', metric: tests-catch-planted-bugs, weight: 2 }
+    # Regression guard only: the requests ask for tests, so the pristine
+    # fixture already passes the hidden acceptance test. It catches an agent
+    # that rewrites production code and breaks the specified behaviour; the
+    # behaviour weight sits on testsCatchPlantedBugs above.
+    - { type: javascript, value: 'file://testing-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 1 }
+    - { type: javascript, value: 'file://testing-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://testing-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/testing-quality.yaml

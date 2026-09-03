@@ -1,0 +1,90 @@
+# finding-seams quality cases.
+#
+# The fixture declares the practice (README.md, CLAUDE.md: legacy code is put
+# under test by introducing seams, not rewriting it) but shows none of it:
+# src/issue-key.ts, src/revoke-key.ts and src/expiry-report.ts each construct
+# the database driver inside the function, read process.env and Date.now()
+# directly, and are called from two call sites (src/http/api-keys.ts and
+# src/cli.ts) that pass only the business arguments. The one test that
+# touches this code (src/revoke-key.test.ts) mocks the whole driver module
+# with vi.mock and stubs the environment — the last-resort seam the skill
+# tells the agent to migrate away from.
+#
+# Each request pins only the function the hidden acceptance test's callers
+# already invoke and the two caller files that must keep working. Where the
+# enabling point goes, what it is called, how the default is wired and how the
+# fakes are built is the agent's — and what finding-seams-assertions.js
+# grades. `entry` and `subject` tell the graders which function is under test.
+#
+# behaviourDelivered is the request, not a regression guard: it fails on the
+# untouched fixture in every case. It needs a test that imports the subject,
+# green with DATABASE_URL / API_KEY_TTL_DAYS / EXPIRY_WARNING_DAYS unset
+# ("nothing set up"), that catches one planted regression the request names
+# (label not lower-cased; warning window inverted; revocation time not
+# recorded — the one src/revoke-key.test.ts's mock cannot see), and the
+# hidden callers test green through the production defaults.
+#
+# - issue-key: three hidden dependencies and no test. The no-skills default
+#   is anchored by the only existing test of this family, src/revoke-key.test.ts,
+#   which the request offers as something to crib from: vi.mock the driver
+#   module, vi.stubEnv / vi.useFakeTimers for the environment and the clock.
+#   Parameter injection with a production default is a plausible unprompted
+#   outcome too; when it happens, discrimination rests on the skill's
+#   vocabulary — seamTypeNamed wants the seam type and where its enabling
+#   point is, which the README's "introducing seams" does not supply — and on
+#   the call sites staying untouched rather than threaded through.
+#   The skill: parameter/factory seam with a production default, fakes
+#   through the seam, call sites untouched, enabling point named.
+# - expiry-report: the requester wants "everything it touches" stubbed. The
+#   skill: seam only at the boundary (driver, clock, env); the pure helpers in
+#   src/format.ts get no seam and no mock.
+# - revoke-key: a vi.mock-based test already exists. Default behaviour is to
+#   improve the mock, or to add a new seam test next to it. The skill: module
+#   mocks are scaffolding; migrate to parameter injection and drop the mock
+#   once the seam exists. Every test that imports the subject is graded,
+#   whether or not the agent edited it, so leaving the old test in place
+#   fails noModuleMock and testsInjectFakesThroughSeam.
+
+- description: issue-key under test
+  vars:
+    acceptance: issue-key-callers.test.ts
+    entry: issueApiKey
+    subject: src/issue-key.ts
+    request: >-
+      `issueApiKey` in src/issue-key.ts has no tests and nobody wants to touch
+      it. Get it under test: the five-active-keys limit, the label being
+      trimmed and lower-cased, and the expiry date. The tests have to run on a
+      fresh laptop with nothing set up — no database, no environment
+      variables, and no waiting on the clock. There is a test for revoke-key
+      already if you want something to crib from. `handleCreateApiKey` in
+      src/http/api-keys.ts and `runCli` in src/cli.ts call it today and must
+      keep working. We are not up for a rewrite; it just needs to be testable.
+
+- description: expiry-report stub everything
+  vars:
+    acceptance: expiry-report-callers.test.ts
+    entry: expiringKeysReport
+    subject: src/expiry-report.ts
+    request: >-
+      We need tests around `expiringKeysReport` in src/expiry-report.ts before
+      we change the warning window. The person who asked said "stub out
+      everything it touches so the test is completely isolated". Same
+      constraints as always here: the tests run anywhere with nothing set up,
+      and `handleExpiringKeys` in src/http/api-keys.ts and `runCli` in
+      src/cli.ts keep working. Do what's right for this codebase.
+  assert:
+    - { type: javascript, value: 'file://finding-seams-assertions.js:pureHelpersNotSeamed', metric: pure-helpers-not-seamed }
+
+- description: revoke-key off the module mock
+  vars:
+    acceptance: revoke-key-callers.test.ts
+    entry: revokeApiKey
+    subject: src/revoke-key.ts
+    request: >-
+      src/revoke-key.test.ts fakes the whole database module. It broke twice
+      when the driver was upgraded, and it cannot tell whether a key really
+      got revoked — the last regression sailed straight through it. Make
+      `revokeApiKey` in src/revoke-key.ts properly testable and replace that
+      test with one that would actually catch a regression, without depending
+      on a database, the environment or the clock. `handleRevokeApiKey` in
+      src/http/api-keys.ts and `runCli` in src/cli.ts keep working.
