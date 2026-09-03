@@ -44,8 +44,13 @@ const internalModules = () => {
 const isInternal = (file) => internalModules().some((internal) => lib.sameFile(internal, file));
 
 // Test files the agent wrote or edited, wherever it put them.
-const touchedTests = (context) =>
-  [...new Set(lib.edits(lib.trail(context)).filter((call) => lib.isTestPath(call.path)).map((call) => call.path))].filter(existsSync);
+// Test files the agent touched, located in the current workspace (trail paths
+// name the run's own temp directory, which regrade rebuilds elsewhere; a Bash
+// heredoc leaves no edit call at all, which git status catches).
+const touchedTests = (context) => {
+  const touched = lib.touchedBy(context);
+  return lib.sourceFiles(resolve(lib.workspace(), "src")).filter((file) => lib.isTestPath(file) && touched(file));
+};
 
 // Those tests plus the test-support modules they import (factories in their
 // own file are the skill's own pattern); production modules are excluded.

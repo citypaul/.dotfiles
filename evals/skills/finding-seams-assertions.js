@@ -107,16 +107,43 @@ const functionName = (ts, node) => {
   return undefined;
 };
 
-// Walk up from a hidden-dependency occurrence. A parameter initializer met
-// first is an enabling point (production default); reaching a function-like
-// ancestor named for the entry means the dependency is still hard-coded
-// inside the function under test.
+// Every name a function's parameter list binds, destructured ones included.
+const parameterNames = (ts, fn) =>
+  (fn.parameters ?? []).flatMap((parameter) => descendants(ts, parameter.name).filter((node) => ts.isIdentifier(node)).map((node) => node.text));
+
+const readsParameter = (ts, node, names) => descendants(ts, node).some((inner) => ts.isIdentifier(inner) && names.includes(inner.text));
+
+// "pass dependencies as arguments with production defaults" — the default may
+// be written as a fallback in the body rather than a parameter initializer:
+// `options.store ?? new Database(...)`, `(options.now ?? Date.now)()`,
+// `options.now ? options.now() : Date.now()`. The dependency is then only
+// reached when the caller supplied nothing, so the choice still lives in the
+// argument list: that is an enabling point, not a hard-coded dependency.
+const guardedByParameter = (ts, child, parent, names) => {
+  if (ts.isBinaryExpression(parent) && (parent.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken || parent.operatorToken.kind === ts.SyntaxKind.BarBarToken)) {
+    return child === parent.right && readsParameter(ts, parent.left, names);
+  }
+  if (ts.isConditionalExpression(parent)) {
+    return (child === parent.whenTrue || child === parent.whenFalse) && readsParameter(ts, parent.condition, names);
+  }
+  return false;
+};
+
+// Walk up from a hidden-dependency occurrence. A parameter initializer, or a
+// fallback the caller can pre-empt through a parameter, is an enabling point
+// (production default); reaching a function-like ancestor named for the entry
+// first means the dependency is still hard-coded inside the function under
+// test.
 const classify = (ts, node, entry) => {
+  const chain = [];
+  for (let current = node; current.parent; current = current.parent) chain.push({ child: current, parent: current.parent });
+  const names = chain.filter(({ parent }) => ts.isFunctionLike(parent)).flatMap(({ parent }) => parameterNames(ts, parent));
   const path = [];
-  for (let current = node.parent; current; current = current.parent) {
-    if (ts.isParameter(current)) return { at: "default", path };
-    if (ts.isFunctionLike(current)) {
-      const name = functionName(ts, current);
+  for (const { child, parent } of chain) {
+    if (ts.isParameter(parent)) return { at: "default", path };
+    if (guardedByParameter(ts, child, parent, names)) return { at: "default", path };
+    if (ts.isFunctionLike(parent)) {
+      const name = functionName(ts, parent);
       path.push(name ?? "(anonymous)");
       if (name === entry) return { at: "inside-entry", path };
     }
@@ -245,14 +272,29 @@ exports.narrowestSeam = (output, context) => {
 //    parameter, configuration, module, object) and each one's enabling point
 //    (the argument list, the config source, the mock configuration, where the
 //    object is created). The reply names the seam type it introduced and
-//    says where its enabling point is — "seam" plus "parameter" alone is the
-//    fixture README's vocabulary, not the skill's.
+//    says where behaviour is chosen — the phrase "enabling point", or the
+//    skill's own two restatements of it: the default kicking in at the
+//    untouched call sites, or the test handing its fake in. "seam" alone is
+//    the fixture README's vocabulary, not the skill's.
 exports.seamTypeNamed = (output) => {
   const text = String(output ?? "");
   const seam = /\bseams?\b/i.test(text);
-  const type = text.match(/\b(parameter|argument|factory|higher-order|configuration|config|object|constructor)\b/i)?.[1];
+  // Singular or plural: the check is vocabulary ("the dependencies are now
+  // optional parameters with production defaults"), not number.
+  const type = text.match(/\b(parameters?|arguments?|factory|factories|higher-order|configuration|configs?|objects?|constructors?)\b/i)?.[1];
   const where = "(argument|parameter|default|factory|config|construct|creat|composition|call|import|mock)\\w*";
-  const enabling = text.match(new RegExp(`enabling point[^.\\n]{0,100}?\\b${where}|\\b${where}[^.\\n]{0,100}?enabling point`, "i"));
+  // Tolerant of the reply's line wrapping: the phrase and the mechanism may
+  // sit either side of a newline in a wrapped paragraph or a bullet.
+  const point = "enabling\\s+point";
+  const named = text.match(new RegExp(`${point}[^.]{0,100}?\\b${where}|\\b${where}[^.]{0,100}?${point}`, "i"));
+  // The skill states the enabling point twice more without the phrase:
+  // "Production code is unchanged at every call site (the default kicks in)"
+  // and "Test -- swap in a fake at the enabling point (the argument list)".
+  // A reply that says what the production default does at the call sites, or
+  // where the test hands its fake in, has said where behaviour is chosen.
+  const defaults = text.match(/\bdefaults?\b[^.]{0,160}?\b(call sites?|callers?|production|unchanged|untouched|kicks? in)\b|\b(call sites?|callers?|production|unchanged|untouched)\b[^.]{0,160}?\bdefaults?\b/i);
+  const injected = text.match(/\btests?\b[^.]{0,160}?\b(pass(?:es)?|inject(?:s)?|suppl(?:y|ies)|hands?|gives?)\b[^.]{0,160}?\b(fake|stub|double|in-memory)\w*/i);
+  const enabling = named ?? defaults ?? injected;
   if (!seam) return lib.verdict(false, "reply never uses the word seam");
   if (!type) return lib.verdict(false, "reply says seam but not which kind");
   if (!enabling) return lib.verdict(false, `reply names the seam type (${type}) but not where its enabling point is`);

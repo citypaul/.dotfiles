@@ -11,6 +11,7 @@
 
 const { existsSync, writeFileSync, unlinkSync, mkdirSync } = require("node:fs");
 const { dirname } = require("node:path");
+const { tmpdir } = require("node:os");
 const lib = require("./quality-lib");
 
 const FIXTURE = lib.resolve(__dirname, "fixtures", "characterisation-tests-workspace");
@@ -125,19 +126,268 @@ const withProduction = (transform, fn) => {
 };
 
 const runAgentTests = () => lib.run("pnpm exec vitest run --exclude '**/acceptance-*.test.ts'");
+
+// The same run, read per test: one row per test with the file it lives in and
+// whether it failed. Used to find which of the agent's tests a quirk's hidden
+// fix turns red — that is the test that pins the quirk.
+const runAgentTestsPerTest = () => {
+  const report = lib.resolve(tmpdir(), `characterisation-tests-${process.pid}-${Math.random().toString(36).slice(2)}.json`);
+  try {
+    lib.run(`pnpm exec vitest run --exclude '**/acceptance-*.test.ts' --reporter=json --outputFile='${report}'`);
+    if (!existsSync(report)) return null;
+    const parsed = JSON.parse(lib.read(report));
+    return (parsed.testResults ?? []).flatMap((file) => (file.assertionResults ?? []).map((test) => ({ file: file.name, title: test.title, failed: test.status === "failed" })));
+  } catch {
+    return null;
+  } finally {
+    if (existsSync(report)) unlinkSync(report);
+  }
+};
 const testRunCommand = (command) => /\b(vitest|pnpm test|npm test|pnpm run test|npm run test)\b/.test(command);
 
 // The trail only names a path for the edit tools. A file written from Bash —
 // a heredoc, a redirect, `tee`, `sed -i` — shows up as a command whose write
 // target matches `target` (a regex source, e.g. an escaped file name).
+// The command is read as shell words rather than scanned as text: a `;` or a
+// newline inside a quoted sed script belongs to the script, and a file named
+// on the next line of a multi-line command belongs to that line's command, not
+// to this line's `tee`.
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const bashWrites = (command, target) =>
-  new RegExp(`>>?\\s*['"]?\\S*?${target}|\\btee\\b[^|;&]*?${target}|\\bsed\\s+(?:-\\S+\\s+)*-i[^|;&]*?${target}`).test(command);
+
+// Heredoc bodies are file content, not commands: drop them first, so the
+// quotes and separators inside a test file being written cannot confuse the
+// split below.
+const withoutHeredocBodies = (command) => {
+  const lines = command.split("\n");
+  const kept = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    kept.push(lines[index]);
+    const delimiters = [...lines[index].matchAll(/<<-?(?!<)\s*(?:'([^']*)'|"([^"]*)"|\\?([A-Za-z_]\w*))/g)].map((match) => match[1] ?? match[2] ?? match[3]);
+    for (const delimiter of delimiters) {
+      while (index + 1 < lines.length && lines[index + 1].trim() !== delimiter) index += 1;
+      index += 1;
+    }
+  }
+  return kept.join("\n");
+};
+
+// One segment per pipeline stage, list element or line; each segment is its
+// quote-aware words, with redirection operators kept as words of their own.
+const SEPARATORS = new Set(["\n", ";", "|", "&", "(", ")"]);
+const shellSegments = (command) => {
+  const text = withoutHeredocBodies(command);
+  const segments = [];
+  let words = [];
+  let word = "";
+  let started = false;
+  const endWord = () => {
+    if (started) words.push(word);
+    word = "";
+    started = false;
+  };
+  const endSegment = () => {
+    endWord();
+    if (words.length) segments.push(words);
+    words = [];
+  };
+  const add = (character) => {
+    word += character;
+    started = true;
+  };
+  let index = 0;
+  while (index < text.length) {
+    const character = text[index];
+    if (character === "\\") {
+      add(text[index + 1] ?? "");
+      index += 2;
+      continue;
+    }
+    if (character === "'" || character === '"') {
+      started = true;
+      index += 1;
+      while (index < text.length && text[index] !== character) {
+        if (character === '"' && text[index] === "\\") {
+          add(text[index + 1] ?? "");
+          index += 2;
+          continue;
+        }
+        add(text[index]);
+        index += 1;
+      }
+      index += 1;
+      continue;
+    }
+    if (SEPARATORS.has(character)) {
+      endSegment();
+      index += 1;
+      continue;
+    }
+    if (/\s/.test(character)) {
+      endWord();
+      index += 1;
+      continue;
+    }
+    if (character === ">" || character === "<") {
+      endWord();
+      let operator = character;
+      while (text[index + operator.length] === character) operator += character;
+      index += operator.length;
+      words.push(operator);
+      continue;
+    }
+    add(character);
+    index += 1;
+  }
+  endSegment();
+  return segments;
+};
+
+const WRAPPERS = new Set(["sudo", "env", "command", "xargs", "time", "nohup"]);
+const commandOf = (words) => {
+  let index = 0;
+  while (index < words.length && (/^\w+=/.test(words[index]) || WRAPPERS.has(lib.basename(words[index])))) index += 1;
+  return { name: words[index] === undefined ? "" : lib.basename(words[index]), args: words.slice(index + 1) };
+};
+
+// sed edits the files named after its script; a bare `-i` takes a backup
+// suffix first (BSD's `sed -i ''`). Reading the operands this way keeps a
+// file name that only appears *inside* the script out of the answer.
+const sedFiles = (args) => {
+  const files = [];
+  let suffixNext = false;
+  let scriptSeen = false;
+  for (const arg of args) {
+    if (/^-/.test(arg)) {
+      suffixNext = arg === "-i";
+      continue;
+    }
+    if (suffixNext && (arg === "" || /^\.\w+$/.test(arg))) {
+      suffixNext = false;
+      continue;
+    }
+    suffixNext = false;
+    if (!scriptSeen) {
+      scriptSeen = true;
+      continue;
+    }
+    files.push(arg);
+  }
+  return files;
+};
+
+const bashWrites = (command, target) => {
+  const hits = (word) => word !== "" && new RegExp(target).test(word);
+  return shellSegments(command).some((words) => {
+    const redirected = words.some((word, index) => /^>>?$/.test(word) && words[index + 1] !== undefined && !/^[<>]+$/.test(words[index + 1]) && hits(words[index + 1]));
+    if (redirected) return true;
+    const { name, args } = commandOf(words.filter((word) => !/^[<>]+$/.test(word)));
+    if (name === "tee") return args.filter((arg) => !/^-/.test(arg)).some(hits);
+    if (name === "sed" && args.some((arg) => /^--in-place/.test(arg) || /^-[A-Za-z]*i/.test(arg))) return sedFiles(args).some(hits);
+    return false;
+  });
+};
 const TEST_FILE = "[\\w./-]*\\.test\\.[jt]sx?\\b";
 const bashTestWrites = (calls) => calls.filter((call) => call.name === "Bash" && bashWrites(call.command, TEST_FILE) && !/acceptance-/.test(call.command));
 const usesSnapshots = (text) => /toMatch(Inline|File)?Snapshot\(/.test(text);
 const titlesOf = (text, callee) => [...text.matchAll(new RegExp(`\\b${callee}(?:\\.(?:each|only|skip|todo|concurrent)(?:\\([^)]*\\))?)?\\(\\s*(["'\`])((?:(?!\\1)[^\\\\]|\\\\.)*)\\1`, "g"))].map((m) => m[2]);
 const CHARACTERISATION = /characteri[sz]/i;
+
+// The skill's marker vocabulary: "-- SUSPICIOUS: returns negative bonus",
+// "This may be a bug", "Documented as-is; escalate before changing." Calling
+// the behaviour a bug, unintended or unexpected is the same mark in other
+// words, so those count; "not a bug" does not. What is deliberately *not*
+// marker wording is the fixture's own header comment — "check with billing
+// before changing anything here" (src/proration.ts:2): copying a line out of
+// the file under test is not flagging the behaviour.
+const SUSPICIOUS_MARKER = new RegExp(
+  [
+    "suspicious",
+    "escalat\\w*",
+    "(?<!not a )(?<!n't a )(?<!no )bugs?\\b",
+    "unintended",
+    "unintentional",
+    "not intended",
+    "unexpected",
+    "(?:looks?|seems?|reads?) wrong",
+  ].join("|"),
+  "i",
+);
+
+// The end of the call that starts at `open` (the "(" of an `it(`), skipping
+// strings and comments so a ")" inside an expectation does not close it.
+const callEnd = (text, open) => {
+  let depth = 0;
+  let index = open;
+  while (index < text.length) {
+    const character = text[index];
+    if (character === "/" && text[index + 1] === "/") {
+      const line = text.indexOf("\n", index);
+      if (line === -1) return text.length;
+      index = line;
+      continue;
+    }
+    if (character === "/" && text[index + 1] === "*") {
+      const close = text.indexOf("*/", index + 2);
+      index = close === -1 ? text.length : close + 2;
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      index += 1;
+      while (index < text.length && text[index] !== character) index += text[index] === "\\" ? 2 : 1;
+      index += 1;
+      continue;
+    }
+    if (character === "(") depth += 1;
+    if (character === ")") {
+      depth -= 1;
+      if (depth === 0) return index + 1;
+    }
+    index += 1;
+  }
+  return text.length;
+};
+
+// The comment lines directly above a test — where the skill's example puts
+// "Documented as-is; escalate before changing."
+const commentAbove = (text, start) => {
+  const lines = text.slice(0, start).split("\n");
+  const taken = [];
+  for (let index = lines.length - 2; index >= 0; index -= 1) {
+    const line = lines[index].trim();
+    if (line === "" || line.startsWith("//") || line.startsWith("*") || line.startsWith("/*") || line.endsWith("*/")) taken.unshift(lines[index]);
+    else break;
+  }
+  return taken.join("\n");
+};
+
+// Each `it(...)`/`test(...)` in a file as its title and the source that
+// stands for it: the comment above, the title, and the body.
+const testBlocks = (text) => {
+  const pattern = /(?:^|[\s;{)])(?:it|test)(?:\.(?:each|only|skip|todo|concurrent|fails)(?:\([^)]*\))?)?\s*\(\s*(["'`])((?:(?!\1)[^\\]|\\.)*)\1/g;
+  return [...text.matchAll(pattern)].map((match) => {
+    const start = match.index + (/^[\s;{)]/.test(match[0]) ? 1 : 0);
+    // The "(" the title is the first argument of — not one an `it.each([…])`
+    // opens, nor one inside the title itself.
+    const quote = match.index + match[0].length - match[2].length - 2;
+    const open = text.lastIndexOf("(", quote);
+    return { title: match[2], text: `${commentAbove(text, start)}\n${text.slice(start, callEnd(text, open))}` };
+  });
+};
+
+// A title in the source against the title the runner reported: equal once
+// escapes are resolved, the first piece of a title concatenated from several
+// literals, or equal up to the placeholders of an `it.each` or a template
+// literal.
+const titleMatches = (source, reported) => {
+  const literal = source.replace(/\\(.)/g, "$1");
+  if (literal === reported) return true;
+  if (literal.length >= 8 && reported.startsWith(literal)) return true;
+  const pattern = literal
+    .split(/%[sdifjop#%]|\$\{[^}]*\}|\$\w+/)
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("[\\s\\S]*");
+  return new RegExp(`^${pattern}$`).test(reported);
+};
 
 // 1. "Characterisation tests have no moral authority. They don't assert
 //    correctness -- they detect *change*." / "'Fixing' bugs in
@@ -250,17 +500,39 @@ exports.lifecycleDocumented = () => {
 
 // 6. "When a characterisation test captures behavior that looks like a bug,
 //    mark it explicitly" (`-- SUSPICIOUS: ...`) and "Documented as-is;
-//    escalate before changing." Case-specific: the fixture quirk the request
-//    or the code makes obvious (named in the case file's header) must be
-//    marked, not fixed. The skill's own marker is SUSPICIOUS; its escalation
-//    wording ("escalate", "confirm with billing") counts too.
-exports.suspiciousMarked = () => {
+//    escalate before changing." Case-specific, and specific to the one quirk
+//    the case names in vars.suspicious: the marker has to be on the test that
+//    pins *that* quirk — found by applying the quirk's hidden fix and seeing
+//    which of the agent's tests go red — and not merely somewhere in some
+//    test file. It counts in the test's title, its body, or the comment lines
+//    directly above it, which is where the skill's example puts it.
+exports.suspiciousMarked = (output, context) => {
   const files = agentTestFiles();
   if (files.length === 0) return lib.verdict(false, "no test file was written or changed");
-  const marked = files.filter((file) =>
-    /suspicious|looks like a bug|possible bug|probabl[ey] a bug|may be a bug|might be a bug|likely a bug|escalat|(?:confirm|check|verify) with (?:billing|finance|product|the team)/i.test(lib.read(file)),
+  const name = String(context?.vars?.suspicious ?? "").trim();
+  const quirk = MUTANTS[name];
+  if (!quirk) return lib.verdict(false, `unknown quirk in vars.suspicious: ${name || "(unset)"}`);
+  if (!fixtureText(quirk.file).includes(quirk.from)) return lib.verdict(false, `harness defect: quirk text not found in the fixture for ${name}`);
+  const shipped = withProduction((relPath, pristine) => pristine, runAgentTestsPerTest);
+  if (!shipped) return lib.verdict(false, "no test report for the fixture as shipped");
+  if (shipped.some((test) => test.failed)) return lib.verdict(false, "tests are red on the unmodified fixture, so which test pins the quirk cannot be told");
+  const fixed = withProduction((relPath, pristine) => (relPath === quirk.file ? pristine.replace(quirk.from, quirk.to) : pristine), runAgentTestsPerTest);
+  if (!fixed) return lib.verdict(false, `no test report with ${name} fixed`);
+  const own = (reported) => files.find((file) => lib.rel(file) === lib.rel(reported) || lib.basename(file) === lib.basename(reported));
+  const pinning = fixed.filter((test) => test.failed && own(test.file));
+  if (pinning.length === 0) return lib.verdict(false, `no test pins the ${name} quirk, so no test marks it`);
+  const marked = pinning.filter((test) => {
+    const source = lib.read(own(test.file));
+    const blocks = testBlocks(source).filter((block) => titleMatches(block.title, test.title));
+    return blocks.length ? blocks.some((block) => SUSPICIOUS_MARKER.test(block.text)) : SUSPICIOUS_MARKER.test(source);
+  });
+  const quoted = (tests) => tests.slice(0, 3).map((test) => `"${test.title}"`).join(", ");
+  return lib.verdict(
+    marked.length > 0,
+    marked.length > 0
+      ? `${name} pinned and marked as suspicious by ${quoted(marked)}`
+      : `${name} is pinned but no test marks it as suspicious: ${quoted(pinning)}`,
   );
-  return lib.verdict(marked.length > 0, marked.length > 0 ? `suspicious behaviour marked in ${list(marked)}` : "no test marks the quirk as suspicious");
 };
 
 // 7. The algorithm: "Write an assertion you know will fail ... Let the failure

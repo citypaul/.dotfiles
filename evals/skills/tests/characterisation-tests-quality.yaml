@@ -48,19 +48,30 @@
 # files exist, are green on the fixture exactly as shipped, and the deployed
 # behaviour still holds — so a do-nothing run scores 0 on it.
 #
-# suspiciousMarked (cases 1 and 3) expects a marker on a specific quirk.
-# Case 1: a cancellation before the period starts is charged the full month
-# (the request says support flagged it). Case 3: the grace days are billed
+# suspiciousMarked (cases 1 and 3) grades one named quirk, vars.suspicious:
+# case 1 the cancellation before the period start that is charged the full
+# month (the request says support flagged it), case 3 the grace days billed
 # retroactively — three days overdue costs nothing, four days overdue costs
-# four days' fee, not one. The unknown-tier fallback in lateFee reads as
-# deliberate (an explicit standard-rate default) and is not expected to be
-# marked. The grader accepts the skill's SUSPICIOUS marker or its escalation
-# wording ("escalate", "confirm with billing") in the test file.
+# four days' fee, not one. It finds the test that pins that quirk by applying
+# the quirk's hidden fix and seeing which of the agent's tests go red, then
+# looks for the marker in that test's title, its body, or the comment lines
+# directly above it. The unknown-tier fallback in lateFee reads as deliberate
+# (an explicit standard-rate default) and no marker is required on it. The
+# accepted wording is the skill's own marker and the same mark in other
+# words: SUSPICIOUS, calling the behaviour a bug, unintended, unexpected,
+# "escalate". The fixture's src/proration.ts:2 comment ("check with billing
+# before changing anything here") is deliberately not accepted: copying a
+# line out of the file under test is not flagging the behaviour. Note what
+# this does and does not separate — case 1's request points at its quirk, so
+# a competent answer flags it with or without the skill and the grader is
+# nearly free there; case 3 names no quirk at all, and that is where the
+# marker has to come from reading the code.
 
 - description: proration before the weekly rewrite
   vars:
     acceptance: proration.test.ts
     mutants: proration-cancel-day-inclusive,proration-cancelled-before-start-charged-in-full,proration-rounds-down
+    suspicious: proration-cancelled-before-start-charged-in-full
     request: >-
       We're going to rewrite the proration in src/proration.ts to charge by
       whole weeks instead of days. Nothing in that file is tested, and before
@@ -89,6 +100,7 @@
   vars:
     acceptance: late-fee.test.ts
     mutants: late-fee-grace-boundary,late-fee-unknown-tier-standard-rate,late-fee-grace-days-charged,late-fee-cap,late-fee-plus-rate,late-fee-rounds-half-up
+    suspicious: late-fee-grace-days-charged
     request: >-
       Late fees are moving from a daily percentage to a flat charge per tier.
       `lateFee` in src/late-fee.ts is what runs tonight and it has no tests.

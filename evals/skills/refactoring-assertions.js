@@ -15,9 +15,16 @@ const CLASS_WORD = /\b(Critical|High|Nice|Skip)\b/g;
 // "Priority: High", "Classification: Skip.", "**Verdict**: Critical".
 const LEAD_IN = /\b(?:priority|classification|classified(?:\s+as)?|verdict|assessment|class|category|tier)\**\s*[:=—–-]?\s*(?:\*\*|`|_)?\s*(Critical|High|Nice|Skip)\b/i;
 // Only markers precede the class word on its line: a bullet, a heading, a
-// table cell, a blockquote, an emoji, bold or code.
-const MARKERS_ONLY = /^\s*(?:(?:[-*+>#|]+|\d+[.)])\s*)*(?:[\u26A0\u2705\u274C\u{1F534}\u{1F7E0}\u{1F7E1}\u{1F7E2}\u{1F535}\u{1F7E3}\u2B50]\uFE0F?\s*)*(?:\*\*|`|_)?\s*$/u;
-const CELL_OR_BRACKET = /(?:\||[[(])\s*(?:\*\*|`|_)?\s*$/;
+// table cell, a blockquote, a comment slash (the skill's own Example
+// Assessment writes `// ⚠️ High: …` / `// ✅ Skip: …`), an emoji, bold or code.
+const MARKERS_ONLY = /^\s*(?:(?:[-*+>#|/]+|\d+[.)])\s*)*(?:[\u26A0\u2705\u274C\u{1F534}\u{1F7E0}\u{1F7E1}\u{1F7E2}\u{1F535}\u{1F7E3}\u2B50]\uFE0F?\s*)*(?:\*\*|`|_)?\s*$/u;
+// A table cell, an opening bracket, or an opening quote — `| Critical |`,
+// `(Skip)`, `falls under "Skip: don't change"`.
+const CELL_OR_BRACKET = /(?:\||[[(]|["'“‘])\s*(?:\*\*|`|_)?\s*$/;
+// A markdown table separator row, and the column headers that carry a
+// value rather than a classification: `| Change | Risk | Effort |`.
+const TABLE_SEPARATOR = /^\s*\|?\s*:?-{2,}:?\s*(?:\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+const VALUE_COLUMN = /\b(?:risk|impact|effort|severity|likelihood|confidence|cost)\b/i;
 // "Risk: High | Effort: Low" — a labelled value, not a classification.
 const LABELLED_VALUE = /[A-Za-z]\**\s*[:=]\s*(?:\*\*|`|_)?\s*$/;
 const STRONG_TERMINATOR = /^(?:\*\*|`|_)?\s*(?:\(|→|\||—|–|priority\b)/;
@@ -139,34 +146,59 @@ exports.testsNotWeakened = () => {
 
 // 5. "Priority Classification": Critical / High / Nice / Skip — the reply
 //    states the assessment in those classes, as the skill's example does.
-//    A class word counts when a lead-in names it ("Priority: High",
-//    "Classification: Skip."), when only markers precede it on its line
-//    ("| Critical |", "⚠️ High:", "**Skip**:", "- Skip → …"), when a
-//    classification terminator follows it ("Critical (fix now):",
-//    "Skip (already clean code)"), or when it opens a line inside an
-//    assessment section. "Risk: High | Effort: Low" and "Nice: also tidied
-//    the imports" are ordinary prose and do not count.
-const classificationIn = (text) => {
-  const leadIn = LEAD_IN.exec(text);
-  if (leadIn) return leadIn[0];
+//    A class word counts outright when a lead-in names it ("Priority: High",
+//    "Classification: Skip.") or when a classification terminator follows it
+//    ("Critical (fix now):", "High → extract constants", "| Critical |").
+//    A bare label — the class word behind nothing but markers ("- Skip: …",
+//    the skill's own `// ⚠️ High: …` / `// ✅ Skip: …`, `"Skip: don't
+//    change"`) or opening its line — counts only where the reply is
+//    actually classifying: under an assessment/priority/classification
+//    heading or alongside a second class word. So a lone "- High: consider
+//    a Money type" under "## Next steps" is ordinary prose, and so are
+//    "Risk: High | Effort: Low" and a High in a table column headed
+//    Risk/Impact/Effort/Severity.
+const cellIndex = (before) => (before.match(/\|/g) ?? []).length;
+// The header cell above a table cell: walk up to the separator row
+// (`| --- | --- |`) and take the row before it. Outside a table, none.
+const columnHeader = (lines, lineIndex, before) => {
+  for (let index = lineIndex - 1; index >= 0; index -= 1) {
+    if (TABLE_SEPARATOR.test(lines[index])) return lines[index - 1]?.split("|")[cellIndex(before)];
+    if (!lines[index].includes("|")) return undefined;
+  }
+  return undefined;
+};
+
+const classificationCandidates = (text) => {
   const sectionAt = text.search(ASSESSMENT_SECTION);
   const lines = text.split("\n");
-  const found = lines.flatMap((line, lineIndex) => {
-    const offset = lines.slice(0, lineIndex).reduce((sum, previous) => sum + previous.length + 1, 0);
+  let offset = 0;
+  return lines.flatMap((line, lineIndex) => {
+    const lineAt = offset;
+    offset += line.length + 1;
     return [...line.matchAll(CLASS_WORD)].flatMap((match) => {
       const before = line.slice(0, match.index);
       const after = line.slice(match.index + match[0].length);
       if (LABELLED_VALUE.test(before)) return [];
+      if (VALUE_COLUMN.test(columnHeader(lines, lineIndex, before) ?? "")) return [];
       const lineStart = /^\s*$/.test(before);
-      const marked = !lineStart && (MARKERS_ONLY.test(before) || CELL_OR_BRACKET.test(before));
+      const marked = lineStart || MARKERS_ONLY.test(before) || CELL_OR_BRACKET.test(before);
       const strong = STRONG_TERMINATOR.test(after);
       const weak = WEAK_TERMINATOR.test(after);
-      const inSection = sectionAt >= 0 && offset > sectionAt;
-      const counts = (marked && (strong || weak)) || strong || (lineStart && weak && inSection);
-      return counts ? [line.trim()] : [];
+      if (!strong && !(marked && weak)) return [];
+      const inSection = sectionAt >= 0 && lineAt + match.index > sectionAt;
+      return [{ word: match[1], line: line.trim(), firm: strong || inSection }];
     });
   });
-  return first(found);
+};
+
+const classificationIn = (text) => {
+  const leadIn = LEAD_IN.exec(text);
+  if (leadIn) return leadIn[0];
+  const candidates = classificationCandidates(text);
+  const firm = candidates.find((candidate) => candidate.firm);
+  if (firm) return firm.line;
+  const words = new Set(candidates.map((candidate) => candidate.word));
+  return words.size > 1 ? first(candidates).line : undefined;
 };
 
 exports.assessmentClassified = (output) => {

@@ -2,57 +2,70 @@
 #
 # The fixture declares "pure transformations over immutable data" (README.md,
 # CLAUDE.md) but src/basket.ts shows none of it: every function mutates the
-# basket it is given and returns it, walks lines with index loops, nests
-# `if` three deep, and takes five positional parameters. Its tests only read
-# return values, so nothing depends on the mutation. An agent that matches
-# the surrounding style writes the same thing; the skill has to supply the
-# rules. Every grader in functional-assertions.js reads only the lines the
-# agent added (git diff against the committed fixture), so fixture code the
-# agent left alone is never held against it.
+# basket it is given and returns it, walks lines with index loops and nests
+# `if` three deep. Its tests only read return values, so nothing depends on
+# the mutation. An agent that matches the surrounding style writes the same
+# thing; the skill has to supply the rules. Every grader in
+# functional-assertions.js reads only the lines the agent added (git diff
+# against the committed fixture), so fixture code the agent left alone is
+# never held against it.
 #
 # Each request pins only what the hidden acceptance test calls: a function
 # name, its inputs in words, and the totals `basketTotal` must then report.
 # The hidden tests deep-freeze every input, so a transformation that writes
 # into its arguments throws instead of passing.
 #
-# Case 1 (voucher): "they show the conventions" tempts `line.unitPence = …`
-#   inside an index loop over the basket it was handed (catalogue: property
-#   assignment, `for` where `map` expresses it).
-# Case 2 (merge): "lean on addLine" tempts `addLine(first, …)` — the fixture
-#   helper writes into the basket it is given — followed by an in-place
-#   `first.lines.sort()`, i.e. modifying an argument (skill: "doesn't ...
-#   modify arguments"); the immutable shape folds into a copy or builds a
-#   fresh array.
+# Case 1 (voucher): "find that sku's line ... and halve its unit price" plus
+#   "hands the basket back to carry on with" tempts
+#   `const line = basket.lines.find(...); line.unitPence = ...; return basket`
+#   (catalogue: property assignment through a reference into an argument). The
+#   immutable shape maps to a new line and returns a new basket.
+# Case 2 (merge): "start from the saved basket and fold each of the guest's
+#   lines into it" plus "lean on addLine" tempts `addLine(saved, ...)` — the
+#   fixture helper writes into the basket it is given — followed by an in-place
+#   `saved.lines.sort()`, i.e. modifying an argument (skill: "doesn't ...
+#   modify arguments"). The immutable shapes are a copy to fold into, or making
+#   addLine pure first and folding through its return value; the grader reads
+#   the mutating-helper set from the working tree, so a helper the agent made
+#   pure is not held against the call site.
 # Case 3 (bulk prices): the rule shape must be typed, so `readonly` on that
 #   type (single-line, multi-line or inline `{ … }[]`) is always measured;
 #   "sort the rules largest-minimum-first" tempts `rules.sort(…)` on the
 #   caller's array where `[...rules].sort(…)` / `toSorted` is the catalogue's
 #   alternative; the fixture style adds for → if → if nesting.
+#
+# Two rules the skill states are deliberately not graded here — an options
+# object for parameter groups, and determinism (no clock, randomness or I/O).
+# Every entry point a hidden test can call has a two-parameter signature the
+# request pins, and nothing in basket pricing reaches for a clock, so both
+# graders would pass for free in both arms. See functional-assertions.js.
 
 - description: half-price voucher
   vars:
     acceptance: voucher.test.ts
     request: >-
-      Add vouchers to src/basket.ts: `applyVoucher(basket, code)`. A code of
-      the form `HALF-<sku>` halves the unit price of that sku's line, rounding
-      down to whole pence, so `basketTotal` reflects it; applying the same
-      code again halves it again. A code for a sku that is not in the basket,
-      or a code in any other form, leaves the basket as it was. Keep it next to
-      the other helpers in that file — they show the conventions — and make
-      sure it's tested.
+      Add vouchers to src/basket.ts: `applyVoucher(basket, code)`. For a code
+      of the form `HALF-<sku>`, find that sku's line in the shopper's basket
+      and halve its unit price, rounding down to whole pence, so `basketTotal`
+      reflects it; applying the same code again halves it again. A code for a
+      sku that is not in the basket, or a code in any other form, leaves the
+      basket as it was. Like the other helpers it hands the basket back to
+      carry on with — keep it next to them in that file, they show the
+      conventions — and make sure it's tested.
 
 - description: merge two baskets
   vars:
     acceptance: merge.test.ts
     request: >-
-      Add `mergeBaskets(first, second)` to src/basket.ts for when a shopper
-      signs in and their guest basket joins their saved one. The result has
-      every line from both; where both baskets have the same sku the
-      quantities add up and the first basket's name and unit price are kept;
-      lines end up in plain string order of sku. The currency is the first
-      basket's (assume they match). `addLine` already knows how to fold one
-      line into a basket, so lean on it rather than writing that logic
-      twice. Test it.
+      Add `mergeBaskets(saved, guest)` to src/basket.ts for when a shopper
+      signs in and their guest basket joins the one they already had. Start
+      from the saved basket and fold each of the guest's lines into it —
+      `addLine` already knows how to fold one line into a basket, so lean on
+      it rather than writing that logic twice — then put the lines in plain
+      string order of sku and hand the basket back. Where both baskets have
+      the same sku the quantities add up and the saved basket's name and unit
+      price are kept; the currency is the saved basket's (assume they match).
+      Test it.
 
 - description: bulk prices
   vars:

@@ -42,9 +42,7 @@ const addedHunks = () => {
   return [...tracked, ...untracked].filter((entry) => isProduction(entry.file));
 };
 
-const addedLines = () => addedHunks().flatMap((entry) => entry.hunks.flatMap((hunk, h) => hunk.map((text, i) => ({ file: entry.file, hunk: h, index: i, text }))));
 const stripComments = (text) => text.replace(/\/\/.*$/, "").replace(/\/\*.*?\*\//g, "");
-const cite = (line) => `${line.file}: \`${line.text.trim()}\``;
 const nothingAdded = () => lib.verdict(false, "no production line was added under src/");
 
 // ---------------------------------------------------------------------------
@@ -267,28 +265,43 @@ const mutationSites = (text) => {
   return sites;
 };
 
-// Fixture helpers that write into an argument (addLine, removeLine,
-// changeQuantity in src/basket.ts): handing them an input mutates it just
-// as surely as a direct push. Found by analysing the committed source the
-// same way, so the list follows the fixture rather than a hard-coded name.
+// Named functions declared in a source text, with the index range of each
+// body: `function f(…) { … }`, `const f = (…) => { … }` and `const f = (…) =>
+// expr` alike, so a helper the agent rewrote in arrow form is still found.
+const declaredFunctions = (text) => {
+  const declaration = /\bfunction\s+([\w$]+)\s*(?:<[^>]*>)?\s*\(|\b(?:const|let|var)\s+([\w$]+)\s*(?::[^=\n]*)?=\s*(?:async\s+)?(?:<[^>]*>)?\s*\(/g;
+  return [...text.matchAll(declaration)]
+    .map((m) => {
+      const close = matching(text, m.index + m[0].length - 1);
+      const body = bodyAfter(text, close);
+      return body ? { name: m[1] ?? m[2], from: body.from, to: body.to } : null;
+    })
+    .filter(Boolean);
+};
+
+// Helpers that write into an argument (addLine, removeLine, changeQuantity as
+// the fixture ships them): handing one an input mutates it just as surely as a
+// direct push. Read from the WORKING TREE, not from HEAD — the fixture's
+// README says src/basket.ts "has not been brought in line yet", so an agent
+// may well make addLine pure in the same change; grading against HEAD would
+// then report a helper that no longer mutates anything. The list therefore
+// follows the code as the agent left it rather than a hard-coded name.
+const productionFiles = () =>
+  lib
+    .sourceFiles(lib.resolve(lib.workspace(), "src"))
+    .map((file) => lib.rel(file))
+    .filter(isProduction);
+
 const fixtureMutators = () =>
   new Set(
-    git("ls-tree -r --name-only HEAD -- src")
-      .out.split("\n")
-      .filter(isProduction)
-      .flatMap((file) => {
-        const text = blank(git(`show HEAD:${file}`).out);
-        const { isInput } = inputAnalysis(text);
-        const mutated = mutationSites(text).filter((s) => isInput(s.root, s.at));
-        return [...text.matchAll(/\bfunction\s+([\w$]+)\s*\(/g)]
-          .map((m) => {
-            const paramsClose = matching(text, m.index + m[0].length - 1);
-            const bodyOpen = text.indexOf("{", paramsClose);
-            return { name: m[1], from: bodyOpen, to: matching(text, bodyOpen) };
-          })
-          .filter((fn) => mutated.some((s) => s.at > fn.from && s.at < fn.to))
-          .map((fn) => fn.name);
-      }),
+    productionFiles().flatMap((file) => {
+      const text = blank(lib.read(lib.resolve(lib.workspace(), file)));
+      const { isInput } = inputAnalysis(text);
+      const mutated = mutationSites(text).filter((s) => isInput(s.root, s.at));
+      return declaredFunctions(text)
+        .filter((fn) => mutated.some((s) => s.at > fn.from && s.at < fn.to))
+        .map((fn) => fn.name);
+    }),
   );
 
 // 1. "Immutable domain data by default"; "Pure functions ... no side
@@ -488,54 +501,20 @@ exports.readonlyContracts = () => {
   return lib.verdict(hits.length === 0, hits.length === 0 ? "added object types and array annotations are readonly" : hits.join("; "));
 };
 
-// 5. "Use an options object when parameters form a meaningful group, several
-//    values share the same type, or optional arguments make ordering
-//    unclear." A function the agent declared with three or more parameters,
-//    two of which share a primitive type, needs an options object.
-//    Functions the committed fixture already exports (addLine and friends)
-//    keep the signatures the tests call, so a rewrite of one is not graded.
-const signaturePattern = /(?:function\s+(\w+)\s*|(?:const|let)\s+(\w+)\s*=\s*(?:async\s*)?)(?:<[^>]*>)?\(([^()]*)\)/g;
-const fixtureFunctionNames = () =>
-  new Set(
-    git("ls-tree -r --name-only HEAD -- src")
-      .out.split("\n")
-      .filter(isProduction)
-      .flatMap((file) => [...git(`show HEAD:${file}`).out.matchAll(signaturePattern)].map((m) => m[1] ?? m[2])),
-  );
-exports.optionsObjectsForParameterGroups = () => {
-  const hunks = addedHunks();
-  const text = hunks.flatMap((entry) => entry.hunks.map((hunk) => hunk.map(stripComments).join("\n"))).join("\n");
-  const inherited = fixtureFunctionNames();
-  const signatures = [...text.matchAll(signaturePattern)].filter((m) => !inherited.has(m[1] ?? m[2]));
-  const hits = signatures.flatMap((m) => {
-    const name = m[1] ?? m[2];
-    const types = m[3].split(",").map((p) => p.split(":")[1]?.trim().replace(/\s*=.*$/, "")).filter(Boolean);
-    if (types.length < 3) return [];
-    const primitives = types.filter((t) => /^(string|number|boolean)$/.test(t));
-    const shared = primitives.some((t, i) => primitives.indexOf(t) !== i);
-    return shared ? [`${name}(${types.join(", ")})`] : [];
-  });
-  if (signatures.length === 0) return lib.verdict(true, "no new function signature added");
-  return lib.verdict(hits.length === 0, hits.length === 0 ? `no parameter group left positional (${signatures.length} signature(s))` : `positional parameters sharing a type; group them in an options object: ${hits.join("; ")}`);
-};
-
-// 6. "Pure functions ... no side effects — doesn't mutate external state,
-//    modify arguments, or perform I/O; deterministic — no dependency on
-//    Date.now(), Math.random(), or globals." Transformations the agent added
-//    read no clock, randomness, environment or console.
-exports.pureTransformations = () => {
-  const lines = addedLines();
-  if (lines.length === 0) return lib.verdict(true, "no production line was added");
-  const rules = [
-    [/\bDate\.now\(|\bnew Date\(/, "reads the clock"],
-    [/\bMath\.random\(|randomUUID\(/, "randomness"],
-    [/\bconsole\./, "console I/O"],
-    [/\bprocess\.env\b/, "reads the environment"],
-    [/\b(fetch|setTimeout|setInterval)\(/, "I/O or timer"],
-  ];
-  const hits = lines.flatMap((line) => rules.filter(([pattern]) => pattern.test(stripComments(line.text))).map(([, label]) => `${label} — ${cite(line)}`));
-  return lib.verdict(hits.length === 0, hits.length === 0 ? "added transformations are pure" : hits.join("; "));
-};
+// Two rules the skill states are deliberately NOT wired into this suite,
+// because no case here can make them discriminate:
+//
+//   * "Use an options object when parameters form a meaningful group" — every
+//     entry point a hidden acceptance test can call has its signature pinned
+//     by the request (applyVoucher(basket, code), mergeBaskets(saved, guest),
+//     applyBulkPrices(basket, rules)), all of them two-parameter, so the rule
+//     could never fire and both arms scored the point for free.
+//   * "Pure functions ... deterministic — no dependency on Date.now(),
+//     Math.random(), or globals" — nothing in a basket-pricing transformation
+//     tempts a clock, randomness, the environment or I/O.
+//
+// A grader that cannot fail is not evidence; adding one back needs a case that
+// tempts it first.
 
 exports.behaviourDelivered = (output, context) =>
   lib.runAcceptance({ suite: "functional", name: context?.vars?.acceptance, targetDir: "src" });

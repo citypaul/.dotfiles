@@ -57,7 +57,10 @@ defaultTest:
     disableVarExpansion: true
   assert:
     - { type: javascript, value: 'file://typescript-strict-assertions.js:schemaAtBoundary', metric: schema-at-boundary, weight: 2 }
-    - { type: javascript, value: 'file://typescript-strict-assertions.js:oneOwnerPerContract', metric: one-owner-per-contract }
+    # Weight 2: for cases 1 and 2 this is the rule a zod-by-default answer
+    # still gets wrong (a second spelling of the priority set beside the
+    # fixture's own `type Priority`).
+    - { type: javascript, value: 'file://typescript-strict-assertions.js:oneOwnerPerContract', metric: one-owner-per-contract, weight: 2 }
     - { type: javascript, value: 'file://typescript-strict-assertions.js:unknownAtBoundary', metric: unknown-at-boundary }
     - { type: javascript, value: 'file://typescript-strict-assertions.js:noAny', metric: no-any }
     - { type: javascript, value: 'file://typescript-strict-assertions.js:assertionsOnlyInBrandConstructors', metric: assertions-only-in-brand-constructors }

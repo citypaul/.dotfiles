@@ -63,52 +63,103 @@ const ancestorsOf = (node) => {
 
 // 1. "A runtime schema is required when untrusted data crosses a boundary
 //    ... HTTP, queue, file, environment, or third-party data entering the
-//    system"; "Define schemas first, derive types from them"; "Prefer schema
-//    libraries implementing Standard Schema (Zod 4+, ...)". The agent's
-//    production code declares a zod schema (any zod 4 entry point: `zod`,
-//    `zod/v4`, `zod/mini`), runs it on the input, and derives the type from
-//    it rather than writing the type twice.
+//    system"; "validate at trust boundaries (HTTP handlers, queue
+//    consumers, file/env parsing, third-party API responses), then pass
+//    plain derived types through internal logic"; "Prefer schema libraries
+//    implementing Standard Schema (Zod 4+, ...)". The agent's production
+//    code declares a zod schema (any zod 4 entry point: `zod`, `zod/v4`,
+//    `zod/mini`) and runs it on the input.
+//
+//    The type is then derived rather than written twice. The skill's
+//    schema-duplication example keeps one declaration ("Define once for
+//    this API contract") and writes
+//    `type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>`, so
+//    what is graded is duplication of the shape, not the presence of an
+//    alias: a hand-written object type or interface whose member names are
+//    exactly a schema's field set is the second copy. Deriving with
+//    `z.infer`, or using the parsed value without naming its type at all,
+//    both pass.
 const ZOD_IMPORT = /from\s*["']zod(?:\/[\w-]+)?["']/;
 const ZOD_BUILDER = /\bz\.(object|strictObject|looseObject|array|discriminatedUnion|union|enum|tuple|record|literal|string|number|boolean)\(/;
+const OBJECT_SCHEMA_CALL = /(?:^|\.)(object|strictObject|looseObject|interface)$/;
+const nameText = (node) => node?.name?.getText().replace(/^["'`]|["'`]$/g, "");
+const sameSet = (a, b) => a.size === b.size && [...a].every((key) => b.has(key));
+const schemaShapes = (ts, files) =>
+  files.flatMap((file) => {
+    const source = parseFile(ts, file);
+    return descendants(source)
+      .filter((node) => ts.isCallExpression(node) && OBJECT_SCHEMA_CALL.test(node.expression.getText()) && node.arguments[0] !== undefined && ts.isObjectLiteralExpression(node.arguments[0]))
+      .map((node) => new Set(node.arguments[0].properties.map(nameText).filter((name) => name !== undefined)))
+      .filter((keys) => keys.size > 0);
+  });
+const handWrittenShapes = (ts, files) =>
+  files.flatMap((file) => {
+    const source = parseFile(ts, file);
+    return descendants(source).flatMap((node) => {
+      const members = ts.isInterfaceDeclaration(node) ? node.members : ts.isTypeAliasDeclaration(node) && ts.isTypeLiteralNode(node.type) ? node.type.members : undefined;
+      if (members === undefined) return [];
+      const keys = new Set(members.map(nameText).filter((name) => name !== undefined));
+      return keys.size === 0 ? [] : [{ file, name: node.name.text, keys, line: source.getLineAndCharacterOfPosition(node.getStart()).line + 1 }];
+    });
+  });
 exports.schemaAtBoundary = (output, context) =>
   requireWork(context, (files) => {
-    const text = productionOf(files).map(lib.read).join("\n");
+    const production = productionOf(files);
+    const text = production.map(lib.read).join("\n");
     const missing = [
       [ZOD_IMPORT, "no zod import"],
       [ZOD_BUILDER, "no schema declared"],
       [/(?<!JSON|Date)\.(safeParse|parse)(Async)?\(/, "nothing calls the schema's parse/safeParse on the input"],
-      [/\bz\.(infer|output|input)\s*<\s*typeof\s+\w+/, "no type derived with z.infer<typeof …>"],
     ]
       .filter(([pattern]) => !pattern.test(text))
       .map(([, label]) => label);
-    return lib.verdict(missing.length === 0, missing.length === 0 ? `schema declared, parsed and inferred in ${list(productionOf(files))}` : missing.join("; "));
+    if (missing.length > 0) return lib.verdict(false, missing.join("; "));
+    const ts = typescript();
+    const shapes = schemaShapes(ts, production);
+    const duplicated = handWrittenShapes(ts, production)
+      .filter((shape) => shapes.some((keys) => sameSet(keys, shape.keys)))
+      .map((shape) => `${lib.rel(shape.file)}:${shape.line} ${shape.name} re-declares a schema's field set (${[...shape.keys].join(", ")}); derive it from the schema instead`);
+    return lib.verdict(duplicated.length === 0, duplicated.length === 0 ? `schema declared and parsed in ${list(production)}, with no second copy of its shape` : duplicated.join("; "));
   });
 
 // 2. "Define a schema once per owned contract, version, and bounded
 //    context, then import it within that boundary"; "Schemas have one owner
-//    per contract/version/context"; "Define schemas first, derive types
-//    from them". The fixture already owns the priority set once, as the
-//    hand-written `type Priority` in tickets.ts. A schema that spells
-//    `low | normal | high` again beside that union gives one contract two
-//    owners; the skill's answer is to derive one from the other (or both
-//    from one `as const` list). Counted across all production files under
-//    src/, because the duplicate may sit in a file the agent never opened.
+//    per contract/version/context"; the skill's schema-duplication example
+//    keeps one declaration ("Define once for this API contract") and
+//    derives from it. The fixture already owns the priority set once, as
+//    the hand-written `type Priority` in tickets.ts. A schema, list or
+//    narrowing chain that spells `low | normal | high` again gives one
+//    contract two owners; the skill's answer is to derive one from the
+//    other (or both from one `as const` list). Counted across all
+//    production files under src/, because the duplicate may sit in a file
+//    the agent never opened.
+//
+//    A spelling is read from the parsed source, not from how close two
+//    literals sit: it is the smallest enumerating node — a union or tuple
+//    type, an array literal, a `===`/`||` chain, a call's arguments —
+//    holding all three values. A `type Priority` union and a
+//    `z.enum([...])` on the next line are therefore two spellings, while
+//    three values scattered through unrelated statements are not a spelling
+//    at all, and an exhaustive `switch` over an already-typed Priority
+//    (which consumes the set rather than declaring it) is deliberately not
+//    counted.
 const PRIORITY_VALUES = ["low", "normal", "high"];
-const prioritySpots = (file) => {
-  const text = withoutComments(lib.read(file));
-  const hits = [...text.matchAll(/["'](low|normal|high)["']/g)].map((match) => ({ value: match[1], index: match.index }));
-  const clusters = hits.reduce((acc, hit) => {
-    const last = acc[acc.length - 1];
-    if (last && hit.index - last.end <= 160) return [...acc.slice(0, -1), { ...last, end: hit.index, values: new Set([...last.values, hit.value]) }];
-    return [...acc, { start: hit.index, end: hit.index, values: new Set([hit.value]) }];
-  }, []);
-  return clusters.filter((cluster) => PRIORITY_VALUES.every((value) => cluster.values.has(value))).map((cluster) => `${lib.rel(file)}:${lineOf(text, cluster.start)}`);
+const enumeratingKinds = (ts) =>
+  new Set([ts.SyntaxKind.ArrayLiteralExpression, ts.SyntaxKind.TupleType, ts.SyntaxKind.UnionType, ts.SyntaxKind.BinaryExpression, ts.SyntaxKind.CallExpression, ts.SyntaxKind.NewExpression]);
+const prioritySpellings = (ts, file) => {
+  const source = parseFile(ts, file);
+  const kinds = enumeratingKinds(ts);
+  const valuesUnder = (node) => new Set(descendants(node).filter((child) => ts.isStringLiteralLike(child) && PRIORITY_VALUES.includes(child.text)).map((child) => child.text));
+  const enumerating = descendants(source).filter((node) => kinds.has(node.kind) && PRIORITY_VALUES.every((value) => valuesUnder(node).has(value)));
+  const minimal = enumerating.filter((node) => !enumerating.some((other) => other !== node && other.getStart() >= node.getStart() && other.getEnd() <= node.getEnd()));
+  return minimal.map((node) => `${lib.rel(file)}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`);
 };
 exports.oneOwnerPerContract = (output, context) =>
   requireWork(context, () => {
-    const spots = productionOf(srcFiles()).flatMap(prioritySpots);
+    const ts = typescript();
+    const spots = productionOf(srcFiles()).flatMap((file) => prioritySpellings(ts, file));
     if (spots.length === 0) return lib.verdict(false, "the priority set (low | normal | high) is no longer declared anywhere under src/");
-    return lib.verdict(spots.length === 1, spots.length === 1 ? `the priority set has one owner (${spots[0]})` : `the priority set is spelled ${spots.length} times — ${spots.join(", ")} — one owner expected, the other derived from it`);
+    return lib.verdict(spots.length === 1, spots.length === 1 ? `the priority set has one owner (${spots[0]})` : `the priority set is spelled ${spots.length} times \u2014 ${spots.join(", ")} \u2014 one owner expected, the others derived from it`);
   });
 
 // 3. "Use `unknown` at untrusted boundaries." JSON.parse returns `any`;
@@ -253,9 +304,11 @@ exports.strictnessKept = () => {
 //    (b) every path that confers a brand validates first. From the parsed
 //        source: an `as TicketId`/`raw is TicketId` inside a zod
 //        `.transform()`/`.pipe()` is validated by the schema; a `.brand()`ed
-//        schema likewise; a hand constructor's body must guard (an if,
-//        throw, ternary, switch, comparison, typeof, or a check call such
-//        as `startsWith`/`test`/`safeParse`) before it asserts.
+//        schema likewise; a `z.custom<TicketId>(guard)` (or a `z.custom`
+//        piped after a validating chain) is the same conferral spelled as a
+//        schema; a hand constructor's body must guard (an if, throw,
+//        ternary, switch, comparison, typeof, or a check call such as
+//        `startsWith`/`test`/`safeParse`) before it asserts.
 const BRAND_IDS = { Ticket: /TicketI[dD]/, Agent: /AgentI[dD]/ };
 const GUARD_CALLS = new Set(["test", "startsWith", "endsWith", "match", "includes", "parse", "safeParse", "isSafeInteger", "isInteger", "isFinite", "isNaN"]);
 const SCHEMA_CALLS = new Set(["transform", "pipe", "refine", "superRefine", "check", "overwrite"]);
@@ -324,6 +377,20 @@ const schemaBrands = (ts, files, name) =>
     const schemaName = rhs.typeArguments[0].exprName.getText();
     return descendants(source).some((node) => ts.isVariableDeclaration(node) && node.name.getText() === schemaName && /\.(brand|transform|pipe)\s*[<(]/.test(node.initializer?.getText() ?? ""));
   });
+// `z.custom<TicketId>((value) => …)` confers the brand through the schema,
+// with the guard as the validation — no assertion is written anywhere. A
+// bare `z.custom<TicketId>()` accepts anything, so it counts only when it
+// sits inside a validating chain (`…refine(…).pipe(z.custom<TicketId>())`).
+const customBrands = (ts, files, name) =>
+  files.some((file) =>
+    descendants(parseFile(ts, file)).some((node) => {
+      if (!ts.isCallExpression(node) || !/(?:^|\.)custom$/.test(node.expression.getText())) return false;
+      if (!(node.typeArguments ?? []).some((argument) => argument.getText() === name)) return false;
+      const guard = node.arguments[0];
+      if (guard === undefined) return insideSchemaCall(ts, node);
+      return ts.isFunctionLike(guard) ? guardsIn(ts, guard.body ?? guard) : true;
+    }),
+  );
 const conferralProblems = (ts, files, name) => {
   const sites = files.flatMap((file) => {
     const source = parseFile(ts, file);
@@ -331,7 +398,7 @@ const conferralProblems = (ts, files, name) => {
       .filter((node) => (ts.isAsExpression(node) && node.type.getText() === name) || (ts.isTypePredicateNode(node) && node.type?.getText() === name))
       .map((node) => ({ file, source, node }));
   });
-  if (sites.length === 0) return schemaBrands(ts, files, name) ? [] : [`nothing produces a ${name}: no validating constructor, type predicate or branded schema`];
+  if (sites.length === 0) return schemaBrands(ts, files, name) || customBrands(ts, files, name) ? [] : [`nothing produces a ${name}: no validating constructor, type predicate, branded schema or z.custom<${name}>(guard)`];
   return sites.flatMap(({ file, source, node }) => {
     if (insideSchemaCall(ts, node)) return [];
     const fn = ancestorsOf(node).find((ancestor) => ts.isFunctionLike(ancestor));

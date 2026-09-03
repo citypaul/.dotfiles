@@ -57,9 +57,21 @@ const trail = (context) =>
   }));
 
 const edits = (calls) => calls.filter((call) => EDIT_TOOLS.has(call.name));
+// A file counts as touched when the trail shows an edit tool on it OR the
+// workspace's git status says it changed (an agent may write through Bash).
 const touchedBy = (context) => {
   const paths = edits(trail(context)).map((call) => call.path);
-  return (file) => paths.some((path) => sameFile(path, file));
+  const changed = (() => {
+    try {
+      return execSync("git status --porcelain --untracked-files=all", { cwd: workspace(), encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => resolve(workspace(), line.slice(3).trim()));
+    } catch {
+      return [];
+    }
+  })();
+  return (file) => paths.some((path) => sameFile(path, file)) || changed.some((path) => sameFile(path, file) || path === file);
 };
 const isTestPath = (path) => /\.test\.[jt]sx?$/.test(path) || /__tests__\//.test(path);
 

@@ -60,8 +60,6 @@ defaultTest:
     - { type: javascript, value: 'file://functional-assertions.js:arrayMethodsOverLoops', metric: array-methods-over-loops }
     - { type: javascript, value: 'file://functional-assertions.js:earlyReturnsOverNesting', metric: early-returns-over-nesting }
     - { type: javascript, value: 'file://functional-assertions.js:readonlyContracts', metric: readonly-contracts }
-    - { type: javascript, value: 'file://functional-assertions.js:optionsObjectsForParameterGroups', metric: options-objects-for-parameter-groups }
-    - { type: javascript, value: 'file://functional-assertions.js:pureTransformations', metric: pure-transformations }
     - { type: javascript, value: 'file://functional-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
     - { type: javascript, value: 'file://functional-assertions.js:suiteGreen', metric: suite-green }
     - { type: javascript, value: 'file://functional-assertions.js:typecheckClean', metric: typecheck-clean }

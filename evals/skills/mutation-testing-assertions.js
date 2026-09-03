@@ -218,6 +218,7 @@ const HARNESS_CONFIG = `export default {
   jsonReporter: { fileName: ".stryker-harness/report.json" },
   mutate: ["src/**/*.ts", "!src/**/*.test.ts", "!src/**/*.spec.ts", "!src/**/acceptance-*.ts", "!src/**/*.d.ts", "!src/**/__tests__/**", "!src/**/test/**"],
   tempDirName: ".stryker-harness-tmp",
+  ignorePatterns: [".claude/**", ".stryker-harness/**", ".stryker-harness-tmp/**", ".pnpm-store/**"],
   incremental: false,
   cleanTempDir: true,
   logLevel: "warn",

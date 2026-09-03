@@ -38,11 +38,16 @@
 # - expiry-report: the requester wants "everything it touches" stubbed. The
 #   skill: seam only at the boundary (driver, clock, env); the pure helpers in
 #   src/format.ts get no seam and no mock.
-# - revoke-key: a vi.mock-based test already exists. Default behaviour is to
-#   improve the mock, or to add a new seam test next to it. The skill: module
-#   mocks are scaffolding; migrate to parameter injection and drop the mock
-#   once the seam exists. Every test that imports the subject is graded,
-#   whether or not the agent edited it, so leaving the old test in place
+# - revoke-key: a vi.mock-based test already exists and the request complains
+#   only about what it fails to catch and how often it breaks — it never says
+#   the module fake is the cause, never rules out the database, the
+#   environment or the clock, and never orders the test replaced. The default
+#   is therefore to keep the whole-module fake and shore it up: assert the
+#   timestamp the mock already records, and reach for vi.setSystemTime /
+#   vi.stubEnv for the clock and the environment. The skill: module mocks are
+#   scaffolding, migrate to parameter injection and drop the mock once the
+#   seam exists. Every test that imports the subject is graded, whether or not
+#   the agent edited it, so keeping the old test alongside a new seam test
 #   fails noModuleMock and testsInjectFakesThroughSeam.
 
 - description: issue-key under test
@@ -81,10 +86,11 @@
     entry: revokeApiKey
     subject: src/revoke-key.ts
     request: >-
-      src/revoke-key.test.ts fakes the whole database module. It broke twice
-      when the driver was upgraded, and it cannot tell whether a key really
-      got revoked — the last regression sailed straight through it. Make
-      `revokeApiKey` in src/revoke-key.ts properly testable and replace that
-      test with one that would actually catch a regression, without depending
-      on a database, the environment or the clock. `handleRevokeApiKey` in
-      src/http/api-keys.ts and `runCli` in src/cli.ts keep working.
+      Nobody trusts src/revoke-key.test.ts. It broke twice last quarter when
+      the database driver was upgraded, and the one regression that actually
+      hurt us — revocations going in with the wrong time recorded — sailed
+      straight through it green. Sort out the testing around `revokeApiKey` in
+      src/revoke-key.ts so we get a test that would have caught that and that
+      any of us can run on a fresh laptop. `handleRevokeApiKey` in
+      src/http/api-keys.ts and `runCli` in src/cli.ts call it today and must
+      keep working.

@@ -29,6 +29,19 @@
 # - "tidy the money module": already clean. The honest answer is that no
 #   refactoring adds value; the skill's Skip class. Exercises assessing
 #   before editing, leaving clean code alone, and saying so explicitly.
+#
+# What discriminates, honestly. behaviourDelivered is a preservation oracle:
+# it re-runs the fixture's behaviour against the agent's code, so it passes on
+# the pristine workspace by construction and can only fail when an agent
+# changes behaviour. It is not evidence that a case requires work. On the
+# untouched fixture only sameKnowledgeUnified (case 1) and baselineBeforeEdit
+# fail; for cases 2 and 3 every workspace grader — lookAlikesKeptSeparate,
+# noValueDeclined, behaviourDelivered, suiteGreen, typecheckClean — passes on
+# the fixture as given. Those two cases therefore discriminate through the
+# trail and reply graders (baselineBeforeEdit, assessmentClassified) and
+# through lookAlikesKeptSeparate and noValueDeclined firing negatively when
+# the agent does the tempting thing the request invites: folding the two
+# look-alikes onto one threshold, or tidying already-clean money.ts.
 
 - description: tidy up the pricing module
   vars:

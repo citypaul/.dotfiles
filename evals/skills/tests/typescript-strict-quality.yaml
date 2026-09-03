@@ -14,7 +14,21 @@
 # priority set as a hand-written `type Priority`; a schema that re-lists
 # `low | normal | high` beside it is the schema duplication the skill
 # forbids (one owner per contract, types derived from the schema), and
-# oneOwnerPerContract grades exactly that.
+# oneOwnerPerContract grades exactly that — counting spellings from the
+# parsed source, so a union and a `z.enum([...])` one line apart are two
+# owners, not one.
+#
+# What each case can actually separate, stated plainly. A model that
+# reaches for zod by default already satisfies schemaAtBoundary,
+# unknownAtBoundary, noAny, typeConvention and strictnessKept in cases 1
+# and 2, so those two cases discriminate on the duplication rules: the
+# priority set having one owner (weight 2 for that reason), and, for a
+# hand-rolled narrowing instead of a schema, schemaAtBoundary plus
+# assertionsOnlyInBrandConstructors — which is what the recorded no-skills
+# arm did in case 1 (`request.body as {…}` plus its own
+# `isPriority` `||` chain: two priority owners, no schema, an unjustified
+# assertion). Case 3 is the one that turns on branded look-alike ids and
+# carries brandedIds on top.
 #
 # Each request pins only what the hidden acceptance test must call: the
 # route, the existing `createApp(deps, initial)` and `tickets()` surface, or

@@ -12,7 +12,7 @@
 // per-case diffs; it defaults to the newest one for the suite.
 
 import { execSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -58,6 +58,7 @@ for (const result of results.results) {
   const workspace = mkdtempSync(join(tmpdir(), `regrade-${suite}-`));
   try {
     cpSync(fixture, workspace, { recursive: true });
+    appendFileSync(join(workspace, ".gitignore"), "\n.pnpm-store/\n");
     execSync("git init -q && git -c user.name=r -c user.email=r@r add -A && git -c user.name=r -c user.email=r@r -c commit.gpgsign=false commit -qm fixture", { cwd: workspace, stdio: "ignore" });
     execSync(`git apply --whitespace=nowarn --exclude=".pnpm-store/*" --exclude="node_modules/*" "${diff}"`, { cwd: workspace, stdio: ["ignore", "ignore", "pipe"] });
     process.env.SKILL_EVAL_WORKSPACE = workspace;
