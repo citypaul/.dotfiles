@@ -221,14 +221,18 @@ it('returns claimed gifts in yourClaims and unclaimed in available', async () =>
 ## Test Factory Pattern
 
 Use factory functions with optional overrides when test data is repeated, nested,
-or otherwise clearer behind a named fixture builder. Keep one-off values inline.
+or otherwise clearer behind a named fixture builder. Keep genuinely single-use
+scalars inline. The trigger is mechanical, not a matter of taste: if more than one
+test in a file constructs the same object shape — including the same shape spread
+into `it.each` rows, or spread out of another object to change one field — that
+shape gets a factory, and the fields that differ become overrides.
 
 ### Core Principles
 
 1. Return objects valid for the scenario, with intentional invalidity made explicit
 2. Use typed overrides when that fits the language and model
 3. Reuse a production schema when the contract already has one; do not invent a schema only for a factory
-4. Prefer fresh state per test. Lifecycle hooks are fine when setup is isolated and cleanup is reliable
+4. Prefer fresh state per test: every test builds its own data from a factory call. Lifecycle hooks are fine when setup is isolated and cleanup is reliable, but shared `let`-bound data rebuilt for each test is not — that is the anti-pattern below wearing a hook. When you add tests to a file that already holds its data in a shared `let` or a `beforeEach` that rebuilds it, replace that setup with a factory as part of the same change instead of writing new tests that spread it. Once you touch a test file, its whole state discipline is yours, not just the lines you added
 
 ### Basic Pattern
 

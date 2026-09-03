@@ -55,10 +55,11 @@ FOR EACH TDD INCREMENT:
     └─► Repeat without running the mutation harness
 
 END-OF-PHASE PR-READINESS GATE:
-    ├─► Run mutation testing once for the accumulated branch/PR scope
+    ├─► BASELINE: one full run for the accumulated branch/PR scope - the only whole-project run
     ├─► KILL MUTANTS: Strengthen tests for worthwhile survivors
-    ├─► Re-run focused mutation checks, then the branch diff check
-    └─► Present the final mutation report and proceed to PR verification
+    ├─► RE-RUN SCOPED ONLY: `--mutate <file>:<startLine>-<endLine>`, `--incremental`, or the diff
+    │   script - never repeat the whole-project run to recheck one file, one edit, or one config fix
+    └─► CLOSE: at most one final full run, present the triaged report, proceed to PR verification
 ```
 
 The automated mutation harness is deliberately **not** part of the inner RED-GREEN-REFACTOR loop. Do not run it after each test, increment, refactor, or commit: its cost grows with the codebase and makes short feedback loops progressively slower. During RED, use the mutator rules to choose strong examples cheaply. Run the harness when the implementation and refactoring phase is complete and the work is otherwise ready for a PR.
@@ -104,11 +105,12 @@ Then inspect and adapt the generated `stryker.config.*`:
 - Prefer the project test runner plugin when available (`vitest`, `jest`, `mocha`, etc.). Use the generic command runner only when no tighter integration is practical.
 - Mutate first-party production source only. Exclude tests, fixtures, snapshots, generated files, declaration files, build outputs, migrations, and low-signal barrels.
 - For TypeScript, consider `@stryker-mutator/typescript-checker` so type-invalid mutants are reported as compile errors instead of wasting test time.
-- Keep setup changes reviewable: add dependencies, config, scripts, and `.gitignore` entries for Stryker temp/report output only when the project needs them.
+- Write no `thresholds.break` value in a first setup. With no measured baseline any number either breaks the build on day one or is decoration: leave `break` unset or `null`, report the first run's score, and propose a threshold only after that score exists.
+- Keep setup changes reviewable: dependencies, config and scripts, plus - whenever Stryker is newly added to a repository - `.gitignore` entries for its temp and report output (`.stryker-tmp/` and the configured report directory, commonly `reports/`), so a run never leaves untracked artefacts behind.
 
 ### Step 3: Recommend Useful Commands
 
-Suggest project scripts for full-project, cached, and branch-diff mutation runs:
+Add all three scripts - full-project, cached (`--incremental`), and branch-diff - even when the request names only one or two of them; the cached script is what makes the scoped reruns of the gate affordable. Match the naming the project or request already implies:
 
 ```json
 {
@@ -145,6 +147,8 @@ download a moving Stryker release.
 ### Step 4: Run and Triage
 
 At the PR-readiness gate, start with `mutation:diff` for branch feedback. Run `mutation` across the full project when introducing Stryker, changing shared test infrastructure, preparing CI gates, or validating a broad test-strengthening pass.
+
+Categorize every survivor before the gate closes, and carry those categories into the report you hand back - including when you stop to ask whether to continue. Each surviving mutant must end as exactly one of: killed by a new test, Equivalent with a one-line argument for why no test could distinguish it, or a judgment call you name and defer explicitly. Listing survivors without classifying them is not a triaged report, and neither is treating every survivor as a defect.
 
 Categorize Stryker findings:
 
