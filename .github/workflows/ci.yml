@@ -19,6 +19,9 @@ jobs:
   changesets:
     name: Validate changesets
     runs-on: ubuntu-latest
+    # The automated "chore: version packages" PR consumes the changesets it
+    # releases, so "no changesets found" is the expected state there.
+    if: github.head_ref != 'changeset-release/main'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
