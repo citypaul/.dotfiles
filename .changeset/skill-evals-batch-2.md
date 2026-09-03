@@ -37,4 +37,44 @@ Highlights of what the graders check:
   `vi.mock` of the module under test, fakes injected through the seam, the seam type
   named in the reply.
 
-Results and skill edits: see below (filled in as the batch completes).
+**What the evals caught, and what changed** (every edit anchored, verified by an
+independent refuter node on Opus, and re-measured; scores are with-skills / no-skills /
+skill-forced):
+
+- `testing` — 21/30 without the skill. With it, a touched test file's shared
+  `let`/`beforeEach` was left standing, factories were a matter of taste, planted
+  boundary and case-folding mutants survived, and factories used literals instead of
+  the production schema. Now: touching a test file makes its whole state discipline
+  yours; the factory trigger is mechanical; comparisons against constants and
+  normalising calls are enumerated before the first assertion; the production schema
+  is reused at the factory. Forced 30/30, with-skills 29/30.
+- `mutation-testing` — 16/27 without. Crashed Stryker attempts silently consumed the
+  rerun budget, no survivor was ever called equivalent, and gate discipline was
+  optional. Now: a rerun budget that counts attempts, a cheap config proof before a
+  whole-project run, a triage table with an equivalence pass, no break threshold
+  before a recorded baseline, gitignore and scripts. 27/27 in both arms.
+- `typescript-strict` — 25/31 without; the schema-at-boundary rule was already
+  landing (3/3 with the skill vs 1/3 without) but a value set with an owner was
+  re-spelled as a `z.enum` beside the hand-written union. Now: search for the owner,
+  derive from one `as const` list. Forced 31/31, with-skills 30/31.
+- `functional` — 10/21 without, 20/21 forced; but with routing left to the agent the
+  skill never loaded (tdd won every request), and when a request asked to change a
+  shared object in place even the forced arm complied. Now: the answer is still a new
+  value and the reply says why; readonly contracts; a description that names
+  data-reshaping feature requests and loads alongside tdd.
+- `refactoring` — 21/28 without, 26/28 forced: the reply never stated the
+  Critical/High/Nice/Skip assessment and look-alike functions were merged. Now: state
+  the classification, keep semantically different look-alikes separate, and the
+  description fires on "collapse" and "tidy".
+- `characterisation-tests` — 20/29 without → forced 29/29, with-skills 28/29: the
+  oracle is observed by running the code before asserting, snapshot tests for large
+  text.
+- `finding-seams` — 19/28 without → with-skills 28/28, forced 27/28: a `??`/`||`
+  fallback from a parameter is an enabling point, never a module mock, and the
+  hand-back names the seam type and where its enabling point is.
+
+Harness changes that came out of this batch: touched files are detected from git
+status as well as the tool-call trail (tests written through a Bash heredoc count);
+regrade rebuilds the exact run and honours the case's current vars; the skills mount
+is a copy rather than a symlink, and the SDK sandbox allows local port binding, so
+Stryker's own sandbox works inside the eval.
