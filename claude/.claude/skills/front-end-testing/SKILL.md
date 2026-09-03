@@ -210,7 +210,7 @@ export default defineConfig({
 
 ### Browser Mode Gotchas
 
-- **`vi.spyOn` on imports**: ES module namespaces are sealed in real browsers. `vi.mock('./module', { spy: true })` works, but treat module mocking as temporary scaffolding — prefer parameter injection so the dependency is an explicit seam (load the `finding-seams` skill).
+- **`vi.spyOn` on imports**: ES module namespaces are sealed in real browsers. `vi.mock('./module', { spy: true })` works, but treat module mocking as temporary scaffolding — prefer parameter injection so the dependency is an explicit seam (load the `finding-seams` skill). It is never the answer for a module that makes network requests: mock that at the network with MSW, in every environment and on error paths as well as happy paths.
 - **`alert()`/`confirm()`**: Thread-blocking dialogs halt browser execution. Mock them with `vi.spyOn(window, 'alert').mockImplementation(() => {})`.
 - **`act()`**: Not needed for component interactions via locators — CDP events + `expect.element()` retry handle timing. `renderHook` state updates still need `act` (see `react-testing`).
 
@@ -352,6 +352,8 @@ For full patterns and anti-patterns, see `resources/async-patterns.md`.
 
 **Use MSW, not fetch/axios mocks** — it intercepts at the network level, so the same handlers work in tests, Storybook, and dev.
 
+**This rule covers the app's own request module, not just `fetch` itself.** Most apps wrap the transport in one module (an api/client/service file, a generated SDK). Replacing *that* module — `vi.mock('./api')`, or handing the subject a hand-written fake client — is the same anti-pattern one layer up: it deletes the real URL building, serialization, status handling and error mapping from the test, and proves nothing about the request the app actually makes. Mock the *response*, never the module that asks for it. This holds on failure paths too: to make a request fail, time out, or fail once and then succeed, add a per-test handler (`server.use()` / `worker.use()` with `HttpResponse.error()` or a non-2xx status) — never `mockRejectedValueOnce` on a module of yours.
+
 **Environment determines the API:**
 - **Browser Mode**: `setupWorker` from `msw/browser` (start the worker in a setup file; per-test overrides via `worker.use()`)
 - **Node/jsdom**: `setupServer` from `msw/node` (per-test overrides via `server.use()`)
@@ -383,7 +385,7 @@ const renderButton = () => {
 
 For factory patterns, see the `testing` skill.
 
-4. **Fetch/axios mocking instead of MSW** — see `resources/msw.md`.
+4. **Faking the network above the network instead of using MSW** — stubbing `fetch`/`axios`, or `vi.mock`-ing the app's own request/api/client module (including making it reject to test an error path) — see `resources/msw.md`.
 5. **waitFor misuse** — see `resources/async-patterns.md`.
 6. **jsdom-specific anti-patterns** (skipping `screen`, `fireEvent`, redundant cleanup when the harness already provides it, property assertions instead of jest-dom matchers, missing ESLint plugins) — see `resources/dom-testing-library-legacy.md`.
 7. **HTTP-level shortcuts wearing browser names** — `page.request`/`page.evaluate(fetch)` performing work a "journey"/"browser"/"E2E" test claims the user or frontend did, or forged browser headers (`Sec-Fetch-*`, `Origin`) admitting a non-browser client — see `resources/playwright-e2e.md`.
@@ -403,7 +405,7 @@ Before merging UI tests, verify:
 - [ ] The hand-back (reply, PR body, CI step label) names the harness the evidence came from and states the nearest claim it does not prove
 - [ ] Cleanup is either verified automatic for this harness or registered once in test setup
 - [ ] No manual `act()` calls for component interactions (Browser Mode handles timing)
-- [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom
+- [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom; no `vi.mock` or hand-written fake of the app's own request module, on success or failure paths
 - [ ] Following TDD workflow (see `tdd` skill)
 - [ ] RED/debug browser runs use the narrowest file/project/grep selection that proves the result
 - [ ] GREEN/REFACTOR browser feedback uses the complete affected scope derived by the runner, workspace orchestrator, or repository mapping; when no reliable graph exists, use the documented owning-suite-plus-known-consumers fallback and widen on uncertainty, never hand-picked test files
