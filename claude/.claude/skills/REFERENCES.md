@@ -651,7 +651,7 @@ Sources grounding the first-party `react-performance` skill, which owns the *met
 
 ## Skill Authoring
 
-Sources for writing and evaluating the skills in this distribution. Both install unmodified from pinned upstream revisions rather than being vendored.
+Sources for writing and evaluating the skills in this distribution. These external skills install unmodified from pinned upstream revisions rather than being vendored.
 
 ### Matt Pocock — [`writing-for-agents`](https://github.com/mattpocock/skills/tree/84fdeffd12f2ee307994d1eb6feb48173b6e0502/skills/productivity/writing-for-agents) (pinned commit `84fdeff`, MIT)
 
@@ -669,3 +669,11 @@ Sources for writing and evaluating the skills in this distribution. Both install
 - Eval and benchmark tooling (`aggregate_benchmark.py`, `generate_report.py`, the eval viewer) and analyzer/comparator/grader sub-agents
 - `improve_description.py` for optimising a description's trigger accuracy — directly relevant to the class of failure that motivated the `xstate` trigger rewrite
 - Licence: [Apache 2.0](https://github.com/anthropics/skills/blob/f17010c9bb483898c1d9c9f42dde2b3a98889434/skills/skill-creator/LICENSE.txt), shipped inside the skill bundle
+
+### Warp — [`skill-doctor`](https://github.com/warpdotdev/common-skills/tree/b811c24365ae505bfc9646458957b886e29110b5/.agents/skills/skill-doctor) (pinned commit `b811c24`, MIT)
+
+- Retrospective evaluation of recent local agent conversations against efficiency, code-quality, and skill-coverage measures
+- Evidence-backed improvement proposals and full draft skill edits, rendered in a shareable local HTML report
+- Supports Claude Code, Codex, and Warp; transcripts and session files stay local, and reports are written outside the project in a fresh temporary directory
+- **Routing note** → use `skill-doctor` to diagnose installed skills from real conversation history; use `skill-creator` to author skills and run controlled prompt evals
+- Licence: [MIT](https://github.com/warpdotdev/common-skills/blob/b811c24365ae505bfc9646458957b886e29110b5/LICENSE)

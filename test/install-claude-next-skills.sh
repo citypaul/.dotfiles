@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Verify the installer wires the selected external Next.js skills through
-# skills.sh for the requested agent targets.
+# Verify the installer wires selected external skills through skills.sh for the
+# requested agent targets.
 #
 
 set -e
@@ -50,7 +50,7 @@ exit 0
 STUB
 chmod +x "$TMPDIR/bin/git"
 
-echo "Testing Next.js external skill installation..."
+echo "Testing external skill installation..."
 echo ""
 
 export NPX_LOG GIT_LOG
@@ -127,6 +127,20 @@ if grep -q 'sparse-checkout set --no-cone skills' "$GIT_LOG" &&
   pass "vercel/next.js fetch is sparse, shallow, and pinned to the reviewed commit"
 else
   fail "vercel/next.js must be fetched sparsely at the reviewed commit, never as the whole repository"
+fi
+
+if grep -Eq 'add [^ ]*skills-src-warpdotdev-common-skills[^ ]*/\.agents/skills -g -a codex -s skill-doctor --copy -y' "$NPX_LOG"; then
+  pass "skill-doctor installs from the fetched .agents/skills directory"
+else
+  fail "skill-doctor must install from the pinned Warp skill directory"
+fi
+assert_output "warpdotdev/common-skills"
+
+if grep -q 'sparse-checkout set --no-cone .agents/skills' "$GIT_LOG" &&
+   grep -q 'fetch --quiet --depth 1 --filter=blob:none origin b811c24365ae505bfc9646458957b886e29110b5' "$GIT_LOG"; then
+  pass "Warp skills fetch is sparse, shallow, and pinned to the reviewed commit"
+else
+  fail "Warp skills must be fetched sparsely at the reviewed commit"
 fi
 
 if grep -Eq 'add [^ ]*(addyosmani/web-quality-skills|vercel|pbakaus/impeccable|mattpocock/skills|coreyhaines31/marketingskills|herdrdev/herdr)[^ ]* .* -s \* ' "$NPX_LOG"; then
