@@ -20,6 +20,8 @@ x-agent: &agent
   sandbox:
     enabled: true
     autoAllowBashIfSandboxed: true
+    network:
+      allowLocalBinding: true
   web_search_enabled: false
   max_turns: 80
   persist_session: false

@@ -238,7 +238,7 @@ shape gets a factory, and the fields that differ become overrides.
 
 1. Return objects valid for the scenario, with intentional invalidity made explicit
 2. Use typed overrides when that fits the language and model
-3. Reuse a production schema when the contract already has one; do not invent a schema only for a factory
+3. Before writing a factory body, check what the module under test exports for that type. If it exports a schema for the object, build the object by calling that schema's parse. A factory returning a type-annotated literal misses the production contract exactly as a redefined schema does — the annotation is checked by the compiler against a type, and nothing checks the fixture against the boundary the code actually validates at. Return a plain literal only when no schema exists; never invent one just to have something to parse
 4. Prefer fresh state per test: every test builds its own data from a factory call. Lifecycle hooks are fine when setup is isolated and cleanup is reliable, but shared `let`-bound data rebuilt for each test is not — that is the anti-pattern below wearing a hook. When you add tests to a file that already holds its data in a shared `let` or a `beforeEach` that rebuilds it, replace that setup with a factory as part of the same change instead of writing new tests that spread it. Once you touch a test file, its whole state discipline is yours, not just the lines you added
 
 ### Basic Pattern

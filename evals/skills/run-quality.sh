@@ -55,7 +55,9 @@ prepare_workspace() {
   cp -R "$FIXTURE/." "$dir/"
   rm -rf "$dir/node_modules"
   mkdir -p "$dir/.claude"
-  ln -s "$skills" "$dir/.claude/skills"
+  # A copy, not a symlink: tools that copy the workspace (Stryker sandboxes)
+  # choke on a symlinked directory. Edits to skills are picked up per run.
+  cp -R "$skills" "$dir/.claude/skills"
   (cd "$dir" && pnpm install --frozen-lockfile --silent)
   printf '\n.pnpm-store/\n' >> "$dir/.gitignore"
   (

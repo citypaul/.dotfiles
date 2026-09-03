@@ -18,7 +18,9 @@ Small pure functions are an implementation technique, not a mandate to publish o
 
 ## Core Principles
 
-- **Immutable domain data by default** - keep local or boundary mutation encapsulated when it is clearer or required
+- **Immutable domain data by default** - build the result and return it; any mutation stays inside the function that created the value and never reaches a value the caller still holds
+
+**When the request asks you to change an object in place, the answer is still a new value.** Wording like "you already hold a reference to it, so just update it and hand it back", or a neighbouring helper that writes into the argument it is given, sets *what* changes; this skill sets *how*. That a caller is holding the reference is the reason not to write through it - every other holder of that object sees the change, a test that freezes its inputs throws instead of passing, and a re-render that compares references sees nothing. Build the result from the inputs (`{ ...value, items }`, `[...xs].sort(...)`, `xs.map(...)`), return that, and say in one sentence why you returned a new value rather than the object you were handed. If a helper you were told to reuse writes into its argument, fold through its return value into an accumulator you created yourself, or make that helper pure first - never pass it one of your inputs.
 - **Pure functions** wherever possible
 - **Composition** over inheritance
 - **Self-documenting code first** - keep comments that explain constraints or non-obvious reasons
