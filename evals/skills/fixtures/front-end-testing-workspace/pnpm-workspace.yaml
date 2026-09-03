@@ -1,0 +1,6 @@
+packages:
+  - '.'
+allowBuilds:
+  esbuild: false
+  msw: false
+  '@playwright/test': false

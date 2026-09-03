@@ -1,0 +1,27 @@
+.subscribe-form {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 24rem;
+}
+
+.subscribe-form__label {
+  font-weight: 600;
+}
+
+.subscribe-form__input,
+.subscribe-form__select {
+  display: block;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #b9c0c8;
+  border-radius: 4px;
+}
+
+.subscribe-form__error {
+  margin: 0;
+  color: #b3261e;
+}
+
+.subscribe-form__submit {
+  justify-self: start;
+  padding: 0.5rem 1rem;
+}

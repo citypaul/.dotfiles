@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# front-end-testing quality evaluation. See promptfooconfig.tdd.yaml for the
+# shape; graders live in front-end-testing-assertions.js. Run with
+# ./run-quality.sh front-end-testing.
+#
+# The fixture is a plain-DOM storefront with both harnesses installed and
+# nothing showing how either is used: the suite asks whether the agent proves
+# each claim with the lightest harness that fits it, drives the UI the way a
+# person does, watches the network instead of replacing it, and says where its
+# evidence stops.
+description: front-end-testing quality — does the agent prove browser claims the way the skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+    network:
+      allowLocalBinding: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `front-end-testing` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:harnessMatchesClaim', metric: harness-matches-claim, weight: 2 }
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:queriesByRole', metric: queries-by-role }
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:noArbitraryWaits', metric: no-arbitrary-waits }
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:networkNotStubbedInApp', metric: network-not-stubbed-in-app }
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:subjectNotMocked', metric: subject-not-mocked }
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:evidenceBoundaryStated', metric: evidence-boundary-stated }
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/front-end-testing-quality.yaml

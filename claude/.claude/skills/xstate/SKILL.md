@@ -122,7 +122,7 @@ Once one hand-rolled statechart is found, the same pattern is usually repeated a
 
 A statechart's main advantage over scattered handlers is that a human can *look* at it — which is worth nothing if the picture and the machine have drifted apart.
 
-**Render or update the diagram whenever a machine is designed or changed, even when nobody asked for one**, and render on request at any time. The cost of a diagram is small; the cost of a stale one is a reviewer trusting a picture that no longer describes the code. Regenerating on every change is what keeps that from happening, so it is not optional work at the end — it is part of changing the machine.
+**Render or update the diagram whenever a machine is designed or changed, even when nobody asked for one**, and render on request at any time. **The render is a file in the repository, not a message.** Write the fenced `mermaid` block either into a markdown file beside the machine or into a comment at the top of the machine file itself, then name that path in your reply. A chart that exists only in the reply is not a render — it leaves with the conversation, and the next reviewer opens the machine with no diagram at all. The cost of a diagram is small; the cost of a stale one is a reviewer trusting a picture that no longer describes the code. Regenerating on every change is what keeps that from happening, so it is not optional work at the end — it is part of changing the machine.
 
 Derive it from the machine source, never from memory of it, and regenerate from the *final* definition once the change is complete. Report the validation result honestly: say whether the diagram was checked to render, and never claim a render that was not performed.
 
@@ -187,5 +187,5 @@ stateDiagram-v2
 - Does the machine suite cover every guard boundary, ignored event, error path, and timeout headlessly — and do component tests touch only the DOM?
 - Are external events schema-validated before `send`, and is persisted-snapshot compatibility across releases either tested or explicitly not needed?
 - Is everything v5 idiom — `setup()`, named implementations, `createActor` — with no v4 vocabulary?
-- Does every designed or changed machine have a diagram regenerated from its final definition, with composite and concurrent boundaries legal, parser-sensitive labels safe, and the validation result reported accurately?
+- Does every designed or changed machine have a diagram regenerated from its final definition and written to a file in the repository — with that path named in the reply, not just a chart pasted into the conversation — with composite and concurrent boundaries legal, parser-sensitive labels safe, and the validation result reported accurately?
 - Would the next reviewer learn the flow faster from the chart than from the diff? If not, the model is not carrying its weight yet.

@@ -7,6 +7,8 @@ description: Behavior-driven UI testing patterns across Vitest Browser Mode, Pla
 
 For React-specific patterns (components, hooks, context), load the `react-testing` skill. For TDD workflow, load the `tdd` skill. For general testing patterns (factories, public-interface testing), load the `testing` skill.
 
+**Every hand-back states the harness and where its evidence stops.** Whenever you report finished UI test work — the reply, a PR body, a CI step label — name the runner and environment that produced the evidence (Playwright against the served app, Vitest in jsdom, Browser Mode in a real browser) and, in the same breath, the nearest thing it does *not* prove. A jsdom suite does not prove real rendering, CSS, focus, or the browser's own event dispatch; a component-level suite does not prove the served app, its routing, or the real server; one journey does not prove the paths it never walks. "All tests pass" with the boundary left unsaid reads as a stronger claim than the tests support.
+
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
 | Resource | Load when... |
@@ -208,7 +210,7 @@ export default defineConfig({
 
 ### Browser Mode Gotchas
 
-- **`vi.spyOn` on imports**: ES module namespaces are sealed in real browsers. `vi.mock('./module', { spy: true })` works, but treat module mocking as temporary scaffolding — prefer parameter injection so the dependency is an explicit seam (load the `finding-seams` skill).
+- **`vi.spyOn` on imports**: ES module namespaces are sealed in real browsers. `vi.mock('./module', { spy: true })` works, but treat module mocking as temporary scaffolding — prefer parameter injection so the dependency is an explicit seam (load the `finding-seams` skill). It is never the answer for a module that makes network requests: mock that at the network with MSW, in every environment and on error paths as well as happy paths.
 - **`alert()`/`confirm()`**: Thread-blocking dialogs halt browser execution. Mock them with `vi.spyOn(window, 'alert').mockImplementation(() => {})`.
 - **`act()`**: Not needed for component interactions via locators — CDP events + `expect.element()` retry handle timing. `renderHook` state updates still need `act` (see `react-testing`).
 
@@ -255,6 +257,8 @@ it('creates and displays a user', async () => {
 ## Playwright E2E Is a Different Subject
 
 Vitest Browser Mode tests a **component in isolation**; Playwright Test against a running application tests **whatever the test's claim names** — a user journey, the frontend's own network behavior, cookie/CSRF posture, redirects, rendering. Same browser engines, different subject and harness: never assume guidance transfers between them.
+
+**One claim, one harness.** Prove a claim with the lightest harness that can fail when the claim is false, and stop there. Behaviour inside one mounted component — a bug fix, an error path, a disabled button that must recover — is proved by the component-level harness; adding an E2E spec that re-walks it buys no evidence, only a second suite to maintain and a slower gate. Reach for Playwright when the claim itself is the served application: navigation, several screens in sequence, the real server, cookies, redirects. If you have already written the component test, adding the journey needs a reason you can state.
 
 The one rule that governs E2E suites: **a browser or user-journey claim must be proved by a browser initiator** — an accessible locator action or a navigation — never by a direct HTTP call standing in for the user or the frontend. `page.request.post('/api/...')` in a test named "user creates ..." proves an HTTP contract, not a journey; it stays green when the button, cookie policy, CSRF check, redirect, or rendering breaks. Load `resources/playwright-e2e.md` before writing or reviewing any E2E/journey suite — it carries the decision rule, the evidence-boundary table, safe request observation, the direct-transport audit procedure, and the auth/lifecycle evidence contract.
 
@@ -318,6 +322,8 @@ screen.getByRole('heading', { name: /welcome,\s+john doe/i });
 
 If an accessible query fails, investigate the accessible name and role first. The failure may reveal an accessibility issue, but it can also mean the query or test setup is wrong.
 
+A query that matches **more than one** element is the same signal, not a licence to change query style. Resolve the ambiguity accessibly: a more specific role plus accessible name, the user-visible text of the outcome itself, `filter({ hasText: /…/i })`, or a container found by an accessible query (`getByRole('region', { name: /…/i })`, `within(screen.getByRole('form', { name: /…/i }))`). If nothing accessible distinguishes them, the page is missing an accessible name — add it. Never escape an ambiguous match by scoping to a class or id (`page.locator('#panel').getByRole(...)`, `within(container.querySelector('.panel'))`): that re-couples the test to markup no user can perceive and buries the accessibility gap that caused the ambiguity.
+
 **Always prefer semantic HTML over ARIA:**
 
 ```html
@@ -345,6 +351,8 @@ For full patterns and anti-patterns, see `resources/async-patterns.md`.
 ## API Mocking with MSW
 
 **Use MSW, not fetch/axios mocks** — it intercepts at the network level, so the same handlers work in tests, Storybook, and dev.
+
+**This rule covers the app's own request module, not just `fetch` itself.** Most apps wrap the transport in one module (an api/client/service file, a generated SDK). Replacing *that* module — `vi.mock('./api')`, or handing the subject a hand-written fake client — is the same anti-pattern one layer up: it deletes the real URL building, serialization, status handling and error mapping from the test, and proves nothing about the request the app actually makes. Mock the *response*, never the module that asks for it. This holds on failure paths too: to make a request fail, time out, or fail once and then succeed, add a per-test handler (`server.use()` / `worker.use()` with `HttpResponse.error()` or a non-2xx status) — never `mockRejectedValueOnce` on a module of yours.
 
 **Environment determines the API:**
 - **Browser Mode**: `setupWorker` from `msw/browser` (start the worker in a setup file; per-test overrides via `worker.use()`)
@@ -377,7 +385,7 @@ const renderButton = () => {
 
 For factory patterns, see the `testing` skill.
 
-4. **Fetch/axios mocking instead of MSW** — see `resources/msw.md`.
+4. **Faking the network above the network instead of using MSW** — stubbing `fetch`/`axios`, or `vi.mock`-ing the app's own request/api/client module (including making it reject to test an error path) — see `resources/msw.md`.
 5. **waitFor misuse** — see `resources/async-patterns.md`.
 6. **jsdom-specific anti-patterns** (skipping `screen`, `fireEvent`, redundant cleanup when the harness already provides it, property assertions instead of jest-dom matchers, missing ESLint plugins) — see `resources/dom-testing-library-legacy.md`.
 7. **HTTP-level shortcuts wearing browser names** — `page.request`/`page.evaluate(fetch)` performing work a "journey"/"browser"/"E2E" test claims the user or frontend did, or forged browser headers (`Sec-Fetch-*`, `Origin`) admitting a non-browser client — see `resources/playwright-e2e.md`.
@@ -394,9 +402,10 @@ Before merging UI tests, verify:
 - [ ] Using `expect.element()` for auto-retrying assertions (Browser Mode)
 - [ ] Using `userEvent` for interactions (CDP-based in Browser Mode, or `@testing-library/user-event`)
 - [ ] Testing behavior users see, not implementation details
+- [ ] The hand-back (reply, PR body, CI step label) names the harness the evidence came from and states the nearest claim it does not prove
 - [ ] Cleanup is either verified automatic for this harness or registered once in test setup
 - [ ] No manual `act()` calls for component interactions (Browser Mode handles timing)
-- [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom
+- [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom; no `vi.mock` or hand-written fake of the app's own request module, on success or failure paths
 - [ ] Following TDD workflow (see `tdd` skill)
 - [ ] RED/debug browser runs use the narrowest file/project/grep selection that proves the result
 - [ ] GREEN/REFACTOR browser feedback uses the complete affected scope derived by the runner, workspace orchestrator, or repository mapping; when no reliable graph exists, use the documented owning-suite-plus-known-consumers fallback and widen on uncertainty, never hand-picked test files

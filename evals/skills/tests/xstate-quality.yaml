@@ -1,0 +1,100 @@
+# xstate quality cases.
+#
+# The fixture (fixtures/xstate-workspace) declares in README.md and CLAUDE.md
+# that flow logic is modelled as XState v5 statecharts, and shows none of it.
+# `xstate` and `@xstate/react` are installed but nothing imports them: the
+# whole checkout flow is hand-rolled in src/checkout/CheckoutForm.tsx as an
+# `isSubmitting` useState, a then/catch chain that sets three pieces of state
+# in sequence, an early return while submitting, and an error cleared just
+# before the retry. There is no machine, no diagram, no headless test and no
+# example of any of them — no `after` delay, no invoked actor, no event names.
+# The skill has to supply the modelling, the v5 idiom, the diagram and the
+# test shape.
+#
+# Every request is a product ask in the words support would use, and pins
+# nothing beyond what the fixture already has: the `src/checkout` feature, the
+# `basket`/`placeOrder` props of the exported CheckoutForm, its "Place order"
+# button, and (case 3) the Cancel button the request itself asks for. No case
+# names a machine, an actor, an event, an export or a test shape, so whether
+# any of that appears is the agent's call in all three. What the states are
+# called, how the flow is decomposed, where the machine lives, what the
+# diagram looks like and how any of it is tested is never pinned — that is
+# what xstate-assertions.js grades.
+#
+# Every hidden acceptance test drives the component through the DOM, so each
+# is satisfiable without XState at all (a ref guard, a hand-held timer, an
+# ignore flag). behaviour-delivered therefore measures the fix, and the ten
+# rule graders measure the modelling.
+#
+# What each case exercises, and what a model that never reads the skill does
+# instead:
+#
+# 1. double submit — the skill's headline failure mode, under-modeling: "A
+#    double-submit guard — an early return, a disabled flag checked before
+#    dispatching → A transition the model would simply not define". The
+#    default fix is to harden the flags: a `useRef` guard, or disabling the
+#    button harder — which the hidden test deliberately accepts, because the
+#    question the suite asks is not "is the bug gone" but "did the lifecycle
+#    move". Graded on whether it actually moved into a machine, whether the
+#    component still holds any of it, whether the effect is an invoked actor
+#    with onDone/onError, whether the machine is tested headlessly through
+#    events, and whether a Mermaid render was regenerated without anybody
+#    asking for one.
+# 2. retry cooldown — "A `setTimeout`/`setInterval` for retry, debounce, or
+#    polling that something must clear → `after`, with cancellation tied to
+#    the state that owns it". The default is a setTimeout plus a `canRetry`
+#    flag in the component, cleared in a useEffect.
+# 3. cancel in flight — "A `useEffect` that starts async work and needs an
+#    ignore flag in its cleanup → Actor lifetime — the machine cancels instead
+#    of ignoring" and "Handling for a response arriving after cancel …
+#    Stale-result fencing by identity". The default is an `ignore`/`cancelled`
+#    boolean or an AbortController held in the component.
+#
+# On the untouched fixture every rule grader and every hidden test fails,
+# while suite-green and typecheck-clean pass: the fixture is green, it just
+# does not model anything.
+
+- description: an order placed twice on a slow network
+  vars:
+    acceptance: double-submit.test.ts
+    request: >-
+      Support have had three people this week charged twice for the same
+      basket. It happens on a slow connection: nothing on screen changes, so
+      the customer taps Place order again, and the taps that land before the
+      screen catches up each reach the shop as another order. One tap on Place
+      order, one order — however many times they tap while we are waiting for
+      the shop to answer. It is all in src/checkout.
+
+- description: cooling off after the shop turns an order down
+  vars:
+    acceptance: retry-cooldown.test.ts
+    request: >-
+      When the shop turns an order down we show the reason and offer to try
+      again, and people hit that straight away — the payments team have asked
+      us to slow it down. After a rejection, another attempt must not reach
+      the shop for three seconds; once those three seconds are up the customer
+      can try again, and an attempt that works confirms the order as usual.
+      It is all in src/checkout.
+  assert:
+    - {
+        type: javascript,
+        value: 'file://xstate-assertions.js:cooldownModelledAsDelay',
+        metric: cooldown-modelled-as-delay,
+      }
+
+- description: backing out of an order that is already in flight
+  vars:
+    acceptance: cancel-in-flight.test.ts
+    request: >-
+      While we wait for the shop to answer, the customer is stuck looking at a
+      dead form. Give them a Cancel button while an order is being placed that
+      puts the checkout back where it started, so they can go and change their
+      basket. The thing that worries me is the answer that turns up a second
+      later: it must never confirm an order the customer walked away from. In
+      src/checkout.
+  assert:
+    - {
+        type: javascript,
+        value: 'file://xstate-assertions.js:cancellationModelledInMachine',
+        metric: cancellation-modelled-in-machine,
+      }

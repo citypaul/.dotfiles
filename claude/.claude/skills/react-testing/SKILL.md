@@ -7,6 +7,8 @@ description: React component testing patterns including components, hooks, conte
 
 For general UI testing patterns (queries, events, async, accessibility, MSW), load the `front-end-testing` skill. For TDD workflow, load the `tdd` skill.
 
+**Find every element the way a person perceives it — never by `data-testid`, a CSS class, or a selector, and least of all because the component already carries one.** A control is found by `getByRole` with its accessible name (`getByLabelText` for a field). An element with no role — a count line, a status message, a paragraph of copy, a bare `<span>` of text — is found by the words it shows: `getByText(/3 of 7 items/)`, then asserted on that same locator (`toBeVisible()`, `toHaveAttribute(...)`). Never fetch a handle by test id first just to assert its content. If nothing about the element is perceivable enough to query, that is a finding about the component: give it the role, label, or accessible name its purpose implies, and query that.
+
 For flow logic driving the component, load `xstate`: the machine is tested headlessly and the component test touches only the DOM, so a component test must never assert machine state. If the component under test holds a `submitting`/`isLoading` flag in `useState`, that is the signal the flow escaped its machine — `xstate` owns that call. For performance changes to the same code, load `react-performance`, whose rule is that behaviour tests stay unchanged and green.
 
 Follow the `tdd` skill's canonical fast-feedback and watcher-lifecycle policy plus the `front-end-testing` skill's browser-specific differences. React adds no separate Vitest graph guarantee: prefer the repository-owned watcher, use diff-selected watch only under the canonical version/configuration proof, and keep every affected app/package consumer eligible through the root graph. Exact files remain RED/debug-only. At PR readiness, stop watchers and apply the target repository's mutation policy plus complete non-watch UI/project gate.
@@ -289,10 +291,13 @@ const screen = await render(<MyComponent />)
 await expect.element(screen.getByRole('dialog')).toBeVisible() // What user sees
 ```
 
-### 3. Shallow rendering
+### 3. Shallow rendering — and its modern spelling, mocking a child component
 
-❌ **WRONG - Shallow rendering**
+**Never `vi.mock` a component the app under test owns.** Replacing a child with a stand-in is shallow rendering by another name, and it is now the far more common form. When a request asks you to stand something in for a child because its markup is somebody else's problem, honour the concern, not the mechanism: render the whole tree and assert only the parent's own observable facts — which items are on screen, the count line, the empty state — and pin none of the child's markup. Mock across a real boundary (network via MSW, clock, randomness), never inside your own component tree.
+
+❌ **WRONG - Child replaced by a stand-in, or shallow rendered**
 ```tsx
+vi.mock('./ItemRow', () => ({ ItemRow: ({ item }) => <li>{item.title}</li> }))
 const wrapper = shallow(<MyComponent />);
 // Child components not rendered - incomplete test
 ```
@@ -329,6 +334,8 @@ React-specific checks:
 - [ ] Cleanup is either verified automatic for this harness or registered once in test setup
 - [ ] MSW via `setupWorker`/`worker.use()` in Browser Mode (not `setupServer`)
 - [ ] Testing component output, not internal state
+- [ ] Every element found by role, label, or its visible text — no `getByTestId`, `data-testid`, selector or class, even where the component provides one
+- [ ] No `vi.mock` of a component the app owns; the whole tree renders and the parent's test asserts only the parent's own facts
 - [ ] Setup is isolated per test; lifecycle hooks may create fresh state, and helpers are used only when repeated or nested setup becomes clearer
 - [ ] Using `expect.element()` for auto-retrying assertions (Browser Mode)
 - [ ] RSCs tested via e2e or extracted logic, not Browser Mode component tests

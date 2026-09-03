@@ -1,0 +1,131 @@
+# event-sourcing quality cases.
+#
+# The fixture (fixtures/event-sourcing-workspace) is greenfield. README.md and
+# CLAUDE.md say the wallet ledger is event sourced and point at
+# docs/glossary.md; the glossary gives the domain words (Wallet, Top-up,
+# Charge, Balance, Statement), the commands and the refused outcomes, and
+# says amounts are whole pence. That one declaration is what routes the skill.
+# It withholds everything the skill teaches: there is no event type, no
+# decider, no store, no projection, no example of a fold, and src/ holds only
+# a version constant and its test.
+#
+# WHAT THE RECORDED RUN OF 2026-09-03 SETTLED. A third case used to ask for
+# the decider on its own (`initialState`, `evolve`, `decide`). Its no-skills
+# arm came back with past-tense business facts, a `decide` with no clock and
+# no id minting, an `evolve` that refuses impossible history rather than
+# no-opping, and behaviour tests with no mocks — every decider rule the skill
+# states, at full marks, with no skill loaded. By AUTHORING.md's bar ("if the
+# answer is 'the same thing', the case does not belong") that case measured
+# nothing, so it is gone: once a repository says "event sourced", the decider
+# is what a capable model writes anyway.
+#
+# The same run showed where a model does stop short. On both cases below, the
+# no-skills, with-skills and skill-forced arms alike appended naked domain
+# events to an array — no id, no timestamp, no stream position — read them
+# straight back as typed values, and shipped a first event shape with nothing
+# able to read a second one. Those three rules were not measured before; they
+# are now (`eventsHaveEnvelopes`, `storedEventsValidatedOnRead`,
+# `versioningStrategyExists`), and each request now carries the business facts
+# that make them matter — in a product person's words, with no mechanism
+# named: the lines end up as JSON in a database column, older ones written by
+# earlier versions of this code, what a top-up records is about to grow, and
+# support must be able to say of any single line when it happened and which
+# request put it there. The NEED is in the request; the ANSWER — an envelope
+# the store owns, a tolerant reader at the trust boundary, an upcast for older
+# rows, a projection with a way back to event zero — is what the skill
+# supplies, and what the graders look for.
+#
+# Nothing in a request explains the practice. A request never says that
+# history is part of the domain, that nothing may be edited or thrown away,
+# that a refused write should be retried, or that a read model must be
+# disposable. It pins only what the hidden acceptance test calls: the barrel
+# `src/wallet/index.ts` (the test is copied into `src/` and imports
+# `./wallet`), the function names that test imports, the command shapes, the
+# reason strings from the glossary and the fields the test reads. It never
+# pins an event name, a file layout, how state is rebuilt, how the store is
+# shaped, what a lost race is called, whether events are wrapped, whether they
+# are parsed on the way out, or where the screen's numbers come from: that is
+# what event-sourcing-assertions.js grades.
+#
+# What each case exercises, and the default the recorded run actually showed:
+#
+#   1 keeping the history — the event store and the command handler. Every
+#     recorded arm already folded the stream before deciding and appended with
+#     an expected version, so those rules are graded but are not where the
+#     headroom is. What no arm did was wrap the fact it stored, parse what it
+#     read back before folding it, or leave any way to read a row an older
+#     writer left behind.
+#   2 the wallet screen — the read model. The recorded arms folded the screen
+#     from zero on every read, which passes and must (such a screen cannot
+#     fall behind and cannot double-count), and missed the same three storage
+#     rules. The pressure this request adds — support keeps the screen open
+#     all day, the busiest wallets have years of lines — is what tempts the
+#     maintained view that `projectionRebuildableFromCheckpoint` bites on: a
+#     view kept up to date has to earn it with a checkpoint and a way back to
+#     event zero.
+#
+# On the untouched fixture there is no wallet module at all: 10 of case 2's 14
+# graders fail, and only suite-green, typecheck-clean and the two vacuous
+# rules (nothing is persisted, so nothing is mutated or stored as state) pass.
+# The fixture cannot carry a case.
+
+- description: keeping the wallet history
+  vars:
+    acceptance: wallet-store.test.ts
+    request: >-
+      Same wallet rules as docs/glossary.md describes — opened in a currency,
+      topped up, charged, never below zero, whole pence — but now they have to
+      stick. Export from src/wallet/index.ts a `createWalletStore()` we can
+      keep in memory while we develop and an async
+      `handleWalletCommand({ store, walletId, command })` that answers
+      `{ success: true, events }` or `{ success: false, reason }`, taking
+      commands `{ type: "Open", currency }`, `{ type: "TopUp", amountPence }`
+      and `{ type: "Charge", amountPence }` and refusing with the glossary's
+      outcomes. The checkout and the support tool can both act on the same
+      wallet at the same moment. Three things we already know about where a
+      wallet's lines end up: they will sit in a database column as JSON, and
+      the finance importer writes into the same wallets; what we keep about a
+      top-up is going to grow — the payment reference goes in next month —
+      while everything written before that still has to open; and when support
+      chases a complaint they read a wallet's lines one at a time, and for any
+      single line they have to be able to say when it happened and which
+      request put it there. Test it.
+  assert:
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:optimisticConcurrencyOnAppend', metric: optimistic-concurrency-on-append, weight: 2 }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:stateRebuiltByFolding', metric: state-rebuilt-by-folding }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:storedEventsNeverMutated', metric: stored-events-never-mutated }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:eventsHaveEnvelopes', metric: events-have-envelopes }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:storedEventsValidatedOnRead', metric: stored-events-validated-on-read }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:versioningStrategyExists', metric: versioning-strategy-exists }
+
+- description: the wallet screen
+  vars:
+    acceptance: wallet-screen.test.ts
+    request: >-
+      Support needs a wallet screen. Add an async
+      `walletScreen({ store, walletId })` to src/wallet/index.ts that answers
+      `{ currency, balancePence, statement }`, where `statement` is one entry
+      per top-up and charge, oldest first, each `{ amountPence,
+      balanceAfterPence }` with `amountPence` positive for a top-up and
+      negative for a charge (see Statement in docs/glossary.md). It sits on
+      `createWalletStore()` and an async
+      `handleWalletCommand({ store, walletId, command })` answering
+      `{ success: true, events }` or `{ success: false, reason }`, both
+      exported from src/wallet/index.ts, which you will need to write too.
+      Commands are `{ type: "Open", currency }`, `{ type: "TopUp",
+      amountPence }` and `{ type: "Charge", amountPence }`; the refusal
+      reasons and the whole-pence rule are in the glossary; a wallet never
+      goes below zero. Support keeps this screen open all day and the busiest
+      wallets have years of lines on them. Two things we know about where
+      those lines end up: they will sit in a database column as JSON, older
+      ones written by earlier versions of this code, and support has to be
+      able to say of any single line when it happened and which request put it
+      there. Test it.
+  assert:
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:readModelIsAProjection', metric: read-model-is-a-projection, weight: 2 }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:stateRebuiltByFolding', metric: state-rebuilt-by-folding }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:storedEventsNeverMutated', metric: stored-events-never-mutated }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:eventsHaveEnvelopes', metric: events-have-envelopes }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:storedEventsValidatedOnRead', metric: stored-events-validated-on-read }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:versioningStrategyExists', metric: versioning-strategy-exists }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:projectionRebuildableFromCheckpoint', metric: projection-rebuildable-from-checkpoint }

@@ -405,3 +405,53 @@
           score: loaded.length === 0 ? 1 : 0,
           reason: loaded.length === 0 ? 'no skill loaded' : `loaded ${loaded.join(', ')}`,
         };
+
+# ------------------------------------------------- batch-2 routing gaps ---
+# Phrasings on which, with the whole bundle installed, tdd loaded alone and
+# the owning skill never did. tdd may co-load; the owner must.
+
+- description: functional — data-shaping feature request in everyday words
+  metadata: { cluster: routing-gap }
+  vars:
+    request: "Add `mergeStates(saved, guest)` to src/notes.ts for when a signed-in user's notes join the ones they wrote as a guest: fold the guest's notes into the saved state, drop duplicates by title, and put the notes in title order. Test it."
+  assert:
+    - { type: skill-used, value: functional }
+
+- description: functional — pricing rules over a list
+  metadata: { cluster: routing-gap }
+  vars:
+    request: "Add tiered export pricing to src/notes.ts: `exportCost(state, rules)` charges per note, with a rule list like `[{ minNotes: 10, pencePerNote: 8 }, { minNotes: 50, pencePerNote: 5 }]` — the biggest tier the count reaches wins. Implement it."
+  assert:
+    - { type: skill-used, value: functional }
+
+- description: refactoring — collapse look-alikes
+  metadata: { cluster: routing-gap }
+  vars:
+    request: "In src/notes.ts, selectNote and searchNotes both scan the notes list in the same shape. Collapse the two look-alikes into one helper. Tests are green."
+  assert:
+    - { type: skill-used, value: refactoring }
+
+- description: refactoring — tidy a module
+  metadata: { cluster: routing-gap }
+  vars:
+    request: "Tidy the sync module in src/sync/ — nothing should change in behaviour, the tests are green, it's just hard to read."
+  assert:
+    - { type: skill-used, value: refactoring }
+
+- description: UI testing — a browser bug report with a fix and a test
+  metadata: { cluster: routing-gap }
+  vars:
+    request: "Users say the spinner on the submit button in src/checkout-form.tsx sometimes never goes away after the server turns the order down, and they have to reload the page. Fix it and cover it with a test."
+  assert:
+    - type: assert-set
+      threshold: 0.5
+      assert:
+        - { type: skill-used, value: react-testing }
+        - { type: skill-used, value: front-end-testing }
+
+- description: react-performance — a symptom report in product words
+  metadata: { cluster: routing-gap }
+  vars:
+    request: "The search box in src/notes-list.tsx stutters while typing once someone has a few thousand notes. Make it smooth — nothing else should change."
+  assert:
+    - { type: skill-used, value: react-performance }

@@ -1,0 +1,73 @@
+# front-end-testing quality cases.
+#
+# The fixture is a plain-DOM TypeScript storefront (a sign-up form and a
+# basket, both talking to a small JSON API through src/api.ts) that says it
+# covers its UI with behaviour-driven front-end tests and shows none of how.
+# Both harnesses are installed and wired — Vitest + jsdom over
+# `src/**/*.test.ts`, Playwright over `e2e/**/*.spec.ts` against the app that
+# `scripts/serve.mjs` builds and serves — and MSW sits in the lockfile, but the
+# only test in the tree is a pure money unit test. Nothing demonstrates which
+# harness a claim needs, how to find an element, where the network is
+# observed, or how to wait. The skill has to supply all of it.
+#
+# Each request is what a developer would actually say, pins only what the
+# hidden acceptance test calls (`mountSignupForm`, the checkout module, the
+# apology text) and tempts the default answer:
+#
+#   sign-up form  — a component-level claim; the default reaches for
+#                   `vi.stubGlobal('fetch', …)` and `container.querySelector`.
+#   checkout      — a journey claim, with `pnpm test` (jsdom) named as what CI
+#                   runs, tempting either a jsdom test wearing the words "end
+#                   to end" or a Playwright test that posts to /api/orders
+#                   itself instead of clicking the button.
+#   stuck spinner — an async bug; the default reaches for a sleep, and for a
+#                   Playwright run to "see" an intermittent problem.
+#
+# `harness` names the claim the request makes (dom or e2e) so
+# harnessMatchesClaim can hold the agent to the lightest harness that proves
+# it. behaviourDelivered is a regression guard on the first two cases (they ask
+# only for evidence, so the hidden test passes on the untouched fixture and
+# fails only if the agent changed what a customer gets); on the third it is the
+# real measure — the stuck spinner is a live bug in src/checkout.ts and the
+# hidden test fails until it is fixed.
+
+- description: cover the sign-up form
+  vars:
+    harness: dom
+    acceptance: signup.test.ts
+    request: >-
+      `mountSignupForm` in src/signup.ts puts our sign-up form on the page and
+      nothing covers it. Give it real coverage: someone who fills it in
+      properly and is told the account was created, the two things we turn away
+      (no name, and something that is not an email address), and what the
+      person sees when the sign-up endpoint refuses. I would like to stop
+      worrying about that form.
+  assert:
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:apiMockedAtNetworkBoundary', metric: api-mocked-at-network-boundary }
+
+- description: prove the checkout journey
+  vars:
+    harness: e2e
+    acceptance: checkout.test.ts
+    request: >-
+      Before we ship the new basket I want proof the whole checkout works end
+      to end: someone opens the page, changes a quantity, watches the total
+      move, places the order and gets their reference back. The basket is
+      src/checkout.ts and the order endpoint is POST /api/orders. CI runs
+      `pnpm test` — tell me what to add there if this needs something else.
+  assert:
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:browserInitiatorForJourney', metric: browser-initiator-for-journey, weight: 2 }
+
+- description: the spinner that sticks
+  vars:
+    harness: dom
+    acceptance: checkout-failure.test.ts
+    request: >-
+      Support says the Place order button on the basket sometimes spins
+      forever: the spinner stays up, the button stays greyed out and nothing
+      else happens. It looks like it happens when the order request doesn't
+      come back cleanly. Sort it out — the customer should see "Sorry — we
+      couldn't place your order. Please try again." and be able to have
+      another go — and make sure it stays sorted.
+  assert:
+    - { type: javascript, value: 'file://front-end-testing-assertions.js:apiMockedAtNetworkBoundary', metric: api-mocked-at-network-boundary }
