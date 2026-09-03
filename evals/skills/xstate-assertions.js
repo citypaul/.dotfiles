@@ -416,7 +416,9 @@ exports.cancellationModelledInMachine = () => {
   if (machineFiles().length === 0) return noMachine();
   const invoking = topLevelStates(machineText()).filter((state) => /\binvoke\s*:/.test(state.body));
   const interruptible = invoking.filter((state) =>
-    /\bon\s*:[\s\S]*[A-Z][A-Z0-9_]{1,}\s*:/.test(state.body),
+    [...state.body.matchAll(/\bon\s*:\s*\{([^}]*)\}/g)].some((m) =>
+      /(^|[{,\s])["']?[A-Za-z][\w.]*["']?\s*:/.test(m[1]),
+    ),
   );
   const handRolled = components()
     .filter((file) => /\b(ignore|cancelled|canceled|isMounted|stale)\b|AbortController/.test(lib.read(file)))

@@ -215,7 +215,8 @@ exports.evidenceBoundaryStated = (output) => {
   const text = String(output ?? "");
   const harness = /(playwright|browser|jsdom|vitest|end[- ]to[- ]end|e2e|dom test)/i.test(text);
   const boundary =
-    /\b(does not|doesn't|do not|don't|cannot|can't|no|not)\b[^.\n]{0,80}\b(prove|proof|cover|exercise|verify|guarantee|evidence|catch)\b/i.test(text) ||
+    /\b(does not|doesn't|do not|don't|cannot|can't|won't|will not|is not|isn't|are not|aren't|never)\s+(?:\w+\s+){0,3}(prove|proves|proven|proved|cover|covers|covered|exercise|exercises|exercised|verify|verifies|verified|guarantee|guarantees|catch|catches|show|shows|demonstrate|demonstrates|confirm|confirms)\b/i.test(text) ||
+    /\b(remains?|is|are|stays?|left)\s+(unproven|untested|uncovered|unverified)\b/i.test(text) ||
     /\b(only|just)\b[^.\n]{0,40}\b(proves|covers|exercises|verifies)\b/i.test(text) ||
     /\b(evidence|proof)\s+(boundary|stops|ends)|boundary of (the|this) evidence|out of scope/i.test(text);
   return lib.verdict(
