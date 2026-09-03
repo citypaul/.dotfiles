@@ -1,5 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 
+import "./SubscribeForm.css";
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export type Plan = "monthly" | "yearly";

@@ -4,7 +4,8 @@ The task board and the subscribe form from our React app. Plain React 19 + TypeS
 no router and no data layer: components take their data as props.
 
 - `src/components/` holds the components, `src/hooks/` the custom hooks, `src/tasks.ts`
-  the task types and shared text helpers.
+  the task types and shared text helpers. A component that needs styling imports its
+  own stylesheet next to it.
 - Two Vitest projects are configured in `vitest.config.ts`: `unit` runs `*.test.ts(x)`
   under jsdom, and `browser` runs `*.browser.test.tsx` in a real Chromium through
   Playwright. `pnpm test` runs both.

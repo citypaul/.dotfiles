@@ -3,18 +3,23 @@
 # The fixture (fixtures/react-performance-workspace) is a React 19 + TypeScript
 # app that is genuinely slow in two different ways: the note search scores
 # every note in the list on every keystroke before it filters, and the
-# dashboard puts a once-a-second clock in the same context as the notes, so
-# every tick re-runs an expensive per-tag aggregation. It ships passing
-# behaviour tests and an offline benchmark (`pnpm bench`, vitest bench in
-# jsdom, `src/perf/*.bench.ts`), and its README and CLAUDE.md declare only that
-# responsiveness is a product guarantee and that the benchmarks exist.
+# dashboard puts a once-a-second clock in the same context as the notes and
+# rebuilds the whole per-tag aggregation — note counts, word counts and idle
+# times — on every tick, when only the idle times can have changed. Both costs
+# are real work over real data — scanning a note's text, walking a body's
+# words — not a padded loop: there is no repeat count to delete, no sleep and
+# no constant
+# that makes the fixture slow on purpose. The only way to move the number is to
+# do less of the work, so a fix has to be a real one.
 #
-# What the fixture withholds: the method. Nothing in it says to take a number
-# before touching code, to attribute the cost before choosing a fix, to put one
-# hypothesis in a diff, to re-measure and revert a change that moved nothing,
-# to leave the behaviour tests alone, or to report the before/after pair. There
-# is no memo, no useCallback, no split context and no cache anywhere in the
-# fixture to copy — the skill has to supply all of it.
+# What the fixture withholds: the method. Its README and CLAUDE.md say what the
+# files are and nothing else — not that speed is a promise, not that a
+# benchmark exists to be run, not to take a number before touching code, to
+# attribute the cost before choosing a fix, to put one hypothesis in a diff, to
+# re-measure and revert a change that moved nothing, to leave the behaviour
+# tests alone, or to report the before/after pair. There is no memo, no
+# useCallback, no split context and no cache anywhere in the fixture to copy —
+# the skill has to supply all of it.
 #
 # Both requests are the way the complaint actually arrives ("stutters after
 # every character", "the fan never stops"). They name no pattern, offer no
@@ -24,20 +29,38 @@
 # react-performance-assertions.js grades.
 #
 # `benchmark` names the benchmark the graders re-run for the case. After every
-# case `measuredImprovement` runs it twice — once over the fixture as committed,
-# once over the code the agent left, with the harness from HEAD in both — and
-# requires the mean to have dropped by at least a quarter. That is what stops
-# the reflex answer scoring: wrapping the existing scored/sort/filter block in
-# a single `useMemo(…, [notes, query])` is the most natural one-hook fix for
-# case 1, it survives every structural grader, and it measures at ~51 ms
-# against the fixture's ~48 ms because the query it depends on changes on every
-# keystroke. The removal the skill prefers — score only the notes that match,
-# instead of the whole list — takes the same benchmark to ~16 ms. On case 2,
-# taking the clock out of the shared context goes from ~20 ms to ~0.0007 ms a
-# tick; leaving the aggregation on the tick path measures no better than the
-# fixture. An agent that never measures cannot tell any of these apart, and an
-# agent that measures but reports numbers it did not earn is caught by the same
-# grader.
+# case `measuredImprovement` runs it — once over the fixture as committed, once
+# over the code the agent left — with the whole of `src/perf`, the vitest
+# config, the tsconfig and package.json from HEAD in both runs. `src/perf`
+# holds the benchmark, its vitest options and `makeNotes`, the generator that
+# decides how many notes of what size are rendered, so nothing the agent can
+# edit changes what is measured. The rest of the candidate tree is the agent's
+# working tree exactly as it left it, wherever it chose to put its code, so a
+# helper module outside `src` measures like one written in place. The mean must
+# drop by at least 30%.
+#
+# That is what stops the reflex answers scoring. On case 1, wrapping the
+# existing scored/sort/filter block in a single `useMemo(…, [notes, query])` is
+# the most natural one-hook fix, it survives every structural grader, and it
+# measures at ~17.7 ms against the fixture's ~17.4 ms because the query it
+# depends on changes on every keystroke. Scoring only the notes that match,
+# instead of the whole list, takes the same benchmark to ~7.6 ms.
+#
+# Case 2 is built so that no reflex reaches the number either.
+# `memo(TagBreakdown)` measures ~1.0x, because `TagBreakdown` reads the clock's
+# context and React.memo does not stop a context change. Wrapping the
+# aggregation in one `useMemo(() => tagTotals(notes, nowMs), [notes, nowMs])`
+# measures ~1.0x too, because the clock is one of its inputs — and dropping
+# `nowMs` from the dependency list to make it hit freezes the idle times the
+# acceptance test watches age. The only way to the number is to notice *which
+# part* of the tick is expensive: the note and word aggregation cannot have
+# changed since the last tick, only the idle seconds derived from the clock
+# can. Splitting those apart — the aggregation kept out of the tick path, the
+# clock consumed only where it is displayed — takes the tick from ~40 ms to
+# well under a millisecond. That is step 2 of the method, "locate the cost",
+# and it is not reachable by pattern-matching on a hook. An agent that never
+# measures cannot tell any of these apart, and an agent that measures but
+# reports numbers it did not earn is caught by the same grader.
 
 - description: the search box stutters while typing
   vars:
@@ -63,5 +86,6 @@
       whatever it is that keeps burning CPU while the page is just sitting
       there. `Dashboard` in src/dashboard.tsx keeps its `notes` prop and shows
       exactly what it shows today: the same "Live at hh:mm:ss" line ticking
-      every second, the same per-tag lines, and the clock still stops when the
-      dashboard is unmounted.
+      every second, the same per-tag lines — tag, note count, word count and
+      idle time, with the idle seconds still counting up as the clock runs —
+      and the clock still stops when the dashboard is unmounted.

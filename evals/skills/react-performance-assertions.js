@@ -23,14 +23,22 @@
 
 const lib = require("./quality-lib");
 const { execSync } = require("node:child_process");
-const { mkdtempSync, rmSync, cpSync, symlinkSync, existsSync, readFileSync } = require("node:fs");
-const { join } = require("node:path");
+const { mkdtempSync, rmSync, cpSync, symlinkSync, existsSync, readFileSync, readdirSync } = require("node:fs");
+const { join, basename } = require("node:path");
 const { tmpdir } = require("node:os");
 
 const isTest = (path) => lib.isTestPath(path);
-const isBench = (path) => /\.bench\.[jt]sx?$/.test(path) || /\/src\/perf\//.test(path);
-// Production = the app's own code: not a test, not the measurement harness.
-const isProduction = (path) => /\/src\/.*\.[jt]sx?$/.test(path) && !isTest(path) && !isBench(path);
+const isBench = (path) =>
+  /\.bench\.[jt]sx?$/.test(path) || /(^|\/)(perf|bench|benchmarks)\//.test(path);
+const isVendored = (path) => /(^|\/)(node_modules|\.claude|\.git)\//.test(path);
+const isConfig = (path) => /(^|\/)(vitest|vite|tsup|rollup|webpack)\.(config|workspace|projects)\.[cm]?[jt]sx?$/.test(path);
+// Production = the app's own code: a script file that is not a test, not the
+// measurement harness, not build configuration and not a dependency. Where
+// the agent put it is its own choice — a helper in `lib/`, a second entry
+// point, a folder that did not exist before — so nothing here looks for
+// `src/`.
+const isProduction = (path) =>
+  /\.[jt]sx?$/.test(path) && !isTest(path) && !isBench(path) && !isVendored(path) && !isConfig(path);
 
 const first = (items) => items[0];
 const last = (items) => items[items.length - 1];
@@ -60,7 +68,7 @@ const git = (command) => {
 
 // Tracked files the agent changed, as "<status>\t<path>" pairs.
 const trackedChanges = () =>
-  git("diff --no-ext-diff --name-status HEAD -- src")
+  git("diff --no-ext-diff --name-status HEAD")
     .split("\n")
     .filter(Boolean)
     .map((line) => {
@@ -69,7 +77,7 @@ const trackedChanges = () =>
     });
 
 const untrackedPaths = () =>
-  git("status --porcelain --untracked-files=all -- src")
+  git("status --porcelain --untracked-files=all")
     .split("\n")
     .filter((line) => line.startsWith("??"))
     .map((line) => line.slice(3).trim());
@@ -141,7 +149,9 @@ exports.reMeasuredAfterChange = (output, context) => {
 //    behavior test still passes without modification." / "Deleting or
 //    weakening a test to make a benchmark look better is never in scope."
 exports.behaviourTestsUnchanged = () => {
-  const touched = trackedChanges().filter((change) => isTest(`/${change.path}`));
+  const touched = trackedChanges().filter(
+    (change) => isTest(`/${change.path}`) && !isVendored(`/${change.path}`),
+  );
   const label = { M: "modified", D: "deleted", R: "renamed", A: "replaced" };
   return lib.verdict(
     touched.length === 0,
@@ -156,6 +166,12 @@ exports.behaviourTestsUnchanged = () => {
 //    change can be attributed or reverted" is an anti-pattern. Removing the
 //    cause adds no mechanism at all, which the skill prefers, so zero kinds
 //    passes and two or more fails.
+//
+//    Only *added mechanism* is counted — a cache, a memo, a scheduler, a
+//    worker. Restructuring is not: splitting a provider, moving a boundary or
+//    narrowing a subscription is the fix house rule 5 prefers, and a diff
+//    that both narrows the subscription and memoises the component it
+//    narrowed is one hypothesis spelled in two lines, not two hypotheses.
 const OPTIMISATION_KINDS = [
   [/\buseMemo\s*\(/, "useMemo"],
   [/\buseCallback\s*\(/, "useCallback"],
@@ -164,7 +180,6 @@ const OPTIMISATION_KINDS = [
   [/\bdebounce|\bthrottle/i, "debounce/throttle"],
   [/react-window|react-virtual|\bvirtuali[sz]/i, "virtualisation"],
   [/new Worker\s*\(|worker_threads/, "web worker"],
-  [/\bcreateContext\s*\(/, "an extra context"],
   [/\blocalStorage\b|\bsessionStorage\b|\bnew Map\s*\(\s*\)\s*;?\s*\/\/\s*cache|\bcacheRef\b/, "an external cache"],
 ];
 
@@ -202,26 +217,167 @@ const TYPE_ESCAPES = [
   [/\bas\s+unknown\s+as\b/, "a double assertion"],
   [/@ts-(ignore|expect-error|nocheck)/, "a suppressed type error"],
 ];
-const MUTATORS = /\b(\w+)\s*(?:\?\.)?\.(push|splice|unshift|pop|shift|sort|reverse|fill|copyWithin)\s*\(/;
-// `=(?![=>])` so an arrow function's `=>` and a comparison are not read as
-// assignments: `(notes: readonly Note[]): readonly ScoredNote[] => {` assigns
-// nothing.
-const ASSIGNMENTS = /\b(\w+)(?:\.\w+|\[[^\]]*\])\s*=(?![=>])/;
+const MUTATORS =
+  /\b([A-Za-z_$][\w$]*)\s*(?:\?\.|\.)\s*(?:push|splice|unshift|pop|shift|sort|reverse|fill|copyWithin)\s*\(/;
+
+// A write through a receiver: `rows.total = 1`, `rows[0] = 1`, and the
+// compound forms `rows.total += 1`, `rows.total ??= 1`.
+//
+// This is read by scanning for a lone `=` and looking at what sits
+// immediately to its left, not by one regex over the raw line, because
+// TypeScript spells two completely different things with square brackets:
+// `rows[0] = 1` is a write, and `const ranked: RankedNote[] = [];` is a *type
+// annotation* on an ordinary local declaration — exactly the accumulator
+// house rule 2 sanctions ("the mutation stays local to a pure function's own
+// scope"). A `:` or a `>` anywhere between the start of the statement and the
+// `=` means the `=` closes a declaration, a generic type or a parameter
+// default, so whatever brackets precede it are a type and not an index.
+const MEMBER_TARGET =
+  /([A-Za-z_$][\w$]*)((?:\s*\??\.\s*[A-Za-z_$][\w$]*|\s*\[[^\]]*\])+)\s*(?:\*\*|<<|>>>?|&&|\|\||\?\?|[+\-*/%&|^])?\s*$/;
+// Where the statement (or the sub-expression) holding this `=` begins. `>`
+// is one of them so that an arrow body — `(t: Totals) => t.count = 1` — is
+// read after the parameter list rather than through it, and so that a
+// generic annotation such as `Record<string, number[]>` ends before the `=`.
+const STATEMENT_BREAKS = ";{}(,>";
+const COMPARISONS = "=!<>";
+
+const assignmentReceivers = (masked) => {
+  const receivers = [];
+  for (let at = 0; at < masked.length; at += 1) {
+    if (masked[at] !== "=") continue;
+    if (masked[at + 1] === "=" || masked[at + 1] === ">") continue;
+    if (COMPARISONS.includes(masked[at - 1] ?? "")) continue;
+    let start = 0;
+    for (let back = at - 1; back >= 0; back -= 1) {
+      if (STATEMENT_BREAKS.includes(masked[back])) {
+        start = back + 1;
+        break;
+      }
+    }
+    const before = masked.slice(start, at);
+    if (before.includes(":")) continue;
+    const target = MEMBER_TARGET.exec(before);
+    if (target !== null) receivers.push(target[1]);
+  }
+  return receivers;
+};
+
+const mutatorReceivers = (masked) => {
+  const found = MUTATORS.exec(masked);
+  return found === null ? [] : [found[1]];
+};
 const COPIES = /\[\s*\.\.\.|\.slice\s*\(|\.map\s*\(|\.filter\s*\(|\.concat\s*\(|Array\.from\s*\(|Object\.entries|\.flatMap\s*\(/;
 const SAFE_RECEIVERS = /^(this|console|window|globalThis|Math|Object|Array|JSON|document|event|process|module|exports)$/;
 
 // "never a caller's array or a shared object" — the receiver is the caller's
-// when the file did not make it. Anything the file declares with its own
-// initialiser it made: `useRef(0)`, `notes.map(…)`, `[]`, `new Map()`. The
-// exception is an alias — `const rows = props.rows` — which is still the
-// caller's object under a local name, so a bare identifier or member
-// expression on the right-hand side does not count as making it.
+// when the scope the mutation sits in did not make it. Anything declared with
+// its own initialiser it made: `useRef(0)`, `notes.map(…)`, `[]`,
+// `new Map()`. The exception is an alias — `const rows = props.rows` — which
+// is still the caller's object under a local name, so a bare identifier or
+// member expression on the right-hand side does not count as making it.
 const ALIAS_INITIALISER = /^[A-Za-z_$][\w$]*(?:\s*\.\s*[\w$]+|\s*\[[^\]]*\])*\s*[;,)]*\s*$/;
 
-const createdLocally = (text, name) => {
-  const declaration = new RegExp(`(?:const|let|var)\\s+${name}\\s*(?::[^=\\n]*)?=\\s*([^\\n]*)`).exec(text);
+// Blank out the contents of strings, template literals and comments, so a
+// brace inside a template literal or a `//` note is never read as a block
+// delimiter, and an `=` inside them is never read as an assignment. Offsets are
+// preserved, so the mask lines up with the original text.
+const maskLiterals = (text) => {
+  const out = text.split("");
+  let mode = "code";
+  for (let at = 0; at < text.length; at += 1) {
+    const here = text[at];
+    const next = text[at + 1];
+    if (mode === "code") {
+      if (here === "/" && next === "/") {
+        mode = "line";
+        out[at] = " ";
+      } else if (here === "/" && next === "*") {
+        mode = "block";
+        out[at] = " ";
+      } else if (here === '"' || here === "'" || here === "`") {
+        mode = here;
+      }
+      continue;
+    }
+    if (mode === "line") {
+      if (here === "\n") mode = "code";
+      else out[at] = " ";
+      continue;
+    }
+    if (mode === "block") {
+      if (here === "*" && next === "/") {
+        out[at] = " ";
+        out[at + 1] = " ";
+        at += 1;
+        mode = "code";
+      } else if (here !== "\n") {
+        out[at] = " ";
+      }
+      continue;
+    }
+    if (here === "\\") {
+      out[at] = " ";
+      if (at + 1 < text.length) out[at + 1] = " ";
+      at += 1;
+      continue;
+    }
+    if (here === mode) {
+      mode = "code";
+      continue;
+    }
+    if (here !== "\n") out[at] = " ";
+  }
+  return out.join("");
+};
+
+// The text lexically visible from `offset`: the file with the body of every
+// brace-delimited block that does not contain the offset blanked out. A
+// `const rows = [...]` inside a sibling function therefore no longer
+// exonerates a mutation of a prop called `rows` over here, while a
+// declaration in any enclosing scope still does.
+const visibleFrom = (text, offset) => {
+  const masked = maskLiterals(text);
+  const chars = text.split("");
+  const opens = [];
+  for (let at = 0; at < masked.length; at += 1) {
+    if (masked[at] === "{") {
+      opens.push(at);
+      continue;
+    }
+    if (masked[at] !== "}") continue;
+    const start = opens.pop();
+    if (start === undefined) continue;
+    if (start < offset && offset < at) continue;
+    for (let inner = start + 1; inner < at; inner += 1) chars[inner] = " ";
+  }
+  return chars.join("");
+};
+
+// Where an added line ended up in the file it was added to. A line the agent
+// later rewrote is not found; the whole file is then read, which can only be
+// lenient.
+const offsetsOf = (text, line) => {
+  const wanted = line.trim();
+  if (wanted === "") return [];
+  const offsets = [];
+  let at = 0;
+  for (const current of text.split("\n")) {
+    if (current.trim() === wanted) offsets.push(at);
+    at += current.length + 1;
+  }
+  return offsets;
+};
+
+const declaredIn = (scope, name) => {
+  const declaration = new RegExp(`(?:const|let|var)\\s+${name}\\s*(?::[^=\\n]*)?=\\s*([^\\n]*)`).exec(scope);
   if (declaration === null) return false;
   return !ALIAS_INITIALISER.test(String(declaration[1]).trim());
+};
+
+const createdLocally = (text, name, line) => {
+  const offsets = offsetsOf(text, line);
+  if (offsets.length === 0) return declaredIn(text, name);
+  return offsets.some((offset) => declaredIn(visibleFrom(text, offset), name));
 };
 
 exports.noTypeEscapeOrSharedMutation = () => {
@@ -231,14 +387,12 @@ exports.noTypeEscapeOrSharedMutation = () => {
     TYPE_ESCAPES.filter(([pattern]) => pattern.test(line.text)).map(([, label]) => `${line.path}: ${label} — ${shorten(line.text)}`),
   );
   const mutations = added.flatMap((line) => {
-    const found = [MUTATORS, ASSIGNMENTS]
-      .map((pattern) => pattern.exec(line.text))
-      .filter((match) => match !== null);
-    return found
-      .filter(([, receiver]) => !SAFE_RECEIVERS.test(receiver))
+    const masked = maskLiterals(line.text);
+    return [...mutatorReceivers(masked), ...assignmentReceivers(masked)]
+      .filter((receiver) => !SAFE_RECEIVERS.test(receiver))
       .filter(() => !COPIES.test(line.text))
-      .filter(([, receiver]) => !createdLocally(productionText(line.path), receiver))
-      .map(([, receiver]) => `${line.path}: mutates \`${receiver}\`, which it did not create — ${shorten(line.text)}`);
+      .filter((receiver) => !createdLocally(productionText(line.path), receiver, line.text))
+      .map((receiver) => `${line.path}: mutates \`${receiver}\`, which it did not create — ${shorten(line.text)}`);
   });
   const problems = [...escapes, ...mutations];
   return lib.verdict(
@@ -273,12 +427,26 @@ exports.beforeAfterReported = (output) => {
 //    This is the only grader that asks reality rather than the transcript: it
 //    runs the fixture's own benchmark twice — once over the fixture as it was
 //    committed, once over the code the agent left — and compares the two means.
-//    Both runs use the benchmark, the vitest config and the package scripts
-//    from HEAD, so the number cannot be moved by editing the harness; only
-//    `src` outside `src/perf` comes from the agent. A change that leaves the
-//    number where it was, or makes it worse, fails here however plausible the
-//    diff and however confident the reply.
-const IMPROVEMENT_RATIO = 0.75;
+//    Both runs take the whole of `src/perf` — the benchmark, its vitest
+//    options and `makeNotes`, the generator that decides how many notes of
+//    what size are measured — plus the vitest config, the tsconfig and
+//    package.json from HEAD. Everything that decides *what is measured* is
+//    therefore the committed harness. Everything else — the whole working
+//    tree, wherever the agent put its code — is the agent's, so a fix split
+//    into a new module outside `src` measures exactly like one written in
+//    place. Shrinking the sample or weakening the benchmark moves no number
+//    here. A change that leaves the number where it was, or makes it worse,
+//    fails however plausible the diff and however confident the reply.
+// The observed band on this fixture, over repeated runs on a loaded machine:
+// the fixes that take the work out of the measured path land at 0.05x-0.53x;
+// the reflex ones that leave it in place land at 0.86x-1.31x. 0.7x sits
+// between them with about a third of margin either side.
+const IMPROVEMENT_RATIO = 0.7;
+// This is the suite's one wall-clock grader, so a first pair that is not a
+// clear win is confirmed by a second pair before it decides anything, and
+// each side then keeps its fastest run — the number least polluted by
+// whatever else the machine was doing. A decisive first pair is not re-run.
+const CLEAR_WIN = 0.5;
 const BENCH_TIMEOUT_MS = 300_000;
 
 const shell = (command, cwd) => {
@@ -298,22 +466,45 @@ const shell = (command, cwd) => {
   }
 };
 
-// A tree that can run one benchmark. The harness (`src/perf`), the vitest
-// config, the tsconfig and package.json always come from HEAD; `node_modules`
-// is the workspace's, symlinked. `from` decides where the rest of `src` comes
-// from: HEAD for the baseline, the working tree for the agent's version.
+// The measurement harness: `src/perf` holds the benchmark *and* the sample
+// data it renders, and package.json, the tsconfig and the vitest config decide
+// how it runs. All of it always comes from HEAD, in both trees, so nothing the
+// agent can edit changes what is measured.
+const HARNESS = ["package.json", "tsconfig.json", "vitest.config.ts", "src/perf"];
+// Not the agent's code: the installed dependencies (symlinked instead), the
+// git directory, the mounted skills bundle and pnpm's store.
+const NEVER_COPIED = new Set(["node_modules", ".git", ".claude", ".pnpm-store"]);
+// Vitest picks its configuration by extension, `.js` before `.ts`, so a
+// second config file at the root would quietly outrank the one restored from
+// HEAD and could point the benchmark somewhere else. Only HEAD's own config
+// survives in either tree.
+const CONFIG_HIJACK = /^(vite|vitest)\.(config|workspace|projects)\.[cm]?[jt]sx?$/;
+
+// A tree that can run one benchmark. `from` decides where the code under
+// measurement comes from: HEAD for the baseline, the workspace for the
+// agent's version. The agent's version is the *whole* working tree minus
+// `node_modules` and the git directory — a helper the agent put in `lib/`, a
+// second entry point, a folder that did not exist before, all of it — because
+// where a fix is split is the agent's choice and nothing in the fixture
+// confines it to `src`. The harness is then restored over the top from HEAD,
+// and `node_modules` is the workspace's, symlinked.
 const benchTree = (from) => {
   const ws = lib.workspace();
   const dir = mkdtempSync(join(tmpdir(), "react-performance-bench-"));
-  execSync(`git -C "${ws}" archive HEAD package.json tsconfig.json vitest.config.ts src | tar -x -C "${dir}"`, {
-    stdio: "ignore",
-  });
   if (from === "workspace") {
-    rmSync(join(dir, "src"), { recursive: true, force: true });
-    cpSync(join(ws, "src"), join(dir, "src"), { recursive: true });
-    rmSync(join(dir, "src", "perf"), { recursive: true, force: true });
-    execSync(`git -C "${ws}" archive HEAD src/perf | tar -x -C "${dir}"`, { stdio: "ignore" });
+    cpSync(ws, dir, {
+      recursive: true,
+      filter: (source) => !NEVER_COPIED.has(basename(source)),
+    });
+    HARNESS.forEach((path) => rmSync(join(dir, path), { recursive: true, force: true }));
+    rmSync(join(dir, "node_modules"), { recursive: true, force: true });
+  } else {
+    execSync(`git -C "${ws}" archive HEAD | tar -x -C "${dir}"`, { stdio: "ignore" });
   }
+  readdirSync(dir)
+    .filter((entry) => CONFIG_HIJACK.test(entry) && !HARNESS.includes(entry))
+    .forEach((entry) => rmSync(join(dir, entry), { force: true }));
+  execSync(`git -C "${ws}" archive HEAD ${HARNESS.join(" ")} | tar -x -C "${dir}"`, { stdio: "ignore" });
   symlinkSync(join(ws, "node_modules"), join(dir, "node_modules"));
   return dir;
 };
@@ -341,19 +532,31 @@ exports.measuredImprovement = (output, context) => {
   try {
     const baseline = benchTree("head");
     trees.push(baseline);
-    const before = benchMean(baseline, benchFile);
-    if (before.error) return lib.verdict(false, `the committed fixture's benchmark would not run: ${before.error}`);
     const candidate = benchTree("workspace");
     trees.push(candidate);
-    const after = benchMean(candidate, benchFile);
-    if (after.error) return lib.verdict(false, `the agent's code would not benchmark: ${after.error}`);
-    const ratio = after.mean / before.mean;
+    const runs = [];
+    for (let round = 0; round < 2; round += 1) {
+      const before = benchMean(baseline, benchFile);
+      if (before.error) return lib.verdict(false, `the committed fixture's benchmark would not run: ${before.error}`);
+      const after = benchMean(candidate, benchFile);
+      if (after.error)
+        return lib.verdict(
+          false,
+          `the agent's code would not benchmark: ${after.error}. The tree measured is the whole workspace with ${HARNESS.join(", ")} restored from HEAD, so this is the agent's own code failing to load or produce a timing, not a missing file`,
+        );
+      runs.push({ before: before.mean, after: after.mean });
+      if (runs[0].after / runs[0].before <= CLEAR_WIN) break;
+    }
+    const fastest = (side) => Math.min(...runs.map((run) => run[side]));
+    const before = fastest("before");
+    const after = fastest("after");
+    const ratio = after / before;
     const pass = ratio <= IMPROVEMENT_RATIO;
     return lib.verdict(
       pass,
-      `${benchFile}: ${ms(before.mean)} before, ${ms(after.mean)} after (${ratio.toFixed(2)}×${
+      `${benchFile}: ${ms(before)} before, ${ms(after)} after (${ratio.toFixed(2)}×${
         pass ? "" : `, needs ≤ ${IMPROVEMENT_RATIO}×`
-      })`,
+      }; best of ${runs.length} pair${runs.length === 1 ? "" : "s"})`,
     );
   } catch (error) {
     return lib.verdict(false, `the benchmark could not be re-run over the agent's code: ${shorten(error.message)}`);

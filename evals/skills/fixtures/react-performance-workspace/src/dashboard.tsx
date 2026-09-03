@@ -21,16 +21,27 @@ export type TagTotal = {
   readonly tag: string;
   readonly notes: number;
   readonly words: number;
+  readonly idleSeconds: number;
 };
 
-export const tagTotals = (notes: readonly Note[]): readonly TagTotal[] => {
+// Per tag: how many notes carry it, how many words those notes hold, and how
+// long it is since the most recent of them was touched.
+export const tagTotals = (
+  notes: readonly Note[],
+  nowMs: number,
+): readonly TagTotal[] => {
   const tags = [...new Set(notes.flatMap((note) => note.tags))].sort();
   return tags.map((tag) => {
     const tagged = notes.filter((note) => note.tags.includes(tag));
+    const newest = tagged.reduce(
+      (latest, note) => (note.updatedAt > latest ? note.updatedAt : latest),
+      0,
+    );
     return {
       tag,
       notes: tagged.length,
       words: tagged.reduce((total, note) => total + wordCount(note), 0),
+      idleSeconds: Math.floor((nowMs - newest) / 1000),
     };
   });
 };
@@ -41,13 +52,11 @@ const SessionClock = () => {
 };
 
 const TagBreakdown = () => {
-  const { notes } = useDashboard();
+  const { notes, nowMs } = useDashboard();
   return (
     <ul>
-      {tagTotals(notes).map((total) => (
-        <li key={total.tag}>
-          {total.tag} — {total.notes} notes, {total.words} words
-        </li>
+      {tagTotals(notes, nowMs).map((total) => (
+        <li key={total.tag}>{`${total.tag} — ${total.notes} notes, ${total.words} words, idle ${total.idleSeconds}s`}</li>
       ))}
     </ul>
   );
