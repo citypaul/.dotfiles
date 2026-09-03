@@ -217,6 +217,7 @@ exports.evidenceBoundaryStated = (output) => {
   const boundary =
     /\b(does not|doesn't|do not|don't|cannot|can't|won't|will not|is not|isn't|are not|aren't|never)\s+(?:\w+\s+){0,3}(prove|proves|proven|proved|cover|covers|covered|exercise|exercises|exercised|verify|verifies|verified|guarantee|guarantees|catch|catches|show|shows|demonstrate|demonstrates|confirm|confirms)\b/i.test(text) ||
     /\b(remains?|is|are|stays?|left)\s+(unproven|untested|uncovered|unverified)\b/i.test(text) ||
+    /\b(proves?|covers?|verifies|verify|shows?|demonstrates?)\b[^.\n]{0,160}\b(not|never|rather than)\b/i.test(text) ||
     /\b(only|just)\b[^.\n]{0,40}\b(proves|covers|exercises|verifies)\b/i.test(text) ||
     /\b(evidence|proof)\s+(boundary|stops|ends)|boundary of (the|this) evidence|out of scope/i.test(text);
   return lib.verdict(
