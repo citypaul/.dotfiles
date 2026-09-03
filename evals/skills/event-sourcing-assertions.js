@@ -738,7 +738,7 @@ const eventUnions = () =>
 const words = (name) => name.split(/(?=[A-Z])/).filter(Boolean);
 
 // The wallet's decision logic: whatever the agent called it. `decide`/`evolve`
-// when those names exist (case 1 pins them), otherwise every function whose
+// when those names exist (no case pins them any more), otherwise every function whose
 // body carries three or more of the glossary's refused outcomes — a `decide`
 // that lives inlined inside the async command handler is found here too, and
 // that is the point.
@@ -890,7 +890,10 @@ exports.storedEventsNeverMutated = () => {
   const hits = files.flatMap((file) => {
     const body = analyse(file).code;
     return [
-      [/\b\w*[Ee]vents?\s*\[[^\]]+\]\s*=[^=]/, "assigns over a stored event"],
+      // The index has to be an expression, never a quoted key: a type
+      // annotation such as `WalletStore["readStream"] = …` names a method on
+      // the port, it does not write over an event.
+      [/\b\w*[Ee]vents?\s*\[\s*[^\]"'`\s][^\]]*\]\s*=[^=]/, "assigns over a stored event"],
       [
         /\b\w*([Ee]vents?|[Ss]treams?|[Hh]istory|[Rr]ecords?)\s*\.\s*(splice|pop|shift|fill|copyWithin)\s*\(/,
         "removes or overwrites stored events",
@@ -908,7 +911,7 @@ exports.storedEventsNeverMutated = () => {
   const inStore = closureFrom(["createWalletStore"]).flatMap((definition) =>
     [
       [/\.\s*(splice|pop|shift|fill|copyWithin|reverse|sort)\s*\(/, "rewrites a stored stream in place"],
-      [/\b\w+\s*\[[^\]]+\]\s*=[^=]/, "assigns into a stored stream"],
+      [/\b\w+\s*\[\s*[^\]"'`\s][^\]]*\]\s*=[^=]/, "assigns into a stored stream"],
     ]
       .filter(([pattern]) => pattern.test(definition.code))
       .map(([, label]) => `${definition.name} (${lib.rel(definition.file)}) ${label}`),
@@ -1075,7 +1078,11 @@ exports.readModelIsAProjection = () => {
           (definition) =>
             definition.kind === "value" &&
             definition.name !== "walletScreen" &&
-            /statement|balanceAfterPence/i.test(definition.code) &&
+            /statement|balanceAfterPence/i.test(
+              closureFrom([definition.name])
+                .map((reached) => reached.code)
+                .join("\n"),
+            ) &&
             foldsFromScratch(closureFrom([definition.name])),
         )
         .map((definition) => definition.name),
@@ -1116,6 +1123,430 @@ exports.testedWithoutMocks = (output, context) => {
   return lib.verdict(
     smells.length === 0,
     smells.length === 0 ? `behaviour tests without mocks: ${list(exercising)}` : smells.join("; "),
+  );
+};
+
+// --- the envelope, the trust boundary, versioning and checkpoints -----------
+
+// The depth-1 keys of every `{ … }` in a span. An object literal, a type body
+// and an interface body all read the same way, and keys are read from `code`
+// (comments and literal interiors blanked), so neither prose nor a string can
+// contribute one. This is how the envelope rules are decided by the FIELDS a
+// shape actually carries rather than by what the agent called the shape.
+const objectBodies = (code) => {
+  const bodies = [];
+  for (let index = 0; index < code.length; index += 1) {
+    if (code[index] !== "{") continue;
+    const end = groupEnd(code, index);
+    const inner = code.slice(index + 1, Math.max(index + 1, end - 1));
+    const depth = depths(inner);
+    const keys = [...inner.matchAll(/([A-Za-z_$][\w$]*)\s*\??\s*:/g)]
+      .filter((match) => depth[match.index] === 0)
+      .map((match) => match[1]);
+    if (keys.length > 0) bodies.push({ inner, keys });
+  }
+  return bodies;
+};
+
+// The envelope's facets, matched against whole key names so the stream's own
+// `version` and a per-event `schemaVersion` can never stand in for each other.
+const ENVELOPE_ID_KEY = /^(?:id|eventId|event_id|messageId|message_id|uuid|guid|eventUuid|identifier)$/i;
+const ENVELOPE_TIME_KEY =
+  /^(?:timestamp|timeStamp|occurredAt|occurredOn|recordedAt|createdAt|happenedAt|writtenAt|appendedAt|loggedAt|storedAt|at|on|time|when|date|dateTime|ts)$/i;
+const ENVELOPE_POSITION_KEY =
+  /^(?:version|streamVersion|streamPosition|position|globalPosition|sequence|sequenceNumber|seq|seqNo|offset|revision|index|ordinal|number|no)$/i;
+const ENVELOPE_PAYLOAD_KEY = /^(?:data|payload|event|domainEvent|body|fact|content|value)$/i;
+// A timestamp has to come from somewhere at write time; an injected clock
+// counts, so this asks for a clock reading, not for a particular spelling.
+const CLOCK_READ = /new Date\s*\(|Date\.now\s*\(|toISOString\s*\(|\bnow\s*\(|\bclock\b/i;
+
+const writePathRoles = () => ["handleWalletCommand", "createWalletStore"].filter((name) => named(name).length > 0);
+const writePathDefinitions = () => {
+  const roles = writePathRoles();
+  return roles.length > 0 ? closureFrom(roles) : [];
+};
+// The read path: everything the command handler, the store and the screen
+// reach. Stored events cross the trust boundary in any of them.
+const readPathDefinitions = () => {
+  const roles = ["handleWalletCommand", "walletScreen", "createWalletStore"].filter((name) => named(name).length > 0);
+  return roles.length > 0 ? closureFrom(roles) : [];
+};
+
+// Unions that declare their own `type: "…"` facts — the DOMAIN PAYLOAD. A
+// stored-event type that merely mentions one of them is not itself one, so
+// the envelope is never mistaken for the payload it wraps.
+const payloadUnions = () => eventUnions().filter((union) => literalsIn(union.plain).length > 0);
+const eventNames = () => new Set(payloadUnions().flatMap((union) => union.literals));
+
+// 9. "Give every event an envelope: a unique id, type, stream id, version,
+//    timestamp, and metadata (correlation and causation ids for tracing a
+//    command through the events it caused). The domain payload is separate
+//    from this envelope." — the shape the store writes carries the id, the
+//    time and the stream position; the facts the decider returns do not.
+exports.eventsHaveEnvelopes = () => {
+  const writePath = writePathDefinitions();
+  if (writePath.length === 0)
+    return lib.verdict(false, "nothing persists events (no `createWalletStore` and no `handleWalletCommand`)");
+  const envelopes = writePath.flatMap((definition) =>
+    objectBodies(definition.code)
+      .filter(
+        (body) =>
+          body.keys.some((key) => ENVELOPE_ID_KEY.test(key)) &&
+          body.keys.some((key) => ENVELOPE_TIME_KEY.test(key)) &&
+          body.keys.some((key) => ENVELOPE_POSITION_KEY.test(key)),
+      )
+      .map((body) => ({ definition, body })),
+  );
+  const unionNames = [...new Set(payloadUnions().map((union) => union.name))];
+  const separates = envelopes.filter(
+    ({ body }) =>
+      body.keys.some((key) => ENVELOPE_PAYLOAD_KEY.test(key)) ||
+      (unionNames.length > 0 && new RegExp(`\\b(?:${unionNames.join("|")})\\b`).test(body.inner)),
+  );
+  const stamped = CLOCK_READ.test(joined(writePath));
+  const flattened = payloadUnions().filter((union) =>
+    objectBodies(union.code).some((body) =>
+      body.keys.some((key) => ENVELOPE_ID_KEY.test(key) || ENVELOPE_TIME_KEY.test(key)),
+    ),
+  );
+  const missing = [
+    envelopes.length === 0 &&
+      "the shape written to the store carries no envelope: nothing the write path builds or declares holds an id, a timestamp and a stream position together",
+    envelopes.length > 0 &&
+      separates.length === 0 &&
+      "the envelope does not keep the domain payload separate: it has no field holding the event itself",
+    envelopes.length > 0 &&
+      !stamped &&
+      "nothing stamps an envelope when the event is written: the write path never reads a clock",
+    flattened.length > 0 &&
+      `the domain payload carries envelope fields instead of leaving them to the envelope: ${flattened
+        .map((union) => union.name)
+        .join(", ")}`,
+  ].filter(Boolean);
+  return lib.verdict(
+    missing.length === 0,
+    missing.length === 0
+      ? `stored events are wrapped in an envelope (id, timestamp, stream position) with the domain payload separate: ${list(
+          filesOf(separates.map((hit) => hit.definition)),
+        )}`
+      : `${missing.join("; ")} (${list(filesOf(writePath))})`,
+  );
+};
+
+// A schema built out of parts, however the library spells it: `z.object(…)`,
+// `z.literal(…)`, `z.discriminatedUnion(…)`. Content, not a name ending in
+// "Schema".
+const SCHEMA_BUILT =
+  /\b\w+\s*\.\s*(?:object|literal|union|discriminatedUnion|enum|array|record|tuple|lazy|strictObject|looseObject)\s*\(/;
+const PARSE_CALL = /\.\s*(?:safeParseAsync|parseAsync|safeParse|parse|decode|validate)\s*\(/;
+const READ_ISH = /\.\s*(?:read|load|get|fetch|find|select|query|list|all|stream)\w*\s*\(/i;
+const TOLERANT = /\.\s*(?:default|optional|nullish|catch|passthrough|loose)\s*\(|\?\?/;
+const STRICT = /\.\s*(?:strict|strictObject|exact)\s*\(/;
+
+// Every name used to fold: the reducer handed to `.reduce(…)`, and the
+// function a loop folds with (`wallet = applyFact(wallet, fact)`, found by
+// the accumulator appearing on both sides). `evolve` under any spelling is a
+// fold function, never the trust boundary's parser, so it is never counted as
+// one — and that holds however the agent spelled it or folded with it.
+const reducerNames = () => {
+  const body = joined(allDefinitions());
+  return new Set(
+    [
+      ...reduceCalls(body).map((call) => (/^[A-Za-z_$][\w$]*$/.exec(call.reducer.trim()) ?? [])[0]),
+      ...[...body.matchAll(/\b([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*\(\s*\1\b/g)].map((match) => match[2]),
+    ].filter(Boolean),
+  );
+};
+
+// A parser for stored events: a value definition that either builds a schema
+// or hand-checks a discriminant and refuses what it does not recognise, and
+// that covers at least two of the declared events. The decider and the fold
+// are excluded by role, so a `switch` full of event names is not mistaken for
+// a validator.
+const validatorNames = () => {
+  const names = eventNames();
+  if (names.size === 0) return [];
+  const excluded = new Set([...decisionEntries(), ...reducerNames(), "handleWalletCommand", "walletScreen", "createWalletStore"]);
+  return allDefinitions()
+    .filter((definition) => {
+      if (definition.kind !== "value" || excluded.has(definition.name)) return false;
+      const own = definition.code;
+      const schema = SCHEMA_BUILT.test(own);
+      const guard =
+        /\bthrow\b|\breturn\s+(?:null|undefined|false)\b|\bsuccess\s*:/.test(own) &&
+        /\btypeof\b|\bswitch\s*\(|\bin\b|\.\s*type\b/.test(own);
+      if (!schema && !guard) return false;
+      const covered = closureFrom([definition.name]).flatMap((reached) => literalsIn(reached.plain));
+      return new Set(covered.filter((literal) => names.has(literal))).size >= 2;
+    })
+    .map((definition) => definition.name);
+};
+
+// A parse whose ANSWER IS USED. Calling a parser and throwing its answer away
+// — `rows.forEach((row) => acceptRow(row)); return rows as Fact[];` — leaves
+// the fold reading exactly what came out of the store, so nothing crossed the
+// trust boundary. The call therefore has to sit where a value is consumed
+// (returned, bound, passed on, chained), and a binding it fills has to be read
+// somewhere else in the same definition.
+const VALUE_BEFORE = /[([,:?|&+\-*/%!<>=~^.]/;
+const TRANSPARENT_PREFIX = /^(?:await|void|yield)$/;
+const VALUE_KEYWORD = /^(?:return|throw|case|of|in|new|typeof|instanceof|do|else)$/;
+const BINDING_BEFORE = /(?:\b(?:const|let|var)\s+)?([A-Za-z_$][\w$]*)\s*(?::[^=;]*)?=\s*$/;
+
+const answerUsed = (code, start) => {
+  let index = start - 1;
+  for (let step = 0; step < 6; step += 1) {
+    while (index >= 0 && isSpace(code[index])) index -= 1;
+    if (index < 0) return false;
+    const head = code.slice(0, index + 1);
+    const word = /[\w$]+$/.exec(head);
+    if (word !== null) {
+      if (TRANSPARENT_PREFIX.test(word[0])) {
+        index -= word[0].length;
+        continue;
+      }
+      return VALUE_KEYWORD.test(word[0]);
+    }
+    const character = code[index];
+    if (character === "=" && !/[=!<>]/.test(code[index - 1] ?? "")) {
+      const binding = BINDING_BEFORE.exec(head);
+      if (binding === null) return true;
+      return (code.match(new RegExp(`\\b${binding[1]}\\b`, "g")) ?? []).length > 1;
+    }
+    return VALUE_BEFORE.test(character);
+  }
+  return false;
+};
+
+// Where each parse of a stored row starts: a validator called by name, or a
+// `.parse(`-style call, read back to the head of its receiver chain.
+const parseCallStarts = (code, validators) => {
+  const called = new RegExp(`\\b(?:${validators.join("|")})\\b(?=\\s*(?:\\(|\\)|,))`, "g");
+  return [
+    ...[...code.matchAll(called)].map((match) => match.index),
+    ...[...code.matchAll(/\.\s*(?:safeParseAsync|parseAsync|safeParse|parse|decode|validate)\s*\(/g)].map(
+      (match) => match.index - receiverChain(code, match.index).length,
+    ),
+  ];
+};
+
+// Where that parser is actually applied to what came back out of the store.
+// "on the way out" is what has to be true, so the search starts at whatever
+// definition READS the stream and follows only what that reading reaches —
+// a parser wired in on the way IN would not be found here. The parse may sit
+// a helper or two away from the read (`load` → `readStoredEvents` → `parse`),
+// which is why reachability, not one definition's own text, decides it.
+const validationSites = () => {
+  const validators = [...new Set(validatorNames())];
+  if (validators.length === 0) return { validators, sites: [] };
+  const readers = readPathDefinitions().filter((definition) => READ_ISH.test(definition.code));
+  const afterRead = readers.length > 0 ? closureFrom([...new Set(readers.map((definition) => definition.name))]) : [];
+  const mentions = new RegExp(`\\b(?:${validators.join("|")})\\b`);
+  const called = new RegExp(`\\b(?:${validators.join("|")})\\b(?=\\s*(?:\\(|\\)|,))`);
+  const parsing = afterRead.filter(
+    (definition) =>
+      !validators.includes(definition.name) &&
+      mentions.test(definition.code) &&
+      (PARSE_CALL.test(definition.code) || called.test(definition.code)) &&
+      parseCallStarts(definition.code, validators).some((start) => answerUsed(definition.code, start)),
+  );
+  // …and the parse has to be on the way to the fold, not in a helper whose
+  // own answer is dropped: either the parsing definition is the one reading
+  // the stream, or something else on the read path uses what it returns.
+  const sites = parsing.filter(
+    (definition) =>
+      READ_ISH.test(definition.code) ||
+      afterRead.some(
+        (caller) =>
+          caller.name !== definition.name &&
+          parseCallStarts(caller.code, [definition.name]).some((start) => answerUsed(caller.code, start)),
+      ),
+  );
+  return { validators, sites };
+};
+
+// 10. "Events are stored as data across a trust boundary, so on the way out
+//     they are validated with a schema (a tolerant reader) before `evolve`
+//     ever sees them." / "the stored JSON is untrusted input, parsed into
+//     branded domain events on read." Found by what parses on the read path,
+//     never by a name: a zod schema and a hand-written parse of the
+//     discriminant both count.
+exports.storedEventsValidatedOnRead = () => {
+  if (readPathDefinitions().length === 0)
+    return lib.verdict(false, "nothing reads events back (no `createWalletStore`, `handleWalletCommand` or `walletScreen`)");
+  const { validators, sites } = validationSites();
+  if (validators.length === 0)
+    return lib.verdict(
+      false,
+      "nothing parses a stored event: no schema and no hand-written check of the event's discriminant covers the declared events, so what comes out of the store is folded untrusted",
+    );
+  if (sites.length === 0)
+    return lib.verdict(
+      false,
+      `\`${validators.join(", ")}\` parses events but nothing on the read path applies it: events come back out of the store and are folded without crossing the trust boundary`,
+    );
+  return lib.verdict(
+    true,
+    `stored events are validated before they are folded: ${validators.join(", ")} applied in ${list(filesOf(sites))}`,
+  );
+};
+
+// A per-event schema version, as opposed to the stream's own version.
+const SCHEMA_VERSION_KEY =
+  /^(?:schemaVersion|eventVersion|payloadVersion|schema_version|event_version|payload_version|eventSchemaVersion|dataVersion)$/i;
+const VERSIONED_EVENT_NAME = /(?:V|_v)\d+$/;
+
+// 11. "A versioning strategy exists before the first event ships (tolerant
+//     reader and/or upcasters)" / anti-pattern "No versioning strategy.
+//     Shipping v1 events with no plan for evolving them … decide the
+//     tolerant-reader / upcasting strategy on day one." Either mechanism the
+//     skill names is accepted.
+exports.versioningStrategyExists = () => {
+  const readPath = readPathDefinitions();
+  if (readPath.length === 0)
+    return lib.verdict(false, "nothing reads events back (no `createWalletStore`, `handleWalletCommand` or `walletScreen`)");
+  const { validators, sites } = validationSites();
+  const validatorBody = joined(validators.flatMap((name) => closureFrom([name])));
+  // Tolerant reader: a parser that is applied on the way out and does not
+  // insist on the exact shape it was written with.
+  const tolerant =
+    sites.length > 0 && !STRICT.test(validatorBody) && (SCHEMA_BUILT.test(validatorBody) || TOLERANT.test(validatorBody));
+  // Upcasters: a per-event schema version, and somewhere on the read path
+  // that branches on it.
+  const markers = [
+    ...new Set(
+      allDefinitions().flatMap((definition) =>
+        objectBodies(definition.code).flatMap((body) => body.keys.filter((key) => SCHEMA_VERSION_KEY.test(key))),
+      ),
+    ),
+  ];
+  const versionedNames = [...eventNames()].filter((name) => VERSIONED_EVENT_NAME.test(name));
+  const marked = markers.length > 0 || versionedNames.length > 0;
+  // The version has to be READ, not merely written: switched on, compared,
+  // or used as a key. Stamping a `schemaVersion` on the way in and never
+  // looking at it again is the anti-pattern, not the strategy.
+  const alternation = (words) => words.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const markerAlt = markers.length > 0 ? alternation(markers) : "\\0";
+  const nameAlt = versionedNames.length > 0 ? alternation(versionedNames) : "\\0";
+  const branchOn = new RegExp(
+    [
+      `switch\\s*\\(\\s*[\\w.?[\\]]*(?:${markerAlt})\\b`,
+      `[\\w.?[\\]]*(?:${markerAlt})[\\w.?[\\]]*\\s*(?:===|!==|==|!=|<=|>=|<|>)`,
+      `(?:===|!==|==|!=|<=|>=|<|>)\\s*[\\w.?[\\]]*(?:${markerAlt})`,
+      `\\[\\s*[\\w.?[\\]]*(?:${markerAlt})\\b`,
+      `case\\s*["'\`](?:${nameAlt})["'\`]`,
+    ].join("|"),
+  );
+  const upcasts =
+    marked && [...readPath, ...validators.flatMap((name) => closureFrom([name]))].some((definition) => branchOn.test(definition.code));
+  if (tolerant || upcasts)
+    return lib.verdict(
+      true,
+      upcasts
+        ? `old events have a way forward: a per-event schema version (${[...markers, ...versionedNames].join(
+            ", ",
+          )}) with a version branch on the read path${tolerant ? ", read by a tolerant reader" : ""}`
+        : `old events have a way forward: the read path parses them with a tolerant reader (${validators.join(", ")})`,
+    );
+  return lib.verdict(
+    false,
+    [
+      "no versioning strategy: nothing plans for the day a stored event's shape changes",
+      sites.length === 0
+        ? "no tolerant reader is applied on the read path"
+        : STRICT.test(validatorBody)
+          ? "the reader on the read path is strict, so an event written by a newer writer is rejected rather than tolerated"
+          : "the reader on the read path neither ignores unknown fields nor defaults absent ones",
+      marked ? "and nothing branches on the per-event schema version" : "and no event carries a schema version to upcast from",
+    ].join("; "),
+  );
+};
+
+// Where a maintained view says how far it has got, and how it refuses a
+// redelivery. Read only over the view's own definitions, so the stream
+// version an append asserts is never mistaken for a projection checkpoint.
+const CHECKPOINT_SIDE =
+  "[\\w.?[\\]]*(?:checkpoint|lastApplied|lastProcessed|lastSeen|lastEvent|processedUpTo|position|offset|sequence|seq|version|index)[\\w.?[\\]]*";
+const CHECKPOINT_COMPARED = new RegExp(
+  `${CHECKPOINT_SIDE}\\s*(?:<=|>=|<|>|===|!==|==|!=)|(?:<=|>=|<|>|===|!==|==|!=)\\s*${CHECKPOINT_SIDE}`,
+  "i",
+);
+const SCREEN_SHAPE = /statement|balanceAfter/i;
+const viewDefinitions = () => allDefinitions().filter((definition) => SCREEN_SHAPE.test(definition.code));
+// A redelivery refused by keying on the event's own id or position.
+const KEYED_ON_EVENT = /\.\s*has\s*\(\s*[\w.?[\]]*(?:id|position|offset|sequence|seq|version|event)[\w.?[\]]*\s*\)/i;
+// The view and everything that keeps it: what the screen reaches, the
+// definitions that carry the screen's shape, and whatever writes to them.
+// The command handler and the store are left out on purpose — the version an
+// append asserts is not a projection's checkpoint.
+const viewNeighbourhood = () => {
+  const reading = closureFrom(["walletScreen"]);
+  const views = viewDefinitions();
+  const names = [...new Set([...reading, ...views].map((definition) => definition.name))];
+  if (names.length === 0) return reading;
+  const mentions = new RegExp(`\\b(?:${names.join("|")})\\b`);
+  const keepers = allDefinitions().filter(
+    (definition) =>
+      definition.name !== "createWalletStore" &&
+      definition.name !== "handleWalletCommand" &&
+      mentions.test(definition.code),
+  );
+  return [...new Set([...reading, ...views, ...keepers])];
+};
+// A way back to event zero: a definition other than the screen itself that
+// folds the wallet's events from nothing into the screen's own shape. Found
+// by what the fold builds — its reducer, or its own text — so a command
+// handler that merely folds the wallet's state is never mistaken for one.
+const screenRebuilders = () =>
+  allDefinitions().filter((definition) => {
+    if (definition.kind !== "value" || definition.name === "walletScreen") return false;
+    const { folds, bindings } = eventFolds([definition]);
+    return folds.some((call) => {
+      if (!seedIsNothing(call.seed, bindings)) return false;
+      if (SCREEN_SHAPE.test(definition.code)) return true;
+      // The screen's shape may be a hop or two inside the reducer (`showOnScreen`
+      // → `withLine` → `statement`), so the reducer's whole closure is read.
+      const reducer = /^[A-Za-z_$][\w$]*$/.exec(call.reducer.trim());
+      return reducer !== null && closureFrom([reducer[0]]).some((target) => SCREEN_SHAPE.test(target.code));
+    });
+  });
+
+// 12. "Projections are disposable. Track a checkpoint (the last event
+//     position processed); to rebuild, reset the read model and the
+//     checkpoint to zero and replay." / "Projections must be idempotent …
+//     Key on the event id or global position." A screen folded from event
+//     zero on every read satisfies both trivially — it keeps no state to fall
+//     behind and nothing to double-count — so it passes. A view kept up to
+//     date has to earn it: a checkpoint, a refusal to apply the same event
+//     twice, and a way back to zero.
+exports.projectionRebuildableFromCheckpoint = () => {
+  if (named("walletScreen").length === 0) return lib.verdict(false, "no production file defines `walletScreen`");
+  const reading = closureFrom(["walletScreen"]);
+  if (foldsEvents(reading) && foldsFromScratch(reading))
+    return lib.verdict(
+      true,
+      `the screen is folded from the wallet's events from zero on every read, so it can never fall behind and cannot double-count: ${list(
+        filesOf(reading),
+      )}`,
+    );
+  const views = viewNeighbourhood();
+  const checkpointed = views.filter(
+    (definition) => CHECKPOINT_COMPARED.test(definition.code) || KEYED_ON_EVENT.test(definition.code),
+  );
+  const rebuilders = screenRebuilders();
+  const missing = [
+    checkpointed.length === 0 &&
+      "the maintained view tracks no checkpoint and keys on nothing, so a redelivered event double-counts and a missed one is lost forever",
+    rebuilders.length === 0 &&
+      "nothing rebuilds the view by replaying the wallet's events from zero, so a wrong screen cannot be put right",
+  ].filter(Boolean);
+  return lib.verdict(
+    missing.length === 0,
+    missing.length === 0
+      ? `the maintained view keeps a checkpoint (${checkpointed
+          .map((definition) => definition.name)
+          .join(", ")}) and can be rebuilt from event zero (${rebuilders.map((definition) => definition.name).join(", ")})`
+      : `${missing.join("; ")} (${list(filesOf(views.length > 0 ? views : reading))})`,
   );
 };
 
