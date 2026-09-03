@@ -614,7 +614,7 @@ const bindingsIn = (body) => {
 const reduceCalls = (body) =>
   [...body.matchAll(/\.\s*(?:reduce|reduceRight)\s*\(/g)].map((match) => {
     const open = body.indexOf("(", match.index + match[0].length - 1);
-    const args = argumentsOf(body, open);
+    const args = argumentsOf(body, open).filter((argument, index, all) => !(index === all.length - 1 && index > 0 && argument.trim() === ""));
     return {
       receiver: receiverChain(body, match.index),
       reducer: args[0] ?? "",
