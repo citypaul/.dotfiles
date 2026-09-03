@@ -409,8 +409,9 @@ exports.noTypeEscapeOrSharedMutation = () => {
 exports.beforeAfterReported = (output) => {
   const text = String(output ?? "");
   const numbers = text.match(/\d+(?:[.,]\d+)?\s*(?:ms\b|milliseconds\b|µs\b|us\b|seconds?\b|s\b|hz\b|ops\/s|%|×|x\b)/gi) ?? [];
-  const before = /\bbefore\b|\bbaseline\b|\bwas\b|\bpreviously\b|\bstarting\b/i.test(text);
-  const after = /\bafter\b|\bnow\b|→|->|\bdown to\b|\bimproved?\b/i.test(text);
+  const fromTo = /\bfrom\b\s*~?\d+(?:[.,]\d+)?\s*\w*\s*(?:\/\w+)?\s*(?:to|→|->)\s*~?\d/i.test(text);
+  const before = fromTo || /\bbefore\b|\bbaseline\b|\bwas\b|\bpreviously\b|\bstarting\b/i.test(text);
+  const after = fromTo || /\bafter\b|\bnow\b|→|->|\bdown to\b|\bimproved?\b|\bdropped\b|\breduction\b|\bfaster\b/i.test(text);
   const pass = numbers.length >= 2 && before && after;
   return lib.verdict(
     pass,
