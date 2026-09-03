@@ -1,0 +1,95 @@
+# secure-oauth-oidc quality cases.
+#
+# The fixture is a Hono portal whose README.md and CLAUDE.md say only that
+# people sign in with the company identity provider over OAuth 2.0 / OpenID
+# Connect. It withholds every protocol invariant. `src/auth.ts` is a hack-day
+# spike that shows the opposite: a literal `state` kept in a module-level Set
+# and never retired, no PKCE and no nonce, an ID token trusted on the SDK's
+# signature check alone, the access token written to the log and handed back to
+# the browser in the redirect URL, and no session at all, so `GET /me` is
+# always 401. `src/lib/openid-provider.ts` is the provider SDK stand-in: it can
+# exchange a code (with an optional verifier) and check an ID token's
+# signature, and it does nothing else.
+#
+# Each request is a product ask in the words the person asking would use. It
+# pins only what the hidden tests must drive — `createApp`, the two routes,
+# the one registered callback URL, `GET /me`, and (case 3) the dependency keys
+# for the second provider. Nothing tells the agent to use PKCE, to bind the
+# state to the browser, to check `iss`/`aud`/`exp`/`nonce`, or to keep tokens
+# off the wire; that is the skill's job and what the graders measure.
+#
+# Case 1 exercises the authorization-code boundary end to end: S256 PKCE with
+# a per-transaction verifier, a fresh high-entropy one-time state bound to the
+# browser that started the sign-in, exact redirect-URI matching, ID-token
+# claim validation, and tokens that never reach the browser or the log.
+# Case 2 is a review. Two of its graders are floors a plain no-skills review
+# also clears — the five defects the spike really has, and evidence anchored in
+# the two named files — and are kept only so a worthless review cannot score.
+# Its discrimination is meant to come from the rest: an attacker-to-impact path
+# per finding rather than a list of absent parameters, unknowns declared
+# instead of silently read as compliance, hostile-path tests asked for rather
+# than the happy path taken as evidence, and no false assurance offered. Its
+# acceptance test is a regression guard that already passes on the untouched
+# fixture.
+# Case 3 adds a second issuer: the provider a sign-in started with must decide
+# how it ends, and the new flow gets the same transaction bindings.
+
+- description: finish the sign-in
+  vars:
+    acceptance: signin.test.ts
+    pkceTest: pkce.test.ts
+    stateTest: state.test.ts
+    idTokenTest: id-token.test.ts
+    exposureTest: token-exposure.test.ts
+    request: >-
+      Sign-in is still the hack-day spike in src/auth.ts and it never finishes
+      the job: people bounce out to the identity provider and come back, but
+      the portal still has no idea who they are. Finish it. `GET /auth/login`
+      starts the sign-in; the provider sends the browser back to
+      `https://portal.example.com/auth/callback`, which is the one callback URL
+      registered with them; after that the browser lands back on the portal at
+      `config.appBaseUrl` and `GET /me` answers 200 with the signed-in person's
+      email address, 401 for anyone else. Leave createApp's deps as they are
+      and keep the suite green. This is the front door to the whole portal and
+      it goes in front of customers next week.
+  assert:
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:pkceEnforced', metric: pkce-enforced }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:stateOneTimeAndSessionBound', metric: state-one-time-and-session-bound }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:idTokenClaimsValidated', metric: id-token-claims-validated }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:tokensNeverReachTheBrowser', metric: tokens-never-reach-the-browser }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:tokensStayOutOfLogsAndUrls', metric: tokens-stay-out-of-logs-and-urls }
+
+- description: is the callback safe to ship
+  vars:
+    acceptance: review-baseline.test.ts
+    request: >-
+      Before we put the hack-day sign-in in front of customers I want a proper
+      look at it. Read src/auth.ts and src/index.ts and tell me whether the
+      callback handling is safe to ship. Write it up: what is wrong, what could
+      actually happen if we shipped it as it stands, and what you would change.
+      Leave the code alone for now — I want the write-up first.
+  assert:
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:reviewNamesConcreteDefects', metric: review-names-concrete-defects }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:reviewCitesEvidence', metric: review-cites-evidence }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:reviewShowsAttackPath', metric: review-shows-attack-path }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:reviewDeclaresUnknowns', metric: review-declares-unknowns }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:reviewDemandsHostileTests', metric: review-demands-hostile-tests }
+
+- description: the partner organisation gets in too
+  vars:
+    acceptance: partner-signin.test.ts
+    issuerTest: partner-issuer.test.ts
+    pkceTest: partner-pkce.test.ts
+    request: >-
+      The partner organisation runs its own identity provider and their staff
+      need into the portal as well. Swap createApp's `provider` dependency for
+      `providers`, keyed by organisation — `providers.company` is the one we
+      have and `providers.partner` is theirs — and make
+      `GET /auth/login?org=partner` start the sign-in with theirs. No `org`, or
+      `org=company`, keeps working exactly as it does now. We are registered
+      with them under a different client id and their tokens come from their
+      own issuer. Both sets of people end up in the same portal session, and
+      `GET /me` answers the same way for either. Keep the suite green.
+  assert:
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:issuerBoundToTransaction', metric: issuer-bound-to-transaction, weight: 2 }
+    - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:pkceEnforced', metric: pkce-enforced }

@@ -1,0 +1,76 @@
+# cli-design quality cases.
+#
+# The fixture is `tally`, a small build-stats CLI. README.md and CLAUDE.md say
+# one thing — it is a Unix tool people run from scripts, pipe into other
+# commands and branch on the exit code of — and the code shows the opposite:
+# src/cli.ts and src/builds.ts print data, the "Scanning builds…"/"Done."
+# status lines and every error with console.log on stdout, exit 1 for every
+# failure whatever caused it, have no machine-readable mode, and the `list`
+# handler both prints and exits instead of returning data. The fixture
+# withholds every rule: no stream contract, no exit-code table, no envelope,
+# no --json/--plain, no TTY or NO_COLOR check, no help beyond a flag list.
+#
+# Each request is a product complaint that pins only what the hidden
+# acceptance test must call — the command name, `--json`, `--fail-under`, the
+# `--config` flag the fixture already has, and (case 1) the four field names
+# the dashboard reads. Which stream each kind of output goes to, which exit
+# code each kind of failure gets, what the JSON envelope looks like, where the
+# handler lives and what --help says are the agent's call, and what
+# cli-design-assertions.js grades. `command` is the command each grader
+# probes.
+#
+# On the untouched fixture every default grader fails: `list` prints status
+# lines on stdout, has no --json, exits 1 with the error on stdout and nothing
+# on stderr.
+
+- description: a report the SREs can pipe
+  vars:
+    acceptance: report-pipe.test.ts
+    command: report
+    request: >-
+      Add a `report` command. The SRE team already pipes our other tools into
+      `jq` and `grep` and they want to do the same here: per project, how many
+      builds there are, how many of them failed, and the pass rate as a
+      whole-number percentage — the dashboard reads those as `project`,
+      `builds`, `failed` and `passRate` — plus a `--json` mode for the
+      dashboard that scrapes us. `--config` picks the config file the way
+      `list` does. Nothing that isn't the report itself can end up in the
+      pipe, whether the run works or not.
+  assert:
+    - { type: javascript, value: 'file://cli-design-assertions.js:humanOutputIsFlatRows', metric: human-output-is-flat-rows }
+
+- description: failures a CI job can branch on
+  vars:
+    acceptance: exit-codes.test.ts
+    command: report
+    request: >-
+      Our CI job wraps tally and every failure comes back the same way, so a
+      typo in a flag looks exactly like a real problem. Two things. Add a
+      `report` command that summarises the builds per project and takes
+      `--fail-under <percent>`: when the overall pass rate across all the
+      builds is under that number, the command fails the build. And make the
+      kinds of failure tell themselves apart so the job can branch on them —
+      an argument we don't understand, a config file we can't read, and the
+      gate not being met. Whoever wraps tally has to be able to find out what
+      each one means without reading our source, and the job runs us with
+      `--json`, so a failure has to be machine-readable too.
+  assert:
+    - { type: javascript, value: 'file://cli-design-assertions.js:exitCodesSemantic', metric: exit-codes-semantic, weight: 2 }
+    - { type: javascript, value: 'file://cli-design-assertions.js:exitCodesDocumentedInHelp', metric: exit-codes-documented-in-help }
+    - { type: javascript, value: 'file://cli-design-assertions.js:jsonErrorEnvelopeOnStderr', metric: json-error-envelope-on-stderr }
+
+- description: list is being wrapped by a script
+  vars:
+    acceptance: list-pipe.test.ts
+    command: list
+    request: >-
+      Our deploy script wraps `tally list` and it keeps biting us. The
+      "Scanning builds…" and "Done." lines land in the middle of the output
+      when we pipe it somewhere, and when the config file is missing the error
+      lands there too, so the script can't tell a broken run from an empty
+      list. It also parses our columns with awk, which breaks every time
+      anyone touches the layout — give it something stable to read with
+      `--json`. People running it by hand in a terminal still want to see what
+      it's doing.
+  assert:
+    - { type: javascript, value: 'file://cli-design-assertions.js:ttyAndColorAware', metric: tty-and-color-aware }

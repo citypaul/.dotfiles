@@ -1,0 +1,10 @@
+[
+  { "id": "b1", "project": "checkout", "status": "passed", "duration_ms": 41000 },
+  { "id": "b2", "project": "checkout", "status": "failed", "duration_ms": 12000 },
+  { "id": "b3", "project": "checkout", "status": "passed", "duration_ms": 39000 },
+  { "id": "b4", "project": "checkout", "status": "passed", "duration_ms": 44000 },
+  { "id": "b5", "project": "search", "status": "passed", "duration_ms": 22000 },
+  { "id": "b6", "project": "search", "status": "failed", "duration_ms": 9000 },
+  { "id": "b7", "project": "billing", "status": "passed", "duration_ms": 61000 },
+  { "id": "b8", "project": "billing", "status": "passed", "duration_ms": 58000 }
+]

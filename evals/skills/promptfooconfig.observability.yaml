@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# observability quality evaluation.
+#
+# The routing suite (promptfooconfig.yaml) asks whether the right skill loads.
+# This suite asks what the agent then does: given a real production problem in
+# the fixture service, does it instrument the way the observability skill
+# promises — one canonical event per request that survives the exception path,
+# allowlisted fields with no secrets, semantic-convention names, identifiers on
+# events rather than metric labels, W3C trace context across the hop, and
+# symptom-based burn-rate pages with runbooks — and does the service still
+# behave.
+#
+# Three providers run every case: the skills bundle as installed, the same
+# agent with no skills at all, and the bundle with the skill under test
+# force-loaded. forced vs no-skills is what the skill body is worth;
+# with-skills vs forced is whether routing fires on its own.
+#
+# Run it with ./run-quality.sh observability. Cases run one at a time in a
+# shared workspace that quality-hooks.js resets between cases.
+description: observability quality — does the agent instrument the way the observability skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+    network:
+      allowLocalBinding: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `observability` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://observability-assertions.js:telemetryFieldsAllowlisted', metric: telemetry-fields-allowlisted }
+    - { type: javascript, value: 'file://observability-assertions.js:semanticConventionAttributeNames', metric: semconv-attribute-names }
+    - { type: javascript, value: 'file://observability-assertions.js:highCardinalityOffMetricLabels', metric: high-cardinality-off-metric-labels }
+    - { type: javascript, value: 'file://observability-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://observability-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://observability-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/observability-quality.yaml

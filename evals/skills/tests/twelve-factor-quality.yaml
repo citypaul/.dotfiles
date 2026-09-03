@@ -1,0 +1,120 @@
+# twelve-factor quality cases.
+#
+# The fixture is a sessions service whose README and CLAUDE.md say it is
+# deployed as a twelve-factor service on a container platform that runs the
+# process types listed in Procfile — and that is all they say. Everything the
+# skill teaches is withheld and the opposite is shown: `process.env` is read
+# wherever it is wanted (src/app.ts, src/sessions.ts, src/server.ts,
+# src/index.ts) with silent `?? "60"`-style defaults, the database host is
+# chosen by `NODE_ENV`, every line is logged as an English sentence through an
+# SDK stand-in that appends to `logs/`, `startServer` starts a server and never
+# stops one, sessions are cached in a module-level Map, and Procfile declares a
+# single `web` process. There is no config module, no `.env.example`, no
+# logger, no signal handling and no second process type to copy. Nothing in the
+# fixture parses anything through a schema either: `zod` is a declared
+# dependency the agent may reach for, but the request body is checked by hand,
+# so schema validation is available and nowhere demonstrated.
+#
+# Each request is a symptom a developer or an operator would report. It names
+# no factor, no rule and no library, and pins only what the hidden acceptance
+# test has to call: `createConfig(env)`, `startServer` (whose deps the fixture
+# already has), `createLogger()` and `runCleanup({ pool, now })`. Where the
+# work goes, how it is validated, what is closed and how the job is scheduled
+# is the agent's call — and what twelve-factor-assertions.js grades.
+#
+# What each case exercises, and what a capable model does here without the
+# skill:
+#
+# 1. config drift — schema validation at startup, no in-source fallback for a
+#    backing service, no environment-name branching, `process.env` out of the
+#    call tree, `.env.example`. The request reports symptoms only: an operator
+#    who cannot be told what to set, a service that carries on against
+#    localhost, and a staging container that behaves differently on
+#    production's own settings. It never says where to look. The default is a
+#    hand-rolled `requireEnv` helper, `NODE_ENV` kept as a config key that code
+#    still branches on, the `SESSION_TTL_MINUTES` read left where it is, and
+#    nothing written down for an operator.
+# 2. containers recycled mid-request — SIGTERM *and* SIGINT, drain before
+#    exit, a drain timeout, backing services closed. The default is
+#    `process.on("SIGTERM", () => server.close(() => process.exit(0)))`.
+# 3. logs invisible on the platform — structured records on the process
+#    streams, no file transport left anywhere, a severity threshold that can
+#    be set for a deploy, correlation on request-scoped records. The default
+#    is a fixed console.log/JSON.stringify wrapper with no ranking of levels
+#    and no request id threaded through the handler.
+# 4. nightly cleanup — a second process type with its own entry point declared
+#    in Procfile, running the same code and wiring as the app, and no
+#    scheduler inside the web process. The default is `setInterval` in
+#    src/index.ts.
+
+- description: config drifting between environments
+  vars:
+    acceptance: config.test.ts
+    request: >-
+      We are standing up a staging environment next week and it is already
+      going wrong. Nobody on the team can tell an operator what has to be set
+      on a container, so containers keep going out half configured: when
+      something is not set the service quietly carries on against localhost
+      and we only find out when staging times out an hour later. We also put
+      the exact settings a production container runs with onto a staging
+      container and it still behaved differently, which nobody can explain.
+      The platform sets PORT, DATABASE_URL and SESSION_TTL_MINUTES on the
+      container. A container that is missing one of those, or has nonsense in
+      it, must not come up at all and must say which setting is at fault. Put
+      the reading of it in `createConfig(env)` in src/config.ts so we can test
+      it, and keep it tested.
+  assert:
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:configSchemaValidated', metric: config-schema-validated }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:noSilentDefaultForRequiredConfig', metric: no-silent-default-for-required-config }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:noEnvironmentNameBranching', metric: no-environment-name-branching }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:configInjectedNotReadDeep', metric: config-injected-not-read-deep }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:envExampleDocumented', metric: env-example-documented }
+
+- description: containers recycled mid-request
+  vars:
+    acceptance: shutdown.test.ts
+    request: >-
+      Every deploy the platform replaces our containers and users see it:
+      whatever was in flight dies mid-response, and we get a burst of database
+      errors in the logs from the same second. The platform asks a process to
+      stop and kills whatever is still running about thirty seconds later.
+      Deal with this in `startServer` in src/server.ts — it already gets the
+      server, the pool and the port — and keep it tested.
+  assert:
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:signalHandlersRegistered', metric: signal-handlers-registered }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:drainTimeoutSet', metric: drain-timeout-set }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:shutdownDrainsBeforeExiting', metric: shutdown-drains-before-exiting }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:backingServicesClosedOnShutdown', metric: backing-services-closed-on-shutdown }
+
+- description: ops cannot find our logs
+  vars:
+    acceptance: logging.test.ts
+    request: >-
+      Ops cannot find anything we log. They say the only thing their tooling
+      picks up is what a container prints while it is running, and on the rare
+      occasion they do get a line out of us it is an English sentence they
+      cannot filter or sort on. Give us one `createLogger()` in src/logger.ts
+      — `createLogger()` with no arguments at all has to give a usable logger,
+      so anything it takes needs a default — and a record should read like
+      `logger.info("session created", { session_id: "s-1" })`. Move everything
+      we log today over to it. Keep it tested.
+  assert:
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:logsOnProcessStreamsNotFiles', metric: logs-on-process-streams-not-files }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:logRecordsAreStructured', metric: log-records-are-structured }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:logLevelThresholdConfigurable', metric: log-level-threshold-configurable }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:logRecordsCarryCorrelation', metric: log-records-carry-correlation }
+
+- description: nightly cleanup of expired sessions
+  vars:
+    acceptance: cleanup.test.ts
+    request: >-
+      Expired sessions are never removed and the sessions table only grows.
+      Once a night, delete every session whose expiry has passed. Expose the
+      work as `runCleanup({ pool, now })` in src/cleanup.ts — `now` is a
+      function giving the current time — so we can test it without waiting for
+      midnight, and make sure it really does run every night once this is
+      deployed. Keep it tested.
+  assert:
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:separateProcessTypeDeclared', metric: separate-process-type-declared }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:noInProcessScheduler', metric: no-in-process-scheduler }
+    - { type: javascript, value: 'file://twelve-factor-assertions.js:adminProcessSharesAppDependencies', metric: admin-process-shares-app-dependencies }

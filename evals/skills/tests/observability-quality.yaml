@@ -1,0 +1,92 @@
+# observability quality cases.
+#
+# The fixture is a checkout service whose README and CLAUDE.md say only that it
+# is observed with OpenTelemetry and that the platform starts the SDK, so
+# application code instruments through `@opentelemetry/api`. It withholds every
+# rule: there is no wide event, no span, no metric, no propagated header, no SLO
+# and no alert file. What it does show is the temptation — a console.log at each
+# step of the checkout, one of them serialising the whole request, another
+# printing the card token, another the customer's email — plus a payments client
+# whose charge already carries an `idempotency-key` header, and a router that
+# answers 404 on any path it does not know. The OpenTelemetry API, the SDK and
+# an in-memory exporter are all in the lockfile.
+#
+# Requests are product asks. They pin only what the hidden test must reach: the
+# route, the responses that already exist, the payments client's file and the
+# header it already sends. Where the instrumentation lives, what it is called,
+# which fields it carries, how the metric is labelled and where the alert rules
+# go are the agent's calls — and what observability-assertions.js grades.
+#
+# Case 1 (debugging a failed checkout) exercises one canonical event per
+# request emitted in teardown so it survives the exception path, allowlisted
+# fields with no secrets, semantic-convention attribute names, and the removal
+# of the console noise. Case 2 (latency per customer) exercises the cardinality
+# routing rule: the identifier belongs on the event, never on a metric label,
+# and a request-derived route label must be normalised to a fixed set. Case 3
+# (the payments team cannot correlate) exercises W3C trace-context propagation
+# instead of a home-made correlation header: the request says only that the
+# gateway shows back the headers that arrive, so nothing in it names the
+# standard, and an agent that has not read the skill is free to invent
+# `x-correlation-id`. It also exercises a span that is ended in teardown. Case 4 (alerting) exercises a ratio SLI with an error budget,
+# multiwindow burn-rate pages, symptoms rather than causes, and a runbook per
+# page; it tells the agent not to touch the service code, so its hidden test is
+# a regression guard that passes on the untouched fixture.
+
+- description: a failed checkout cannot be debugged
+  vars:
+    acceptance: checkout-trace.test.ts
+    request: >-
+      When a checkout fails in production we cannot work out what happened.
+      Support gives us a customer id and a rough time, and all we have is a
+      scatter of log lines we stitch back together by eye. Make a checkout
+      something we can look up in one go in the tracing backend: who was
+      paying, how big the basket was, how much we tried to take, what went
+      wrong, and how long it took. POST /checkout must keep answering 201 with
+      the same body and 502 when the card is declined.
+  assert:
+    - { type: javascript, value: 'file://observability-assertions.js:canonicalEventEmittedInFinally', metric: canonical-event-in-teardown, weight: 2 }
+    - { type: javascript, value: 'file://observability-assertions.js:consoleLoggingRemoved', metric: console-logging-removed }
+
+- description: checkout latency per customer on the dashboard
+  vars:
+    acceptance: checkout-latency.test.ts
+    request: >-
+      Product wants checkout latency on the dashboard, and when it goes bad
+      they want to know which customers were hit. Record how long POST
+      /checkout takes as a metric the dashboard can chart per endpoint, and
+      leave us able to answer the "which customers" question afterwards. What
+      the endpoint answers must not change.
+  assert:
+    - { type: javascript, value: 'file://observability-assertions.js:routeLabelBounded', metric: route-label-bounded, weight: 2 }
+
+- description: the payments provider cannot correlate our calls
+  vars:
+    acceptance: payments-correlation.test.ts
+    request: >-
+      The payments team cannot line their side of a charge up with ours: when
+      we ask them about a capture they have no way to find the request it came
+      from. Their gateway keeps whatever headers arrive on the call and shows
+      them next to the capture, so they can search on one. Put what they need
+      on the charge we send through the client in src/lib/payments.ts, keep
+      the idempotency-key header we already send, and while you are there make
+      it possible to see how long the provider took on a charge that fails as
+      well as one that works.
+  assert:
+    - { type: javascript, value: 'file://observability-assertions.js:traceContextHeaderIsStandard', metric: trace-context-header-standard, weight: 2 }
+    - { type: javascript, value: 'file://observability-assertions.js:canonicalEventEmittedInFinally', metric: canonical-event-in-teardown }
+
+- description: alerting for a broken checkout
+  vars:
+    acceptance: checkout-smoke.test.ts
+    request: >-
+      We only find out that checkout is broken when support tells us. Set up
+      the alerting for it, and put the rules — and what the person who gets
+      woken up should do — in the repository. We already have request counts,
+      error counts and request duration for every endpoint in Prometheus, and
+      Alertmanager sends anything we mark as paging to the on-call phone.
+      Leave the service code alone.
+  assert:
+    - { type: javascript, value: 'file://observability-assertions.js:sloIsRatioBased', metric: slo-is-ratio-based }
+    - { type: javascript, value: 'file://observability-assertions.js:pagesAreBurnRateMultiwindow', metric: pages-are-burn-rate-multiwindow, weight: 2 }
+    - { type: javascript, value: 'file://observability-assertions.js:pagesAreSymptomBased', metric: pages-are-symptom-based }
+    - { type: javascript, value: 'file://observability-assertions.js:everyPageLinksRunbook', metric: every-page-links-runbook }
