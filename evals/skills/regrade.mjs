@@ -46,6 +46,7 @@ const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").re
 const { results } = JSON.parse(readFileSync(file, "utf8"));
 const fixture = resolve(here, `fixtures/${suite}-workspace`);
 const tally = {};
+const regraded = [];
 
 for (const result of results.results) {
   const label = result.provider?.label ?? result.provider?.id;
@@ -84,6 +85,7 @@ for (const result of results.results) {
       if (verdict.pass) tally[key].pass += 1;
       else failed.push(`${metric}: ${String(verdict.reason).replace(/\x1b\[[0-9;]*m/g, "").slice(0, 160)}`);
     }
+    regraded.push({ provider: label, description, failed });
     console.log(`${failed.length ? "FAIL" : "PASS"}  ${label.padEnd(13)} ${description}`);
     for (const line of failed) console.log(`      ↳ ${line}`);
   } finally {
@@ -99,3 +101,7 @@ console.log("metric".padEnd(width) + labels.map((l) => l.padEnd(14)).join(""));
 for (const metric of metrics) {
   console.log(metric.padEnd(width) + labels.map((l) => { const t = tally[`${l}|${metric}`]; return (t ? `${t.pass}/${t.total}` : "-").padEnd(14); }).join(""));
 }
+
+// Persist the regrade beside the run so evidence builders can use current graders.
+import { writeFileSync } from "node:fs";
+writeFileSync(join(runDir, "regrade.json"), JSON.stringify({ tally, cases: regraded }, null, 1));
