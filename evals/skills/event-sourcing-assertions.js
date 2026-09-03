@@ -625,10 +625,13 @@ const LOOP_OVER = /\bfor\s*(?:await\s+)?\(\s*(?:const|let|var)\s+[^;()]*?\bof\b(
 
 // Is this expression the wallet's history? Either it is named for it, or the
 // local name it starts from was bound to something that is.
+const READ_FROM_STORE = /\b(?:read\w*|load\w*|fetch\w*|stream\w*|history|events?|store)\b/i;
 const eventSource = (expression, bindings) => {
   if (EVENT_WORD.test(expression)) return true;
   const root = /^[A-Za-z_$][\w$]*/.exec(expression.trim());
-  return root !== null && EVENT_WORD.test(bindings.get(root[0]) ?? "");
+  if (root === null) return false;
+  const bound = bindings.get(root[0]) ?? "";
+  return EVENT_WORD.test(bound) || READ_FROM_STORE.test(bound);
 };
 // A reducer that handles the declared event names is folding events, whatever
 // the thing it folds over happens to be called.
@@ -637,6 +640,7 @@ const handlesEvents = (reducer) => {
   if (names.length === 0) return false;
   const identifier = /^[A-Za-z_$][\w$]*$/.exec(reducer.trim());
   const bodies = [reducer, ...(identifier === null ? [] : named(identifier[0]).map((definition) => definition.plain))];
+  if (/\b(?:evolve\w*|apply\w*)\s*\(/i.test(reducer)) return true;
   return bodies.some((text) => names.some((name) => text.includes(name)));
 };
 
@@ -1140,9 +1144,13 @@ const objectBodies = (code) => {
     const end = groupEnd(code, index);
     const inner = code.slice(index + 1, Math.max(index + 1, end - 1));
     const depth = depths(inner);
-    const keys = [...inner.matchAll(/([A-Za-z_$][\w$]*)\s*\??\s*:/g)]
+    const ownKeys = [...inner.matchAll(/([A-Za-z_$][\w$]*)\s*\??\s*:/g)]
       .filter((match) => depth[match.index] === 0)
       .map((match) => match[1]);
+    const spreadKeys = [...inner.matchAll(/\.\.\.\s*([A-Za-z_$][\w$]*)/g)]
+      .filter((match) => depth[match.index] === 0)
+      .flatMap((match) => named(match[1]).flatMap((definition) => objectBodies(definition.code).flatMap((body) => body.keys)));
+    const keys = [...new Set([...ownKeys, ...spreadKeys])];
     if (keys.length > 0) bodies.push({ inner, keys });
   }
   return bodies;
@@ -1205,8 +1213,10 @@ exports.eventsHaveEnvelopes = () => {
   );
   const stamped = CLOCK_READ.test(joined(writePath));
   const flattened = payloadUnions().filter((union) =>
-    objectBodies(union.code).some((body) =>
-      body.keys.some((key) => ENVELOPE_ID_KEY.test(key) || ENVELOPE_TIME_KEY.test(key)),
+    objectBodies(union.code).some(
+      (body) =>
+        body.keys.some((key) => ENVELOPE_ID_KEY.test(key) || ENVELOPE_TIME_KEY.test(key)) &&
+        !body.keys.some((key) => ENVELOPE_PAYLOAD_KEY.test(key)),
     ),
   );
   const missing = [
