@@ -141,9 +141,12 @@ const stateNames = () => topLevelStates(machineText()).map((state) => state.name
 // and every `type: "EVENT"` the code sends.
 const eventNames = () => {
   const text = [machineText(), ...components().map(lib.read)].join("\n");
-  const keys = [...text.matchAll(/(^|[{,\s])([A-Z][A-Z0-9_]{1,})\s*:/g)].map((m) => m[2]);
-  const sent = [...text.matchAll(/type\s*:\s*["']([A-Z][A-Z0-9_]*)["']/g)].map((m) => m[1]);
-  return [...new Set([...keys, ...sent])];
+  const onBlocks = [...text.matchAll(/\bon\s*:\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  const keys = onBlocks.flatMap((block) =>
+    [...block.matchAll(/(^|[{,\s])["']?([A-Za-z][\w.]*)["']?\s*:/g)].map((m) => m[2]),
+  );
+  const sent = [...text.matchAll(/type\s*:\s*["']([A-Za-z][\w.]*)["']/g)].map((m) => m[1]);
+  return [...new Set([...keys, ...sent])].filter((name) => !name.startsWith("xstate."));
 };
 
 // --- diagram scanning --------------------------------------------------------
@@ -244,8 +247,18 @@ exports.effectsAreActors = () => {
   ]
     .filter(([pattern]) => !pattern.test(text))
     .map(([, label]) => label);
+  const outsideActors = (text) => text.replace(/\bfromPromise\s*(<[^>]*>)?\s*\(/g, () => "\u0000").split("\u0000").map((chunk, index) => (index === 0 ? chunk : dropBalanced(chunk))).join("");
+  const dropBalanced = (chunk) => {
+    let depth = 1;
+    for (let i = 0; i < chunk.length; i += 1) {
+      if (chunk[i] === "(") depth += 1;
+      if (chunk[i] === ")") depth -= 1;
+      if (depth === 0) return chunk.slice(i + 1);
+    }
+    return "";
+  };
   const inComponent = components()
-    .filter((file) => /placeOrder\s*\(|\.then\s*\(/.test(lib.read(file)))
+    .filter((file) => /placeOrder\s*\(|\.then\s*\(/.test(outsideActors(lib.read(file))))
     .map((file) => `${lib.basename(file)} still runs the promise itself`);
   const problems = [...missing, ...inComponent];
   return lib.verdict(
@@ -265,7 +278,7 @@ exports.eventsAreDomainShaped = () => {
   const names = eventNames();
   if (names.length === 0) return lib.verdict(false, "the machine reacts to no named event");
   const shaped = names.filter((name) =>
-    /^(SET|CLEAR|UPDATE|TOGGLE|ASSIGN|START|STOP)_|^(SET|UPDATE|CLEAR)$/.test(name),
+    /^(set|clear|update|toggle|assign|start|stop)[_A-Z]|^(set|update|clear)$/i.test(name),
   );
   return lib.verdict(
     shaped.length === 0,
