@@ -75,7 +75,7 @@ meta-skill, or one-liner); routing coverage only.
 
 | Batch | Branch | PR | Scope | State |
 |---|---|---|---|---|
-| 1 | `promptfoo-skill-evals` | open | harness, routing suite, tdd / hexagonal-architecture / domain-driven-design | all three at max; PR open |
+| 1 | `promptfoo-skill-evals` | [#248](https://github.com/citypaul/.dotfiles/pull/248) | harness, routing suite, tdd / hexagonal-architecture / domain-driven-design | all three at max; PR open |
 | 2 | — | — | testing, typescript-strict, functional, refactoring, mutation-testing, characterisation-tests, finding-seams | todo |
 | 3 | — | — | event-sourcing, xstate, react-testing, front-end-testing, react-performance | todo |
 | 4 | — | — | api-design, cli-design, bff-entry-points, secure-oauth-oidc, twelve-factor, observability | todo |
