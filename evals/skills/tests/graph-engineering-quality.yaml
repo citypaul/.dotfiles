@@ -1,0 +1,27 @@
+# Two planning cases that expose the fan-in failure seen in real sessions.
+# The fixture supplies scope, but no budgeting or checkpoint advice.
+
+- description: bound a large audit fan-in
+  vars:
+    artifact: graph-plan.md
+    source_path: docs/audit-targets.md
+    fan_in_budget: '12000'
+    checkpoint_expected: 'false'
+    request: >-
+      Design an execution-ready multi-agent graph for the eight-area audit in
+      docs/audit-targets.md. The final synthesizer has room for at most 12,000
+      input tokens. Write the plan to graph-plan.md, including node contracts
+      and data flow, but do not dispatch agents or modify anything else.
+
+- description: split an over-budget migration graph
+  vars:
+    artifact: migration-plan.md
+    source_path: docs/migration-targets.md
+    fan_in_budget: '9000'
+    checkpoint_expected: 'true'
+    request: >-
+      Design an execution-ready graph for the twelve dependent migration units
+      in docs/migration-targets.md. Their projected outputs total 36,000 tokens,
+      while the final synthesizer can accept 9,000. Write migration-plan.md with
+      node contracts and dependency flow, but do not dispatch agents or modify
+      anything else.

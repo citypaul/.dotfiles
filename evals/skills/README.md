@@ -6,7 +6,7 @@
 | Suite | Question | Runner | Cost |
 |---|---|---|---|
 | **Routing** | Given a realistic request, does Claude load the right skill, and do the neighbouring skills stay quiet? | `./run.sh` | ~10 min, 48 one-step decisions |
-| **Quality** (`tdd`, `hexagonal`, `ddd`) | With the skill loaded, does the agent work the way the skill promises, and does the work behave? | `./run-quality.sh <suite>` | 5–15 min per suite, real implementation runs |
+| **Quality** ([coverage](COVERAGE.md)) | With the skill loaded, does the agent work the way the skill promises, and does the work or artifact satisfy the request? | `./run-quality.sh <suite>` | 5–15 min per suite, real agent runs |
 
 Routing is where a description earns its place; quality is where a skill body does.
 Both share the same provider (promptfoo's `anthropic:claude-agent-sdk`, i.e. the real
@@ -100,7 +100,13 @@ small — the fixture is context the agent pays for on every case.
 
 Each quality suite is a small project under `fixtures/<suite>-workspace` that has
 **declared** the practice the skill teaches but shows as little of it as possible, so
-the skill — not the fixture — has to supply the rules:
+the skill — not the fixture — has to supply the rules. Implementation suites grade
+the agent's trail, workspace, and hidden behavioral checks; advisory suites grade the
+written artifact, deterministically where the promise is objective and with a rubric
+only where judgement is unavoidable. [`COVERAGE.md`](COVERAGE.md) is the authoritative
+suite list and status tracker.
+
+The original implementation fixtures illustrate the pattern:
 
 - `tdd`: a notes module with a decent test file. Cases add behaviour or fix a bug.
 - `hexagonal`: a service whose README and CLAUDE.md say "ports and adapters" but whose
@@ -149,6 +155,7 @@ cd evals/skills
 ./run-quality.sh tdd                                # all three arms, all cases
 ./run-quality.sh hexagonal --filter-providers with-skills
 ./run-quality.sh ddd --repeat 3
+./run-quality.sh graph-engineering
 SKILL_EVAL_BASELINE_REF=origin/main ./run-quality.sh tdd   # + skills-at-<ref> arm: old vs new skill in one eval
 pnpm exec promptfoo view                           # transcripts, per-metric scores
 ```
