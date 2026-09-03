@@ -7,6 +7,8 @@ description: Behavior-driven UI testing patterns across Vitest Browser Mode, Pla
 
 For React-specific patterns (components, hooks, context), load the `react-testing` skill. For TDD workflow, load the `tdd` skill. For general testing patterns (factories, public-interface testing), load the `testing` skill.
 
+**Every hand-back states the harness and where its evidence stops.** Whenever you report finished UI test work — the reply, a PR body, a CI step label — name the runner and environment that produced the evidence (Playwright against the served app, Vitest in jsdom, Browser Mode in a real browser) and, in the same breath, the nearest thing it does *not* prove. A jsdom suite does not prove real rendering, CSS, focus, or the browser's own event dispatch; a component-level suite does not prove the served app, its routing, or the real server; one journey does not prove the paths it never walks. "All tests pass" with the boundary left unsaid reads as a stronger claim than the tests support.
+
 **Deep-dive resources** are in the `resources/` directory. Load them on demand:
 
 | Resource | Load when... |
@@ -256,6 +258,8 @@ it('creates and displays a user', async () => {
 
 Vitest Browser Mode tests a **component in isolation**; Playwright Test against a running application tests **whatever the test's claim names** — a user journey, the frontend's own network behavior, cookie/CSRF posture, redirects, rendering. Same browser engines, different subject and harness: never assume guidance transfers between them.
 
+**One claim, one harness.** Prove a claim with the lightest harness that can fail when the claim is false, and stop there. Behaviour inside one mounted component — a bug fix, an error path, a disabled button that must recover — is proved by the component-level harness; adding an E2E spec that re-walks it buys no evidence, only a second suite to maintain and a slower gate. Reach for Playwright when the claim itself is the served application: navigation, several screens in sequence, the real server, cookies, redirects. If you have already written the component test, adding the journey needs a reason you can state.
+
 The one rule that governs E2E suites: **a browser or user-journey claim must be proved by a browser initiator** — an accessible locator action or a navigation — never by a direct HTTP call standing in for the user or the frontend. `page.request.post('/api/...')` in a test named "user creates ..." proves an HTTP contract, not a journey; it stays green when the button, cookie policy, CSRF check, redirect, or rendering breaks. Load `resources/playwright-e2e.md` before writing or reviewing any E2E/journey suite — it carries the decision rule, the evidence-boundary table, safe request observation, the direct-transport audit procedure, and the auth/lifecycle evidence contract.
 
 ---
@@ -317,6 +321,8 @@ screen.getByRole('heading', { name: /welcome,\s+john doe/i });
 3. **Refactor-friendly** - Coupled to user experience, not implementation
 
 If an accessible query fails, investigate the accessible name and role first. The failure may reveal an accessibility issue, but it can also mean the query or test setup is wrong.
+
+A query that matches **more than one** element is the same signal, not a licence to change query style. Resolve the ambiguity accessibly: a more specific role plus accessible name, the user-visible text of the outcome itself, `filter({ hasText: /…/i })`, or a container found by an accessible query (`getByRole('region', { name: /…/i })`, `within(screen.getByRole('form', { name: /…/i }))`). If nothing accessible distinguishes them, the page is missing an accessible name — add it. Never escape an ambiguous match by scoping to a class or id (`page.locator('#panel').getByRole(...)`, `within(container.querySelector('.panel'))`): that re-couples the test to markup no user can perceive and buries the accessibility gap that caused the ambiguity.
 
 **Always prefer semantic HTML over ARIA:**
 
@@ -394,6 +400,7 @@ Before merging UI tests, verify:
 - [ ] Using `expect.element()` for auto-retrying assertions (Browser Mode)
 - [ ] Using `userEvent` for interactions (CDP-based in Browser Mode, or `@testing-library/user-event`)
 - [ ] Testing behavior users see, not implementation details
+- [ ] The hand-back (reply, PR body, CI step label) names the harness the evidence came from and states the nearest claim it does not prove
 - [ ] Cleanup is either verified automatic for this harness or registered once in test setup
 - [ ] No manual `act()` calls for component interactions (Browser Mode handles timing)
 - [ ] MSW for API mocking — `setupWorker` in Browser Mode, `setupServer` in Node/jsdom
