@@ -1,0 +1,67 @@
+# react-performance quality cases.
+#
+# The fixture (fixtures/react-performance-workspace) is a React 19 + TypeScript
+# app that is genuinely slow in two different ways: the note search scores
+# every note in the list on every keystroke before it filters, and the
+# dashboard puts a once-a-second clock in the same context as the notes, so
+# every tick re-runs an expensive per-tag aggregation. It ships passing
+# behaviour tests and an offline benchmark (`pnpm bench`, vitest bench in
+# jsdom, `src/perf/*.bench.ts`), and its README and CLAUDE.md declare only that
+# responsiveness is a product guarantee and that the benchmarks exist.
+#
+# What the fixture withholds: the method. Nothing in it says to take a number
+# before touching code, to attribute the cost before choosing a fix, to put one
+# hypothesis in a diff, to re-measure and revert a change that moved nothing,
+# to leave the behaviour tests alone, or to report the before/after pair. There
+# is no memo, no useCallback, no split context and no cache anywhere in the
+# fixture to copy — the skill has to supply all of it.
+#
+# Both requests are the way the complaint actually arrives ("stutters after
+# every character", "the fan never stops"). They name no pattern, offer no
+# diagnosis, and pin only what the hidden acceptance test calls: the exported
+# component, its props, and the output a person sees. Where the cost is, where
+# the fix goes and what shape it takes are the agent's, and are what
+# react-performance-assertions.js grades.
+#
+# `benchmark` names the benchmark the graders re-run for the case. After every
+# case `measuredImprovement` runs it twice — once over the fixture as committed,
+# once over the code the agent left, with the harness from HEAD in both — and
+# requires the mean to have dropped by at least a quarter. That is what stops
+# the reflex answer scoring: wrapping the existing scored/sort/filter block in
+# a single `useMemo(…, [notes, query])` is the most natural one-hook fix for
+# case 1, it survives every structural grader, and it measures at ~51 ms
+# against the fixture's ~48 ms because the query it depends on changes on every
+# keystroke. The removal the skill prefers — score only the notes that match,
+# instead of the whole list — takes the same benchmark to ~16 ms. On case 2,
+# taking the clock out of the shared context goes from ~20 ms to ~0.0007 ms a
+# tick; leaving the aggregation on the tick path measures no better than the
+# fixture. An agent that never measures cannot tell any of these apart, and an
+# agent that measures but reports numbers it did not earn is caught by the same
+# grader.
+
+- description: the search box stutters while typing
+  vars:
+    acceptance: note-search.test.ts
+    benchmark: src/perf/note-search.bench.ts
+    request: >-
+      Typing in the notes search has become painful. Once a team has a few
+      thousand notes, the box stutters after every character and the list
+      takes a visible beat to catch up — one of our bigger teams says it is
+      unusable. Please make typing feel quick again. `NoteSearch` in
+      src/note-search.tsx keeps the same props and the same visible output:
+      the same "N of M notes" line, the same ranking once something is typed,
+      and clicking a title still opens that note's body.
+
+- description: the dashboard burns cpu while it sits open
+  vars:
+    acceptance: dashboard.test.ts
+    benchmark: src/perf/dashboard.bench.ts
+    request: >-
+      The team dashboard cooks laptops. Leave it open on a big team's notes
+      and it pegs a core with nobody touching it — one of our support leads
+      says her fan never stops until she closes the tab. Please sort out
+      whatever it is that keeps burning CPU while the page is just sitting
+      there. `Dashboard` in src/dashboard.tsx keeps its `notes` prop and shows
+      exactly what it shows today: the same "Live at hh:mm:ss" line ticking
+      every second, the same per-tag lines, and the clock still stops when the
+      dashboard is unmounted.

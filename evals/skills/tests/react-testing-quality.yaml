@@ -1,0 +1,106 @@
+# react-testing quality cases.
+#
+# The fixture (fixtures/react-testing-workspace) is a React 19 + TypeScript app
+# with a subscribe form, a task board that renders a child row component, and a
+# title that clips when it runs out of room. What it withholds is every React
+# testing decision: the only test it has covers a pure text helper
+# (`describeCount`) in plain TypeScript, so nothing shows which harness to
+# reach for, how to query a component, or how to drive an interaction. What it
+# *shows* is the tempting default — every field, row, filter button, count,
+# title and error paragraph carries a `data-testid` and a BEM-ish class name,
+# and `vitest.config.ts` configures both a jsdom `unit` project and a
+# real-Chromium `browser` project without saying when either is right.
+# README.md and CLAUDE.md declare the practice in one sentence ("tests drive a
+# component the way a person uses it and check what that person can then see")
+# and give no rule beyond it.
+#
+# Every request asks for tests in product words, names only what already exists
+# (a component file, the visible text, the behaviour people complain about),
+# and never names a harness, a query or a library. react-testing-assertions.js
+# grades the tests the agent wrote: accessible queries instead of the planted
+# test ids and classes, user-driven interactions instead of fireEvent, the
+# whole tree rendered instead of a mocked child, hooks through renderHook, no
+# act() wrapped around a render or an interaction, and whether the tests catch
+# the planted bugs (`mutants`).
+#
+# What each case exercises, and what a no-skills agent does instead:
+#
+# 1. Subscribe form — the harness rule by *adherence*. The claim is focus and
+#    an on-screen message; jsdom can be talked into answering it, and the
+#    fixture's jsdom project plus jest-dom is the path of least resistance, so
+#    an agent that never read the skill writes a jsdom test. The skill says
+#    prefer the browser harness when the claim depends on real rendering,
+#    events, focus or accessibility and the repository supports it — the
+#    fixture supports it. Live graders: browser harness (weight 2), accessible
+#    queries against the planted ids, user-driven interaction, mutants.
+#
+# 2. Task board — queries and the whole tree. Every element the request names
+#    carries a `data-testid`, and the request itself invites stubbing the child
+#    row ("I do not want its markup pinned down again in here"), which is the
+#    shallow-render hole by another name. Live graders: accessible queries, no
+#    mocked child component, mutants.
+#
+# 3. Clipped title — the harness rule by *impossibility*. Whether a title is
+#    cut off is a layout question: jsdom reports 0 for every measurement, so
+#    the behaviour simply does not happen there. An agent that stays in jsdom
+#    either writes a red test, fakes the layout by redefining `scrollWidth`, or
+#    rewrites the component. Live graders: browser harness (weight 2), nothing
+#    faked, mutants (two of the three are invisible outside a real browser).
+#
+# Cases 1 and 3 both sit on the harness rule; that is deliberate, because it is
+# the rule this skill exists for and the two halves fail differently — one by
+# rule adherence, one because the test cannot work at all. The other half of
+# the harness rule (keep the light harness when it already proves the claim) is
+# not graded: an agent that never read the skill stays in jsdom by default, so
+# no case built on it could separate the arms.
+#
+# The hidden acceptance test passes on the untouched fixture: it is a
+# regression guard against an agent that rewrites a component to make a test
+# easier, not a measure of the agent's tests. The behaviour weight sits on
+# testsCatchPlantedBugs.
+
+- description: cover the subscribe form
+  vars:
+    acceptance: subscribe-form.test.tsx
+    mutants: email-pattern,submits-with-errors,no-focus-on-error
+    request: >-
+      Nothing covers the digest signup in src/components/SubscribeForm.tsx and
+      support keeps hearing about it. Cover what happens when someone gets it
+      wrong: they hit Subscribe with the boxes empty, and they fill in their
+      name but type "alice@example" for the address. Both times the complaint
+      is the same — people say they cannot tell anything happened, so the
+      message telling them what to fix has to be up on the screen and the
+      cursor has to land back in the box that needs fixing so they can carry
+      on typing. Cover the good path too: name, address, a plan picked, and the
+      details go to whoever is listening.
+  assert:
+    - { type: javascript, value: 'file://react-testing-assertions.js:browserHarnessForBrowserClaim', metric: browser-harness-for-browser-claim, weight: 2 }
+
+- description: cover the task board
+  vars:
+    acceptance: task-board.test.tsx
+    mutants: empty-state-hidden,count-ignores-filter,status-filter-inverted
+    request: >-
+      src/components/TaskBoard.tsx is untested. Cover what someone sees while
+      they use it: typing in the search box leaves only the tasks whose title
+      matches, the Open and Done buttons leave only the tasks in that state,
+      the line under the search says how many of the total are showing, and
+      when nothing matches they are told so instead of being left staring at a
+      blank space. The row is a dumb presenter that is somebody else's problem
+      — I do not want its markup pinned down again in here, this is about the
+      board's own behaviour.
+
+- description: cover the clipped title
+  vars:
+    acceptance: task-title.browser.test.tsx
+    mutants: tooltip-never-clipped,tooltip-always,tooltip-empty
+    request: >-
+      People keep telling us they cannot read the longer task titles: there is
+      only so much room on a row and the rest gets cut off. src/components/TaskTitle.tsx
+      is what draws a title and nothing covers it. Cover both sides of what
+      they get: a title too long for the room it has can still be read in full
+      by hovering over it, and a title that already fits gets no hover text
+      cluttering it up.
+  assert:
+    - { type: javascript, value: 'file://react-testing-assertions.js:browserHarnessForBrowserClaim', metric: browser-harness-for-browser-claim, weight: 2 }
+    - { type: javascript, value: 'file://react-testing-assertions.js:noFakedLayoutOrEnvironment', metric: no-faked-layout-or-environment }

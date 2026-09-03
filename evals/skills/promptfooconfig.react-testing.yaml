@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# react-testing quality evaluation. See promptfooconfig.tdd.yaml for the shape;
+# graders live in react-testing-assertions.js. Run with
+# ./run-quality.sh react-testing.
+description: react-testing quality — does the agent test React the way the react-testing skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+    network:
+      allowLocalBinding: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `react-testing` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://react-testing-assertions.js:accessibleQueries', metric: accessible-queries }
+    - { type: javascript, value: 'file://react-testing-assertions.js:userEventNotFireEvent', metric: user-event-not-fire-event }
+    - { type: javascript, value: 'file://react-testing-assertions.js:noMockedChildComponents', metric: no-mocked-child-components }
+    - { type: javascript, value: 'file://react-testing-assertions.js:hooksThroughRenderHook', metric: hooks-through-render-hook }
+    - { type: javascript, value: 'file://react-testing-assertions.js:noManualActAroundInteractions', metric: no-manual-act-around-interactions }
+    - { type: javascript, value: 'file://react-testing-assertions.js:testsCatchPlantedBugs', metric: tests-catch-planted-bugs, weight: 2 }
+    # Regression guard only: every request asks for tests, so the pristine
+    # fixture already passes the hidden acceptance test. It catches an agent
+    # that rewrites a component to make its own test easier and breaks the
+    # behaviour the requester described; the behaviour weight sits on
+    # testsCatchPlantedBugs above, so this one stays at weight 1.
+    - { type: javascript, value: 'file://react-testing-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 1 }
+    - { type: javascript, value: 'file://react-testing-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://react-testing-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/react-testing-quality.yaml

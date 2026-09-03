@@ -1,0 +1,112 @@
+# event-sourcing quality cases.
+#
+# The fixture (fixtures/event-sourcing-workspace) is greenfield. README.md and
+# CLAUDE.md say the wallet ledger is event sourced and point at
+# docs/glossary.md; the glossary gives the domain words (Wallet, Top-up,
+# Charge, Balance, Statement), the commands and the refused outcomes, and
+# says amounts are whole pence. It withholds everything the skill teaches:
+# there is no event type, no decider, no store, no projection, no example of
+# a fold, and src/ holds only a version constant and its test. Nothing in the
+# repository shows the pattern, so the rules have to come from the skill.
+#
+# Each request is a product ask in everyday words. It pins only what the
+# hidden acceptance test must call — the barrel `src/wallet/index.ts` (the
+# test is copied into `src/` and imports `./wallet`), the function names that
+# test imports, the command shapes, the reason strings from the glossary and
+# the fields the test reads. Case 1's test calls `initialState`, `evolve` and
+# `decide`, so case 1 pins those three and nothing else does. It never pins an
+# event name, a file layout, how state is rebuilt, how the store is shaped,
+# what a lost race is called, or where the screen's numbers come from: that is
+# what event-sourcing-assertions.js grades.
+#
+# What each case exercises, and the default a model reaches for without the
+# skill:
+#
+#   1 wallet rules — the decider. Default: events named after the command
+#     ("TopUp") or after the table ("WalletUpdated"), and `decide` stamping
+#     each event with `new Date()` / `crypto.randomUUID()`. The skill: events
+#     are past-tense business facts, the envelope is separate, and `decide`
+#     has no side effects.
+#   2 keeping the history — the event store and the command handler. Default:
+#     a store row holding the current balance, and an append with no expected
+#     version, so two charges racing each other both pass the balance check.
+#     The skill: append-only streams, state rebuilt by folding the stream
+#     before deciding, and optimistic concurrency on every append.
+#   3 the wallet screen — the read model. Default: maintain a balance column
+#     and a transactions table as the writes happen. The skill: a read model
+#     is a fold over the stream's events and can be rebuilt from event zero.
+#
+# On the untouched fixture there is no wallet module at all, so every rule
+# grader and the hidden acceptance test fail; only the health checks
+# (suite-green, typecheck-clean) and the vacuous no-stored-current-state pass.
+# The fixture cannot carry a case.
+
+- description: wallet top-ups and charges
+  vars:
+    acceptance: wallet.test.ts
+    request: >-
+      Time to build the wallet rules. A customer's wallet is opened in a
+      currency, topped up, and charged when they buy something; it must never
+      go below zero, and we have to be able to say what the wallet was worth
+      at any point in the past and why, not just what it is worth now.
+      Amounts are whole pence — see docs/glossary.md for the words we use and
+      the outcomes when we turn a request down. Export from
+      src/wallet/index.ts: `initialState`, `evolve(state, event)` and
+      `decide(command, state)`, where a command is one of `{ type: "Open",
+      currency }`, `{ type: "TopUp", amountPence }` or `{ type: "Charge",
+      amountPence }`, and `decide` answers `{ accepted: true, events }` or
+      `{ accepted: false, reason }` with `reason` one of the glossary's
+      refused outcomes. Before it is opened a wallet's `status` is
+      `"unopened"`; once opened `status` is `"open"` and it carries
+      `balancePence` and `currency`. Test it.
+
+- description: keeping the wallet history
+  vars:
+    acceptance: wallet-store.test.ts
+    request: >-
+      Same wallet rules as docs/glossary.md describes — opened in a currency,
+      topped up, charged, never below zero, whole pence — but now they have to
+      stick. Export from src/wallet/index.ts a `createWalletStore()` we can
+      keep in memory while we develop (Postgres next quarter, so keep the
+      wallet rules themselves out of it) and an async
+      `handleWalletCommand({ store, walletId, command })` that answers
+      `{ success: true, events }` or `{ success: false, reason }`, taking
+      commands `{ type: "Open", currency }`, `{ type: "TopUp", amountPence }`
+      and `{ type: "Charge", amountPence }` and refusing with the glossary's
+      outcomes. The checkout and the support tool both act on the same wallet,
+      sometimes in the same instant: whatever else happens, a wallet must
+      never go below zero and no charge may be lost or applied twice — where
+      you cannot safely apply a write, refuse it with a reason and the caller
+      will try again. Support must be able to see exactly what happened to a
+      wallet, in order, months later, so nothing we write down may be edited
+      or thrown away afterwards. Test it.
+  assert:
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:optimisticConcurrencyOnAppend', metric: optimistic-concurrency-on-append, weight: 2 }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:stateRebuiltByFolding', metric: state-rebuilt-by-folding }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:storedEventsNeverMutated', metric: stored-events-never-mutated }
+
+- description: the wallet screen
+  vars:
+    acceptance: wallet-screen.test.ts
+    request: >-
+      Support needs a wallet screen. Add an async
+      `walletScreen({ store, walletId })` to src/wallet/index.ts that answers
+      `{ currency, balancePence, statement }`, where `statement` is one entry
+      per top-up and charge, oldest first, each `{ amountPence,
+      balanceAfterPence }` with `amountPence` positive for a top-up and
+      negative for a charge (see Statement in docs/glossary.md). The screen
+      must always agree with what actually happened to the wallet — if it
+      ever disagrees we need to be able to put it right without touching the
+      money records — and next quarter product wants a second view over the
+      same wallets, spend by month, without changing how we record the money.
+      You will need the write side first: `createWalletStore()` and an async
+      `handleWalletCommand({ store, walletId, command })` answering
+      `{ success: true, events }` or `{ success: false, reason }`, both
+      exported from src/wallet/index.ts. Commands are `{ type: "Open",
+      currency }`, `{ type: "TopUp", amountPence }` and `{ type: "Charge",
+      amountPence }`; the refusal reasons and the whole-pence rule are in the
+      glossary; a wallet never goes below zero. Test it.
+  assert:
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:readModelIsAProjection', metric: read-model-is-a-projection, weight: 2 }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:stateRebuiltByFolding', metric: state-rebuilt-by-folding }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:storedEventsNeverMutated', metric: stored-events-never-mutated }

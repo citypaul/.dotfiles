@@ -1,0 +1,25 @@
+{
+  "name": "gearshop-web",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "serve": "node scripts/serve.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "24.10.1",
+    "jsdom": "26.1.0",
+    "msw": "2.11.5",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

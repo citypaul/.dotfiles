@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# event-sourcing quality evaluation.
+#
+# The routing suite (promptfooconfig.yaml) asks whether the right skill loads.
+# This suite asks what the agent then does: given a real behaviour change in
+# the fixture project, does it work the way the event-sourcing skill promises —
+# past-tense business events, a pure decider, state rebuilt by folding, an
+# append-only store with optimistic concurrency, read models projected from
+# events — and does the behaviour actually work.
+#
+# Three providers run every case: the skills bundle as installed, the same
+# agent with no skills at all, and the bundle with the skill under test
+# force-loaded. forced vs no-skills is what the skill body is worth;
+# with-skills vs forced is whether routing fires on its own.
+#
+# Run it with ./run-quality.sh event-sourcing. Cases run one at a time in a
+# shared workspace that quality-hooks.js resets between cases.
+description: event-sourcing quality — does the agent work the way the event-sourcing skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+    network:
+      allowLocalBinding: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `event-sourcing` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:deciderIsPure', metric: decider-is-pure }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:eventsArePastTenseFacts', metric: events-are-past-tense-facts }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:noStoredCurrentState', metric: no-stored-current-state }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:testedWithoutMocks', metric: tested-without-mocks }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://event-sourcing-assertions.js:typecheckClean', metric: typecheck-clean }
+
+tests: file://tests/event-sourcing-quality.yaml
