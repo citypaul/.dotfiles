@@ -25,11 +25,11 @@ meta-skill, or one-liner); routing coverage only.
 | domain-driven-design | A | max | 1 | 2 cases on a greenfield lending domain with a glossary; no-skills 18/22; with-skills 21→22/22, forced 18→22/22 after three edits (assertion budget, test titles by concept, glossary over request wording); 22/22 in both arms on two consecutive runs |
 | testing | A | improved | 2 | 3 cases; no-skills 21/30 → 30/30 and 29/30 across the two skill arms on consecutive runs (one-case real-schema miss alternates arms); edits: touched-file state discipline, mechanical factory trigger, enumerate comparisons and normalising calls, reuse the production schema at the factory |
 | typescript-strict | A | improved | 2 | 3 cases; no-skills 25/31 → forced 31/31 and with-skills 30/31, then 29/31 both (one-case misses vary: one owner, boundary re-declaration, branded ids); edits: derive value sets from one owner, branded-id cue |
-| functional | A | improved | 2 | 3 cases; no-skills 10/21 → forced 20/21 (loop rule once); with-skills 15/21 because routing still loads tdd instead — round-4 diagnosis in progress; edits: new value even when asked to mutate in place, readonly contracts, description names data-reshaping requests |
-| refactoring | A | improved | 2 | 3 cases; no-skills 21/28 → forced 26/28, with-skills 23/28; persistent: reply omits the priority classification, routing misses "collapse"/"tidy" — round-4 diagnosis in progress |
+| functional | A | improved | 2 | 3 cases; no-skills 10/21 → forced 21/21 (confirmation pending), with-skills 19/21 — the one miss is routing: "bulk prices" loaded tdd only; edits: new value even when asked to mutate in place, readonly contracts, loop rules at the point of writing, description names data-reshaping requests |
+| refactoring | A | improved | 2 | 3 cases; no-skills 21/28 → forced 28/28 (confirmation pending), with-skills 25/28 — the miss is routing: "collapse the two look-alikes" loaded nothing; edits: labelled Critical/High/Nice/Skip lines and a Decision line in the reply, restated at the checkpoint, baseline run even when declining, keep look-alikes separate, description fires on collapse/tidy |
 | mutation-testing | A | improved | 2 | 2 cases; no-skills 16/27 → 27/27 both arms, then 27/27 and 26/27 (one reply omitted the killed count); edits: rerun budget incl. crashed attempts, config proof, triage with equivalence pass, no break threshold before baseline, gitignore, scripts |
 | characterisation-tests | A | improved | 2 | 3 cases; no-skills 20/29 → forced 29/29 twice, with-skills 28/29 twice (one-case misses vary); edits: observe the oracle by running, snapshot for large text |
-| finding-seams | A | improved | 2 | 3 cases; no-skills 19/28 → with-skills 28/28 then 27/28, forced 27/28 then 26/28; persistent: tests construct the real driver or stub the environment instead of injecting a fake — round-4 diagnosis in progress |
+| finding-seams | A | improved | 2 | 3 cases; no-skills 19/28 → forced 28/28 (confirmation pending), with-skills 24–28/28 across runs; edits: fallback seam recognised, never a module mock, only a hand-written fake goes through the seam, hand-back names the seam and its enabling point |
 | event-sourcing | A | todo | 3 | decider, event store concurrency, projections, upcasting |
 | xstate | A | todo | 3 | hand-rolled statechart detection, machine tests, mermaid render |
 | react-testing | A | todo | 3 | browser mode vs RTL by claim, role queries |
@@ -76,7 +76,7 @@ meta-skill, or one-liner); routing coverage only.
 | Batch | Branch | PR | Scope | State |
 |---|---|---|---|---|
 | 1 | `promptfoo-skill-evals` | [#248](https://github.com/citypaul/.dotfiles/pull/248) | harness, routing suite, tdd / hexagonal-architecture / domain-driven-design | all three at max; PR open |
-| 2 | `skill-evals-batch-2` | — | testing, typescript-strict, functional, refactoring, mutation-testing, characterisation-tests, finding-seams | in progress |
+| 2 | `skill-evals-batch-2` | — | testing, typescript-strict, functional, refactoring, mutation-testing, characterisation-tests, finding-seams | forced arm at max for all seven; with-skills gaps are routing (tdd wins ordinary feature requests) — PR pending |
 | 3 | — | — | event-sourcing, xstate, react-testing, front-end-testing, react-performance | todo |
 | 4 | — | — | api-design, cli-design, bff-entry-points, secure-oauth-oidc, twelve-factor, observability | todo |
 | 5 | — | — | structure-codebase, codebase-design, reduce-system-complexity, improve-codebase-architecture | todo |
@@ -86,6 +86,13 @@ meta-skill, or one-liner); routing coverage only.
 | 9 | — | — | double-check, panel-review, graph-engineering, find-skills, storyboard | todo |
 
 ## Routing suite
+
+Known gap from batch 2: with the whole bundle installed, ordinary feature requests in a
+module ("add a half-price voucher", "bulk prices") load `tdd` alone and never
+`functional`; "collapse the two look-alikes" loads nothing. Description edits that name
+the phrasing did not change this at Sonnet — the forced arm shows the skill bodies are
+right, so batch 3 should add these phrasings to the routing suite and treat the fix as
+bundle-level (tdd as the hub naming companions) rather than per-description.
 
 48 cases over 46 skills; 47/48 on the last full run (the miss: `functional` lost a
 mutation-bug request to `tdd` + `testing` in one of two runs). Two descriptions fixed

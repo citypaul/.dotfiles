@@ -57,21 +57,25 @@ skill-forced):
   landing (3/3 with the skill vs 1/3 without) but a value set with an owner was
   re-spelled as a `z.enum` beside the hand-written union. Now: search for the owner,
   derive from one `as const` list. Forced 31/31, with-skills 30/31.
-- `functional` — 10/21 without, 20/21 forced; but with routing left to the agent the
-  skill never loaded (tdd won every request), and when a request asked to change a
-  shared object in place even the forced arm complied. Now: the answer is still a new
-  value and the reply says why; readonly contracts; a description that names
-  data-reshaping feature requests and loads alongside tdd.
-- `refactoring` — 21/28 without, 26/28 forced: the reply never stated the
-  Critical/High/Nice/Skip assessment and look-alike functions were merged. Now: state
-  the classification, keep semantically different look-alikes separate, and the
-  description fires on "collapse" and "tidy".
+- `functional` — 10/21 without → forced 21/21; but with routing left to the agent the
+  skill often does not load (tdd wins ordinary feature requests; with-skills 19/21),
+  and when a request asked to change a shared object in place even the forced arm
+  complied until the skill said otherwise. Now: the answer is still a new value and
+  the reply says why; readonly contracts; loop rules at the point of writing; a
+  description that names data-reshaping requests and loads alongside tdd.
+- `refactoring` — 21/28 without → forced 28/28 (with-skills 25/28, one routing miss):
+  the reply never stated the Critical/High/Nice/Skip assessment and look-alike
+  functions were merged. Now: labelled lines plus a Decision line in every reply,
+  restated at the checkpoint that owns the reply; a baseline run even when declining;
+  keep semantically different look-alikes separate; the description fires on
+  "collapse" and "tidy".
 - `characterisation-tests` — 20/29 without → forced 29/29, with-skills 28/29: the
   oracle is observed by running the code before asserting, snapshot tests for large
   text.
-- `finding-seams` — 19/28 without → with-skills 28/28, forced 27/28: a `??`/`||`
-  fallback from a parameter is an enabling point, never a module mock, and the
-  hand-back names the seam type and where its enabling point is.
+- `finding-seams` — 19/28 without → forced 28/28: a `??`/`||` fallback from a
+  parameter is an enabling point, never a module mock, only a hand-written fake goes
+  through the seam, and the hand-back names the seam type and where its enabling
+  point is.
 
 Harness changes that came out of this batch: touched files are detected from git
 status as well as the tool-call trail (tests written through a Bash heredoc count);
