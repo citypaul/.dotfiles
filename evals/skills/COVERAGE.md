@@ -87,12 +87,12 @@ meta-skill, or one-liner); routing coverage only.
 
 ## Routing suite
 
-Known gap from batch 2: with the whole bundle installed, ordinary feature requests in a
-module ("add a half-price voucher", "bulk prices") load `tdd` alone and never
-`functional`; "collapse the two look-alikes" loads nothing. Description edits that name
-the phrasing did not change this at Sonnet — the forced arm shows the skill bodies are
-right, so batch 3 should add these phrasings to the routing suite and treat the fix as
-bundle-level (tdd as the hub naming companions) rather than per-description.
+Batch 3 turned the batch-2 routing gaps into four routing cases and fixed them at
+bundle level: tdd's description now says it is the workflow, not the toolkit, and names
+functional, refactoring and the declared architecture skills as companions. Result over
+three repeats: data-shaping request 3/3 (tdd and functional co-load), "collapse the
+look-alikes" 3/3, "tidy a module" 3/3, "tiered pricing rules" 1/3 (tdd alone twice) —
+the one remaining partial.
 
 48 cases over 46 skills; 47/48 on the last full run (the miss: `functional` lost a
 mutation-bug request to `tdd` + `testing` in one of two runs). Two descriptions fixed
