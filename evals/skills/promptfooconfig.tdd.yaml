@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# tdd quality evaluation.
+#
+# The routing suite (promptfooconfig.yaml) asks whether the right skill loads.
+# This suite asks what the agent then does: given a real behaviour change in
+# the fixture project, does it work the way the tdd skill promises — a failing
+# behaviour test first, the failure observed, the minimum to pass, a finite
+# verification run, behaviour tests rather than spies — and does the behaviour
+# actually work.
+#
+# Three providers run every case: the skills bundle as installed, the same
+# agent with no skills at all, and the bundle with the skill under test
+# force-loaded. forced vs no-skills is what the skill body is worth;
+# with-skills vs forced is whether routing fires on its own.
+#
+# Run it with ./run-quality.sh tdd. Cases run one at a time in a shared
+# workspace that quality-hooks.js resets between cases.
+description: tdd quality — does the agent work the way the tdd skill promises?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  # Bash runs inside the SDK sandbox with no network; pnpm install ran before
+  # the eval, so tests and typecheck need none.
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+  web_search_enabled: false
+  max_turns: 80
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  # Same bundle, but told to load the skill under test first. Against
+  # no-skills this isolates what the skill body is worth; against with-skills
+  # it isolates whether routing fires on its own.
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `tdd` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://tdd-assertions.js:testFirst', metric: test-first }
+    - { type: javascript, value: 'file://tdd-assertions.js:redObserved', metric: red-observed }
+    - { type: javascript, value: 'file://tdd-assertions.js:greenVerified', metric: green-verified }
+    - { type: javascript, value: 'file://tdd-assertions.js:noWatchMode', metric: no-watch-mode }
+    - { type: javascript, value: 'file://tdd-assertions.js:suiteGreen', metric: suite-green }
+    - { type: javascript, value: 'file://tdd-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
+    - { type: javascript, value: 'file://tdd-assertions.js:behaviourStyleTests', metric: behaviour-style-tests }
+    - { type: javascript, value: 'file://tdd-assertions.js:evidenceReported', metric: evidence-reported }
+    - { type: javascript, value: 'file://tdd-assertions.js:narrowRedSelector', metric: narrow-red-selector }
+    - { type: javascript, value: 'file://tdd-assertions.js:noSpeculativeExports', metric: no-speculative-exports }
+    - { type: javascript, value: 'file://tdd-assertions.js:mutationGateRecorded', metric: mutation-gate-recorded }
+
+tests: file://tests/tdd-quality.yaml

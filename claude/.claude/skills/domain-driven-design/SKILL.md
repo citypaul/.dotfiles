@@ -125,7 +125,7 @@ For projects with multiple bounded contexts, organize by context. The same term 
 
 ### Enforcement Rules
 
-- Use the canonical spelling and capitalization whenever naming a declared concept.
+- Use the canonical spelling and capitalization whenever naming a declared concept — including when the request, ticket, or user used a rejected alias. The request's wording is input to translate, not a naming authority: a request that says "reservation" where the glossary declares `Booking` and rejects Reservation is `Booking` in the code, `Reservation` never appears as a type, field, or function name, and the reply says which words were translated.
 - Treat an absent term as a candidate requiring agreement, not as automatically approved or forbidden.
 - Rejected or deprecated aliases must point to the owning bounded context and canonical replacement.
 - Apply glossary checks to `type` and `interface` names, function names, and test descriptions within the check's declared scope.
@@ -201,7 +201,7 @@ Reconstitution (rebuilding domain objects from DB rows) uses the same factory fu
 The branded type pattern itself is covered by the `typescript-strict` skill — load it for the general rules. The DDD-specific application:
 
 - **Give every entity its own branded ID** (`OccasionId`, `GiftIdeaId`) so the compiler rejects cross-entity ID mixups — passing a `GiftIdeaId` where an `OccasionId` is expected is a compile error, not a runtime bug.
-- **Brand only through validating factory functions** — raw strings become branded values only after validation. The `as` assertion inside such a factory is the one justified exception: validate first, then brand.
+- **Brand once, through one validating factory per branded type** — raw strings become branded values only after validation. The single `as` inside that factory is the only assertion the brand gets: validate, then brand. Budget: exactly one `as` per branded type, zero elsewhere. A value derived from a branded value — a date computed from another date, an id read back from a row — is re-branded by calling the factory again, never by writing another `as`.
 - Use branded types for entity IDs and single-value value objects (`EmailAddress`).
 
 ```typescript
@@ -438,6 +438,20 @@ For simple domains where reads map cleanly to a single aggregate, repository rea
 ### Test by Domain Concept, Not Implementation File
 
 Follow the physical shape selected for the project and keep focused tests beside the behavior they describe; DDD does not require a root `tests/` directory.
+
+Title `describe` and `it` blocks with the business behaviour in glossary terms, never with the name of the function under test:
+
+```typescript
+// ❌ Titled after helpers — proves nothing a domain expert would recognise
+describe('addDays', () => { it('rolls over a month boundary', ...) });
+describe('createMoney', () => { it('rejects a negative amount', ...) });
+
+// ✅ Titled after the rule
+describe('Pledging to an Occasion', () => { it('is refused once funding is closed', ...) });
+describe('Committed total for an Occasion', () => { it('excludes gift ideas that are only proposed', ...) });
+```
+
+A date or arithmetic helper gets no `describe` of its own; it is proved through the rule that uses it. One test file per implementation file is the smell that produces helper-named tests — group tests by the concept they exercise instead.
 
 ```
 <selected-context-or-feature>/

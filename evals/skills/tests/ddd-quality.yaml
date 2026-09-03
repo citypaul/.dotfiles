@@ -1,0 +1,51 @@
+# domain-driven-design quality cases.
+#
+# The fixture is greenfield: it declares DDD (README.md, CLAUDE.md), points
+# at docs/glossary.md, and ships no domain code to copy. The glossary's
+# canonical terms (Patron, Item, Loan, Hold, Fine) deliberately differ from
+# the everyday words the requests use (member, book, borrow, late fee), and
+# it names the operations, refused outcomes and events the hidden tests
+# call. Each request pins the command inputs and the fields the hidden test
+# reads; ids, outcomes, immutability, time, money, events and naming are the
+# agent's — and what ddd-assertions.js grades.
+
+- description: members borrowing books
+  vars:
+    acceptance: lending.test.ts
+    request: >-
+      Build the core of lending. Members can borrow books: a member can have
+      at most five books out at once; a book that is already out cannot be
+      borrowed; a borrowing lasts three weeks; a member can extend it twice,
+      each time by another three weeks from the current due date, but not
+      while someone is waiting for that book; returning the book closes it.
+      There is a domain glossary in docs/glossary.md. Commands take the facts
+      they need rather than looking anything up: `openLoan({ loanId,
+      patronId, itemId, patronOpenLoans, itemOnLoan, openedOn })`,
+      `renewLoan({ loan, holdsOnItem, renewedOn })`, `returnItem({ loan,
+      returnedOn })`, where `patronOpenLoans` is a count, `itemOnLoan` a
+      boolean, and `holdsOnItem` a count, and every date a JavaScript `Date`. A Loan
+      exposes `id`, `patronId`, `itemId`, `openedOn`, `dueOn` (a `Date`),
+      `renewals` and `status`. Successful
+      results carry `{ loan, events }`. Export everything from
+      src/lending/index.ts and test it.
+  assert:
+    - { type: javascript, value: 'file://ddd-assertions.js:lifecycleAsUnion', metric: lifecycle-as-union }
+    - { type: javascript, value: 'file://ddd-assertions.js:eventsAsReturnedData', metric: events-as-returned-data }
+    - { type: javascript, value: 'file://ddd-assertions.js:referencesById', metric: references-by-id }
+
+- description: late return fees
+  vars:
+    acceptance: fines.test.ts
+    request: >-
+      Late returns cost 20p a day, capped at £5. Model that: `fineFor({
+      loan, returnedOn })` returns the fee, and `returnItem({ loan,
+      returnedOn })` reports it in its result value as `fine` alongside the
+      loan. You will need `openLoan({ loanId, patronId, itemId,
+      patronOpenLoans, itemOnLoan, openedOn })` to exist first — keep it to
+      what the fee needs. Dates are JavaScript `Date` values. A Loan
+      exposes `id`, `patronId`, `itemId`, `openedOn`, `dueOn` (a `Date`) and
+      `status`; a fee exposes `pence`. There is a
+      domain glossary in docs/glossary.md. Export everything from
+      src/lending/index.ts and test it.
+  assert:
+    - { type: javascript, value: 'file://ddd-assertions.js:moneyInWholePence', metric: money-in-whole-pence, weight: 2 }

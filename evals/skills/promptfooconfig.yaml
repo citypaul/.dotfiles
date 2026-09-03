@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Skill-routing evaluation for claude/.claude/skills.
+#
+# Each test is a realistic request a developer might type into Claude Code in
+# the fixture project. The only signal under test is which skill (if any) the
+# agent decides to load — the `skill-used` / `not-skill-used` assertions read
+# the Skill tool calls the Claude Agent SDK reports. Nothing here grades the
+# prose of the answer.
+#
+# Run it with ./run.sh (which assembles the workspace and sets the env vars
+# referenced below). See README.md.
+description: Skill routing — does the right skill fire, and do adjacent skills stay quiet?
+
+prompts:
+  - '{{request}}'
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: skills-bundle
+    config:
+      model: '{{env.SKILL_EVAL_MODEL}}'
+      apiKeyRequired: false
+      working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+      setting_sources: ['project']
+      skills: 'all'
+      max_turns: 30
+      persist_session: false
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+    # Show the routing decision, not the essay, in the results viewer.
+    transform: file://transform.js
+
+tests: file://tests/routing.yaml

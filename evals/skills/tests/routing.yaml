@@ -1,0 +1,407 @@
+# Skill-routing cases. Each request is written the way a developer would type
+# it — it never names a skill. `expect` is the skill that should load;
+# `quiet` lists the adjacent skills that should NOT load for this request.
+#
+# Grouped by the clusters where descriptions overlap most. When a case fails,
+# the fix is almost always in the losing or winning skill's frontmatter
+# description, not in this file.
+
+# ---------------------------------------------------------------- testing ---
+
+- description: tdd — new behaviour in tested code
+  metadata: { cluster: testing }
+  vars:
+    request: "Add the ability to archive a note in src/notes.ts — an archived note should drop out of searchNotes results. Go ahead and implement it."
+  assert:
+    - { type: skill-used, value: tdd }
+    - { type: not-skill-used, value: characterisation-tests }
+
+- description: testing — restructuring brittle tests
+  metadata: { cluster: testing }
+  vars:
+    request: "src/notes.test.ts breaks every time we touch the implementation even when behaviour hasn't changed. How should these tests be written instead? Show me what you'd change."
+  assert:
+    - { type: skill-used, value: testing }
+    - { type: not-skill-used, value: mutation-testing }
+
+- description: mutation-testing — coverage is high but bugs slip through
+  metadata: { cluster: testing }
+  vars:
+    request: "We're at 100% line coverage on src/notes.ts and a bug still shipped last week. How do I find out which of our tests are actually weak?"
+  assert:
+    - { type: skill-used, value: mutation-testing }
+    - { type: not-skill-used, value: testing }
+
+- description: test-design-reviewer — assess an existing test file
+  metadata: { cluster: testing }
+  vars:
+    request: "Review the quality of src/notes.test.ts as a test suite. Is it well designed? Don't change anything."
+  assert:
+    - { type: skill-used, value: test-design-reviewer }
+    - { type: not-skill-used, value: mutation-testing }
+
+- description: characterisation-tests — legacy code without tests
+  metadata: { cluster: testing }
+  vars:
+    request: "I need to change the EU pricing rule in src/legacy/pricing.js but there are no tests and nobody remembers what all those branches do. What should I do first?"
+  assert:
+    - { type: skill-used, value: characterisation-tests }
+    - { type: not-skill-used, value: tdd }
+
+- description: finding-seams — untestable dependencies
+  metadata: { cluster: testing }
+  vars:
+    request: "I can't unit test src/legacy/report.ts — it news up a Database in the constructor and reads Date.now() and process.env directly. How do I get this under test without a big rewrite?"
+  assert:
+    - { type: skill-used, value: finding-seams }
+    - { type: not-skill-used, value: refactoring }
+
+- description: react-testing — tests for a React component
+  metadata: { cluster: testing }
+  vars:
+    request: "Write tests for the CheckoutForm component in src/checkout-form.tsx covering the error message and the disabled button while submitting."
+  assert:
+    - { type: skill-used, value: react-testing }
+
+- description: front-end-testing — end-to-end browser flow
+  metadata: { cluster: testing }
+  vars:
+    request: "Write a Playwright end-to-end test that signs in, creates a note, and checks it appears in the list. What's the right evidence boundary for this?"
+  assert:
+    - { type: skill-used, value: front-end-testing }
+    - { type: not-skill-used, value: react-testing }
+
+# ------------------------------------------------------------ architecture ---
+
+- description: refactoring — clean up tested code
+  metadata: { cluster: architecture }
+  vars:
+    request: "src/notes.ts is getting messy. The tests are green — clean it up without changing what it does."
+  assert:
+    - { type: skill-used, value: refactoring }
+    - { type: not-skill-used, value: reduce-system-complexity }
+
+- description: reduce-system-complexity — fewer moving parts on one path
+  metadata: { cluster: architecture }
+  vars:
+    request: "src/sync/sync-notes.ts has three feature flags, a retry queue, a cache and a legacy fallback. I want fewer moving parts on that path with identical behaviour, and I want proof that complexity actually went away rather than moving somewhere else. Start with a diagnosis."
+  assert:
+    - { type: skill-used, value: reduce-system-complexity }
+    - { type: not-skill-used, value: refactoring }
+
+- description: structure-codebase — where files should live
+  metadata: { cluster: architecture }
+  vars:
+    request: "src/ is turning into a flat pile of files. How should we organise this project's folders so the boundaries are obvious? Propose a tree."
+  assert:
+    - { type: skill-used, value: structure-codebase }
+    - { type: not-skill-used, value: codebase-design }
+
+- description: improve-codebase-architecture — where would investment pay off
+  metadata: { cluster: architecture }
+  vars:
+    request: "Audit this repo and tell me where architecture investment would pay off most. I want a few ranked options, not a rewrite plan."
+  assert:
+    - { type: skill-used, value: improve-codebase-architecture }
+    - { type: not-skill-used, value: structure-codebase }
+
+- description: codebase-design — one module's interface
+  metadata: { cluster: architecture }
+  vars:
+    request: "I'm about to turn src/notes.ts into a NotesStore module that the UI and the sync code both call. What should its interface look like, and what should stay hidden inside it?"
+  assert:
+    - { type: skill-used, value: codebase-design }
+    - { type: not-skill-used, value: api-design }
+
+- description: hexagonal-architecture — explicit ports and adapters
+  metadata: { cluster: architecture }
+  vars:
+    request: "This project uses hexagonal architecture. Add a port for sending the weekly report email so src/legacy/report.ts stops depending on the mailer directly."
+  assert:
+    - { type: skill-used, value: hexagonal-architecture }
+
+- description: domain-driven-design — aggregate with invariants
+  metadata: { cluster: architecture }
+  vars:
+    request: "We're doing DDD on the sharing feature. Model a SharedNote aggregate — invariants are that a note can be shared with at most 10 people and only the owner can revoke."
+  assert:
+    - { type: skill-used, value: domain-driven-design }
+    - { type: not-skill-used, value: event-sourcing }
+
+- description: event-sourcing — events as the source of truth
+  metadata: { cluster: architecture }
+  vars:
+    request: "We want to keep the full history of edits to a note and be able to rebuild any past version. Persist the changes as events and derive current state from them. How would you structure the write model?"
+  assert:
+    - { type: skill-used, value: event-sourcing }
+
+# ----------------------------------------------------------------- api/bff ---
+
+- description: api-design — public REST contract
+  metadata: { cluster: api }
+  vars:
+    request: "Design the public REST API for notes that third-party integrations will call — listing with pagination, errors, and how we'll version it."
+  assert:
+    - { type: skill-used, value: api-design }
+    - { type: not-skill-used, value: bff-design }
+
+- description: bff-design — whether and how many BFFs
+  metadata: { cluster: api }
+  vars:
+    request: "We're adding an iOS app next to the web app. Should both clients share one backend, or should each get its own backend-for-frontend? What are the trade-offs?"
+  assert:
+    - { type: skill-used, value: bff-design }
+    - { type: not-skill-used, value: bff-entry-points }
+
+- description: bff-entry-points — protecting a browser-facing route
+  metadata: { cluster: api }
+  vars:
+    request: "Add a POST /api/notes/export route to our browser-facing backend. It must only work for a logged-in session and must not be callable from another site."
+  assert:
+    - { type: skill-used, value: bff-entry-points }
+    - { type: not-skill-used, value: bff-design }
+
+- description: secure-oauth-oidc — PKCE login
+  metadata: { cluster: api }
+  vars:
+    request: "Implement sign-in against our OpenID Connect provider from the web app using the authorization code flow with PKCE. What do I need to get right?"
+  assert:
+    - { type: skill-used, value: secure-oauth-oidc }
+    - { type: not-skill-used, value: bff-entry-points }
+
+- description: cli-design — command-line tool
+  metadata: { cluster: api }
+  vars:
+    request: "Build a small CLI, `notes export`, that prints notes as a table by default and as JSON with --json, and exits non-zero when the notes file can't be read."
+  assert:
+    - { type: skill-used, value: cli-design }
+
+# ---------------------------------------------------------------- planning ---
+
+- description: specification — nothing agreed yet
+  metadata: { cluster: planning }
+  vars:
+    request: "We want to add 'shared notebooks'. Nobody has agreed what that actually means yet — no rules, no examples. Help me pin it down."
+  assert:
+    - { type: skill-used, value: specification }
+    - { type: not-skill-used, value: story-splitting }
+
+- description: find-gaps — poke holes in an existing story
+  metadata: { cluster: planning }
+  vars:
+    request: "Read docs/story.md and poke holes in it. What's missing from the acceptance criteria?"
+  assert:
+    - { type: skill-used, value: find-gaps }
+    - { type: not-skill-used, value: specification }
+
+- description: story-splitting — an epic into child stories
+  metadata: { cluster: planning }
+  vars:
+    request: "'Real-time collaboration on notes' is far too big for one story. Break it into smaller stories we could ship one at a time."
+  assert:
+    - { type: skill-used, value: story-splitting }
+    - { type: not-skill-used, value: planning }
+
+- description: planning — implementation plan for an agreed story
+  metadata: { cluster: planning }
+  vars:
+    request: "docs/story.md is agreed and ready. Write an implementation plan for it in small increments that each leave the app working."
+  assert:
+    - { type: skill-used, value: planning }
+    - { type: not-skill-used, value: story-splitting }
+
+- description: stack-pull-requests — one slice too big for one PR
+  metadata: { cluster: planning }
+  vars:
+    request: "The sharing slice is going to be a 2,000-line PR. How should I split it into a series of dependent PRs that can be reviewed bottom-up?"
+  assert:
+    - { type: skill-used, value: stack-pull-requests }
+    - { type: not-skill-used, value: story-splitting }
+
+- description: acceptance-review — does the work satisfy the story
+  metadata: { cluster: planning }
+  vars:
+    request: "Check whether the current implementation on this branch satisfies every acceptance criterion in docs/story.md. I want a criterion-by-criterion verdict, not a code review."
+  assert:
+    - { type: skill-used, value: acceptance-review }
+    - { type: not-skill-used, value: panel-review }
+
+# --------------------------------------------------------------- debugging ---
+
+- description: ci-debugging — passes locally, fails in CI
+  metadata: { cluster: debugging }
+  vars:
+    request: "The test suite passes on my machine but fails on GitHub Actions with a timeout in notes.test.ts. Help me work out why."
+  assert:
+    - { type: skill-used, value: ci-debugging }
+    - { type: not-skill-used, value: debugging }
+
+- description: debugging — runtime failure, diagnosis only
+  metadata: { cluster: debugging }
+  vars:
+    request: "About one time in ten, after saving a note the list shows the old title until you reload. Find the cause. Don't fix anything yet."
+  assert:
+    - { type: skill-used, value: debugging }
+    - { type: not-skill-used, value: ci-debugging }
+
+- description: observability — tracing and alerts
+  metadata: { cluster: debugging }
+  vars:
+    request: "We can't tell why sync is slow in production. Add tracing to src/sync and propose what we should alert on."
+  assert:
+    - { type: skill-used, value: observability }
+    - { type: not-skill-used, value: debugging }
+
+- description: twelve-factor — deploy-time config
+  metadata: { cluster: debugging }
+  vars:
+    request: "Right now we ship a config.staging.json and config.prod.json inside the build. Move to twelve-factor style configuration for this service."
+  assert:
+    - { type: skill-used, value: twelve-factor }
+
+- description: production-parity-skill-builder — staging and prod differ
+  metadata: { cluster: debugging }
+  vars:
+    request: "Sharing works in staging but breaks in production because the feature flags and the identity provider groups are different there. We keep getting bitten by this. Build me something reusable that catches these environment differences for this app."
+  assert:
+    - { type: skill-used, value: production-parity-skill-builder }
+    - { type: not-skill-used, value: twelve-factor }
+
+# ------------------------------------------------------------------- other ---
+
+- description: functional — mutation bug
+  metadata: { cluster: other }
+  vars:
+    request: "addTag in src/notes.ts seems to be mutating notes that other parts of the app still hold references to. Fix it properly."
+  assert:
+    - { type: skill-used, value: functional }
+
+- description: typescript-strict — schema at a trust boundary
+  metadata: { cluster: other }
+  vars:
+    request: "Define the types for the payload the sync endpoint receives from the mobile client. It's untrusted input, so it needs validating at runtime too."
+  assert:
+    - { type: skill-used, value: typescript-strict }
+
+- description: xstate — hand-rolled statechart in React
+  metadata: { cluster: other }
+  vars:
+    request: "Have a look at src/checkout-form.tsx. Users are reporting that sometimes an order is placed twice when they mash the button while the network is slow. What's the right way to fix this? Just describe the approach, don't edit anything."
+  assert:
+    - { type: skill-used, value: xstate }
+
+- description: react-performance — slow re-renders
+  metadata: { cluster: other }
+  vars:
+    request: "The notes list re-renders on every keystroke in the search box and feels sluggish with a few hundred notes. Make it fast."
+  assert:
+    - { type: skill-used, value: react-performance }
+    - { type: not-skill-used, value: xstate }
+
+- description: render-code-shape — how does it compose
+  metadata: { cluster: other }
+  vars:
+    request: "Show me the shape of the sync path — which modules a call to syncNotes touches, the signatures, and what crosses each boundary. I don't want a picture, and don't change anything."
+  assert:
+    - { type: skill-used, value: render-code-shape }
+    - { type: not-skill-used, value: diagrams }
+
+- description: diagrams — draw the flow
+  metadata: { cluster: other }
+  vars:
+    request: "Draw a diagram of what happens when syncNotes runs, for the README."
+  assert:
+    - { type: skill-used, value: diagrams }
+    - { type: not-skill-used, value: render-code-shape }
+
+- description: technical-writing — rewrite the README
+  metadata: { cluster: other }
+  vars:
+    request: "Rewrite README.md so a new developer can get productive in ten minutes."
+  assert:
+    - { type: skill-used, value: technical-writing }
+
+- description: panel-review — review through named lenses
+  metadata: { cluster: other }
+  vars:
+    request: "Review the work on this branch through the hexagonal-architecture and typescript-strict lenses and give me one ranked list of findings."
+  assert:
+    - { type: skill-used, value: panel-review }
+    - { type: not-skill-used, value: double-check }
+
+- description: double-check — second opinion on finished work
+  metadata: { cluster: other }
+  vars:
+    request: "I've finished the sharing feature. Get me an independent second opinion on it before I open the PR — ideally from a different model."
+  assert:
+    - { type: skill-used, value: double-check }
+    - { type: not-skill-used, value: panel-review }
+
+- description: evaluate-existing-solutions — build vs adopt
+  metadata: { cluster: other }
+  vars:
+    request: "Should we keep our hand-written retry queue in src/sync or adopt a library for it? Give me a recommendation with evidence."
+  assert:
+    - { type: skill-used, value: evaluate-existing-solutions }
+    - { type: not-skill-used, value: find-skills }
+
+- description: find-skills — install a skill
+  metadata: { cluster: other }
+  vars:
+    request: "Is there an agent skill I can install for writing Terraform? Find one and install it."
+  assert:
+    - { type: skill-used, value: find-skills }
+    - { type: not-skill-used, value: evaluate-existing-solutions }
+
+- description: ubiquitous-language — naming a domain concept
+  metadata: { cluster: other }
+  vars:
+    request: "The code says 'shared note' in some places, 'collaborative note' in others and 'team note' in the UI copy. Sort out the naming across the codebase."
+  assert:
+    - { type: skill-used, value: ubiquitous-language }
+    - { type: not-skill-used, value: domain-driven-design }
+
+- description: expectations — where to record a gotcha
+  metadata: { cluster: other }
+  vars:
+    request: "I just discovered that vitest browser mode needs the playwright browsers installed separately or the whole suite silently skips. Where should that be recorded so we don't lose it?"
+  assert:
+    - { type: skill-used, value: expectations }
+
+- description: teach-me — learn a topic
+  metadata: { cluster: other }
+  vars:
+    request: "I don't really understand event sourcing. Teach it to me properly, quiz me as we go."
+  assert:
+    - { type: skill-used, value: teach-me }
+    - { type: not-skill-used, value: event-sourcing }
+
+- description: no skill — trivial rename
+  metadata: { cluster: negative }
+  vars:
+    request: "In src/notes.ts rename the local variable `q` in searchNotes to `needle`."
+  assert:
+    - type: javascript
+      value: |
+        const calls = context.providerResponse?.metadata?.toolCalls || [];
+        const loaded = calls.filter((c) => c.name === 'Skill').map((c) => c.input?.skill);
+        return {
+          pass: loaded.length === 0,
+          score: loaded.length === 0 ? 1 : 0,
+          reason: loaded.length === 0 ? 'no skill loaded' : `loaded ${loaded.join(', ')}`,
+        };
+
+- description: no skill — factual question about the code
+  metadata: { cluster: negative }
+  vars:
+    request: "Which files import from src/sync/flags.ts?"
+  assert:
+    - type: javascript
+      value: |
+        const calls = context.providerResponse?.metadata?.toolCalls || [];
+        const loaded = calls.filter((c) => c.name === 'Skill').map((c) => c.input?.skill);
+        return {
+          pass: loaded.length === 0,
+          score: loaded.length === 0 ? 1 : 0,
+          reason: loaded.length === 0 ? 'no skill loaded' : `loaded ${loaded.join(', ')}`,
+        };
