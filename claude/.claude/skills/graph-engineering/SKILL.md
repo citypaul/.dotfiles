@@ -44,6 +44,8 @@ Pick stage patterns from [`references/topologies.md`](references/topologies.md):
 
 Every stage returns structured data against a schema — findings with `file:line` evidence, severities from a fixed taxonomy, verdicts with reasons. The evidence bar and severity vocabulary live in `references/node-design.md`. Contracts are what make the graph a graph instead of a pile of prose reports.
 
+Set an explicit per-node response limit and aggregate fan-in budget before dispatch: reference large inputs by path, let write nodes leave artifacts in their owned files, and return only the compact evidence needed for synthesis. If the projected fan-in exceeds that budget, split the graph into persisted checkpoints.
+
 ### 6. Choose the runtime
 
 In order of preference — details and templates in [`references/execution.md`](references/execution.md):

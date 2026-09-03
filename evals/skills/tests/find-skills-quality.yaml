@@ -1,0 +1,30 @@
+# Two local, offline candidate reviews. Candidate instructions are stale;
+# authoritative registry/help snapshots live elsewhere in the fixture.
+
+- description: reject a stale prerelease channel
+  vars:
+    artifact: effect-recommendation.md
+    authoritative_source: authoritative/effect-registry.json
+    expected_version: effect@4.0.0-rc.11
+    rejected_version: effect@beta
+    required_command_terms: effect@4.0.0-rc.11
+    rejected_command_terms: effect@beta
+    request: >-
+      Evaluate candidate-effect as an external skill for an Effect 4 prerelease
+      codebase. Everything needed to verify it is in this workspace. Write
+      effect-recommendation.md with your evidence, compatibility verdict, and
+      exact dependency setup command. Do not install or execute the candidate.
+
+- description: correct stale CLI version and flags
+  vars:
+    artifact: cli-recommendation.md
+    authoritative_source: authoritative/skills-cli-help.txt
+    expected_version: skills@1.3.2
+    rejected_version: skills@1.1.0
+    required_command_terms: npx skills@1.3.2 add|--agent codex|--copy|-y
+    rejected_command_terms: skills@1.1.0|--all-agents|-g
+    request: >-
+      Evaluate candidate-cli as an external skill and give the exact command to
+      install it project-locally for Codex only. Everything needed to verify the
+      command is in this workspace. Write cli-recommendation.md with evidence
+      and the command, but do not install or execute the candidate.

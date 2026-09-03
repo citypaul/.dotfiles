@@ -1,0 +1,9 @@
+Skills CLI registry version: 1.3.2
+
+Usage: npx skills@1.3.2 add <path> [options]
+  --agent <agent>   install for one named agent
+  --copy            copy files instead of linking a shared canonical directory
+  -g                install at user scope; omit for project-local installation
+  -y                skip prompts without widening the selected targets
+
+There is no --all-agents flag in version 1.3.2.

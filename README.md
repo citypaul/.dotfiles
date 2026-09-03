@@ -1918,25 +1918,24 @@ this bundle mounted and measures two things:
   assertion is which skill the agent loads (`skill-used`), which neighbour stays quiet
   (`not-skill-used`), and that trivial asks load nothing. This is where a `description`
   earns its place.
-- **Quality** — for `tdd`, `hexagonal-architecture` and `domain-driven-design`, a
-  small fixture project that has opted into the practice plus product asks the agent
-  implements with write and shell access. Deterministic graders read the agent's
-  tool-call trail (test edited before production? failure observed?) and the
-  workspace it left (inside imports only inside? money in whole pence?), and hidden
-  acceptance tests check the behaviour. Every case runs **with the skills and
-  without**, so the gap is what the skill is worth on that case.
+- **Quality** — suite-specific fixtures exercise implementation and advisory skills.
+  Deterministic graders read the agent's tool-call trail, workspace, behavior, or
+  written artifact; rubrics are reserved for claims that require judgement. Every
+  case runs **with the skills and without**, so the gap is what the skill is worth on
+  that case. [`COVERAGE.md`](evals/skills/COVERAGE.md) is the authoritative suite list.
 
 ```bash
 cd evals/skills && pnpm install
 ./run.sh                   # routing, ~10 minutes, uses your Claude Code login
-./run-quality.sh tdd       # or hexagonal, ddd
+./run-quality.sh tdd       # replace tdd with any suite in COVERAGE.md
 pnpm exec promptfoo view   # every transcript and per-metric score
 ```
 
 Neither is part of `npm test`: they spend tokens and sample non-deterministic
-decisions. The offline guard `test/skill-evals-routing.sh` keeps the routing cases
-pointing at real skills. When a case fails, the fix is in the skill — a `description`
-line for routing, the body for quality — and the case stays as the regression check.
+decisions. The offline guards `test/skill-evals-routing.sh` and
+`test/skill-evals-quality.sh` keep both harnesses wired to real skills and graders.
+When a case fails, the fix is in the skill — a `description` line for routing, the
+body for quality — and the case stays as the regression check.
 See [the suite's README](evals/skills/README.md) for how to read a failure, add a case,
 and add a quality suite for another skill.
 

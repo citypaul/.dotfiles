@@ -14,9 +14,10 @@ forced metric fails across two consecutive runs).
 
 **Tier**: `A` = implementation skill, graded deterministically from the agent's
 tool-call trail and the workspace it leaves. `B` = advisory or document-producing
-skill, graded by a rubric against the skill's own stated promises (model-graded,
-so run with `--repeat` and read the reasons). `—` = not worth a suite (alias,
-meta-skill, or one-liner); routing coverage only.
+skill, graded from the artifact with deterministic checks where possible and an
+`llm-rubric` only for promises that require judgement (run model-graded cases with
+`--repeat` and read the reasons). `—` = not worth a suite (alias, meta-skill, or
+one-liner); routing coverage only.
 
 | Skill | Tier | Status | Batch | Notes |
 |---|---|---|---|---|
@@ -65,8 +66,8 @@ meta-skill, or one-liner); routing coverage only.
 | teach-me | B | todo | 8 | mission-grounded plan, Socratic, HTML lesson |
 | double-check | B | todo | 9 | cross-provider, scope-fidelity check |
 | panel-review | B | todo | 9 | lens fan-out, verified ranked report |
-| graph-engineering | B | todo | 9 | scout inline, one skill per node, adversarial verify |
-| find-skills | B | todo | 9 | ecosystem search, provenance and licence inspection |
+| graph-engineering | B | proven | 9 | 2 cases for bounded fan-in and persisted checkpoints; reference and negative grader proof pass; live baseline pending |
+| find-skills | B | proven | 9 | 2 cases for authoritative package channels, CLI versions, and flags; reference and negative grader proof pass; live baseline pending |
 | storyboard | B | todo | 9 | mock audit page, gap cards |
 | wtf | — | routing only | — | one-line re-explain skill |
 | folder-structure | — | routing only | — | deprecated alias for structure-codebase |
@@ -83,7 +84,7 @@ meta-skill, or one-liner); routing coverage only.
 | 6 | — | — | planning, story-splitting, specification, find-gaps, acceptance-review, stack-pull-requests | todo |
 | 7 | — | — | debugging, ci-debugging, technical-writing, diagrams, expectations, ubiquitous-language | todo |
 | 8 | — | — | render-code-shape, evaluate-existing-solutions, bff-design, test-design-reviewer, production-parity-skill-builder, teach-me | todo |
-| 9 | — | — | double-check, panel-review, graph-engineering, find-skills, storyboard | todo |
+| 9 | — | — | double-check, panel-review, graph-engineering, find-skills, storyboard | in progress — graph-engineering and find-skills proven offline; live baseline pending |
 
 ## Routing suite
 

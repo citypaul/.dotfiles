@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: graph-engineering quality — does the plan bound node output and fan-in?
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit']
+  permission_mode: acceptEdits
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+  web_search_enabled: false
+  max_turns: 40
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `graph-engineering` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+  assert:
+    - { type: javascript, value: 'file://graph-engineering-assertions.js:artifactWritten', metric: artifact-written }
+    - { type: javascript, value: 'file://graph-engineering-assertions.js:perNodeResponseLimit', metric: per-node-response-limit }
+    - { type: javascript, value: 'file://graph-engineering-assertions.js:fanInBudget', metric: fan-in-budget }
+    - { type: javascript, value: 'file://graph-engineering-assertions.js:largeInputsByPath', metric: large-inputs-by-path }
+    - { type: javascript, value: 'file://graph-engineering-assertions.js:compactEvidenceReturn', metric: compact-evidence-return }
+    - { type: javascript, value: 'file://graph-engineering-assertions.js:persistedCheckpoints', metric: persisted-checkpoints }
+
+tests: file://tests/graph-engineering-quality.yaml
