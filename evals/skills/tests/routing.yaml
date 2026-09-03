@@ -448,3 +448,10 @@
       assert:
         - { type: skill-used, value: react-testing }
         - { type: skill-used, value: front-end-testing }
+
+- description: react-performance — a symptom report in product words
+  metadata: { cluster: routing-gap }
+  vars:
+    request: "The search box in src/notes-list.tsx stutters while typing once someone has a few thousand notes. Make it smooth — nothing else should change."
+  assert:
+    - { type: skill-used, value: react-performance }
