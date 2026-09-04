@@ -442,7 +442,10 @@ const shutdownFiles = () => production().filter((file) => /SIGTERM|SIGINT/.test(
 exports.signalHandlersRegistered = () => {
   const files = shutdownFiles();
   const text = joined(files);
-  const registered = /\b(?:process|signals?|source|emitter|proc)\.(on|once|addListener)\s*\(\s*["']SIG/.test(text) || /process\.(on|once|addListener)\s*\(/.test(text);
+  const registered =
+    /\b(?:process|signals?|source|emitter|proc)\.(on|once|addListener)\s*\(\s*["']SIG/.test(text) ||
+    /process\.(on|once|addListener)\s*\(/.test(text) ||
+    (/\bSIG(?:TERM|INT)\b/.test(text) && /\.(on|once|addListener)\s*\(\s*(?:signal|signalName|name|event|sig|s)\b/.test(text));
   const missing = [
     /SIGTERM/.test(text) ? undefined : "SIGTERM",
     /SIGINT/.test(text) ? undefined : "SIGINT",
