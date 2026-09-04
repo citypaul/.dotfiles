@@ -1148,7 +1148,7 @@ exports.everyPageLinksRunbook = (output, context) => {
 };
 
 exports.behaviourDelivered = (output, context) =>
-  lib.runAcceptance({ suite: "observability", name: context?.vars?.acceptance, targetDir: "src" });
+  lib.runAcceptance({ suite: "observability", name: context?.vars?.acceptance, targetDir: "src", config: "vitest.config.ts" });
 
 exports.suiteGreen = lib.suiteGreen;
 exports.typecheckClean = lib.typecheckClean;
