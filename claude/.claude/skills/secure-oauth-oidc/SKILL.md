@@ -11,6 +11,12 @@ OAuth delegates access. OpenID Connect adds authentication. Never infer a login 
 
 This skill owns the OAuth/OIDC protocol layer. For the application session that results in a browser-facing BFF — session cookies, CSRF and browser-request policy, public/protected endpoint classification, and keeping tokens out of the browser — load the `bff-entry-points` skill.
 
+## Bring the flow you touch up to baseline
+
+Any change that adds, extends, reroutes, or re-points part of an authorization-code flow brings that flow's whole transaction to the RFC 9700 baseline in the same change: `S256` PKCE with a per-transaction verifier, a fresh one-time `state` and, for OIDC, a `nonce`, both bound to the browser that started the sign-in, exact redirect-URI matching, issuer and audience validated on every token you consume, and no token in a URL, a log, or anything the browser can read.
+
+A narrowly worded request, a to-do list or handover note in the repository, an existing test that pins the current shape, or the fact that a defect predates you is not permission to leave that flow short of the baseline. Do not build a new flow to match an insecure one beside it, and do not leave an exposure sitting in a file or function you are already editing. List as residual risk only what this change did not touch.
+
 ## Load the right references
 
 | Reference | Load when |
@@ -121,7 +127,7 @@ Do not parse an access token for identity at a client unless a specific access-t
 1. Use a maintained OAuth/OIDC library rather than hand-rolling protocol or cryptography.
 2. Inspect the exact library version and configuration path; defaults and method names are not evidence.
 3. Put validation at the trust boundary and fail closed before creating a session or forwarding a token.
-4. Keep secrets and raw tokens out of telemetry. Record safe identifiers, decision reasons, issuer, client ID, audience, grant type, and replay events instead.
+4. Keep secrets and raw tokens out of telemetry. Record safe identifiers, decision reasons, issuer, client ID, audience, grant type, and replay events instead. Delete an existing line that logs or hands back a raw token, code, or verifier as soon as you touch the file it sits in — an exposure you edited around is one you shipped — and never write a test that asserts a token appears in a URL, a response body, or a log.
 5. Add behavior-driven positive and negative tests. When production code changes, use the repository's testing/TDD workflow where available.
 
 ### Review or incident diagnosis
