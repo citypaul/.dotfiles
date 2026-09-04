@@ -1,0 +1,86 @@
+# api-design quality cases.
+#
+# The fixture is a live consumer-facing order API. README.md and CLAUDE.md say
+# only that the mobile app and partner integrations call it directly, where the
+# entry point is, and — as a fact about the client, not a design — that the app
+# marks every attempt at one order with the same `Idempotency-Key` header,
+# which the service ignores. They say nothing about error formats, replay,
+# compatibility or validation. What the fixture *shows* is the opposite of the
+# skill: `POST /orders` rejects a bad order with 200 and an ad-hoc
+# `{ error: "…" }` string, a missing key comes back 401 with another one, a
+# body that is not JSON escapes as a 500, the order rules are a stack of
+# hand-rolled `typeof` checks, and `GET /orders` slices at an `offset` with no
+# bound. So the default answer to each request is the fixture's own house
+# style, and the skill has to supply everything else.
+#
+# Each request is a product complaint in the words the person complaining would
+# use. It pins only what the hidden tests must call: routes that already exist,
+# the field name partners asked for, and `createApp` in src/index.ts (README.md
+# fixes its deps as the only injection point, so the hidden tests can build the
+# app). Nothing names a status code, an error format, a schema library, a
+# compatibility rule or the design being measured.
+#
+# What each case exercises:
+#   1 idempotency  — a reused key that carries a different order is refused
+#                    rather than replayed or placed again. (Replaying the first
+#                    result at all is the case's behaviour gate, not its rule
+#                    grader: a capable answer with no skill loaded gets that
+#                    far, and scoping the key to the caller as well, because
+#                    the partner id is already in hand in every handler. Only
+#                    the mismatch rule separates the arms, so it is the only
+#                    rule graded here.)
+#   2 errors       — RFC 9457 problem documents on `application/problem+json`
+#                    with a matching `status` and no leaked internals; 400 for
+#                    a body that will not parse against 422 (or a documented
+#                    house status) for a value that breaks the rules; schema
+#                    validation at the boundary.
+#   3 evolution    — an ask that is phrased as a rename against a contract
+#                    partners are already integrated with: add the field, keep
+#                    the old one working, and record the deprecation.
+#
+# shippedContractIntact runs on every case: it is the regression guard that the
+# fields and statuses the API already publishes survive the change, and it is
+# the rule grader that case 3's default answer breaks.
+
+- description: retried orders are charged twice
+  vars:
+    acceptance: idempotent-orders.test.ts
+    request: >-
+      Customers are being charged twice. When the mobile app loses the network
+      half-way through placing an order it sends the same POST /orders again,
+      and we make a second order out of it. The app already marks every attempt
+      at one order the same way on the wire — README.md says how. Make a resent
+      order come back as the order we already made for it, without turning a
+      genuinely new order into a repeat. `createApp` in src/index.ts stays the
+      entry point.
+  assert:
+    - { type: javascript, value: 'file://api-design-assertions.js:replayWithDifferentBodyRejected', metric: replay-with-different-body-rejected }
+
+- description: the app cannot tell our failures apart
+  vars:
+    acceptance: consistent-errors.test.ts
+    request: >-
+      The mobile app shows the same "Something went wrong" screen for
+      everything, because no two failures from this API look alike: a bad order
+      comes back 200 with an `error` string, a caller with no key comes back
+      401 with a different one, an unknown order id comes back 404, and a body
+      that is not JSON at all takes the whole request down with a 500. Give the
+      app failures it can actually branch on, and sort out the rules for a new
+      order while you are in there — they have grown into a stack of ifs.
+      `createApp` in src/index.ts stays the entry point.
+  assert:
+    - { type: javascript, value: 'file://api-design-assertions.js:errorsUseProblemDetails', metric: errors-use-problem-details }
+    - { type: javascript, value: 'file://api-design-assertions.js:validationStatusMapping', metric: validation-status-mapping }
+    - { type: javascript, value: 'file://api-design-assertions.js:validationBySchemaAtBoundary', metric: validation-by-schema-at-boundary }
+
+- description: the total should say what it includes
+  vars:
+    acceptance: total-field.test.ts
+    request: >-
+      Partners keep asking us whether `total` on an order includes delivery. It
+      does, and it is in pence. They want the field to say so:
+      `totalIncludingDeliveryPence`. Change it on GET /orders, GET /orders/:id
+      and the POST /orders response. `createApp` in src/index.ts stays the
+      entry point.
+  assert:
+    - { type: javascript, value: 'file://api-design-assertions.js:deprecationRecorded', metric: deprecation-recorded }

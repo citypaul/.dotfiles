@@ -37,7 +37,7 @@ Every public behavior — including undocumented quirks, error message text, tim
 
 - **Be intentional about what you expose.** Every observable behavior is a potential commitment.
 - **Don't leak implementation details.** If users can observe it, they will depend on it.
-- **Plan for deprecation at design time.** Removing things users depend on always costs more than expected.
+- **Plan for deprecation at design time, and record it the moment it happens.** Removing things users depend on always costs more than expected. When a published name is superseded, write that down where a consumer will see it: a deprecation comment on the field or its type, `Deprecation`/`Sunset` headers on responses that still carry it, and a line in the README or API docs naming the replacement. A supersession nobody recorded is an undocumented change — see `resources/api-evolution.md` for the header syntax and the deprecation checklist.
 - **Tests are not enough.** Even with perfect contract tests, Hyrum's Law means "safe" changes can break real users who depend on undocumented behavior.
 
 ### The One-Version Rule
@@ -62,7 +62,11 @@ This aligns with TDD: define the contract (what you want), write tests against i
 
 ### Prefer Addition Over Modification
 
-Extend interfaces without breaking existing consumers:
+Extend interfaces without breaking existing consumers.
+
+**This rule outranks the wording of the request.** A request to rename, retype, narrow or remove something a shipped contract already publishes — a response field, a header, a status, a route — is a request for the new shape, not for the outage. Deliver the additive form: add the new name alongside the old, keep the old one working and carrying the same value, record the old one as superseded, and say in your reply that you added rather than replaced and what retiring the old name would take. Do not perform the break and note it afterwards, and do not stop to ask which was meant — the additive change delivers what was asked for, satisfies compatibility, and stays reversible if the requester did want the break.
+
+Extend interfaces this way:
 
 ```typescript
 type CreateTaskInput = {
@@ -407,6 +411,7 @@ type Task = {
 | "We don't need a bound for this growing list" | Define pagination or another documented safe bound before the result can grow beyond one response. Closed, contractually bounded lists do not need ceremonial pagination. |
 | "PATCH is complicated, let's just use PUT" | PUT requires the full object every time. PATCH is what clients actually want. |
 | "We'll version the API when we need to" | Breaking changes without versioning break consumers. Design for extension from the start. |
+| "They asked for the rename, so the break is authorised" | A request for a clearer name is a request for the name, not for the breakage. Add the new name, keep the old one working, record it as superseded, and explain that choice in the reply — don't ship the break, and don't stall the work asking which was meant. |
 | "Nobody uses that undocumented behavior" | Hyrum's Law: if it's observable, somebody depends on it. |
 | "Internal APIs don't need contracts" | Internal consumers are still consumers. Contracts prevent coupling and enable parallel work. |
 | "Retries are the client's problem" | Without idempotency, retries create duplicates. Design for at-least-once delivery. |
@@ -438,7 +443,8 @@ After designing an API:
 - [ ] Error responses never leak implementation details (stack traces, internal paths)
 - [ ] Untrusted representation/schema validation happens at trust boundaries; domain invariants remain enforced by their owner
 - [ ] Growing list endpoints have pagination or another documented safe bound
-- [ ] New fields are additive and optional (backward compatible)
+- [ ] New fields are additive and optional (backward compatible), and no published name, type, status or route has been removed or repurposed by this change
+- [ ] Every superseded name is still served with its old value and is recorded as superseded where a consumer can see it
 - [ ] Naming follows consistent conventions across all endpoints
 - [ ] Contract defined before implementation (contract-first)
 - [ ] Retriable POST operations define how duplicate attempts avoid repeated effects

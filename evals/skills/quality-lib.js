@@ -109,15 +109,23 @@ const importsOf = (text) =>
   [...text.matchAll(/(?:from|import)\s*["']([^"']+)["']/g)].map((match) => match[1]);
 
 // Copy a hidden acceptance test into the workspace, run it, remove it.
-const runAcceptance = ({ suite, name, targetDir }) => {
+// `config` names a vitest config kept beside the hidden tests; when given it is
+// copied in and used instead of the workspace's own, so an agent's setup files
+// (a globally registered tracer provider, say) cannot swallow what the hidden
+// test observes.
+const runAcceptance = ({ suite, name, targetDir, config }) => {
   const source = resolve(__dirname, "tests", suite, "acceptance", name);
   const target = resolve(workspace(), targetDir, `acceptance-${name}`);
   writeFileSync(target, read(source));
+  const configTarget = config ? resolve(workspace(), `acceptance.${config}`) : undefined;
+  if (config) writeFileSync(configTarget, read(resolve(__dirname, "tests", suite, "acceptance", config)));
   try {
-    const result = run(`pnpm exec vitest run ${relative(workspace(), target)}`);
+    const configFlag = config ? ` --config ${relative(workspace(), configTarget)}` : "";
+    const result = run(`pnpm exec vitest run${configFlag} ${relative(workspace(), target)}`);
     return verdict(result.ok, vitestSummary(result.out));
   } finally {
     if (existsSync(target)) unlinkSync(target);
+    if (configTarget && existsSync(configTarget)) unlinkSync(configTarget);
   }
 };
 

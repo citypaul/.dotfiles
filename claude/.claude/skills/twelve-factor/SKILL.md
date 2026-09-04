@@ -45,7 +45,8 @@ credentials or environment-specific endpoints.
 **Rules:**
 - Validate config at startup with a schema — fail fast (exit non-zero, clear error) if config is invalid
 - Inject config via options objects — never import `process.env` deep in the call tree
-- Document required configuration in the platform-appropriate example or schema; use `.env.example` when environment variables are the configuration interface (never commit `.env` with real values)
+- When you introduce or change a config module, move **every** `process.env` read in the application into it in the same change — including settings the reported problem never named, such as a log level, an output path or a feature toggle. A config module that leaves other env reads scattered through request handlers, domain modules and start-up code has relocated the drift, not removed it. Finish by grepping the source for `process.env` and confirming the only hits are the config module and the process entry points that call it.
+- Document required configuration for the operator, not only in code. Where environment variables are the configuration interface, write or update `.env.example` in the **same** change as the schema: one line per setting the schema requires, placeholder values only, never a real credential, and never a committed `.env`. A validation schema tells the process what is wrong at boot; it does not tell a person what to put on the container — ship both. Where the platform's own manifest or secret-declaration format is the configuration interface, update that instead, by the same rule.
 
 See `resources/node-patterns.md` for the Zod config schema, options-object injection, and `.env.example` examples.
 
@@ -67,6 +68,14 @@ const config = require(`./config.${process.env.NODE_ENV}.json`);
 build artifacts, supplied through the runtime's supported injection mechanism.
 Environment-name branching creates combinatorial explosion and breaks dev/prod
 parity.
+
+**The fix:** name the thing the branch was actually deciding and make it its own
+validated setting — `SECURE_COOKIES=true`, `DATABASE_URL=...` — then delete the
+branch. Remove every environment-name comparison in the files you touch, not only
+the ones covering the settings you were asked about: two deploys given identical
+settings must behave identically, and one surviving `NODE_ENV` comparison is
+exactly what breaks that. Flagging such a branch in your summary instead of
+removing it leaves the drift in place — fix it, then say you did.
 
 ## Dependencies (Factor II)
 
@@ -142,6 +151,8 @@ Maximize robustness with fast startup and graceful shutdown. See `resources/node
 
 Treat logs as event streams. Write structured records to the process streams captured by the deployment platform; stdout is the normal application stream and stderr may carry error records or diagnostics when the collector captures both. Never route or store logs in files from within the app.
 
+**A logging change is not finished until three things are true**, whatever the request named: records are structured, they go to the process streams and nowhere else, and every record written while serving a request carries that request's identifier. The third is the one most often skipped — a structured stdout log that cannot be filtered to one request still cannot be used during an incident — so bind a per-request child logger at the entry to each handler before you migrate its call sites, and check the handlers for the id before you report the work done.
+
 This factor owns log *transport and shape*. For what goes into the stream — wide events / canonical log lines, traces, SLOs, alerting — see the `observability` skill.
 
 For internet-facing servers, RFC 6302 (BCP 162) specifies minimum logging requirements: source and destination addresses and ports, timestamps (preferably UTC), and transport protocol. These should be captured at the server/framework level in addition to application-level structured logging.
@@ -152,10 +163,10 @@ For long-running services, start from these properties and defer exact fields to
 
 - **Structured output** — logs are machine-parseable (JSON preferred), not free-form strings
 - **process streams only** — use the platform's documented stdout/stderr contract; the app never writes to log files or configures file transports
-- **Useful severity** — follow the platform's recognized levels and make the threshold deploy-time configurable where needed
+- **Useful severity** — use the levels the platform recognises, rank them, and compare every record against a threshold before emitting it. The threshold comes from outside the logger: an option on the factory with a sensible default (so an existing zero-argument call site keeps working), or one deploy-time setting read where config is built and injected. A factory that takes nothing has hard-coded its threshold, and nobody can turn debug on for one deploy without shipping code.
 - **Contextual data** — logs accept structured metadata (key-value pairs), not just message strings
 - **Timestamp included** — every log entry includes an ISO 8601 timestamp
-- **Request correlation** — include a trace or request identifier on request-scoped records where correlation is available; prefer the platform's W3C trace context integration
+- **Request correlation** — every record emitted while serving a request carries a request or trace identifier. Take it from the inbound trace or request-id header when one arrives and generate one per request when none does; then give it to each log call for that request, usually by binding a per-request child logger at the entry to the handler and logging through that. "No id arrived" is not a reason to omit the field: an operator who cannot pull one request's lines out of an hour of them cannot use the logs at all. Prefer the platform's W3C trace context integration where it exists.
 
 Projects may use any logging library (pino, winston with console transport, OpenTelemetry, custom) as long as these semantics are met. If an existing logger is missing levels or structured data support, adapt it to meet these requirements. See `resources/node-patterns.md` for an illustrative logger implementation.
 
@@ -228,7 +239,7 @@ Config injection via options objects makes all of these patterns naturally testa
 - [ ] Runtime-configured process apps prefer the same build artifact across environments
 - [ ] Deploy-varying config is injected outside the build and validated at startup with a schema
 - [ ] Startup fails fast with a clear error message if config is invalid
-- [ ] The platform-appropriate example or schema documents required config; `.env.example` is used when environment variables are the interface (no real credentials)
+- [ ] An operator-facing example documents every required setting alongside the schema — `.env.example` where environment variables are the interface, the platform's manifest where that is (placeholders only, no real credentials, no committed `.env`)
 - [ ] All dependencies explicitly declared in manifest with lockfile committed
 - [ ] Backing services are injected as platform-appropriate resource locators, handles, or credentials; equivalent providers are swappable at composition time
 - [ ] No in-memory session state, no local filesystem state between requests
@@ -237,7 +248,7 @@ Config injection via options objects makes all of these patterns naturally testa
 - [ ] Database pools and connections closed on shutdown
 - [ ] Platform-required health/readiness probes are implemented
 - [ ] Logs are structured on the platform-captured process streams, with no file transports
-- [ ] Request-scoped logs include available correlation context
+- [ ] Every request-scoped log record carries a request or trace id, taken from the inbound header or generated for the request when none arrives
 - [ ] Long-running web services satisfy the platform's port-binding contract
 - [ ] Development and production backing services are parity-tested where differences matter
 - [ ] Admin scripts live in the repo and use the same config/dependencies

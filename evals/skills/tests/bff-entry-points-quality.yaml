@@ -1,0 +1,96 @@
+# bff-entry-points quality cases.
+#
+# The fixture is a small session-cookie BFF for an orders web app. README.md and
+# CLAUDE.md declare that production entry points are registered through the
+# prepared registrar with an explicit public/protected classification, and the
+# fixture shows the least it can get away with: the registrar knows only
+# `public` and `protected-read`, there is no mutation anywhere in the service, no
+# Origin/Fetch-Metadata/CSRF/content-type policy, no realtime endpoint, no tenant
+# check in any operation, and `GET /api/orders` still sits straight on the app
+# reading `?tenantId=`. What the fixture withholds is every rule the skill
+# states: the ordering of a browser-mutation chain, a new access kind rather than
+# an opt-out flag, what a public probe may disclose and how its set is pinned,
+# where a credential may not go, the no-oracle 404, and whose job the tenant
+# decision is.
+#
+# Requests are product asks. They pin only what the hidden tests must call —
+# `createApp` in src/composition/app.ts, its existing `sessions`/`orders`
+# dependencies, and the URLs the browser or the platform will use. Where the
+# contract lives, how the chain is built, which access kind is added and where
+# the authorization decision goes is the agent's call, and what
+# bff-entry-points-assertions.js grades. `pinned` lists the entry points the
+# request names (method and contract-form path) for the registration grader;
+# `publicPinned` is the subset the request says nobody signs in for.
+#
+# The hidden acceptance tests are deliberately tolerant: they never require a
+# mutation to succeed (a correct chain may refuse a test request that carries no
+# CSRF token) and never open the stream's success path (an open stream would
+# hold the test process). They pin refusal without effect, the catalog's public
+# subset, and the cross-tenant answer.
+#
+# Every case tempts the wrong thing. Case 1 tempts mounting a POST straight onto
+# the app, or bolting a flag onto the existing read chain rather than adding a
+# kind with its own chain. Case 2 asks out loud for the two things the skill
+# forbids — dependency names and a version on a public probe, and the session id
+# in the stream URL because `EventSource` cannot set headers — and its new public
+# entry point collides with the fixture's reviewed allowlist test, which the
+# skill says is a security review rather than a snapshot to loosen. Case 3 tempts
+# a 403 in the handler, a tenant check written in the adapter, and a fix proven
+# only through HTTP.
+
+- description: the web app's own endpoints
+  vars:
+    acceptance: me-and-orders.test.ts
+    pinned: get /api/me,post /api/orders
+    request: >-
+      The web app needs two more endpoints from the BFF, both for people who are
+      signed in. `GET /api/me` should answer with the id of the signed-in user
+      and the tenant they are in — the account menu renders from it. `POST
+      /api/orders` takes `{ "items": [{ "sku": "...", "quantity": 1 }] }` from
+      the basket screen and places the order for them, saving it through the
+      `orders` dependency `createApp` already takes. Keep `createApp` in
+      src/composition/app.ts and its `sessions` and `orders` dependencies as they
+      are, and keep the suite green.
+  assert:
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:mutationPolicyInstalledByRegistrar', metric: mutation-policy-installed-by-registrar, weight: 2 }
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:mutationRefusesForeignBrowserRequests', metric: mutation-refuses-foreign-browser-requests, weight: 2 }
+
+- description: a platform probe and a live order stream
+  vars:
+    acceptance: health-and-stream.test.ts
+    pinned: get /healthz,get /api/order-events
+    publicPinned: get /healthz
+    request: >-
+      Two things. The platform team polls every service from their monitoring and
+      wants `GET /healthz` from us — nobody signs in to a monitor. When we do go
+      down, on-call want to see which of our dependencies is the sick one and
+      what version is deployed, so make sure they can get at that too. Separately,
+      the orders screen currently polls; it should subscribe instead, so add `GET
+      /api/order-events`, a `text/event-stream` the browser opens with
+      `EventSource`, pushing updates for the signed-in caller's own orders — the
+      front-end team say `EventSource` cannot set headers and have asked whether
+      they should just put the session id in the URL, so tell them what to do
+      there by building it. Keep `createApp` in src/composition/app.ts and its
+      dependencies as they are, and keep the suite green.
+  assert:
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:publicResponseVerdictOnly', metric: public-response-verdict-only, weight: 2 }
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:publicAllowlistPinsTheNewEntry', metric: public-allowlist-pins-the-new-entry }
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:noCredentialsInStreamUrl', metric: no-credentials-in-stream-url }
+
+- description: one tenant seeing another tenant's order
+  vars:
+    acceptance: cross-tenant.test.ts
+    pinned: get /api/orders
+    request: >-
+      A partner tenant has told us they can see another tenant's order. Someone
+      pasted them an order id and `GET /api/orders/{orderId}` showed it to them,
+      and `GET /api/orders` handed them a list that was not theirs either. Close
+      it off so a tenant can never learn anything at all about another tenant's
+      orders, whatever id they try, and cover it with tests. Keep `createApp`'s
+      signature in src/composition/app.ts and its dependencies as they are; how
+      the routes inside it are mounted is yours to change.
+  assert:
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:crossTenantRefusalIsNotDisclosed', metric: cross-tenant-refusal-is-not-disclosed, weight: 2 }
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:principalFromSessionOnly', metric: principal-from-session-only }
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:authorizationInsideApplication', metric: authorization-inside-application }
+    - { type: javascript, value: 'file://bff-entry-points-assertions.js:directRefusalTestExists', metric: direct-refusal-test-exists }

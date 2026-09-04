@@ -1,6 +1,6 @@
 ---
 name: bff-entry-points
-description: "Design and protect browser-facing BFF and backend HTTP entry points: an explicit public/protected access classification for every production route, a composition-prepared endpoint registrar that installs session, Origin, Fetch Metadata, CSRF, and content-type policy by construction, provider-free authorization inside the application, protected SSE and WebSocket registration, browser session coordination, and automated enforcement gates. Use when adding or reviewing HTTP endpoints, authentication middleware, session cookies, CSRF or Origin policy, realtime streams, login/logout flows, or auditing which routes are public. For whether to adopt a BFF, granularity, aggregation, and upstream identity mediation use bff-design; for physical BFF route layout use structure-codebase; for REST semantics, pagination, and versioning use api-design; for OAuth/OIDC protocol flows use secure-oauth-oidc; for ports-and-adapters implementation use hexagonal-architecture."
+description: "Design and protect browser-facing BFF and backend HTTP entry points: an explicit public/protected access classification for every production route, a composition-prepared endpoint registrar that installs session, Origin, Fetch Metadata, CSRF, and content-type policy by construction, provider-free authorization inside the application, protected SSE and WebSocket registration, browser session coordination, and automated enforcement gates. Use when adding or reviewing HTTP endpoints, when a tenant or customer can see another's data through a route or any authorization bug is reported on an endpoint, authentication middleware, session cookies, CSRF or Origin policy, realtime streams, login/logout flows, or auditing which routes are public. For whether to adopt a BFF, granularity, aggregation, and upstream identity mediation use bff-design; for physical BFF route layout use structure-codebase; for REST semantics, pagination, and versioning use api-design; for OAuth/OIDC protocol flows use secure-oauth-oidc; for ports-and-adapters implementation use hexagonal-architecture."
 ---
 
 # BFF Entry Points
@@ -80,6 +80,8 @@ The endpoint owner cannot choose, order, or omit authentication middleware — t
 
 This is a deep module in the `codebase-design` sense: a small stable contract (`register`) hiding ordering, header policy, error translation, and doc emission. Keep the registrar's core framework-neutral; only its inner adapter touches Hono/Fastify/Express APIs.
 
+Two consequences follow, and both hold on every change, not only on greenfield work. **The chain lives in the registrar and nowhere else**: an endpoint module that checks Origin, a CSRF token or the content type itself has reopened the seam the registrar exists to close — put the missing check into the registrar's chain and let the endpoint receive it. **Any route you change goes through the registrar in that change**, a route already mounted straight on the app included: give it a declaration and move the mount. Moving a mount changes neither the app factory's signature nor its dependencies, so an instruction to keep those as they are is not a reason to leave the bypass in place. **A state-changing kind is registered only with its whole chain.** The change that adds one adds, in the registrar's branch for it and before the handler runs: an exact-Origin allowlist match, a Fetch Metadata check, a content-type check, session resolution, and a session-bound CSRF token check. All five, whatever you name the kind — a branch that resolves the session and checks the content type is a read chain that accepts a body, and registering a mutation on it is the omission this skill exists to prevent. Build in that same change whatever the chain needs and composition does not yet have: where no allowlist is configured, a service that serves one front end matches the request's own origin; where the session record carries no token field, mint one by HMAC over the session id (step 3 below). A missing collaborator is the work of this change, never permission to install fewer checks.
+
 ## Request Ordering
 
 For a **protected read**:
@@ -93,7 +95,7 @@ For a **protected browser mutation**:
 
 1. reject invalid Origin, unsuitable Fetch Metadata, or unsupported content type — without revealing whether a session exists;
 2. resolve the application session;
-3. validate session-bound CSRF protection;
+3. validate session-bound CSRF protection — not optional and not a follow-up: where the session record cannot carry a synchronizer token, mint one by HMAC over the session id with a server-side secret (signed double-submit, session-bound) and validate that, rather than registering the mutation with an Origin-and-content-type chain and leaving the token for later;
 4. perform any coarse operation or path-resource authorization available from
    the principal and validated params;
 5. parse and validate the bounded body;
@@ -132,7 +134,7 @@ type AuthenticatedPrincipal = {
 
 The BFF does **not** own product authorization. Every protected application operation independently authorizes the principal before performing protected effects — a precondition that holds whether the caller is HTTP, a CLI, a test harness, another BFF, or a future driving adapter (OWASP ASVS 5.0 §8.3.1: enforce at a trusted service layer). Inner code never depends on Hono, cookies, Keycloak, OAuth tokens, provider groups, HTTP status codes, or browser fields.
 
-Authentication answers "who is calling?" — adapter work. Authorization answers "may this caller perform this product operation?" — application policy in product language (`viewOrder` refusing a foreign tenant), never a generic authorization-utilities bucket. Map the principal to an attributable domain actor only after authorization succeeds. Database row-level security is final containment for missed checks, not the source of permission.
+Authentication answers "who is calling?" — adapter work. Authorization answers "may this caller perform this product operation?" — application policy in product language (`viewOrder` refusing a foreign tenant), never a generic authorization-utilities bucket. Prove the rule where it lives: its test calls the operation directly with a foreign principal — no HTTP, no cookies, no registrar — and asserts the refusal result with no effect on the fakes. A test driven through the route proves the wiring, not the rule; an authorization rule you added or changed and covered only through HTTP is unfinished, because the next driving adapter does not go through that route. Map the principal to an attributable domain actor only after authorization succeeds. Database row-level security is final containment for missed checks, not the source of permission.
 
 ## Why This Design
 
@@ -151,7 +153,7 @@ Tradeoffs of design 4, accepted knowingly: the registrar is upfront machinery th
 
 ## Anti-Patterns
 
-- A route mounted directly on the framework app in production code, bypassing the registrar.
+- A route mounted directly on the framework app in production code, bypassing the registrar — including one that predates it. Changing such a route at all, a security fix above all, means moving it onto the registrar with its own access declaration in that same change: a bypass you edited and left mounted is one you have now chosen, and fixing its logic in place leaves the next mistake unclassified.
 - `requireAuth: false`, `skipCsrf`, or any boolean that lets an endpoint owner weaken its own chain.
 - A hand-edited list of protected paths, or path-prefix matching as the authorization boundary.
 - Authorization decided in HTTP middleware only — a non-HTTP caller then bypasses it entirely.
@@ -164,7 +166,7 @@ Tradeoffs of design 4, accepted knowingly: the registrar is upfront machinery th
 
 ## Completion Check
 
-- Does every mounted production entry point — including raw upgrades — have an explicit access classification?
+- Does every mounted production entry point — including raw upgrades, and including any route this change touched that used to sit on the app — have an explicit access classification through the registrar?
 - Can the public endpoint set be printed, and does a reviewed allowlist test pin it?
 - Is there any way to mount a route without the registrar? If yes, does a gate fail?
 - Do protected handlers receive a principal they cannot construct, typed by the declaration?
