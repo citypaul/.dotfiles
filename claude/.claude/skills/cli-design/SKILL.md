@@ -81,7 +81,7 @@ write to correct stream             just returns data
 set exit code
 ```
 
-This isn't an architecture mandate — it's just clean function design. The benefits are concrete:
+This isn't an architecture mandate — it's just clean function design with one hard edge: **the entry-point file is the only file that writes to a stream or ends the process.** When you extend or edit a module that already prints or exits, move that writing into the entry point as part of the same change — do not leave it there, and never add more printing alongside it because "that function already did it". The benefits are concrete:
 
 - **Testable without subprocess spawning** — call the handler, assert on the returned value
 - **Format flexibility for free** — same data renders as JSON, plain text, or coloured tables by swapping one function
@@ -126,8 +126,12 @@ Three-tier output hierarchy:
 ### `--json`: Structured Data
 
 - On success, stdout contains **ONLY** valid JSON — no spinners, no color, no progress
-- On failure, stdout stays empty and the final non-empty stderr line is the
-  structured JSON error envelope
+- On **any** non-zero exit, stdout stays empty and the final non-empty stderr line
+  is the structured JSON error envelope
+- That includes a domain failure (exit 1) where the run completed and the numbers
+  exist — an unmet threshold, gate, or budget is a failure, not a success envelope
+  carrying a `false` flag inside it. If the caller still needs the figures, put them
+  inside `error` (a `details` field), never on stdout
 - Other diagnostics may precede that final stderr line and never contaminate stdout;
   consumers parse the final non-empty line rather than the entire diagnostic stream
 - Schema is versioned — breaking changes to JSON output are breaking changes to the CLI
@@ -139,6 +143,10 @@ Success on stdout:
 ```json
 { "ok": true, "data": { ... } }
 ```
+
+The envelope is not optional and renames nothing: field names a consumer asked for
+live unchanged inside `data`, and a list of records goes in `data` rather than
+replacing the envelope with a bare array.
 
 Failure on stderr:
 ```json
@@ -184,6 +192,13 @@ For NDJSON specification details, see `resources/stream-contracts.md`.
 - A handled SIGTERM may finish with 0 or a documented application status such as
   143; Docker and Kubernetes do not require 143 for graceful shutdown
 - Map non-zero codes to the most important failure modes for your tool
+- A flag the caller simply did not pass is not invalid usage. Exit 2 is for input the
+  tool cannot act on; an added gate, threshold, or filter flag is opt-in — its absence
+  means the check is off and the command still succeeds with 0. Make a new flag
+  required only when the command has no meaning without it, or every plain
+  invocation becomes a usage error and hides the failures the codes exist to separate
+- Order the checks so each failure reaches the code that names it: a later validation
+  must not intercept a config or data error and report it as bad usage
 
 ---
 
@@ -202,7 +217,9 @@ Check priority order (first match wins):
 | 7 | stdout is not a TTY (`!isatty(stdout)`) | Plain output, no animations on stdout |
 | 8 | Default | Full interactive with colors |
 
-**Check stdout and stderr independently.** When stdout is piped but stderr is a TTY, you can still show spinners on stderr while keeping stdout clean for the pipe consumer.
+**Resolve the output mode once, in the entry point, before anything is written.** Walk the table above — format flags, `--no-color`, `FORCE_COLOR`, `NO_COLOR`, `TERM`, `CI`, and each stream's TTY status (`isatty`/`isTTY`) — into a single mode value and pass it to the formatters. Write that check even when today's output has no color and no animation yet: it is what keeps the decision in one place the day either is added.
+
+**Check stdout and stderr independently.** When stdout is piped but stderr is a TTY, you can still show spinners on stderr while keeping stdout clean for the pipe consumer. Status lines, spinners and progress are written only when the stream carrying them is a TTY; when stderr is a pipe it carries warnings and errors and nothing else.
 
 **Gate prompts on stdin independently.** Prompt only when stdin and the prompt's
 output stream are TTYs; stdout TTY status controls data formatting, not whether

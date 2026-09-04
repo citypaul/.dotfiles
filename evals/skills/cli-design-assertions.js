@@ -66,6 +66,7 @@ const gitOut = (args) => {
 // plus every line of a file git reports as new.
 const addedLines = () => {
   const added = [];
+  const removed = new Set();
   let file = "";
   for (const line of gitOut("diff HEAD -U0 --no-color --no-ext-diff -- src").split("\n")) {
     if (line.startsWith("+++ b/")) {
@@ -73,8 +74,12 @@ const addedLines = () => {
       continue;
     }
     if (line.startsWith("+++") || line.startsWith("---")) continue;
+    if (line.startsWith("-")) removed.add(`${file}\u0000${line.slice(1).trim()}`);
     if (line.startsWith("+")) added.push({ file, text: line.slice(1) });
   }
+  const netNew = added.filter(({ file: inFile, text }) => !removed.has(`${inFile}\u0000${text.trim()}`));
+  added.length = 0;
+  added.push(...netNew);
   const untracked = gitOut("status --porcelain --untracked-files=all -- src")
     .split("\n")
     .filter((line) => line.startsWith("?? "))
