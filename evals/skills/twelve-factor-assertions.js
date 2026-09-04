@@ -525,7 +525,7 @@ const USES_THE_FILE_TRANSPORT = /from\s+["'][^"']*file-logger["']|\bcreateFileLo
 // literal `console.log(` call site.
 const putsRecordsOnAStream = (text) =>
   /\bconsole\.(log|info|warn|error|debug|trace)\b/.test(text) ||
-  (/\bprocess\.(stdout|stderr)\b/.test(text) && /\.write\s*\(/.test(text));
+  ((/\bprocess\.(stdout|stderr)\b/.test(text) || /\bprocess\s*\[[^\]]+\]\s*\.write\s*\(/.test(text)) && /\.write\s*\(/.test(text));
 
 // 10. "Never route or store logs in files from within the app" — the execution
 //     environment captures the process streams.
