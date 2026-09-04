@@ -114,6 +114,14 @@ const codeView = (source) => {
   let index = 0;
   while (index < source.length) {
     const two = source.slice(index, index + 2);
+    const quote = source[index];
+    if (quote === '"' || quote === "'" || quote === "`") {
+      let end = index + 1;
+      while (end < source.length && source[end] !== quote) end += source[end] === "\\" ? 2 : 1;
+      out += quote + " ".repeat(Math.max(0, end - index - 1)) + (end < source.length ? quote : "");
+      index = end + 1;
+      continue;
+    }
     if (two === "//") {
       const end = source.indexOf("\n", index);
       out += " ";
@@ -697,7 +705,7 @@ const metricSinks = () => {
       attributeArgumentsIn(body, sinks).forEach((argument) => {
         resolveLabel(file, argument).forEach((value) => {
           params.forEach((param, index) => {
-            if (param === "" || !new RegExp(`\\b${escapeRe(param)}\\b`).test(value)) return;
+            if (param === "" || !new RegExp(`\\b${escapeRe(param)}\\b(?!\\s*\\()`).test(value)) return;
             if (sinks.some((sink) => sink.name === name && sink.index === index)) return;
             sinks.push({ file, name, index });
           });
