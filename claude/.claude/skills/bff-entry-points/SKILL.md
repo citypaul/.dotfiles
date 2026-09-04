@@ -1,6 +1,6 @@
 ---
 name: bff-entry-points
-description: "Design and protect browser-facing BFF and backend HTTP entry points: an explicit public/protected access classification for every production route, a composition-prepared endpoint registrar that installs session, Origin, Fetch Metadata, CSRF, and content-type policy by construction, provider-free authorization inside the application, protected SSE and WebSocket registration, browser session coordination, and automated enforcement gates. Use when adding or reviewing HTTP endpoints, authentication middleware, session cookies, CSRF or Origin policy, realtime streams, login/logout flows, or auditing which routes are public. For whether to adopt a BFF, granularity, aggregation, and upstream identity mediation use bff-design; for physical BFF route layout use structure-codebase; for REST semantics, pagination, and versioning use api-design; for OAuth/OIDC protocol flows use secure-oauth-oidc; for ports-and-adapters implementation use hexagonal-architecture."
+description: "Design and protect browser-facing BFF and backend HTTP entry points: an explicit public/protected access classification for every production route, a composition-prepared endpoint registrar that installs session, Origin, Fetch Metadata, CSRF, and content-type policy by construction, provider-free authorization inside the application, protected SSE and WebSocket registration, browser session coordination, and automated enforcement gates. Use when adding or reviewing HTTP endpoints, when a tenant or customer can see another's data through a route or any authorization bug is reported on an endpoint, authentication middleware, session cookies, CSRF or Origin policy, realtime streams, login/logout flows, or auditing which routes are public. For whether to adopt a BFF, granularity, aggregation, and upstream identity mediation use bff-design; for physical BFF route layout use structure-codebase; for REST semantics, pagination, and versioning use api-design; for OAuth/OIDC protocol flows use secure-oauth-oidc; for ports-and-adapters implementation use hexagonal-architecture."
 ---
 
 # BFF Entry Points
@@ -79,6 +79,8 @@ endpoints.register(getOrderContract, async ({ principal, params }) => {
 The endpoint owner cannot choose, order, or omit authentication middleware — there are no optional flags. The handler's type is derived from the declaration (`HandlerFor<Contract>`, defined in the endpoint-protection reference): a `public` handler receives no principal; a protected handler receives an `AuthenticatedPrincipal` it could not have minted itself — non-constructibility is enforced by module boundary and an import-boundary gate, not convention. For public endpoints the registrar mounts the handler and emits explicitly unauthenticated API documentation (`security: []`, a deliberate greppable marker — never an omitted field). For protected endpoints it installs the verification chain by construction and emits matching OpenAPI security metadata, so runtime behavior and documentation cannot disagree.
 
 This is a deep module in the `codebase-design` sense: a small stable contract (`register`) hiding ordering, header policy, error translation, and doc emission. Keep the registrar's core framework-neutral; only its inner adapter touches Hono/Fastify/Express APIs.
+
+Two consequences follow, and both hold on every change, not only on greenfield work. **The chain lives in the registrar and nowhere else**: an endpoint module that checks Origin, a CSRF token or the content type itself has reopened the seam the registrar exists to close — put the missing check into the registrar's chain and let the endpoint receive it. **Any route you change goes through the registrar in that change**, a route already mounted straight on the app included: give it a declaration and move the mount. Moving a mount changes neither the app factory's signature nor its dependencies, so an instruction to keep those as they are is not a reason to leave the bypass in place.
 
 ## Request Ordering
 
@@ -164,7 +166,7 @@ Tradeoffs of design 4, accepted knowingly: the registrar is upfront machinery th
 
 ## Completion Check
 
-- Does every mounted production entry point — including raw upgrades — have an explicit access classification?
+- Does every mounted production entry point — including raw upgrades, and including any route this change touched that used to sit on the app — have an explicit access classification through the registrar?
 - Can the public endpoint set be printed, and does a reviewed allowlist test pin it?
 - Is there any way to mount a route without the registrar? If yes, does a gate fail?
 - Do protected handlers receive a principal they cannot construct, typed by the declaration?

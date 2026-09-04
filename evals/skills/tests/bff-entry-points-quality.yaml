@@ -86,8 +86,9 @@
       pasted them an order id and `GET /api/orders/{orderId}` showed it to them,
       and `GET /api/orders` handed them a list that was not theirs either. Close
       it off so a tenant can never learn anything at all about another tenant's
-      orders, whatever id they try, and cover it with tests. Keep `createApp` in
-      src/composition/app.ts and its dependencies as they are.
+      orders, whatever id they try, and cover it with tests. Keep `createApp`'s
+      signature in src/composition/app.ts and its dependencies as they are; how
+      the routes inside it are mounted is yours to change.
   assert:
     - { type: javascript, value: 'file://bff-entry-points-assertions.js:crossTenantRefusalIsNotDisclosed', metric: cross-tenant-refusal-is-not-disclosed, weight: 2 }
     - { type: javascript, value: 'file://bff-entry-points-assertions.js:principalFromSessionOnly', metric: principal-from-session-only }
