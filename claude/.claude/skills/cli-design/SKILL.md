@@ -50,7 +50,7 @@ This separation is what makes `mycli --json | jq ...` work. One spinner characte
 | Content | Stream | Why |
 |---------|--------|-----|
 | Primary output (data, results, JSON) | stdout | Pipeable, buffered for throughput |
-| Progress bars, spinners, status | stderr | Not data — must not corrupt pipes |
+| Progress bars, spinners, status | stderr, and only when stderr is a TTY (`process.stderr.isTTY`) — a piped stderr carries warnings and errors and nothing else | Not data — must not corrupt pipes, and a pipe consumer never wants a spinner |
 | Warnings, errors, diagnostics | stderr | Visible to user even when stdout is piped |
 | Debug/verbose output | stderr | Diagnostic, never data |
 
