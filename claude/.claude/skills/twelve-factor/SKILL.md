@@ -151,6 +151,8 @@ Maximize robustness with fast startup and graceful shutdown. See `resources/node
 
 Treat logs as event streams. Write structured records to the process streams captured by the deployment platform; stdout is the normal application stream and stderr may carry error records or diagnostics when the collector captures both. Never route or store logs in files from within the app.
 
+**A logging change is not finished until three things are true**, whatever the request named: records are structured, they go to the process streams and nowhere else, and every record written while serving a request carries that request's identifier. The third is the one most often skipped — a structured stdout log that cannot be filtered to one request still cannot be used during an incident — so bind a per-request child logger at the entry to each handler before you migrate its call sites, and check the handlers for the id before you report the work done.
+
 This factor owns log *transport and shape*. For what goes into the stream — wide events / canonical log lines, traces, SLOs, alerting — see the `observability` skill.
 
 For internet-facing servers, RFC 6302 (BCP 162) specifies minimum logging requirements: source and destination addresses and ports, timestamps (preferably UTC), and transport protocol. These should be captured at the server/framework level in addition to application-level structured logging.
