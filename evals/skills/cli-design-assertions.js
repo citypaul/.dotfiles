@@ -251,9 +251,10 @@ exports.jsonErrorEnvelopeOnStderr = (output, context) => {
 //     and stderr independently".
 exports.ttyAndColorAware = () => {
   const source = productionFiles().map(lib.read).join("\n");
+  const emitsColor = /\\x1b\[|\\u001b\[|\\033\[|\b(?:chalk|picocolors|kleur|colorette|ansi-colors|cli-color)\b|FORCE_COLOR/.test(source);
   const missing = [
     [/isTTY/, "nothing checks isTTY"],
-    [/NO_COLOR/, "NO_COLOR is not respected"],
+    ...(emitsColor ? [[/NO_COLOR/, "NO_COLOR is not respected"]] : []),
   ]
     .filter(([pattern]) => !pattern.test(source))
     .map(([, label]) => label);
