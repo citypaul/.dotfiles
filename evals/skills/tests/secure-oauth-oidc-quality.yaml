@@ -60,8 +60,10 @@
       `https://portal.example.com/auth/callback`, which is the one callback URL
       registered with them; after that the browser lands back on the portal at
       `config.appBaseUrl` and `GET /me` answers 200 with the signed-in person's
-      email address, 401 for anyone else. Leave createApp's deps as they are
-      and keep the suite green.
+      email address, 401 for anyone else. Leave createApp's deps as they are:
+      `createApp({ provider, config })` with today's `config` keeps working, so
+      anything else you need (a signing secret, a session store) is created
+      inside or given a default. Keep the suite green.
   assert:
     - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
     - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:pkceEnforced', metric: pkce-enforced }
@@ -106,8 +108,11 @@
       `GET /auth/login?org=partner` start the sign-in with theirs. No `org`, or
       `org=company`, keeps working exactly as it does now. We are registered
       with them under a different client id. Both sets of people end up in the
-      same portal session, and `GET /me` answers the same way for either. Keep
-      the suite green.
+      same portal session: after either sign-in completes, `GET /me` answers 200
+      with that person's email, and 401 for a visitor who never signed in.
+      `createApp({ providers, config })` with today's `config` keeps working, so
+      anything else you need (a signing secret, a session store) is created
+      inside or given a default. Keep the suite green.
   assert:
     - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:behaviourDelivered', metric: behaviour-delivered, weight: 2 }
     - { type: javascript, value: 'file://secure-oauth-oidc-assertions.js:issuerBoundToTransaction', metric: issuer-bound-to-transaction, weight: 2 }
