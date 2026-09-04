@@ -8,8 +8,11 @@
 # step of the checkout, one of them serialising the whole request, another
 # printing the card token, another the customer's email — plus a payments client
 # whose charge already carries an `idempotency-key` header, and a router that
-# answers 404 on any path it does not know. The OpenTelemetry API, the SDK and
-# an in-memory exporter are all in the lockfile.
+# answers 404 on any path it does not know. Two endpoints are registered,
+# `POST /checkout` and `POST /orders/:orderId/cancel`, so a request path is an
+# unbounded value and a per-endpoint chart has more than one endpoint to tell
+# apart. The OpenTelemetry API, the SDK and an in-memory exporter are all in
+# the lockfile.
 #
 # Requests are product asks. They pin only what the hidden test must reach: the
 # route, the responses that already exist, the payments client's file and the
@@ -20,9 +23,13 @@
 # Case 1 (debugging a failed checkout) exercises one canonical event per
 # request emitted in teardown so it survives the exception path, allowlisted
 # fields with no secrets, semantic-convention attribute names, and the removal
-# of the console noise. Case 2 (latency per customer) exercises the cardinality
+# of the console noise. Its hidden test drives the exception path directly: a
+# body whose first field throws when it is read escapes the handler's own
+# try/catch, so an event ended anywhere but teardown is simply not there. Case 2 (latency per customer) exercises the cardinality
 # routing rule: the identifier belongs on the event, never on a metric label,
-# and a request-derived route label must be normalised to a fixed set. Case 3
+# and a request-derived route label must be normalised to a fixed set — the
+# cancel route's path carries an order id, so labelling with the raw path is
+# anti-pattern #1 rather than a harmless constant. Case 3
 # (the payments team cannot correlate) exercises W3C trace-context propagation
 # instead of a home-made correlation header: the request says only that the
 # gateway shows back the headers that arrive, so nothing in it names the
@@ -52,10 +59,10 @@
     acceptance: checkout-latency.test.ts
     request: >-
       Product wants checkout latency on the dashboard, and when it goes bad
-      they want to know which customers were hit. Record how long POST
-      /checkout takes as a metric the dashboard can chart per endpoint, and
-      leave us able to answer the "which customers" question afterwards. What
-      the endpoint answers must not change.
+      they want to know which customers were hit. Record how long each request
+      this service handles takes as a metric the dashboard can chart per
+      endpoint, and leave us able to answer the "which customers" question
+      afterwards. What the endpoints answer must not change.
   assert:
     - { type: javascript, value: 'file://observability-assertions.js:routeLabelBounded', metric: route-label-bounded, weight: 2 }
 

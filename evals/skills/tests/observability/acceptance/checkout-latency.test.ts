@@ -62,7 +62,7 @@ describe("acceptance: checkout timing is attributable to a customer", () => {
     expect(values(roots[1])).toContain("cus_beta");
   });
 
-  it("still answers the checkout and the unknown path the way it did before", async () => {
+  it("still answers every endpoint the way it did before", async () => {
     exporter.reset();
     const { router } = app();
 
@@ -71,6 +71,12 @@ describe("acceptance: checkout timing is attributable to a customer", () => {
       path: "/checkout",
       params: {},
       body: basket("cus_gamma"),
+    });
+    const cancel = await router.handle({
+      method: "POST",
+      path: "/orders/ord_5150/cancel",
+      params: {},
+      body: {},
     });
     const unknown = await router.handle({
       method: "POST",
@@ -82,6 +88,10 @@ describe("acceptance: checkout timing is attributable to a customer", () => {
     expect(checkout).toEqual({
       status: 201,
       body: { orderId: "ord_5150", totalPence: 1500, paymentId: "pay_5150" },
+    });
+    expect(cancel).toEqual({
+      status: 202,
+      body: { orderId: "ord_5150", status: "cancelling" },
     });
     expect(unknown.status).toBe(404);
   });

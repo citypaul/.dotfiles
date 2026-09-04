@@ -35,13 +35,24 @@
 #    still branches on, the `SESSION_TTL_MINUTES` read left where it is, and
 #    nothing written down for an operator.
 # 2. containers recycled mid-request — SIGTERM *and* SIGINT, drain before
-#    exit, a drain timeout, backing services closed. The default is
-#    `process.on("SIGTERM", () => server.close(() => process.exit(0)))`.
+#    exit, a drain timeout, backing services closed. The request reports the
+#    symptom users and support see and says only that what happens between the
+#    stop request and the container going away is ours; which signals arrive,
+#    what has to be waited for, what has to be closed and what bounds the wait
+#    are all withheld. The default is
+#    `process.on("SIGTERM", () => server.close(() => process.exit(0)))`: one
+#    signal, a callback the fixture's promise-returning `close` never calls, no
+#    bound on the wait and nothing closing the pool.
 # 3. logs invisible on the platform — structured records on the process
 #    streams, no file transport left anywhere, a severity threshold that can
-#    be set for a deploy, correlation on request-scoped records. The default
-#    is a fixed console.log/JSON.stringify wrapper with no ranking of levels
-#    and no request id threaded through the handler.
+#    be set for a deploy, correlation on request-scoped records. The request
+#    reports only that ops see nothing of ours and that what they did see
+#    could not be filtered or sorted: where a container's logs are collected
+#    from, what a severity threshold is for and how one request is picked out
+#    of an hour are all withheld, and the only thing pinned is the call the
+#    hidden test makes. The default is a fixed console.log/JSON.stringify
+#    wrapper taking nothing, with no ranking of levels, no threshold anyone
+#    can set for a deploy and no request id threaded through the handler.
 # 4. nightly cleanup — a second process type with its own entry point declared
 #    in Procfile, running the same code and wiring as the app, and no
 #    scheduler inside the web process. The default is `setInterval` in
@@ -74,12 +85,12 @@
   vars:
     acceptance: shutdown.test.ts
     request: >-
-      Every deploy the platform replaces our containers and users see it:
-      whatever was in flight dies mid-response, and we get a burst of database
-      errors in the logs from the same second. The platform asks a process to
-      stop and kills whatever is still running about thirty seconds later.
-      Deal with this in `startServer` in src/server.ts — it already gets the
-      server, the pool and the port — and keep it tested.
+      Every deploy, users get a rash of failed sign-ins for a few seconds and
+      support picks up the tickets for them. The platform swaps containers on
+      every deploy: it asks the old process to stop, and what happens between
+      that and the container going away is on us. Deal with this in
+      `startServer` in src/server.ts — it already gets the server, the pool
+      and the port — and keep it tested.
   assert:
     - { type: javascript, value: 'file://twelve-factor-assertions.js:signalHandlersRegistered', metric: signal-handlers-registered }
     - { type: javascript, value: 'file://twelve-factor-assertions.js:drainTimeoutSet', metric: drain-timeout-set }
@@ -90,14 +101,16 @@
   vars:
     acceptance: logging.test.ts
     request: >-
-      Ops cannot find anything we log. They say the only thing their tooling
-      picks up is what a container prints while it is running, and on the rare
-      occasion they do get a line out of us it is an English sentence they
-      cannot filter or sort on. Give us one `createLogger()` in src/logger.ts
-      — `createLogger()` with no arguments at all has to give a usable logger,
-      so anything it takes needs a default — and a record should read like
-      `logger.info("session created", { session_id: "s-1" })`. Move everything
-      we log today over to it. Keep it tested.
+      Ops cannot find anything we log. Nothing of ours reaches the tooling they
+      run every other service through, and the one time somebody dug a line of
+      ours out by hand it was no use to them either — an English sentence they
+      could not filter or sort on. They have asked us to fix this on our side
+      rather than have them chase our service specially. Put it behind one
+      `createLogger` in src/logger.ts, taking a
+      message and whatever fields the caller has —
+      `logger.info("session created", { session_id: "s-1" })` — because that is
+      what the tests will call, and move everything we log today over to it.
+      Keep it tested.
   assert:
     - { type: javascript, value: 'file://twelve-factor-assertions.js:logsOnProcessStreamsNotFiles', metric: logs-on-process-streams-not-files }
     - { type: javascript, value: 'file://twelve-factor-assertions.js:logRecordsAreStructured', metric: log-records-are-structured }

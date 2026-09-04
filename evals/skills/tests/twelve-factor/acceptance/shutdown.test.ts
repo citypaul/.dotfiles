@@ -4,7 +4,7 @@
 // It starts the server with fakes, sends the signal the platform sends, and
 // requires the in-flight work to be drained before the backing service is
 // closed. Nothing here assumes how the drain is implemented.
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startServer } from "./server";
 import type { DbPool } from "./lib/db-pool";
 import type { HttpServer } from "./lib/http-server";
@@ -38,6 +38,24 @@ const waitFor = async (settled: () => boolean) => {
     await tick();
   }
 };
+
+// How a drained process ends is not what this test grades. Setting
+// `process.exitCode` and calling `process.exit(0)` once everything is closed
+// are both correct endings, and a forced exit is what a drain timeout is for —
+// but a real exit would take the test runner down with it. Stand in for it for
+// the duration of the run so either ending is scored on the drain alone.
+const exitCalls: number[] = [];
+const realExit = process.exit;
+
+beforeAll(() => {
+  process.exit = ((code?: number) => {
+    exitCalls.push(Number(code ?? 0));
+  }) as unknown as typeof process.exit;
+});
+
+afterAll(() => {
+  process.exit = realExit;
+});
 
 describe("acceptance: the platform stops the container", () => {
   it("drains the server before closing the pool when asked to stop", async () => {

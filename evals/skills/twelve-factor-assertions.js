@@ -14,7 +14,26 @@
 // src/index.ts starts the web process, src/lib/ holds SDK stand-ins, and the
 // platform runs the process types listed in Procfile. Roles are found by
 // content — the config module is whichever production file exports
-// createConfig, the shutdown file is whichever one registers a signal handler.
+// createConfig, the shutdown file is whichever one registers a signal handler,
+// a composition root is whichever file builds the config.
+//
+// Spelling is never graded. A definition may be a `const` arrow or a
+// `function`; a call may sit in the file that defines it or in one that imports
+// it; an options object may be named anything at all; wiring may live in the
+// entry point or in a composition module several files away; a process type may
+// be launched directly or through a package script. Every grader resolves those
+// through the import closure, a definition-aware call scan, a brace/paren-
+// balanced read of a parameter list, and a package.json script walk, so only
+// the rule is graded.
+//
+// Prose is never graded as code either: a pattern that would read a comment or
+// a sentence inside an error message as source runs over `codeOf`, which
+// removes comments and blanks regular-expression bodies, and over whole string
+// literals rather than substrings of them. Documenting a connection URL in a
+// comment, checking a setting `startsWith("postgres://")` and telling an
+// operator what a good value looks like are all correct answers to the config
+// case and none of them is a hardcoded endpoint.
+//
 // Every grader is one rule the skill states, quoted in the comment above it.
 
 const { existsSync, readFileSync, statSync } = require("node:fs");
@@ -73,17 +92,65 @@ const moduleExporting = (name) =>
   production().find((file) => new RegExp(`export\\s+(const|let|function|async function)\\s+${name}\\b`).test(lib.read(file))) ??
   production().find((file) => new RegExp(`export\\s*\\{[^}]*\\b${name}\\b`).test(lib.read(file)));
 
-// The platform's process declaration: "web: <command>" lines in Procfile.
-const processTypes = () =>
-  (readIfExists(wsFile("Procfile")) ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "" && !line.startsWith("#"))
-    .map((line) => ({ name: line.slice(0, line.indexOf(":")).trim(), command: line.slice(line.indexOf(":") + 1).trim() }))
-    .filter((type) => type.name !== "");
-const entryFileOf = (type) => {
-  const token = (type.command.match(/[\w./-]+\.(ts|js|mjs)/g) ?? []).map((path) => wsFile(path)).find(isFile);
-  return token;
+// Does this text *call* `name`, as opposed to merely defining or re-exporting
+// it? The definition headers are removed first, so a file that both exports
+// `runCleanup` and invokes it under a main guard counts as calling it — the
+// shape a one-file process entry naturally takes.
+const callsInText = (text, name) => {
+  const withoutDefinitions = text
+    .replace(new RegExp(`\\b(?:async\\s+)?function\\s+${name}\\s*\\(`, "g"), " ")
+    .replace(new RegExp(`\\b(?:const|let|var)\\s+${name}\\b`, "g"), " ");
+  return new RegExp(`\\b${name}\\s*\\(`).test(withoutDefinitions);
+};
+const calls = (file, name) => callsInText(lib.read(file), name);
+
+// Read a balanced (...) or {...} span starting at `start`, skipping over string
+// and template literals so a bracket inside a string never moves the depth.
+const balancedFrom = (text, start) => {
+  const open = text[start];
+  const close = { "(": ")", "{": "}", "[": "]" }[open];
+  if (close === undefined) return undefined;
+  let depth = 0;
+  let quote;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+    if (quote !== undefined) {
+      if (char === "\\") index += 1;
+      else if (char === quote) quote = undefined;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === "`") quote = char;
+    else if (char === open) depth += 1;
+    else if (char === close) {
+      depth -= 1;
+      if (depth === 0) return text.slice(start + 1, index);
+    }
+  }
+  return undefined;
+};
+
+// The declared parameter list of `name`, whether it is written as an arrow
+// bound to a const or as a function declaration, and whatever return-type
+// annotation follows it. `undefined` means no definition was found; `""` means
+// the factory genuinely takes nothing.
+const parameterListOf = (text, name) => {
+  const definition = [
+    new RegExp(`\\b(?:const|let|var)\\s+${name}\\b`),
+    new RegExp(`\\b(?:async\\s+)?function\\s+${name}\\b`),
+  ]
+    .map((pattern) => pattern.exec(text))
+    .filter(Boolean)
+    .sort((a, b) => a.index - b.index)[0];
+  if (!definition) return undefined;
+  const open = text.indexOf("(", definition.index + definition[0].length);
+  return open === -1 ? undefined : balancedFrom(text, open);
+};
+
+// The argument list of the first call to `name` in this text, if any.
+const argumentListOf = (text, name) => {
+  const call = new RegExp(`\\b${name}\\s*\\(`).exec(text);
+  if (!call) return undefined;
+  return balancedFrom(text, call.index + call[0].length - 1);
 };
 
 const anyOf = (patterns, text) => patterns.some((pattern) => pattern.test(text));
@@ -92,37 +159,217 @@ const hitsIn = (files, checks) =>
     checks.filter(([pattern]) => pattern.test(text)).map(([, label]) => `${lib.rel(file)}: ${label}`),
   );
 
+// Everything before this point reads raw text. The checks that would otherwise
+// read prose as source read `codeOf` instead: line and block comments are
+// removed and regular-expression bodies are blanked, while string literals are
+// left exactly as written. A regular expression is recognised where one may
+// legally start, so `a / b` stays a division and `/^postgres:\/\//` stays one
+// token.
+const REGEX_MAY_START = /(^|[([{,;:=!&|?+\-*%~^<>])\s*$|\b(return|typeof|case|in|of|new|delete|void|do|else)\s*$/;
+const stripComments = (text) => {
+  let out = "";
+  let index = 0;
+  while (index < text.length) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (char === '"' || char === "'" || char === "`") {
+      out += char;
+      index += 1;
+      while (index < text.length) {
+        const inner = text[index];
+        out += inner;
+        index += 1;
+        if (inner === "\\") {
+          out += text[index] ?? "";
+          index += 1;
+          continue;
+        }
+        if (inner === char) break;
+      }
+      continue;
+    }
+    if (char === "/" && next === "/") {
+      while (index < text.length && text[index] !== "\n") index += 1;
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      index += 2;
+      while (index < text.length && !(text[index] === "*" && text[index + 1] === "/")) index += 1;
+      index += 2;
+      continue;
+    }
+    if (char === "/" && REGEX_MAY_START.test(out)) {
+      out += "/RE/";
+      index += 1;
+      let inClass = false;
+      while (index < text.length) {
+        const inner = text[index];
+        index += 1;
+        if (inner === "\\") {
+          index += 1;
+          continue;
+        }
+        if (inner === "[") inClass = true;
+        else if (inner === "]") inClass = false;
+        else if (inner === "\n") break;
+        else if (inner === "/" && !inClass) break;
+      }
+      continue;
+    }
+    out += char;
+    index += 1;
+  }
+  return out;
+};
+const codeOf = (file) => stripComments(lib.read(file));
+const hitsInCode = (files, checks) =>
+  files.flatMap((file) => {
+    const text = codeOf(file);
+    return checks.filter(([pattern]) => pattern.test(text)).map(([, label]) => `${lib.rel(file)}: ${label}`);
+  });
+
+// Whole string and template literals, contents only. A pattern applied to
+// these asks "is this value a URL?" rather than "does this file mention one
+// anywhere?".
+const stringLiteralsIn = (code) => {
+  const found = [];
+  let index = 0;
+  while (index < code.length) {
+    const char = code[index];
+    if (char !== '"' && char !== "'" && char !== "`") {
+      index += 1;
+      continue;
+    }
+    let value = "";
+    index += 1;
+    while (index < code.length) {
+      const inner = code[index];
+      if (inner === "\\") {
+        value += inner + (code[index + 1] ?? "");
+        index += 2;
+        continue;
+      }
+      index += 1;
+      if (inner === char) break;
+      value += inner;
+    }
+    found.push(value);
+  }
+  return found;
+};
+
+// The platform's process declaration: "web: <command>" lines in Procfile.
+const processTypes = () =>
+  (readIfExists(wsFile("Procfile")) ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "" && !line.startsWith("#"))
+    .map((line) => ({ name: line.slice(0, line.indexOf(":")).trim(), command: line.slice(line.indexOf(":") + 1).trim() }))
+    .filter((type) => type.name !== "");
+const packageScripts = () => {
+  try {
+    return JSON.parse(readIfExists(wsFile("package.json")) ?? "{}").scripts ?? {};
+  } catch {
+    return {};
+  }
+};
+
+// The file a declared process command runs. A command naming a source file
+// wins. A command that delegates to a package script is followed into that
+// script, so `worker: pnpm run cleanup` with `"cleanup": "node src/cleanup.ts"`
+// declares the same entry point as `worker: node src/cleanup.ts`. Failing both
+// (a build step whose output is not in the tree), a production file whose
+// basename is one of the names seen along the way — the process type, the
+// script, the built artifact — is taken as the entry, so the choice of launcher
+// is never graded.
+const entryFileOf = (type) => {
+  const scripts = packageScripts();
+  const names = [type.name, `${type.name}-process`];
+  const follow = (command, depth) => {
+    if (typeof command !== "string" || depth > 4) return undefined;
+    const paths = command.match(/[\w@./-]+\.(ts|tsx|mts|cts|js|mjs|cjs)\b/g) ?? [];
+    const named = paths.map((path) => wsFile(path)).find(isFile);
+    if (named) return named;
+    paths.forEach((path) => names.push(stripExt(lib.basename(path))));
+    const script = /\b(?:pnpm|npm|yarn|bun|npx)\s+(?:run\s+|exec\s+)?([\w:.@/-]+)/.exec(command)?.[1];
+    if (script === undefined) return undefined;
+    names.push(script);
+    return Object.hasOwn(scripts, script) ? follow(scripts[script], depth + 1) : undefined;
+  };
+  const found = follow(type.command, 0);
+  if (found) return found;
+  const wanted = new Set(names);
+  return production().find((file) => wanted.has(stripExt(lib.basename(file))));
+};
+
 // ---------------------------------------------------------------------------
 // Config (Factor III)
 // ---------------------------------------------------------------------------
 
+// The settings the platform sets on a container, as the case's request states
+// them. They are the deploy contract, not a naming convention.
+const PLATFORM_SETTINGS = ["PORT", "DATABASE_URL", "SESSION_TTL_MINUTES"];
+
 // 1. "Validate config at startup with a schema — fail fast (exit non-zero,
 //    clear error) if config is invalid".
+//
+//    "With a schema" is graded as the deploy contract being declared in one
+//    place — either through a schema library, or as one literal listing the
+//    settings — never as the name of a library. `JSON.parse` is explicitly not
+//    a schema. "Fail fast" is graded as the module refusing loudly rather than
+//    returning something half built. "At startup" is graded over the web
+//    process's whole import closure, so a composition module counts.
 exports.configSchemaValidated = () => {
   const file = moduleExporting("createConfig");
   if (!file) return lib.verdict(false, "no production module exports createConfig");
   const text = lib.read(file);
-  const schema = anyOf([/\bz\.(object|strictObject|looseObject|record)\s*\(/, /\bSchema\s*=/, /\.(safeParse|parse)\s*\(/], text);
-  // "at startup" is satisfied wherever in the web process's own import closure
-  // the call sits — the entry itself or a composition module it loads — so read
-  // the closure, not just src/index.ts.
-  const startupUse = webPath().some((loaded) => lib.rel(loaded) !== lib.rel(file) && /\bcreateConfig\s*\(/.test(lib.read(loaded)));
+  const throughASchema = anyOf(
+    [
+      /\b[\w$]+\s*\.\s*(object|strictObject|looseObject|record|shape)\s*\(/,
+      /\bSchema\b\s*[:=]/,
+      /(?<!JSON)\.(safeParse|parse|validate|assert)\s*\(/,
+      /from\s+["'](zod|valibot|ajv|yup|superstruct|arktype|@sinclair\/typebox|io-ts)["']/,
+    ],
+    text,
+  );
+  // A hand-written contract counts too, as long as the settings are declared
+  // together rather than read one at a time from wherever they are needed.
+  const positions = PLATFORM_SETTINGS.map((key) => text.indexOf(key)).filter((index) => index >= 0).sort((a, b) => a - b);
+  const declaredTogether = positions.length >= 2 && positions[positions.length - 1] - positions[0] <= 600;
+  const failsFast = anyOf([/\bthrow\b/, /process\.exit\s*\(/, /\b(success|ok|valid)\s*:\s*false/], text);
+  const startupUse = webPath().some((loaded) => calls(loaded, "createConfig"));
   const reasons = [
-    schema ? undefined : `${lib.rel(file)}: config is not parsed through a schema`,
+    throughASchema || declaredTogether ? undefined : `${lib.rel(file)}: the settings a container needs are not declared in one place`,
+    failsFast ? undefined : `${lib.rel(file)}: invalid config is not refused, so a bad container still comes up`,
     startupUse ? undefined : "nothing the web process loads builds its config at startup",
   ].filter(Boolean);
-  return lib.verdict(reasons.length === 0, reasons.length === 0 ? `config schema in ${lib.rel(file)}, parsed at startup` : reasons.join("; "));
+  return lib.verdict(reasons.length === 0, reasons.length === 0 ? `config contract declared and refused in ${lib.rel(file)}, built at startup` : reasons.join("; "));
 };
 
 // 2. "Never hardcode credentials or environment-specific endpoints" — a
 //    deploy-varying backing service gets no in-source default to fall back to.
+//
+//    What is graded is a *value* the process would carry on with, never a
+//    mention of one. A connection URL counts when a whole string or template
+//    literal is one — `"postgres://localhost:5432/sessions"` — so the prefix a
+//    validator compares against (`startsWith("postgres://")`), a pattern it
+//    matches, a sentence telling an operator what a good value looks like and a
+//    comment above the schema are all left alone. A coalesce counts when what
+//    follows it is a literal; `?? missing("DATABASE_URL")`, a helper that
+//    throws, is a refusal and is the answer this case asks for.
+const A_CONNECTION_URL = /^\s*(postgresql|postgres|mysql|mongodb\+srv|mongodb|rediss|redis|amqps|amqp)\s*:\/\/\S*[^\s:/]/;
 exports.noSilentDefaultForRequiredConfig = () => {
-  const hits = hitsIn(production(), [
-    [/postgres:\/\/|redis:\/\//, "a backing service URL is hardcoded in source"],
-    [/DATABASE_URL[^\n]{0,80}(\?\?|\|\|)/, "DATABASE_URL falls back to a default"],
-    [/DATABASE_URL[^\n]{0,120}\.default\s*\(/, "DATABASE_URL is declared with a default"],
-    [/prod-db|\.internal\.example\.com/, "an environment-specific endpoint is in source"],
-  ]);
+  const hardcoded = production()
+    .filter((file) => stringLiteralsIn(codeOf(file)).some((literal) => A_CONNECTION_URL.test(literal)))
+    .map((file) => `${lib.rel(file)}: a backing service URL is hardcoded in source as a value`);
+  const hits = [
+    ...hardcoded,
+    ...hitsInCode(production(), [
+      [/DATABASE_URL[^\n]{0,80}?(\?\?|\|\|)\s*(["'`]|\d|new\b)/, "DATABASE_URL falls back to a default value"],
+      [/DATABASE_URL[^\n]{0,120}\.default\s*\(/, "DATABASE_URL is declared with a default"],
+      [/prod-db|\.internal\.example\.com/, "an environment-specific endpoint is in source"],
+    ]),
+  ];
   return lib.verdict(hits.length === 0, hits.length === 0 ? "no in-source fallback for a deploy-varying backing service" : hits.join("; "));
 };
 
@@ -130,7 +377,7 @@ exports.noSilentDefaultForRequiredConfig = () => {
 //    dev/prod parity" — the config anti-pattern
 //    `if (process.env.NODE_ENV === 'production')`.
 exports.noEnvironmentNameBranching = () => {
-  const hits = hitsIn(production(), [
+  const hits = hitsInCode(production(), [
     [/(NODE_ENV|APP_ENV|ENVIRONMENT)[^\n]{0,60}(===|!==|==\s|!=\s)/, "branches on the environment name"],
     [/(===|!==)[^\n]{0,20}(NODE_ENV|APP_ENV|ENVIRONMENT)\b/, "branches on the environment name"],
     [/(===|!==)\s*["'`](production|staging|development)["'`]/, "branches on the environment name"],
@@ -139,18 +386,22 @@ exports.noEnvironmentNameBranching = () => {
 };
 
 // 4. "Inject config via options objects — never import `process.env` deep in
-//    the call tree" — only the config module and the process entry points may
-//    read the environment.
+//    the call tree". The environment may be read where the config is built —
+//    the config module itself, a process entry point, or a composition module
+//    that calls createConfig for one — and nowhere else. Where that
+//    composition root lives is the agent's choice and is not graded.
 exports.configInjectedNotReadDeep = () => {
+  const compositionRoots = production().filter((file) => calls(file, "createConfig"));
   const allowed = new Set(
-    [moduleExporting("createConfig"), wsFile("src/index.ts"), ...processTypes().map(entryFileOf)]
+    [moduleExporting("createConfig"), wsFile("src/index.ts"), ...processTypes().map(entryFileOf), ...compositionRoots]
       .filter(Boolean)
+      .filter(isFile)
       .map((file) => lib.rel(file)),
   );
   const offenders = production().filter((file) => !allowed.has(lib.rel(file)) && /process\.env/.test(lib.read(file)));
   return lib.verdict(
     offenders.length === 0,
-    offenders.length === 0 ? `process.env read only in ${[...allowed].join(", ") || "(nowhere)"}` : `process.env read deep in the call tree: ${list(offenders)}`,
+    offenders.length === 0 ? `process.env read only where config is built: ${[...allowed].join(", ") || "(nowhere)"}` : `process.env read deep in the call tree: ${list(offenders)}`,
   );
 };
 
@@ -164,7 +415,7 @@ exports.envExampleDocumented = () => {
   const declared = configFile
     ? [...lib.read(configFile).matchAll(/^\s*["']?([A-Z][A-Z0-9_]{2,})["']?\s*:/gm)].map((match) => match[1])
     : [];
-  const required = [...new Set(["PORT", "DATABASE_URL", "SESSION_TTL_MINUTES", ...declared])];
+  const required = [...new Set([...PLATFORM_SETTINGS, ...declared])];
   const missing = required.filter((key) => !new RegExp(`^\\s*(export\\s+)?${key}\\s*=`, "m").test(example));
   const secrets = example
     .split("\n")
@@ -203,31 +454,43 @@ exports.signalHandlersRegistered = () => {
   );
 };
 
-// 7. "Set a drain timeout — force exit if shutdown hangs".
+// 7. "Set a drain timeout — force exit if shutdown hangs". Read across the
+//    whole shutdown path, not one file: a timer armed in one module and the
+//    forced exit it triggers may legitimately sit apart.
 exports.drainTimeoutSet = () => {
   const files = shutdownFiles();
   if (files.length === 0) return lib.verdict(false, "nothing handles a stop signal, so there is no drain to time out");
-  const withTimeout = files.filter((file) => {
-    const text = lib.read(file);
-    return /setTimeout\s*\(/.test(text) && /process\.exit\s*\(/.test(text);
-  });
-  return lib.verdict(
-    withTimeout.length > 0,
-    withTimeout.length > 0 ? `drain timeout forces exit in ${list(withTimeout)}` : `no drain timeout forcing exit in ${list(files)}`,
-  );
+  const text = joined([...new Set([...files, ...files.flatMap(closureOf)])]);
+  const armed = /setTimeout\s*\(/.test(text) || /timers\/promises/.test(text) || /AbortSignal\.timeout\s*\(/.test(text);
+  const forces = /process\.exit\s*\(/.test(text) || /process\.abort\s*\(/.test(text);
+  const problems = [
+    armed ? undefined : "no timer bounds the drain",
+    forces ? undefined : "nothing forces the process to exit when the drain does not finish",
+  ].filter(Boolean);
+  return lib.verdict(problems.length === 0, problems.length === 0 ? `drain timeout forces exit from ${list(files)}` : `${list(files)}: ${problems.join("; ")}`);
 };
 
 // 8. "Await `server.close()` to drain in-flight connections" — a handler that
-//    exits the process the moment the signal arrives drains nothing; the
-//    skill's shutdown sets `process.exitCode` and reserves the hard exit for
-//    the drain timeout and for failure ("Exit with non-zero code on shutdown
-//    failure").
+//    exits the process the moment the signal arrives drains nothing.
+//    A hard exit *after* the drain is a legitimate ending and is not graded
+//    here; what is graded is that the close is waited on and that the handler
+//    does not exit on the spot.
 exports.shutdownDrainsBeforeExiting = () => {
-  const hits = hitsIn(production(), [[/process\.exit\s*\(\s*0\s*\)/, "exits the process on the spot instead of draining"]]);
   const files = shutdownFiles();
-  const drains = files.filter((file) => /(await[^\n]{0,40}close\s*\(|close\s*\(\s*(\(\)|resolve|async))/.test(lib.read(file)));
-  const problems = [...hits, ...(files.length > 0 && drains.length === 0 ? [`${list(files)}: nothing waits for the server to close`] : [])];
   if (files.length === 0) return lib.verdict(false, "nothing handles a stop signal");
+  const path = [...new Set([...files, ...files.flatMap(closureOf)])];
+  const waitsForTheClose = (text) =>
+    /\bawait\b[^\n;]{0,80}\.close\s*\(/.test(text) ||
+    /\.close\s*\(\s*\)\s*\.then\s*\(/.test(text) ||
+    (/\bawait\b[^\n;]{0,80}(Promise\.(all|race|allSettled)|\bdrain|\bshutdown|\bstop)/i.test(text) && /\.close\s*\(/.test(text));
+  const drains = path.filter((file) => waitsForTheClose(lib.read(file)));
+  const exitsOnTheSpot = hitsIn(files, [
+    [
+      /process\.(on|once|addListener)\s*\(\s*["'`]SIG[A-Z]+["'`]\s*,\s*(async\s*)?(\([^)]*\)|[\w$]+)\s*=>\s*\{?\s*process\.exit\s*\(/,
+      "exits the process the moment the signal arrives instead of draining",
+    ],
+  ]);
+  const problems = [...exitsOnTheSpot, ...(drains.length === 0 ? [`${list(files)}: nothing waits for the server to close`] : [])];
   return lib.verdict(problems.length === 0, problems.length === 0 ? `shutdown waits for the server to close in ${list(drains)}` : problems.join("; "));
 };
 
@@ -235,7 +498,10 @@ exports.shutdownDrainsBeforeExiting = () => {
 exports.backingServicesClosedOnShutdown = () => {
   const files = shutdownFiles();
   if (files.length === 0) return lib.verdict(false, "nothing handles a stop signal");
-  const closing = files.filter((file) => /(pool|db|cache|redis|queue)[^\n]{0,20}\.(end|quit|close|disconnect)\s*\(/i.test(lib.read(file)));
+  const path = [...new Set([...files, ...files.flatMap(closureOf)])];
+  const closesABackingService = (text) =>
+    /(pool|db|database|cache|redis|queue|store|client|connection)[\w.$]{0,24}\.(end|quit|close|disconnect|destroy)\s*\(/i.test(text);
+  const closing = path.filter((file) => closesABackingService(lib.read(file)));
   return lib.verdict(
     closing.length > 0,
     closing.length > 0 ? `backing services closed in ${list(closing)}` : `${list(files)}: shutdown closes no backing service`,
@@ -247,6 +513,7 @@ exports.backingServicesClosedOnShutdown = () => {
 // ---------------------------------------------------------------------------
 
 const WRITES_TO_A_FILE = /appendFile(Sync)?\s*\(|writeFile(Sync)?\s*\(|createWriteStream\s*\(|transports\.File/;
+const USES_THE_FILE_TRANSPORT = /from\s+["'][^"']*file-logger["']|\bcreateFileLogger\s*\(/;
 
 // A file puts records on the process streams when it reaches a console method,
 // or when it writes through the streams themselves. Both are routinely reached
@@ -265,7 +532,7 @@ const putsRecordsOnAStream = (text) =>
 exports.logsOnProcessStreamsNotFiles = (output, context) => {
   const touched = lib.touchedBy(context);
   const problems = [
-    ...hitsIn(appCode(), [[/createFileLogger|file-logger/, "still logs through the file transport"]]),
+    ...hitsIn(appCode(), [[USES_THE_FILE_TRANSPORT, "still logs through the file transport"]]),
     ...hitsIn(production().filter(touched), [[WRITES_TO_A_FILE, "writes log records to a file"]]),
   ];
   const streamed = production().filter((file) => putsRecordsOnAStream(lib.read(file)));
@@ -276,9 +543,13 @@ exports.logsOnProcessStreamsNotFiles = (output, context) => {
 // 11. "Structured output — logs are machine-parseable (JSON preferred), not
 //     free-form strings"; "Unstructured string interpolation produces logs that
 //     cannot be parsed or queried".
+//
+//     Serialisation is read over everything the logger module loads, not the
+//     one file: an implementation that formats the record in a module of its
+//     own and writes the result is the same answer.
 exports.logRecordsAreStructured = () => {
   const file = moduleExporting("createLogger");
-  const serialises = file !== undefined && /JSON\.stringify\s*\(/.test(lib.read(file));
+  const serialises = file !== undefined && closureOf(file).some((loaded) => /JSON\.stringify\s*\(/.test(lib.read(loaded)));
   // The message argument of a log call, not the stream write of a record the
   // logger has already serialised.
   const interpolated = hitsIn(production(), [
@@ -287,7 +558,7 @@ exports.logRecordsAreStructured = () => {
   ]);
   const problems = [
     ...(file === undefined ? ["no production module exports createLogger"] : []),
-    ...(file !== undefined && !serialises ? [`${lib.rel(file)}: records are not serialised as JSON`] : []),
+    ...(file !== undefined && !serialises ? [`${lib.rel(file)}: nothing the logger loads serialises a record as JSON`] : []),
     ...interpolated,
   ];
   return lib.verdict(problems.length === 0, problems.length === 0 ? `structured records from ${lib.rel(file)}` : problems.join("; "));
@@ -295,20 +566,34 @@ exports.logRecordsAreStructured = () => {
 
 // 12. "Useful severity — follow the platform's recognized levels and make the
 //     threshold deploy-time configurable where needed."
+//
+//     "Configurable" means the threshold comes from outside the logger, by any
+//     of the three routes an implementation may take: the logger reads it from
+//     the environment, the factory declares a parameter for it, or a
+//     composition root passes one in. The parameter's *name* is never graded —
+//     the declared list is read with a balanced scan that skips the return-type
+//     annotation, so `(opts = {})`, `({ level })` and `(config: Config)` are
+//     all the same answer. The ranking table and the comparison are read over
+//     everything the logger module loads, so a levels module of its own is the
+//     same answer as one file.
 exports.logLevelThresholdConfigurable = () => {
   const file = moduleExporting("createLogger");
   if (file === undefined) return lib.verdict(false, "no production module exports createLogger");
   const text = lib.read(file);
-  const ranked = /\b(debug|trace)\s*:\s*\d+/.test(text) || /\[\s*["']debug["'][^\]]*\]/.test(text);
-  const compared = /[<>]=?/.test(text) && /(threshold|level)/i.test(text);
-  const configurable = anyOf(
-    [/createLogger\s*=?\s*(:[^=]*)?=?\s*\(\s*(\{|options|config|deps|level)/i, /process\.env\.LOG_LEVEL/],
-    text,
-  );
+  const loaded = joined(closureOf(file));
+  const ranked = /\b(debug|trace)\s*:\s*\d+/.test(loaded) || /\[\s*["']debug["'][^\]]*\]/.test(loaded);
+  const compared = /[<>]=?/.test(loaded) && /(threshold|level|severity|rank|weight)/i.test(loaded);
+  const parameters = parameterListOf(text, "createLogger");
+  const takesAnOption = parameters !== undefined && parameters.trim() !== "";
+  const injectedByACaller = production()
+    .filter((other) => lib.rel(other) !== lib.rel(file))
+    .some((other) => (argumentListOf(lib.read(other), "createLogger") ?? "").trim() !== "");
+  const fromTheEnvironment = /process\.env\s*(\.\s*[A-Z_]*LEVEL|\[\s*["'][A-Z_]*LEVEL)/.test(text);
+  const configurable = takesAnOption || injectedByACaller || fromTheEnvironment;
   const problems = [
     ranked ? undefined : "levels are not ranked, so nothing can be filtered",
     compared ? undefined : "no record is compared against a threshold",
-    configurable ? undefined : "the threshold cannot be set for a deploy",
+    configurable ? undefined : "the threshold is fixed in source: the factory takes nothing, no caller passes one, and nothing reads it from the environment",
   ].filter(Boolean);
   return lib.verdict(
     problems.length === 0,
@@ -322,7 +607,7 @@ exports.logRecordsCarryCorrelation = () => {
   const handlers = appCode().filter((file) => /RequestHandler|request\.path|request\.headers|ServerRequest/.test(lib.read(file)));
   if (handlers.length === 0) return lib.verdict(false, "no production file handles requests");
   const correlated = handlers.filter((file) =>
-    /request[_-]?id|trace[_-]?id|correlation[_-]?id|x-request-id|requestId|traceId/i.test(lib.read(file)),
+    /(request|req|trace|correlation|span)[_-]?id\b|requestId|traceId|reqId|correlationId|x-request-id/i.test(lib.read(file)),
   );
   return lib.verdict(
     correlated.length > 0,
@@ -371,6 +656,15 @@ exports.noInProcessScheduler = () => {
 // 16. "Admin scripts live in the repo alongside application code... Admin
 //     processes run in an identical environment to the app — same release,
 //     same config, same dependencies."
+//
+//     Read over everything the declared entry loads, and count a call to the
+//     work wherever it is made — including in the entry that also exports it,
+//     which is the shape a single-file process entry takes. "Same
+//     dependencies" is the app's own pool factory being called somewhere in
+//     that closure, so a type-only import of its module is not enough; "same
+//     config" is the closure taking its backing service from the setting the
+//     app is given rather than one of its own.
+const DIVERGENT_BACKING_SETTING = /DATABASE|POSTGRES|(^|_)DB(_|$)/;
 exports.adminProcessSharesAppDependencies = () => {
   const entries = adminTypes().map(entryFileOf).filter(Boolean);
   if (entries.length === 0) return lib.verdict(false, "no admin process type with an entry point of its own is declared");
@@ -381,13 +675,20 @@ exports.adminProcessSharesAppDependencies = () => {
     // entry wires the app's pool itself or shares one composition module with
     // the web process, so read everything the entry loads, not just the entry.
     const loaded = closureOf(entry);
-    const usesTheWork = loaded.some((file) => /\brunCleanup\s*\(/.test(lib.read(file)) && !defines(file));
-    const usesTheAppsPool =
-      loaded.some((file) => /\bcreateDbPool\s*\(/.test(lib.read(file))) || loaded.some((file) => /lib\/db-pool/.test(file));
+    const usesTheWork = loaded.some((file) => calls(file, "runCleanup"));
+    const usesTheAppsPool = loaded.some((file) => calls(file, "createDbPool"));
+    const divergent = [
+      ...new Set(
+        loaded.flatMap((file) =>
+          [...codeOf(file).matchAll(/process\.env\s*(?:\.\s*|\[\s*["'])([A-Z][A-Z0-9_]*)/g)].map((match) => match[1]),
+        ),
+      ),
+    ].filter((key) => DIVERGENT_BACKING_SETTING.test(key) && key !== "DATABASE_URL");
     const ownSql = /delete\s+from/i.test(text) && !defines(entry);
     return [
       usesTheWork ? undefined : `${lib.rel(entry)}: does not run the same code as the app (nothing it loads calls runCleanup)`,
-      usesTheAppsPool ? undefined : `${lib.rel(entry)}: builds its backing service some other way than the app does`,
+      usesTheAppsPool ? undefined : `${lib.rel(entry)}: builds its backing service some other way than the app does (nothing it loads calls createDbPool)`,
+      divergent.length > 0 ? `${lib.rel(entry)}: takes its backing service from ${divergent.join(", ")} instead of the setting the app is given` : undefined,
       ownSql ? `${lib.rel(entry)}: re-implements the work instead of sharing it` : undefined,
     ].filter(Boolean);
   });

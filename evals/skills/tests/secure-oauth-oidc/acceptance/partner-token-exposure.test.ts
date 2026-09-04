@@ -94,20 +94,32 @@ const isRedirect = (response: Response) => response.status === 302 || response.s
 const callbackPath = (state: string, code: string, extra = "") =>
   `/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}${extra}`;
 
+const PARTNER_ISSUER = "https://id.partner.example";
+const PARTNER_CLIENT_ID = "portal-partner";
 const CONFIG = { redirectUri: REDIRECT_URI, appBaseUrl: APP_BASE_URL };
 
+const orgs = {
+  company: { issuer: ISSUER, clientId: CLIENT_ID, email: "ada@example.com" },
+  partner: { issuer: PARTNER_ISSUER, clientId: PARTNER_CLIENT_ID, email: "grace@partner.example" },
+} as const;
+
 const portal = () => {
-  const provider = createProvider({ issuer: ISSUER, clientId: CLIENT_ID });
-  return { provider, app: createApp({ provider: provider.client, config: CONFIG }) };
+  const company = createProvider({ issuer: ISSUER, clientId: CLIENT_ID });
+  const partner = createProvider({ issuer: PARTNER_ISSUER, clientId: PARTNER_CLIENT_ID });
+  const app = createApp({
+    providers: { company: company.client, partner: partner.client },
+    config: CONFIG,
+  });
+  return { company, partner, app };
 };
 
-const claimsFor = (authUrl: URL, overrides: Record<string, unknown> = {}) => {
+const claimsFor = (org: keyof typeof orgs, authUrl: URL, overrides: Record<string, unknown> = {}) => {
   const nonce = authUrl.searchParams.get("nonce");
   return {
-    iss: ISSUER,
-    sub: "user-1",
-    aud: CLIENT_ID,
-    email: "ada@example.com",
+    iss: orgs[org].issuer,
+    sub: `${org}-user-1`,
+    aud: orgs[org].clientId,
+    email: orgs[org].email,
     iat: seconds(),
     exp: seconds() + 300,
     ...(nonce === null ? {} : { nonce }),
@@ -115,43 +127,51 @@ const claimsFor = (authUrl: URL, overrides: Record<string, unknown> = {}) => {
   };
 };
 
-const signIn = async (
-  underTest: ReturnType<typeof portal>,
-  overrides: Record<string, unknown> = {},
-  code = "code-1",
-) => {
+const signIn = async (underTest: ReturnType<typeof portal>, org: keyof typeof orgs) => {
   const browser = openBrowser(underTest.app);
-  const login = await browser.visit("/auth/login");
+  const login = await browser.visit(`/auth/login?org=${org}`);
   const authUrl = locationOf(login);
-  underTest.provider.issue(claimsFor(authUrl, overrides));
-  const callback = await browser.visit(callbackPath(authUrl.searchParams.get("state") ?? "", code));
+  underTest[org].issue(claimsFor(org, authUrl));
+  const callback = await browser.visit(callbackPath(authUrl.searchParams.get("state") ?? "", "code-1"));
   return { browser, login, authUrl, callback };
 };
 
-const signedIn = async (overrides: Record<string, unknown> = {}) => {
-  const underTest = portal();
-  const { browser } = await signIn(underTest, overrides);
-  return (await browser.visit("/me")).status;
+const SECRETS = ["AT-9f3", "RT-4c1"];
+
+const leaks = async (response: Response) => {
+  const surfaces = [
+    response.headers.get("location") ?? "",
+    setCookies(response).join(" | "),
+    await response.clone().text(),
+  ].join("\n");
+  return SECRETS.filter((secret) => surfaces.includes(secret));
 };
 
-describe("acceptance: the ID token is checked as a protocol object, not just a signature", () => {
-  it("signs the visitor in when every claim is right", async () => {
-    expect(await signedIn()).toBe(200);
+describe("acceptance: neither organisation's tokens reach the browser", () => {
+  it("keeps the partner's tokens out of the redirect back into the app", async () => {
+    const underTest = portal();
+    const { login, callback } = await signIn(underTest, "partner");
+
+    expect(await leaks(login)).toEqual([]);
+    expect(await leaks(callback)).toEqual([]);
+    expect([307, 308]).not.toContain(callback.status);
   });
 
-  it("refuses an ID token minted for another audience", async () => {
-    expect(await signedIn({ aud: "someone-elses-client" })).toBe(401);
+  it("keeps the company's tokens out of the redirect back into the app", async () => {
+    const underTest = portal();
+    const { login, callback } = await signIn(underTest, "company");
+
+    expect(await leaks(login)).toEqual([]);
+    expect(await leaks(callback)).toEqual([]);
+    expect([307, 308]).not.toContain(callback.status);
   });
 
-  it("refuses an ID token from another issuer", async () => {
-    expect(await signedIn({ iss: "https://id.attacker.example" })).toBe(401);
-  });
+  it("keeps them out of anything a signed-in partner can read", async () => {
+    const underTest = portal();
+    const { browser } = await signIn(underTest, "partner");
+    const me = await browser.visit("/me");
 
-  it("refuses an expired ID token", async () => {
-    expect(await signedIn({ exp: seconds() - 60, iat: seconds() - 3600 })).toBe(401);
-  });
-
-  it("refuses an ID token that answers a different authentication request", async () => {
-    expect(await signedIn({ nonce: "a-nonce-we-never-sent" })).toBe(401);
+    expect(me.status).toBe(200);
+    expect(await leaks(me)).toEqual([]);
   });
 });

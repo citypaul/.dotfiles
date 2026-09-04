@@ -19,8 +19,17 @@ const jwt = (claims: Record<string, unknown>) =>
 type Exchange = {
   readonly code: string;
   readonly redirectUri: string;
+  readonly extraParams?: Readonly<Record<string, string>>;
   readonly codeVerifier?: string;
 };
+
+// The SDK stand-in carries everything past `code`/`redirectUri` in
+// `extraParams`, sent as-is in the token-request body, so a PKCE verifier
+// arrives as `code_verifier`. A differently spelled key and a widened SDK type
+// are both accepted: what is graded is the S256 relation to the challenge, not
+// where the implementation chose to put the value.
+const verifierOf = (exchange: Exchange | undefined): string =>
+  exchange?.extraParams?.code_verifier ?? exchange?.extraParams?.codeVerifier ?? exchange?.codeVerifier ?? "";
 
 const createProvider = (options: { issuer: string; clientId: string; tokens?: Record<string, string> } ) => {
   const exchanges: Exchange[] = [];
@@ -78,7 +87,9 @@ const openBrowser = (app: { request: (path: string, init?: RequestInit) => Promi
   };
 };
 
-const locationOf = (response: Response) => new URL(response.headers.get("location") ?? "about:blank");
+// Base-aware, so an implementation that answers with a relative Location is
+// read the same way as one that answers with an absolute URL.
+const locationOf = (response: Response) => new URL(response.headers.get("location") ?? "about:blank", APP_BASE_URL);
 const isRedirect = (response: Response) => response.status === 302 || response.status === 303;
 const callbackPath = (state: string, code: string, extra = "") =>
   `/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}${extra}`;
@@ -153,7 +164,8 @@ describe("acceptance: the partner sign-in is bound to its own transaction", () =
     const exchange = underTest.partner.exchanges[0];
 
     expect(exchange).toBeDefined();
-    expect(s256(exchange?.codeVerifier ?? "")).toBe(authUrl.searchParams.get("code_challenge"));
+    expect(verifierOf(exchange)).toBeTruthy();
+    expect(s256(verifierOf(exchange))).toBe(authUrl.searchParams.get("code_challenge"));
     expect(exchange?.redirectUri).toBe(REDIRECT_URI);
   });
 

@@ -49,5 +49,16 @@ export const createApp = (deps: AppDeps) => {
     }
   });
 
+  router.post("/orders/:orderId/cancel", async (request) => {
+    const orderId = request.params.orderId ?? "";
+    if (!/^ord_[A-Za-z0-9]+$/.test(orderId)) {
+      console.log("cancel: unknown order", request.path);
+      return { status: 404, body: { error: "unknown_order" } };
+    }
+
+    console.log("cancel: accepted", orderId);
+    return { status: 202, body: { orderId, status: "cancelling" } };
+  });
+
   return { router };
 };

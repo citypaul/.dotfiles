@@ -115,43 +115,54 @@ const claimsFor = (authUrl: URL, overrides: Record<string, unknown> = {}) => {
   };
 };
 
-const signIn = async (
-  underTest: ReturnType<typeof portal>,
-  overrides: Record<string, unknown> = {},
-  code = "code-1",
-) => {
+// One browser through a whole sign-in, started wherever the caller says.
+const signIn = async (underTest: ReturnType<typeof portal>, loginPath = "/auth/login") => {
   const browser = openBrowser(underTest.app);
-  const login = await browser.visit("/auth/login");
+  const login = await browser.visit(loginPath);
   const authUrl = locationOf(login);
-  underTest.provider.issue(claimsFor(authUrl, overrides));
-  const callback = await browser.visit(callbackPath(authUrl.searchParams.get("state") ?? "", code));
+  underTest.provider.issue(claimsFor(authUrl));
+  const callback = await browser.visit(callbackPath(authUrl.searchParams.get("state") ?? "", "code-1"));
   return { browser, login, authUrl, callback };
 };
 
-const signedIn = async (overrides: Record<string, unknown> = {}) => {
-  const underTest = portal();
-  const { browser } = await signIn(underTest, overrides);
-  return (await browser.visit("/me")).status;
+// Where the browser was sent, read from whatever the portal answered with:
+// an absolute Location, a relative one, or none at all because the portal
+// refused the whole thing.
+const hostOf = (response: Response) => {
+  const raw = response.headers.get("location");
+  if (raw === null) return "";
+  try {
+    return new URL(raw, APP_BASE_URL).host;
+  } catch {
+    return "";
+  }
 };
 
-describe("acceptance: the ID token is checked as a protocol object, not just a signature", () => {
-  it("signs the visitor in when every claim is right", async () => {
-    expect(await signedIn()).toBe(200);
+const HOSTILE: ReadonlyArray<readonly [string, string]> = [
+  ["another origin outright", "https://evil.example.com/steal"],
+  ["a scheme-relative URL", "//evil.example.com/steal"],
+  ["a host that only starts like ours", "https://portal.example.com.evil.example/steal"],
+];
+
+describe("acceptance: the portal decides where the browser lands, not the link", () => {
+  it("honours a destination on the portal itself", async () => {
+    const underTest = portal();
+    const { callback } = await signIn(underTest, "/auth/login?returnTo=/reports/42");
+
+    expect(locationOf(callback).origin).toBe(APP_BASE_URL);
+    expect(locationOf(callback).pathname).toBe("/reports/42");
   });
 
-  it("refuses an ID token minted for another audience", async () => {
-    expect(await signedIn({ aud: "someone-elses-client" })).toBe(401);
-  });
+  for (const [shape, returnTo] of HOSTILE) {
+    it(`refuses to send the browser to ${shape}`, async () => {
+      const underTest = portal();
+      const { login, callback } = await signIn(
+        underTest,
+        `/auth/login?returnTo=${encodeURIComponent(returnTo)}`,
+      );
 
-  it("refuses an ID token from another issuer", async () => {
-    expect(await signedIn({ iss: "https://id.attacker.example" })).toBe(401);
-  });
-
-  it("refuses an expired ID token", async () => {
-    expect(await signedIn({ exp: seconds() - 60, iat: seconds() - 3600 })).toBe(401);
-  });
-
-  it("refuses an ID token that answers a different authentication request", async () => {
-    expect(await signedIn({ nonce: "a-nonce-we-never-sent" })).toBe(401);
-  });
+      expect(hostOf(login)).not.toContain("evil.example");
+      expect(hostOf(callback)).not.toContain("evil.example");
+    });
+  }
 });

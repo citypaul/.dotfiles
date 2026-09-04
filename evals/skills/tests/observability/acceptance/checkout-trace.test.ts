@@ -95,6 +95,31 @@ describe("acceptance: one canonical event per checkout", () => {
     expect(failureIsVisible).toBe(true);
   });
 
+  it("still records the request's event when the request blows up", async () => {
+    exporter.reset();
+    const { router } = createApp({
+      payments: captures,
+      newOrderId: () => "ord_9001",
+    });
+
+    const unreadableBasket = {
+      get customerId(): string {
+        throw new Error("basket_stream_broken");
+      },
+    };
+
+    await router
+      .handle({
+        method: "POST",
+        path: "/checkout",
+        params: {},
+        body: unreadableBasket,
+      })
+      .catch(() => undefined);
+
+    expect(rootSpans()).toHaveLength(1);
+  });
+
   it("keeps the card token and the email address out of the telemetry", async () => {
     exporter.reset();
 

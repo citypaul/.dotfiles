@@ -10,7 +10,8 @@ export type ProviderMetadata = {
 export type TokenRequest = {
   readonly code: string;
   readonly redirectUri: string;
-  readonly codeVerifier?: string;
+  // Anything else the token request needs. Sent as-is in the form body.
+  readonly extraParams?: Readonly<Record<string, string>>;
 };
 
 export type TokenResponse = {
@@ -28,7 +29,7 @@ export type OpenIdProviderClient = {
   readonly metadata: ProviderMetadata;
   readonly exchangeCode: (request: TokenRequest) => Promise<TokenResponse>;
   // Checks the JWT signature against the provider's published keys and hands
-  // back the claims exactly as they arrived. It looks at nothing else.
+  // back the payload exactly as it arrived.
   readonly verifyIdTokenSignature: (idToken: string) => Promise<IdTokenClaims>;
 };
 
@@ -51,7 +52,7 @@ export const createOpenIdProviderClient = (config: ProviderConfig): OpenIdProvid
         redirect_uri: request.redirectUri,
         client_id: config.clientId,
         client_secret: config.clientSecret,
-        ...(request.codeVerifier === undefined ? {} : { code_verifier: request.codeVerifier }),
+        ...(request.extraParams ?? {}),
       }).toString(),
     });
     return (await response.json()) as TokenResponse;

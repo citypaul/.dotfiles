@@ -84,3 +84,43 @@ describe("POST /checkout", () => {
     });
   });
 });
+
+describe("POST /orders/:orderId/cancel", () => {
+  const app = () =>
+    createApp({
+      payments: createPayments(async () => ({
+        paymentId: "pay_4",
+        capturedPence: 0,
+      })),
+      newOrderId: () => "ord_4",
+    });
+
+  it("accepts a cancellation for an order we issued", async () => {
+    const { router } = app();
+
+    const response = await router.handle({
+      method: "POST",
+      path: "/orders/ord_4/cancel",
+      params: {},
+      body: {},
+    });
+
+    expect(response).toEqual({
+      status: 202,
+      body: { orderId: "ord_4", status: "cancelling" },
+    });
+  });
+
+  it("answers 404 for an order id we never issued", async () => {
+    const { router } = app();
+
+    const response = await router.handle({
+      method: "POST",
+      path: "/orders/99/cancel",
+      params: {},
+      body: {},
+    });
+
+    expect(response).toEqual({ status: 404, body: { error: "unknown_order" } });
+  });
+});

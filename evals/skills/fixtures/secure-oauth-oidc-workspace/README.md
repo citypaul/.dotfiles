@@ -8,6 +8,8 @@ identity provider over OAuth 2.0 / OpenID Connect.**
 - `src/auth.ts` is the sign-in code. It was spiked on a hack day, it has never been
   reviewed, and it does not finish a session yet.
 - `src/lib/` holds stand-ins for third-party SDKs we do not own.
+- `docs/sign-in-notes.md` is what the person who spiked the sign-in wrote up
+  about it afterwards.
 
 - `pnpm test` runs the suite once; `pnpm test:watch` keeps it running.
 - `pnpm typecheck` runs `tsc --noEmit`.

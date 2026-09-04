@@ -115,43 +115,46 @@ const claimsFor = (authUrl: URL, overrides: Record<string, unknown> = {}) => {
   };
 };
 
-const signIn = async (
-  underTest: ReturnType<typeof portal>,
-  overrides: Record<string, unknown> = {},
-  code = "code-1",
-) => {
+// One browser through a whole sign-in, started wherever the caller says.
+const signIn = async (underTest: ReturnType<typeof portal>, loginPath = "/auth/login") => {
   const browser = openBrowser(underTest.app);
-  const login = await browser.visit("/auth/login");
+  const login = await browser.visit(loginPath);
   const authUrl = locationOf(login);
-  underTest.provider.issue(claimsFor(authUrl, overrides));
-  const callback = await browser.visit(callbackPath(authUrl.searchParams.get("state") ?? "", code));
+  underTest.provider.issue(claimsFor(authUrl));
+  const callback = await browser.visit(callbackPath(authUrl.searchParams.get("state") ?? "", "code-1"));
   return { browser, login, authUrl, callback };
 };
 
-const signedIn = async (overrides: Record<string, unknown> = {}) => {
-  const underTest = portal();
-  const { browser } = await signIn(underTest, overrides);
-  return (await browser.visit("/me")).status;
-};
+describe("acceptance: a deep link survives the trip out to the provider and back", () => {
+  it("lands the visitor on the page they were headed for", async () => {
+    const underTest = portal();
+    const { browser, callback } = await signIn(underTest, "/auth/login?returnTo=/reports/42");
 
-describe("acceptance: the ID token is checked as a protocol object, not just a signature", () => {
-  it("signs the visitor in when every claim is right", async () => {
-    expect(await signedIn()).toBe(200);
+    expect(isRedirect(callback)).toBe(true);
+    expect(locationOf(callback).origin).toBe(APP_BASE_URL);
+    expect(locationOf(callback).pathname).toBe("/reports/42");
+
+    const me = await browser.visit("/me");
+
+    expect(me.status).toBe(200);
+    expect(await me.text()).toContain("ada@example.com");
   });
 
-  it("refuses an ID token minted for another audience", async () => {
-    expect(await signedIn({ aud: "someone-elses-client" })).toBe(401);
+  it("lands a visitor who asked for nothing in particular back on the portal", async () => {
+    const underTest = portal();
+    const { browser, callback } = await signIn(underTest);
+
+    expect(isRedirect(callback)).toBe(true);
+    expect(locationOf(callback).origin).toBe(APP_BASE_URL);
+    expect(underTest.provider.exchanges).toHaveLength(1);
+
+    expect((await browser.visit("/me")).status).toBe(200);
   });
 
-  it("refuses an ID token from another issuer", async () => {
-    expect(await signedIn({ iss: "https://id.attacker.example" })).toBe(401);
-  });
+  it("leaves a visitor who never signed in signed out", async () => {
+    const underTest = portal();
+    await signIn(underTest, "/auth/login?returnTo=/reports/42");
 
-  it("refuses an expired ID token", async () => {
-    expect(await signedIn({ exp: seconds() - 60, iat: seconds() - 3600 })).toBe(401);
-  });
-
-  it("refuses an ID token that answers a different authentication request", async () => {
-    expect(await signedIn({ nonce: "a-nonce-we-never-sent" })).toBe(401);
+    expect((await openBrowser(underTest.app).visit("/me")).status).toBe(401);
   });
 });

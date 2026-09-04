@@ -5,7 +5,8 @@ OpenTelemetry**: the platform starts the OTel SDK (with `service.name` and the O
 exporter set from the environment) before the process loads any application code, so
 application code instruments through `@opentelemetry/api` and never boots the SDK itself.
 
-- `src/index.ts` builds the app and owns the HTTP routes.
+- `src/index.ts` builds the app and owns the HTTP routes: `POST /checkout` and
+  `POST /orders/:orderId/cancel`.
 - `src/checkout.ts` is the checkout itself.
 - `src/lib/` holds stand-ins for third-party SDKs we do not own.
 - `pnpm test` runs the suite once; `pnpm test:watch` keeps it running.
