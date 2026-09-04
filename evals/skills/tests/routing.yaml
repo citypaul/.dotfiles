@@ -455,3 +455,10 @@
     request: "The search box in src/notes-list.tsx stutters while typing once someone has a few thousand notes. Make it smooth — nothing else should change."
   assert:
     - { type: skill-used, value: react-performance }
+
+- description: observability — a correlation complaint in product words
+  metadata: { cluster: routing-gap }
+  vars:
+    request: "The sync service on the other team cannot match our calls in src/sync/transport.ts to their own logs when something goes wrong, so every incident turns into a guessing game. Give them a way to line our calls up with theirs."
+  assert:
+    - { type: skill-used, value: observability }
