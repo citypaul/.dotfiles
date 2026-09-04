@@ -93,7 +93,7 @@ For a **protected browser mutation**:
 
 1. reject invalid Origin, unsuitable Fetch Metadata, or unsupported content type — without revealing whether a session exists;
 2. resolve the application session;
-3. validate session-bound CSRF protection;
+3. validate session-bound CSRF protection — not optional and not a follow-up: where the session record cannot carry a synchronizer token, mint one by HMAC over the session id with a server-side secret (signed double-submit, session-bound) and validate that, rather than registering the mutation with an Origin-and-content-type chain and leaving the token for later;
 4. perform any coarse operation or path-resource authorization available from
    the principal and validated params;
 5. parse and validate the bounded body;
@@ -132,7 +132,7 @@ type AuthenticatedPrincipal = {
 
 The BFF does **not** own product authorization. Every protected application operation independently authorizes the principal before performing protected effects — a precondition that holds whether the caller is HTTP, a CLI, a test harness, another BFF, or a future driving adapter (OWASP ASVS 5.0 §8.3.1: enforce at a trusted service layer). Inner code never depends on Hono, cookies, Keycloak, OAuth tokens, provider groups, HTTP status codes, or browser fields.
 
-Authentication answers "who is calling?" — adapter work. Authorization answers "may this caller perform this product operation?" — application policy in product language (`viewOrder` refusing a foreign tenant), never a generic authorization-utilities bucket. Map the principal to an attributable domain actor only after authorization succeeds. Database row-level security is final containment for missed checks, not the source of permission.
+Authentication answers "who is calling?" — adapter work. Authorization answers "may this caller perform this product operation?" — application policy in product language (`viewOrder` refusing a foreign tenant), never a generic authorization-utilities bucket. Prove the rule where it lives: its test calls the operation directly with a foreign principal — no HTTP, no cookies, no registrar — and asserts the refusal result with no effect on the fakes. A test driven through the route proves the wiring, not the rule; an authorization rule you added or changed and covered only through HTTP is unfinished, because the next driving adapter does not go through that route. Map the principal to an attributable domain actor only after authorization succeeds. Database row-level security is final containment for missed checks, not the source of permission.
 
 ## Why This Design
 
@@ -151,7 +151,7 @@ Tradeoffs of design 4, accepted knowingly: the registrar is upfront machinery th
 
 ## Anti-Patterns
 
-- A route mounted directly on the framework app in production code, bypassing the registrar.
+- A route mounted directly on the framework app in production code, bypassing the registrar — including one that predates it. Changing such a route at all, a security fix above all, means moving it onto the registrar with its own access declaration in that same change: a bypass you edited and left mounted is one you have now chosen, and fixing its logic in place leaves the next mistake unclassified.
 - `requireAuth: false`, `skipCsrf`, or any boolean that lets an endpoint owner weaken its own chain.
 - A hand-edited list of protected paths, or path-prefix matching as the authorization boundary.
 - Authorization decided in HTTP middleware only — a non-HTTP caller then bypasses it entirely.
