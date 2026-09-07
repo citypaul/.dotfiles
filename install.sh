@@ -29,3 +29,6 @@ move_with_backup "$HOME/.config/opencode/opencode.json"
 move_with_backup "$HOME/.config/herdr/config.toml"
 
 stow zsh tmux gnupg alacritty zellij .oh-my-zsh karabiner ghostty claude opencode herdr
+
+# CodexBar — menu bar usage monitor for Codex and Claude
+brew install --cask steipete/tap/codexbar
