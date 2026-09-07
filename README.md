@@ -2093,7 +2093,6 @@ This will install:
 - ✅ Git aliases and configuration
 - ✅ Shell configuration (bash/zsh)
 - ✅ Vim, tmux, npm configs
-- ✅ CodexBar (`brew install --cask steipete/tap/codexbar`)
 - ✅ All personal preferences
 
 ### Installing Specific Dotfiles
