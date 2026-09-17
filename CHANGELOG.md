@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.16.1
+
+### Patch Changes
+
+- fd017e2: Clarify endpoint and workflow ownership across personal engineering skills. Add focused Effect runtime guidance covering composition, outcome values, lifetime guarantees, and safe native logging, with complete refactoring slices and whole-path bridge accounting.
+- 2fbbaf6: Remove the CodexBar Homebrew install from `install.sh`
+
+  That cask was added to this repo by mistake; Homebrew packages belong elsewhere.
+
 ## 4.16.0
 
 ### Minor Changes
