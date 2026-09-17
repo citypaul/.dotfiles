@@ -39,6 +39,10 @@ If the baseline cannot be restored safely without creating a commit, stop and as
 5. CHECKPOINT: Present the verified refactor together with the labelled `Critical:`/`High:`/`Nice:`/`Skip:` assessment lines and the closing `Decision:` line; a summary of what changed does not close this step. Commit it only after explicit user approval
 6. PRE-PR GATE: When the phase is otherwise ready for a PR, run mutation testing once for the accumulated scope where meaningful, or record explicit `N/A` plus proportionate alternate evidence; address valuable survivors within that gate
 
+## Complete Slices
+
+Deliver small complete changes around one bounded owner or behavior path. Update affected contracts, adapters, and consumers together; a horizontal migration of all handlers followed by all services usually leaves half-converted paths. Keep existing behavioral oracles as preservation evidence, and identify separately any tests needed for a new mechanism. When claiming simplification, show what wrapper, repeated decision, translation, or dependency was removed; extraction alone may improve comprehension without reducing mechanism. Add compatibility scaffolding only for a demonstrated rollout constraint, with an owner and removal condition; use `reduce-system-complexity` for a whole-path reduction claim.
+
 ## Priority Classification
 
 | Priority | Action | Examples |
