@@ -12,10 +12,15 @@ args = {
   claim: 'the PR title/body one-liner the diff is judged against',
   diff: 'the unified diff text (or a path nodes should read)',
   traits: 'scout notes: project conventions, CLAUDE.md highlights, detected stack',
+  provider: 'claude | codex',
+  runtime: 'workflow | agent-tool | sequential',
+  budget: { total: 20000, perNode: 4000 },
+  strongVerification: [], // [{ findingId, reason }]
+  escalation: null, // only for an explicitly named unresolved high-stakes finding
   lenses: [
-    { name: 'readiness', kind: 'builtin', rules: '<inlined pr-readiness rules>' },
+    { name: 'readiness', kind: 'builtin', workClass: 'reasoning', rules: '<inlined pr-readiness rules>' },
     { name: 'typescript-strict', kind: 'skill', skillRef: 'typescript-strict',
-      path: '~/.claude/skills/typescript-strict/SKILL.md' },
+      path: '~/.claude/skills/typescript-strict/SKILL.md', workClass: 'reasoning' },
     // ...the composed roster
   ],
   thorough: false,
@@ -66,6 +71,44 @@ const VERDICT = {
   required: ['verdict', 'reason'],
 }
 
+// resolveInvocation reads graph-engineering/references/model-policy.md. It
+// returns the mapped model/effort and caps max_tokens by the remaining budget.
+// The runtime response supplies the actual fields for the execution ledger.
+const executions = []
+const verifierTier = (finding) => {
+  if (args.escalation?.findingId === finding.id) return 'top-tier'
+  if (args.strongVerification?.some(x => x.findingId === finding.id && x.reason)) return 'strong'
+  return 'balanced'
+}
+const invoke = async (prompt, { label, phase: phaseName, schema, tier }) => {
+  const request = resolveInvocation({
+    provider: args.provider,
+    runtime: args.runtime ?? 'workflow',
+    tier,
+    budget: args.budget,
+    escalation: args.escalation,
+  })
+  const response = await agent(prompt, {
+    label,
+    phase: phaseName,
+    schema,
+    model: request.model,
+    [request.effortField]: request.effort,
+    max_tokens: request.max_tokens,
+  })
+  executions.push({
+    runtime: args.runtime ?? 'workflow',
+    provider: args.provider,
+    node: label,
+    tier,
+    requested: request,
+    applied: response.execution ?? { model: 'unreported', effort: 'unreported', max_tokens: 'unreported' },
+    fallback: request.fallback ?? null,
+    usage: response.usage ?? 'unreported',
+  })
+  return response
+}
+
 const lensBrief = (l) => `You are one review lens in a multi-agent code review.
 ${l.kind === 'skill'
   ? `Your lens is the \`${l.skillRef}\` skill. Load it with the Skill tool (skill "${l.skillRef}"); if unavailable, Read ${l.path}. Follow the skill's own guidance, including its deeper references when relevant.`
@@ -83,7 +126,12 @@ Base ${args.target.baseRef}, head ${args.target.headRef}. Check: (1) does it rep
 
 phase('Lenses')
 const reports = (await parallel(args.lenses.map(l => () =>
-  agent(lensBrief(l), { label: `lens:${l.name}`, phase: 'Lenses', schema: FINDINGS })
+  invoke(lensBrief(l), {
+    label: `lens:${l.name}`,
+    phase: 'Lenses',
+    schema: FINDINGS,
+    tier: l.workClass === 'mechanical' ? 'economical' : 'balanced',
+  })
 ))).filter(Boolean)
 
 // Barrier justified: dedup needs all lens reports before verification spends tokens.
@@ -100,7 +148,12 @@ phase('Verify')
 const VOTES = args.thorough ? 3 : 1
 const verified = (await parallel(unique.map(f => () =>
   parallel(Array.from({ length: VOTES }, (_, i) => () =>
-    agent(verifierBrief(f), { label: `verify:${f.id}${VOTES > 1 ? `#${i + 1}` : ''}`, phase: 'Verify', schema: VERDICT })
+    invoke(verifierBrief(f), {
+      label: `verify:${f.id}${VOTES > 1 ? `#${i + 1}` : ''}`,
+      phase: 'Verify',
+      schema: VERDICT,
+      tier: verifierTier(f),
+    })
   )).then(votes => {
     const vs = votes.filter(Boolean)
     const confirmed = vs.filter(v => v.verdict === 'confirmed').length
@@ -114,6 +167,7 @@ return {
   confirmed: verified.filter(f => f.verdict === 'confirmed'),
   refuted: verified.filter(f => f.verdict === 'refuted'),
   unverifiable: verified.filter(f => f.verdict === 'unverifiable'),
+  execution: executions,
   clean: reports.flatMap(r => r.clean.map(c => ({ lens: r.lens, area: c }))),
   notAssessable: reports.flatMap(r => r.not_assessable.map(n => ({ lens: r.lens, gap: n }))),
   lensFailures: args.lenses.map(l => l.name).filter(n => !reports.some(r => r.lens === n)),
@@ -126,7 +180,7 @@ The orchestrator (not a node) assembles the report from the returned object per 
 
 ## Agent-tool fallback deltas
 
-Same briefs, no schema enforcement: append "Your final message must be ONLY the JSON object — no prose" to each brief, launch all lens nodes in one message, retry a malformed node once, then report it under `lensFailures`. Verification is a second single-message fan-out over the deduped findings.
+Same briefs, no schema enforcement: append "Your final message must be ONLY the JSON object — no prose" to each brief, launch all lens nodes in one message, pass the mapped options when supported, retry a malformed node once, then report it under `lensFailures`. Record requested versus applied model/effort/budget; if the tool cannot override them, use the fresh non-top-tier fallback and report `uncontrolled-default`. Verification is a second single-message fan-out over the deduped findings.
 
 ## Cost and scale
 

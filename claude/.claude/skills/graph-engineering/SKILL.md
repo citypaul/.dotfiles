@@ -46,6 +46,8 @@ Every stage returns structured data against a schema — findings with `file:lin
 
 Set an explicit per-node response limit and aggregate fan-in budget before dispatch: reference large inputs by path, let write nodes leave artifacts in their owned files, and return only the compact evidence needed for synthesis. If the projected fan-in exceeds that budget, split the graph into persisted checkpoints.
 
+Choose each node's capability tier from [`references/model-policy.md`](references/model-policy.md) before dispatch. Apply the resolved provider model, effort, and remaining budget where the runtime supports them, and keep a ledger of what the runtime actually applied. Ordinary lenses and verification stay `balanced`; `strong` and `top-tier` require the policy's named gates.
+
 ### 6. Choose the runtime
 
 In order of preference — details and templates in [`references/execution.md`](references/execution.md):
@@ -78,6 +80,7 @@ Run the graph. Then earn the synthesis:
 | Reference | Read when... |
 |-----------|--------------|
 | [`references/node-design.md`](references/node-design.md) | Writing node briefs — the skill-loading preamble, scope framing, output schemas, evidence bar, severity taxonomy, model/effort choice |
+| [`references/model-policy.md`](references/model-policy.md) | Provider-neutral capability tiers, provider mappings, runtime fallbacks, budget application, and the execution ledger |
 | [`references/topologies.md`](references/topologies.md) | Choosing stage patterns — fan-out, pipeline vs barrier, adversarial verify, judge panel, loop-until-dry, conflict surfacing, dependent-write graphs (needs/informs/excludes, frontier scheduling) |
 | [`references/execution.md`](references/execution.md) | Running the graph — Workflow-tool script authoring, Agent-tool fallback, degraded sequential mode, resume and diagnosis |
 
@@ -87,6 +90,7 @@ Run the graph. Then earn the synthesis:
 - Does every node load exactly one skill, with a bounded scope no other node shares?
 - Does every stage return schema-shaped data with evidence, not free prose?
 - Did verification run independently of finding, with unverified claims labelled rather than dropped?
+- Did each node's execution ledger distinguish the requested model/effort/budget from what the runtime actually applied?
 - Are conflicts between lenses surfaced with both arguments?
 - Does the final deliverable state what was covered, what was capped, and what failed?
 - Was the run's scale proportionate to what the user asked for — and did they opt into it?

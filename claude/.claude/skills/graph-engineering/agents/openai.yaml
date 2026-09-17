@@ -1,4 +1,4 @@
 interface:
   display_name: "Graph Engineering"
   short_description: "Compose installed skills into orchestrated multi-agent graphs"
-  default_prompt: "Use $graph-engineering to design and run an agent graph for this task — scout the scope, pick one skill per node, fan the nodes out, adversarially verify the results, and synthesize one deliverable."
+  default_prompt: "Use $graph-engineering to design and run an agent graph for this task — scout the scope, pick one skill and a capability tier per node, apply mapped model/effort/budget options where supported, adversarially verify the results, record actual execution, and synthesize one deliverable."

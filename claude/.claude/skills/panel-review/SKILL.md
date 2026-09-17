@@ -14,6 +14,7 @@ This skill is an instance of `graph-engineering` — load that skill for the gen
 | Reference | Read when... |
 |-----------|--------------|
 | [`references/lenses.md`](references/lenses.md) | Composing the roster — default lenses, auto-detection signals, lens brief template |
+| [`../graph-engineering/references/model-policy.md`](../graph-engineering/references/model-policy.md) | Choosing capability tiers, applying provider mappings and budgets, and recording actual runtime usage |
 | [`references/pr-readiness.md`](references/pr-readiness.md) | Judging change-path evidence — TDD/refactor/reduction classification, the mutation-evidence freshness model, the verification gate |
 | [`references/workflow-template.md`](references/workflow-template.md) | Executing the graph — the concrete dynamic-workflow script and Agent-tool fallback |
 
@@ -59,7 +60,7 @@ Per `references/lenses.md`: built-in lenses (readiness, quality) + core defaults
 
 ### 4. Run the graph
 
-Execute per `graph-engineering` runtimes — the Workflow tool with [`references/workflow-template.md`](references/workflow-template.md) when available, Agent-tool fan-out otherwise, sequential degraded mode as the labelled last resort. Every lens node loads exactly one skill, receives the diff scope and the sibling-lens list (to keep boundaries disjoint), reads surrounding code as needed, and returns schema-shaped findings with `file:line` evidence. Lens nodes are read-only.
+Execute per `graph-engineering` runtimes — the Workflow tool with [`references/workflow-template.md`](references/workflow-template.md) when available, Agent-tool fan-out otherwise, sequential degraded mode as the labelled last resort. Load the model policy before dispatch: ordinary lenses and verification use `balanced`, mechanical work may use `economical`, and higher tiers require their named gates. Apply the mapped model, effort, and remaining budget where possible, and return the execution ledger with the report. Every lens node loads exactly one skill, receives the diff scope and the sibling-lens list (to keep boundaries disjoint), reads surrounding code as needed, and returns schema-shaped findings with `file:line` evidence. Lens nodes are read-only.
 
 ### 5. Verify and synthesize
 
@@ -109,4 +110,5 @@ With the `post` token and a PR target: write the report to a scratch file and po
 - Did every reported finding survive independent adversarial verification, with `file:line` evidence?
 - Are conflicts, unverifiable claims, clean areas, and coverage gaps all explicit in the report?
 - When the readiness lens ran, does its verdict follow `references/pr-readiness.md`, including the mutation-evidence freshness model — and when it was skipped for a mid-development target, is that listed under "Not covered"?
+- Did every node receive a policy tier, and does the report distinguish the requested model/effort/budget from what the runtime actually applied?
 - Was anything posted to GitHub only with the explicit `post` token?
