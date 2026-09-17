@@ -1,6 +1,6 @@
 ---
 name: functional
-description: Functional programming patterns with immutable data. Use when writing logic, data transformations, or encountering mutation bugs — including any feature request that builds, merges, filters, sorts, prices or otherwise reshapes records, lists, carts, orders or invoices, even when it never mentions immutability; load it alongside tdd for such changes, not instead of it. Covers immutability violations catalog, pure functions, composition, early returns, and options objects. Do NOT over-apply heavy FP abstractions (monads, fp-ts) unless the project requires them.
+description: Functional programming patterns with immutable data. Use when writing logic, data transformations, or encountering mutation bugs — including any feature request that builds, merges, filters, sorts, prices or otherwise reshapes records, lists, carts, orders or invoices, even when it never mentions immutability; load it alongside tdd for such changes, not instead of it. Covers immutability violations catalog, pure functions, composition, early returns, and options objects. Also use when composing Effect programs or reviewing Effect runtime boundaries in a project that already uses Effect. Do NOT over-apply heavy FP abstractions (monads, fp-ts) unless the project requires them.
 ---
 
 # Functional Patterns
@@ -11,6 +11,7 @@ description: Functional programming patterns with immutable data. Use when writi
 |----------|-------------|
 | `immutability-catalog.md` | Fixing mutation bugs, applying `readonly`/`ReadonlyArray` types, or looking up the immutable alternative to an array/object mutation |
 | `composition-patterns.md` | Composing small functions into pipelines, refactoring monolithic logic, or flattening deeply nested code |
+| [`effect-runtime.md`](resources/effect-runtime.md) | Working in an Effect-based project: runtime boundaries, service requirements, failure handling, interruption, or resource lifetime |
 
 ---
 
@@ -208,7 +209,7 @@ async function saveShipment(shipment: Shipment): Promise<void> {
 }
 ```
 
-**Pattern**: Keep impure functions at system boundaries (adapters, ports). Keep core domain logic pure.
+**Pattern**: Keep concrete I/O at the project's chosen boundaries. Application orchestration may compose effectful capabilities; core domain decisions stay pure. Follow the existing architecture rather than introducing ports and adapters solely to isolate effects.
 
 ---
 
@@ -238,7 +239,7 @@ if (!user.hasPermission) return;
 
 ## Result Type for Error Handling
 
-Use a `Result` type when expected failures are part of the caller-facing contract and callers must handle both branches. Preserve an established exception, nullable-value, or framework error convention when it communicates the contract more clearly.
+Use a `Result` type when expected failures are part of the caller-facing contract and callers must handle both branches. Preserve an established exception, nullable-value, or framework error convention when it communicates the contract more clearly. Existing business outcome unions can remain values, including refusals: translate them directly at the consumer boundary instead of converting each refusal into an exception or tagged failure and immediately catching it to recover the same outcome.
 
 ```typescript
 type Result<T, E = Error> =

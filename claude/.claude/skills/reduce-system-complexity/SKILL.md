@@ -71,6 +71,8 @@ Trace each conserved behavior from trigger to outcome and recovery. Inventory ap
 
 Include tests and operational machinery when they impose ongoing ownership cost. Exclude generated artifacts unless their source, build, or runtime mechanism changes. Mark irrelevant dimensions `N/A`.
 
+For mixed runtimes, include runtime entries and conversions across consumers and implementations in the before/after inventory, rather than counting only wrappers removed at the entry point. Read the [Effect runtime reference](../functional/resources/effect-runtime.md) when that path uses Effect.
+
 Do not combine unlike counts into a synthetic score. A smaller function, directory, or diff is not a reduction when callers, operators, dependencies, or recovery paths inherit the removed burden.
 
 ### 3. Derive a minimum from constraints

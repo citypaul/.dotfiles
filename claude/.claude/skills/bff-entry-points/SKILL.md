@@ -45,7 +45,11 @@ A project may extend the discriminated union — service credentials, signed web
 
 ## Source of Truth and the Derived Catalog
 
-Endpoint contracts stay feature-local: route, validation schemas, access declaration, handler, and documentation live together at the endpoint leaf, so one review sees the whole story.
+Endpoint contracts stay feature-local: route, validation schemas, access declaration, handler, and documentation live together at the endpoint leaf, so one review sees the whole story. Colocation does not require one file; `structure-codebase` owns the placement of substantial response mapping and workflows.
+
+The HTTP boundary translates application outcomes into safe responses. A BFF workflow may coordinate an application call with host-owned publication or lifetime policy, while application authorization, fact resolution, domain decisions, and conditional persistence remain with their current owners. When publication is asynchronous, HTTP success does not promise downstream delivery. Preserve existing conflict and existence-hiding semantics without exposing another caller's winning state.
+
+For Effect-based handlers, read the [runtime composition guidance](../functional/resources/effect-runtime.md).
 
 Do not build a second, hand-maintained central route-security map. It will drift from runtime registration, and the drift is invisible until an incident. Instead, derive a central entry catalog from the two things that are already true:
 

@@ -42,7 +42,7 @@ This skill covers what goes *into* telemetry and how it is consumed. The `twelve
 2. Business logic and middleware add fields as work happens
 3. The event is emitted once, at the end of the request, in `finally`/teardown logic — **it must survive the exception path**, because that is exactly when you need it
 
-**Construction rule — one exit, proved by a throw.** Open the `try` before anything that can throw: request parsing and body reads included, not just the business call. The *only* call site that finishes the event — setting the outcome attributes, recording the exception, ending the span or emitting the record — sits in the matching `finally`. A helper that does all three is fine, but it is called from the `finally` and from nowhere else. A helper invoked on the success path, paired with a `finally` that merely ends a span or flushes, still loses every field on the throw. Before calling the work done, run a test that makes the handler throw *outside* its own `catch` and assert that one event carrying the outcome is still recorded.
+**Construction rule — one exit, proved by a throw.** For Promise-based handlers, open the `try` before anything that can throw: request parsing and body reads included, not just the business call. The *only* call site that finishes the event — setting the outcome attributes, recording the exception, ending the span or emitting the record — sits in the matching `finally`. A helper that does all three is fine, but it is called from the `finally` and from nowhere else. A helper invoked on the success path, paired with a `finally` that merely ends a span or flushes, still loses every field on the throw. Before calling the work done, run a test that makes the handler throw *outside* its own `catch` and assert that one event carrying the outcome is still recorded.
 
 **What goes in it:**
 
@@ -169,6 +169,14 @@ The `twelve-factor` skill owns transport and shape (structured records on platfo
 - In regulated environments, every log line containing PII becomes a compliance obligation (retention, access control, right-to-erasure)
 
 ---
+
+## Effect Logging
+
+In an Effect-based runtime, prefer native logging and annotations with Logger Layers supplied by composition. Remove threaded JavaScript logger callbacks and diagnostic wrappers when they merely recreate those capabilities. Keep domain observations under the architecture rules below; native logging is not a reason to introduce a logger into pure domain decisions.
+
+Use a scoped finalizer or exit-aware equivalent for the wide event, covering failure and interruption as well as success; a JavaScript `finally` around construction of an Effect does not observe its execution. Accumulate safe annotations within the program for that boundary event.
+
+Preserve source redaction and sink-failure isolation during adoption: JSON output does not enforce either. Check the installed production logger and test through the operation that a failing sink neither changes the product outcome nor masks its original failure; use a narrow sink adapter if native behavior needs containment. For pinned-version API verification and runtime lifetime rules, read [Effect runtime composition](../functional/resources/effect-runtime.md).
 
 ## Where Instrumentation Lives (Architecture Placement)
 

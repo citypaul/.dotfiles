@@ -75,9 +75,9 @@ Apply these rules:
 
 - Keep `router.ts` explicit, but delegate route branches so it remains a catalog rather than a god file.
 - Use plain names such as `by-order-id`; do not imitate `[orderId]` file-router syntax unless the framework requires it.
-- Keep endpoint leaves transport-thin: parse, translate, call, and respond. Authentication and browser policy arrive installed by the prepared registrar, not chosen per leaf.
+- Keep endpoint leaves readable as parse → translate → invoke operation → respond. Put substantial endpoint-specific problem catalogs, response mapping, and response validation beside the leaf (for example, `response.ts`); small helpers can stay inline. Split by responsibility and navigation benefit, not file length. Authentication and browser policy arrive installed by the prepared registrar, not chosen per leaf.
 - Give endpoint leaves explicit access classifications and install shared browser/security policy at a prepared entry-point boundary rather than choosing middleware ad hoc in every leaf.
-- Keep route-independent aggregation workflows outside the endpoint tree when several transports or routes genuinely share them.
+- Give real coordination a purpose-named workflow outside the endpoint tree, even with one caller when it owns sequencing or lifetime across collaborators. Keep HTTP mapping beside the endpoint; a workflow that merely forwards one call earns no extra file.
 - Keep concrete stores, upstream clients, configuration, resource ownership, and shutdown in composition.
 - Keep OpenAPI generation aligned with the explicit route catalog.
 

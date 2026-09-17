@@ -40,7 +40,7 @@ Place a responsibility behind a module when callers should not each know its pol
 
 ### Keep depth cohesive
 
-A tiny contract over an incoherent implementation is a god module, not a good deep module. Combine behavior only when it shares meaning, invariants, ownership, lifecycle, or a real axis of change. Preserve separate modules when they evolve, fail, deploy, or authorize independently.
+A tiny contract over an incoherent implementation is a god module, not a good deep module. Combine behavior only when it shares meaning, invariants, ownership, lifecycle, or a real axis of change. Preserve separate modules when they evolve, fail, deploy, or authorize independently. An extraction earns its boundary when the reader can name the decision or responsibility it owns and understand the caller with less cross-file reconstruction; a file per helper or a chain of trivial forwarding functions does not establish ownership.
 
 ### Apply the behavior-preserving inlining test
 
