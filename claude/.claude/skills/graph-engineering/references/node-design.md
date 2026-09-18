@@ -111,4 +111,18 @@ Review findings are dropped or reported; a failed *build* is repaired. On a fail
 
 ## Model and Effort per Node
 
-Default to omitting model overrides — nodes inherit the session model, which is almost always right. Deviate only deliberately: mechanical stages (dedup formatting, path resolution) can drop to a cheaper model or lower effort; the hardest verify/judge stages may warrant higher effort. Never economize on the verification stage of a review — false positives that survive verification are the product failing. At the highest stakes, a verifier gains independence when it does not share a provider with the worker it judges; `double-check` owns the cross-provider mechanics.
+Load [`model-policy.md`](model-policy.md) before dispatch. Assign a tier, not a
+provider model ID: `balanced` is the default for ordinary lenses and
+verification, `economical` is for mechanical stages, `strong` is only for a
+named difficult or high-impact verification, and `top-tier` requires an
+explicitly named unresolved high-stakes escalation. `thorough`, roster size,
+and a large diff do not promote a node by themselves.
+
+The runtime adapter must pass the mapped model, effort, and capped remaining
+budget where supported. Record the requested values separately from the model,
+effort, budget, and usage the runtime reports as actually applied. An
+unsupported Agent-tool option is an explicit fallback with an honest ledger
+entry, not permission to inherit a top-tier session silently. Never economize
+on verification merely to reduce cost; false positives that survive
+verification are the product failing. For cross-provider independence,
+`double-check` owns the reviewer selection rules.

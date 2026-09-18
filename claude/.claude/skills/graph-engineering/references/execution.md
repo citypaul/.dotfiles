@@ -1,6 +1,6 @@
 # Execution — Running the Graph
 
-Three runtimes, in order of preference. Detect what the session offers and say which one you're using.
+Three runtimes, in order of preference. Detect what the session offers and say which one you're using. All three use the capability tiers and provider mappings in [`model-policy.md`](model-policy.md); a runtime that cannot apply an option records that limitation.
 
 ## Runtime 1: The Workflow Tool (dynamic workflow)
 
@@ -18,10 +18,19 @@ export const meta = {
 const FINDINGS = { /* findings schema from node-design.md */ }
 const VERDICT  = { /* verdict schema from node-design.md */ }
 
+// `invoke` is the runtime adapter from model-policy.md: it resolves the tier,
+// passes the mapped model/effort/max-token options to `agent()`, and appends
+// the requested/applied/usage record to the run ledger.
+
 phase('Lenses')
 // args = { scope, lenses: [{ name, skillRef, focus }] } — passed via Workflow's args input
 const reports = (await parallel(args.lenses.map(l => () =>
-  agent(nodeBrief(l, args.scope), { label: `lens:${l.name}`, phase: 'Lenses', schema: FINDINGS })
+  invoke(nodeBrief(l, args.scope), {
+    label: `lens:${l.name}`,
+    phase: 'Lenses',
+    schema: FINDINGS,
+    tier: l.workClass === 'mechanical' ? 'economical' : 'balanced',
+  })
 ))).filter(Boolean)
 
 // Barrier is deliberate here: dedup needs ALL lens reports before verification.
@@ -29,7 +38,12 @@ const unique = dedupeByFileLineClaim(reports.flatMap(r => r.findings))
 
 phase('Verify')
 const verified = (await parallel(unique.map(f => () =>
-  agent(verifierBrief(f, args.scope), { label: `verify:${f.id}`, phase: 'Verify', schema: VERDICT })
+  invoke(verifierBrief(f, args.scope), {
+    label: `verify:${f.id}`,
+    phase: 'Verify',
+    schema: VERDICT,
+    tier: f.tier ?? 'balanced',
+  })
     .then(v => ({ ...f, verdict: v }))
 ))).filter(Boolean)
 
@@ -66,7 +80,7 @@ For long runs, check usage headroom before each checkpoint. When near a limit: d
 
 ## Runtime 2: Agent-tool Fan-out
 
-No Workflow tool, but an Agent/Task mechanism exists: launch all independent nodes **in a single message** so they run concurrently, each with a complete brief (skill preamble + scope + schema stated in prose). Collect results as they complete; run verification as a second fan-out over surviving findings.
+No Workflow tool, but an Agent/Task mechanism exists: launch all independent nodes **in a single message** so they run concurrently, each with a complete brief (skill preamble + scope + schema stated in prose). Pass the resolved tier's model, effort, and budget when the tool supports them. Collect a requested/applied/usage ledger entry for every node; if the tool cannot override a field, use the fresh non-top-tier fallback from `model-policy.md` and surface `uncontrolled-default`.
 
 Differences from Runtime 1 you must compensate for by hand:
 

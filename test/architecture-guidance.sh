@@ -67,6 +67,10 @@ USE_CASE_DATA="$REPO_ROOT/claude/.claude/agents/use-case-data-patterns.md"
 USE_CASE_DATA_SOURCE="$REPO_ROOT/claude/.claude/agents/references/use-case-data-patterns-source-notes.md"
 REVIEW_SKILL="$SKILLS/panel-review/SKILL.md"
 REVIEW_LENSES="$SKILLS/panel-review/references/lenses.md"
+MODEL_POLICY="$SKILLS/graph-engineering/references/model-policy.md"
+GRAPH_NODE="$SKILLS/graph-engineering/references/node-design.md"
+PANEL_WORKFLOW="$SKILLS/panel-review/references/workflow-template.md"
+PANEL_OPENAI="$SKILLS/panel-review/agents/openai.yaml"
 TDD_GUARDIAN="$REPO_ROOT/claude/.claude/agents/tdd-guardian.md"
 REVIEW_READINESS="$SKILLS/panel-review/references/pr-readiness.md"
 REFACTOR_SCAN="$REPO_ROOT/claude/.claude/agents/refactor-scan.md"
@@ -105,6 +109,25 @@ INSTALLER="$REPO_ROOT/install-claude.sh"
 MIGRATION="$REPO_ROOT/MIGRATION.md"
 CHARACTERISATION_WRITING="$SKILLS/characterisation-tests/resources/writing-process.md"
 CHARACTERISATION_MODERN="$SKILLS/characterisation-tests/resources/modern-tooling.md"
+
+require_match "model policy defines balanced ordinary review work" \
+  'balanced.*Ordinary lenses and ordinary finding verification' "$MODEL_POLICY"
+require_match "model policy reserves top tier for named high stakes" \
+  'top-tier.*An explicitly named unresolved high-stakes escalation' "$MODEL_POLICY"
+require_match "model policy keeps Claude and Codex mappings separate" \
+  'Claude Code.*haiku.*sonnet.*opus' "$MODEL_POLICY"
+require_match "model policy maps Codex IDs in one table" \
+  'Codex.*gpt-5\.6-luna.*gpt-5\.6-terra.*gpt-5\.6-sol.*gpt-6-astra' "$MODEL_POLICY"
+require_match "workflow passes model and effort" \
+  'model: request\.model' "$PANEL_WORKFLOW"
+require_match "workflow caps node tokens by remaining budget" \
+  'max_tokens: request\.max_tokens' "$PANEL_WORKFLOW"
+require_match "workflow records requested and applied execution" \
+  'requested: request' "$PANEL_WORKFLOW"
+require_match "node policy forbids silent session inheritance" \
+  'inherit a top-tier session silently' "$GRAPH_NODE"
+require_match "Codex projection keeps model policy in the shared mapping" \
+  'model policy' "$PANEL_OPENAI"
 
 require_match "DDD makes repository/gateway ports normally application-owned" \
   'Repository and gateway ports are therefore normally application-owned' "$DDD"
