@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.17.0
+
+### Minor Changes
+
+- bcfb332: Add provider-neutral model capability tiers, runtime fallbacks, budget application, and execution-ledger guidance to graph-engineering and panel-review.
+
+### Patch Changes
+
+- ad8ff59: Remove the Karabiner-Elements config
+
+  Karabiner-Elements is no longer installed, so `install.sh` stops stowing the
+  `karabiner` package and the package itself is deleted.
+
 ## 4.16.1
 
 ### Patch Changes
