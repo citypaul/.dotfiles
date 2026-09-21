@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.18.0
+
+### Minor Changes
+
+- 315ab6f: Install the Clarity and Simple English skills from reviewed, commit-pinned
+  upstream sources, and route prose tasks between them and technical-writing.
+
 ## 4.17.0
 
 ### Minor Changes
