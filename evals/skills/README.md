@@ -96,6 +96,27 @@ Add an entry to `tests/routing.yaml` under the cluster it belongs to:
 If the request needs code to look at, add it to `fixtures/workspace` and keep it
 small — the fixture is context the agent pays for on every case.
 
+### Writing-skill routing through Codex
+
+Run `./evals/skills/run-writing.sh` for nine writing requests repeated three times
+(27 runs). It uses the existing file-backed Codex login, isolated settings, and
+the Clarity/Simple English revisions pinned in `install-claude.sh`. Set
+`SKILL_EVAL_MODEL` to override `gpt-5.6-sol`. Results are saved to
+`results/writing/latest.json`; normal promptfoo flags pass through.
+The runner disables user-level skills and canonicalises workspace paths so
+macOS path aliases do not hide successful skill reads from the detector.
+
+The cases check which skills load, including combined Technical Writing/Clarity
+requests and cases where neighbouring skills must stay quiet. They supply drafts
+where needed and request replies rather than writes to the read-only workspace.
+The September 4 ad hoc suite omitted those drafts; one reported miss merely asked
+for its missing input, and another read both skills through a tool call the old
+detector did not recognise. The maintained suite therefore replaces that setup;
+its score is not a like-for-like improvement over the historical 25/27.
+
+This measures skill selection, not the quality of the resulting prose. A perfect
+run is evidence for these cases and model settings, not a reliability guarantee.
+
 ## Quality suites
 
 Each quality suite is a small project under `fixtures/<suite>-workspace` that has

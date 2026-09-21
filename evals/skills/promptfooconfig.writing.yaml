@@ -1,0 +1,23 @@
+description: Writing skill selection through Codex
+prompts:
+  - |
+    {{request}}
+    Return the requested writing in your reply; leave workspace files unchanged.
+providers:
+  - id: openai:codex-sdk
+    config:
+      model: '{{env.SKILL_EVAL_MODEL}}'
+      working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+      cli_env:
+        CODEX_HOME: '{{env.SKILL_EVAL_CODEX_HOME}}'
+      skip_git_repo_check: true
+      sandbox_mode: read-only
+      approval_policy: never
+      network_access_enabled: false
+      web_search_mode: disabled
+      model_reasoning_effort: low
+      persist_threads: false
+defaultTest:
+  options:
+    disableVarExpansion: true
+tests: file://tests/writing-routing.yaml

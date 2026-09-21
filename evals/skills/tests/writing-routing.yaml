@@ -1,0 +1,66 @@
+# Nine requests repeated three times. Source text is supplied where the base fixture has no relevant draft.
+- description: technical-writing owns developer-document structure
+  vars:
+    request: "Write a README for this library. It must help a developer decide whether to use it, install it, and verify that the first example works."
+  assert:
+    - { type: skill-used, value: technical-writing }
+    - { type: not-skill-used, value: clarity }
+    - { type: not-skill-used, value: simple-english }
+
+- description: clarity owns a voice-preserving rewrite
+  vars:
+    request: "Rewrite this product essay because it sounds generic and AI-shaped. Preserve the author's voice and every factual claim, and make the smallest changes that restore energy and specificity. Draft: I built this tool after losing my notes on a train. It stores notes locally and exports Markdown. I still use a paper notebook for sketches. This powerful solution seamlessly unlocks a new era of productivity."
+  assert:
+    - { type: skill-used, value: clarity }
+    - { type: not-skill-used, value: simple-english }
+
+- description: clarity owns sentence-level review
+  vars:
+    request: "Review this draft at sentence level. Mark passages keep, revise, cut, or ask the author, especially where the prose is hollow or over-polished. Do not reorganize the whole document. Draft: Our app stores notes locally. It seamlessly empowers your workflow. You can export notes as Markdown. Everyone loves it."
+  assert:
+    - { type: skill-used, value: clarity }
+    - { type: not-skill-used, value: simple-english }
+
+- description: simple-english owns plain language for lay readers
+  vars:
+    request: "Rewrite these deployment instructions in plain English for non-native speakers and lay readers. Use short sentences, define unfamiliar terms, and keep code and identifiers unchanged. Source: Prior to initiating deployment, ascertain that the staging environment is operational. Execute deploy --env staging. In the event of a nonzero exit code, consult deploy.log before repeating the operation."
+  assert:
+    - { type: skill-used, value: simple-english }
+    - { type: not-skill-used, value: clarity }
+
+- description: simple-english owns explicit STE compliance
+  vars:
+    request: "Convert this maintenance procedure to ASD-STE100 Simplified Technical English. Enforce the controlled-language rules strictly. Source: Before opening the enclosure, disconnect the power supply. Inspect the filter for damage. If the filter is damaged, replace it before reconnecting the power supply."
+  assert:
+    - { type: skill-used, value: simple-english }
+    - { type: not-skill-used, value: clarity }
+
+- description: technical-writing and clarity may compose on a structured rewrite
+  vars:
+    request: "Improve this developer guide. Keep its verified claims and task structure, but rewrite the stiff, generic sentences without inventing facts. Source: This library provides pure note-state transitions. Setup: Run npm install. Usage: Import addNote from src/notes.ts. Verification: Run npm test. The powerful API seamlessly enables note management."
+  assert:
+    - { type: skill-used, value: technical-writing }
+    - { type: skill-used, value: clarity }
+    - { type: not-skill-used, value: simple-english }
+
+- description: technical-writing keeps a wall-of-text README
+  vars:
+    request: "This README is a wall of text. Restructure it so developers can skim the key decision, follow the setup, and verify its claims."
+  assert:
+    - { type: skill-used, value: technical-writing }
+    - { type: not-skill-used, value: clarity }
+    - { type: not-skill-used, value: simple-english }
+
+- description: clarity keeps brand voice during de-slop
+  vars:
+    request: "De-slop this launch essay, but keep the founder's distinctive voice, rhythm, and factual claims. Make the least invasive sentence-level changes. Draft: I made this for my own messy desk. Six friends tried it last week. It is a revolutionary solution that seamlessly transforms the way we work. I still spill coffee on the keyboard."
+  assert:
+    - { type: skill-used, value: clarity }
+    - { type: not-skill-used, value: simple-english }
+
+- description: technical-writing keeps readable developer docs
+  vars:
+    request: "Make this developer guide readable. Keep the technical depth, but improve its information hierarchy, headings, examples, and evidence so an experienced engineer can scan it. Source: Install dependencies with npm install. State transitions live in src/notes.ts. Run npm test to check the examples. The sync module is under src/sync/."
+  assert:
+    - { type: skill-used, value: technical-writing }
+    - { type: not-skill-used, value: simple-english }
