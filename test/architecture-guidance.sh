@@ -269,6 +269,12 @@ require_match "test-reviewer historical source is pinned honestly" \
   '278e367057bbe4a57255870e0a30b9d0a6eabc59' "$TEST_REVIEWER_SOURCE"
 require_match "test-reviewer records the upstream permission gap" \
   'Public source availability is not redistribution' "$TEST_REVIEWER_SOURCE"
+require_match "technical writing routes sentence-level prose to clarity" \
+  'Sentence-level voice, generic prose, or AI-shaped writing.*clarity' "$TECHNICAL_WRITING"
+require_match "technical writing routes controlled plain language to simple-english" \
+  'Plain English, lay readers, translation, or ASD-STE100.*simple-english' "$TECHNICAL_WRITING"
+require_match "always-loaded guidance distinguishes the prose skills" \
+  'technical-writing.*document.*clarity.*substance, voice, and sentences' "$CLAUDE_POLICY"
 require_match "twelve-factor guidance states its SaaS scope" \
   'original methodology targets software-as-a-service' "$TWELVE_FACTOR"
 require_match "twelve-factor checklist permits platform-native config injection" \

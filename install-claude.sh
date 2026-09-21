@@ -50,6 +50,9 @@ SKILLS_CLI_VERSION="1.5.22" # https://github.com/vercel-labs/skills/tree/v1.5.22
 # one directory for repos far larger than their skills.
 OWN_SKILLS_REPO_BASE="citypaul/.dotfiles"
 WEB_QUALITY_SKILLS_REPO="addyosmani/web-quality-skills#95d6e255afe1596b557d7a8498517884438f5b3a"
+CLARITY_SKILLS_REPO="addyosmani/clarity#9e3071196d5d26f26c58f5d7c995890b35a94499"
+SIMPLE_ENGLISH_SKILLS_REPO="AminBlg/SimpleEnglish#080a862b2e80d5fe19a2fbddd3de76f7d580279e"
+SIMPLE_ENGLISH_SKILLS_SUBPATH="skills"
 NEXT_SKILLS_REPO="vercel/next.js#ae1e53a11f5379e715096b829178f4df92d35044"
 NEXT_SKILLS_SUBPATH="skills"
 # React performance and composition rule catalogues. Pinned separately from the
@@ -87,6 +90,8 @@ FIRST_PARTY_SKILLS=(
 WEB_QUALITY_SKILLS=(
   accessibility best-practices core-web-vitals performance seo web-quality-audit
 )
+CLARITY_SKILLS=(clarity)
+SIMPLE_ENGLISH_SKILLS=(simple-english)
 # vercel-labs/next-skills was retired: next-best-practices and next-upgrade
 # now ship inside Next.js itself (bundled docs + generated AGENTS.md), and
 # next-cache-components split into the two workflow skills below, which live
@@ -216,7 +221,7 @@ Options:
                        (use with --agent to target other agents only)
   --with-opencode      Shorthand for --agent opencode + install OpenCode config
   --opencode-only      Install only OpenCode config plus projected agents/commands (no Claude artifacts or skills)
-  --no-external        Skip all external community skills (web-quality-skills + Next.js skills + agent-skills + impeccable + grill-me + writing-for-agents + seo-audit + skill-creator + herdr + skill-doctor)
+  --no-external        Skip all external community skills (web quality + clarity + simple-english + framework + design + workflow skills)
   --no-impeccable      Skip impeccable design skills only
   --no-ponytail        Skip the ponytail plugin (Claude Code + Codex)
   --version REF        Exact reviewed release tag or commit for first-party artifacts.
@@ -227,6 +232,8 @@ Options:
 Default external skill sources are pinned to reviewed commits; the installer
 selects only the declared names from each source:
   addyosmani/web-quality-skills#95d6e25
+  addyosmani/clarity#9e30711 --skill clarity
+  AminBlg/SimpleEnglish#080a862 --skill simple-english
   vercel/next.js#ae1e53a --skill next-cache-components-optimizer + next-cache-components-adoption
   vercel-labs/agent-skills#b8caa26 --skill vercel-react-best-practices --skill vercel-composition-patterns
   pbakaus/impeccable#5d10bc8
@@ -789,7 +796,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
 
   install_manifest=("${FIRST_PARTY_SKILLS[@]}")
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
-    install_manifest+=("${WEB_QUALITY_SKILLS[@]}" "${NEXT_SKILLS[@]}" "${VERCEL_REACT_SKILLS[@]}" "${MATTPOCOCK_SKILLS[@]}" "${SEO_AUDIT_SKILLS[@]}" "${ANTHROPIC_SKILLS[@]}" "${HERDR_SKILLS[@]}" "${WARP_COMMON_SKILLS[@]}")
+    install_manifest+=("${WEB_QUALITY_SKILLS[@]}" "${CLARITY_SKILLS[@]}" "${SIMPLE_ENGLISH_SKILLS[@]}" "${NEXT_SKILLS[@]}" "${VERCEL_REACT_SKILLS[@]}" "${MATTPOCOCK_SKILLS[@]}" "${SEO_AUDIT_SKILLS[@]}" "${ANTHROPIC_SKILLS[@]}" "${HERDR_SKILLS[@]}" "${WARP_COMMON_SKILLS[@]}")
   fi
   if [[ "$INSTALL_IMPECCABLE" == true ]]; then
     install_manifest+=("${IMPECCABLE_SKILLS[@]}")
@@ -809,6 +816,8 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
 
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)" "" "${WEB_QUALITY_SKILLS[@]}"
+    install_optional_skills_from "$CLARITY_SKILLS_REPO" "clarity writing skill (addyosmani/clarity)" "" "${CLARITY_SKILLS[@]}"
+    install_optional_skills_from "$SIMPLE_ENGLISH_SKILLS_REPO" "simple-english writing skill (AminBlg/SimpleEnglish)" "$SIMPLE_ENGLISH_SKILLS_SUBPATH" "${SIMPLE_ENGLISH_SKILLS[@]}"
     install_optional_skills_from "$NEXT_SKILLS_REPO" "Next.js skills (vercel/next.js)" "$NEXT_SKILLS_SUBPATH" "${NEXT_SKILLS[@]}"
     install_optional_skills_from "$VERCEL_REACT_SKILLS_REPO" "React skills (vercel-labs/agent-skills)" "$VERCEL_REACT_SKILLS_SUBPATH" "${VERCEL_REACT_SKILLS[@]}"
     install_optional_skills_from "$MATTPOCOCK_SKILLS_REPO" "grill-me + writing-for-agents skills (mattpocock/skills)" "" "${MATTPOCOCK_SKILLS[@]}"
@@ -932,6 +941,8 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   echo -e "     • citypaul/.dotfiles — auto-discovered patterns (tdd, testing, typescript-strict, ...)"
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     echo -e "     • addyosmani/web-quality-skills — accessibility, performance, SEO, ..."
+    echo -e "     • addyosmani/clarity — sentence-level co-writing, rewriting, review, and diagnostics"
+    echo -e "     • AminBlg/SimpleEnglish — plain and Simplified Technical English for technical prose"
     echo -e "     • vercel/next.js — Cache Components optimizer + adoption workflow skills"
     echo -e "     • vercel-labs/agent-skills — React performance rules + composition patterns"
     echo -e "     • mattpocock/skills — relentless plan interviewing + writing for agents"
@@ -1036,6 +1047,12 @@ echo -e "  Skills ecosystem: ${YELLOW}skills.sh${NC} (${BLUE}https://skills.sh${
 echo ""
 echo -e "  • ${YELLOW}Addy Osmani${NC} — web quality skills"
 echo -e "    ${BLUE}https://github.com/addyosmani/web-quality-skills${NC} (MIT)"
+echo ""
+echo -e "  • ${YELLOW}Addy Osmani${NC} — clarity writing skill"
+echo -e "    ${BLUE}https://github.com/addyosmani/clarity${NC} (MIT)"
+echo ""
+echo -e "  • ${YELLOW}Amin Boulegroun${NC} — simple-english writing skill"
+echo -e "    ${BLUE}https://github.com/AminBlg/SimpleEnglish${NC} (MIT)"
 echo ""
 echo -e "  • ${YELLOW}Vercel${NC} — Next.js skills"
 echo -e "    ${BLUE}https://github.com/vercel/next.js/tree/canary/skills${NC}"

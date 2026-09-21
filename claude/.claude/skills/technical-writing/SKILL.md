@@ -1,6 +1,6 @@
 ---
 name: technical-writing
-description: "Writing developer-facing prose that can be skimmed first and trusted enough to finish — READMEs, guides, tutorials, reference docs, proposals, PR descriptions, release notes. Load before drafting, rewriting, restructuring, or editing any technical document, including a request to rewrite or improve a README, when a doc reads as a wall of text, when claims need receipts, or when docs must serve AI agents as well as humans. Covers reader-first structure, falsifiable claims, docs-as-behavior verification, and agent-readable reference shape. For deciding where a learning, gotcha, or decision should be recorded see expectations; for diagram choice and syntax see diagrams; for API reference semantics see api-design; for CLI help text see cli-design."
+description: "Writing developer-facing prose that can be skimmed first and trusted enough to finish — READMEs, guides, tutorials, reference docs, proposals, PR descriptions, release notes. Load before drafting, rewriting, restructuring, or editing technical documents, when a doc reads as a wall of text, claims need receipts, or docs must serve AI agents. Covers reader-first structure, falsifiable claims, docs-as-behavior verification, and agent-readable reference shape. For sentence-level voice or generic AI-shaped prose use clarity; for plain English, lay readers, translation, or ASD-STE100 use simple-english; for recording a learning use expectations; for diagrams use diagrams; for API semantics use api-design; for CLI help use cli-design."
 ---
 
 # Technical Writing: Skimmed First, Trusted Enough to Finish
@@ -136,6 +136,8 @@ Developer docs now have two audiences. Agent-readable means:
 | CLI help text, exit codes, output design | `cli-design` |
 | Documenting expectations, gotchas, decisions while fresh | `expectations` |
 | Domain vocabulary in prose | `ubiquitous-language` (where installed) |
+| Sentence-level voice, generic prose, or AI-shaped writing | `clarity` (where installed) |
+| Plain English, lay readers, translation, or ASD-STE100 | `simple-english` (where installed) |
 
 ## Verification Checklist
 

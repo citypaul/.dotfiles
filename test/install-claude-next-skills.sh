@@ -129,6 +129,33 @@ else
   fail "vercel/next.js must be fetched sparsely at the reviewed commit, never as the whole repository"
 fi
 
+if grep -Eq 'add [^ ]*skills-src-addyosmani-clarity[^ ]* -g -a codex -s clarity --copy -y' "$NPX_LOG"; then
+  pass "clarity installs from its reviewed commit"
+else
+  fail "clarity must install from the pinned addyosmani/clarity source"
+fi
+assert_output "addyosmani/clarity"
+
+if grep -q 'fetch --quiet --depth 1 origin 9e3071196d5d26f26c58f5d7c995890b35a94499' "$GIT_LOG"; then
+  pass "clarity fetch is shallow and pinned to the reviewed commit"
+else
+  fail "clarity must install from its reviewed commit"
+fi
+
+if grep -Eq 'add [^ ]*skills-src-AminBlg-SimpleEnglish[^ ]*/skills -g -a codex -s simple-english --copy -y' "$NPX_LOG"; then
+  pass "simple-english installs from the fetched skills directory"
+else
+  fail "simple-english must install from the pinned AminBlg/SimpleEnglish skills directory"
+fi
+assert_output "AminBlg/SimpleEnglish"
+
+if grep -q 'sparse-checkout set --no-cone skills' "$GIT_LOG" &&
+   grep -q 'fetch --quiet --depth 1 --filter=blob:none origin 080a862b2e80d5fe19a2fbddd3de76f7d580279e' "$GIT_LOG"; then
+  pass "SimpleEnglish fetch is sparse, shallow, and pinned to the reviewed commit"
+else
+  fail "SimpleEnglish must install from its reviewed commit"
+fi
+
 if grep -Eq 'add [^ ]*skills-src-warpdotdev-common-skills[^ ]*/\.agents/skills -g -a codex -s skill-doctor --copy -y' "$NPX_LOG"; then
   pass "skill-doctor installs from the fetched .agents/skills directory"
 else
@@ -143,7 +170,7 @@ else
   fail "Warp skills must be fetched sparsely at the reviewed commit"
 fi
 
-if grep -Eq 'add [^ ]*(addyosmani/web-quality-skills|vercel|pbakaus/impeccable|mattpocock/skills|coreyhaines31/marketingskills|herdrdev/herdr)[^ ]* .* -s \* ' "$NPX_LOG"; then
+if grep -Eq 'add [^ ]*(addyosmani|AminBlg|vercel|pbakaus/impeccable|mattpocock/skills|coreyhaines31/marketingskills|herdrdev/herdr)[^ ]* .* -s \* ' "$NPX_LOG"; then
   fail "external sources must never install an undeclared wildcard set"
 else
   pass "external sources install only reviewed names"
