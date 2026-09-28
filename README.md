@@ -1455,13 +1455,14 @@ Claude Code: [Launches twelve-factor-audit agent, produces compliance report]
 
 [**→ Browse the commands directory**](claude/.claude/commands/)
 
-Three slash commands that encode common workflows into single invocations:
+Four slash commands that encode common workflows into single invocations:
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
 | **`/setup`** | Authorized project onboarding — detect tech stack, create project guidance, hooks, and commands | Only when the user explicitly requests onboarding/config generation |
 | **`/plan`** | Create a plan document on a branch with a PR — no code changes | When planning work before implementation |
 | **`/continue`** | Continue after a merged independent PR or advance/sync a stack | Moving to the next slice or dependent layer |
+| **`/delegate`** | Work a labelled GitHub issue to a reviewable PR through the `delegating-github-issues` skill, or watch and land delegated PRs | In a project with a `.claude/delegation.md` settings file |
 
 PR review is not a command: the [`panel-review` skill](claude/.claude/skills/panel-review/SKILL.md) provides `/panel-review`, and PR creation is ordinary agent-led work gated by that skill's PR-readiness reference.
 
@@ -1655,7 +1656,7 @@ those reviewed names without unrelated skills or files blocking the install.
   - [coreyhaines31/marketingskills/seo-audit](https://skills.sh/coreyhaines31/marketingskills/seo-audit) — technical, on-page, content, and authority SEO audit workflow
   - [herdrdev/herdr](https://skills.sh/herdrdev/herdr) — drive the [Herdr](https://herdr.dev) terminal workspace from inside an agent: split panes, run commands, read output, wait on a sibling agent
   - [warpdotdev/common-skills/skill-doctor](https://www.warp.dev/skill-doctor) — score recent local agent conversations and draft evidence-backed skill improvements; transcripts stay local and reports are written to a temporary directory
-- ✅ `~/.claude/commands/` (3 slash commands: /setup, /plan, /continue)
+- ✅ `~/.claude/commands/` (4 slash commands: /setup, /plan, /continue, /delegate)
 - ✅ `~/.claude/agents/` (9 specialized workflow agents)
 
 **Inspecting skills after install:**

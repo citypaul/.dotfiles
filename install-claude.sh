@@ -120,7 +120,7 @@ SEO_AUDIT_SKILLS=(seo-audit)
 ANTHROPIC_SKILLS=(skill-creator)
 HERDR_SKILLS=(herdr)
 WARP_COMMON_SKILLS=(skill-doctor)
-COMMAND_FILES=(setup.md plan.md continue.md)
+COMMAND_FILES=(setup.md plan.md continue.md delegate.md)
 AGENT_FILES=(
   tdd-guardian.md ts-enforcer.md refactor-scan.md docs-guardian.md adr.md
   learn.md use-case-data-patterns.md progress-guardian.md
@@ -981,7 +981,7 @@ if [[ "$INSTALL_PONYTAIL" == true ]]; then
 fi
 
 if [[ "$INSTALL_COMMANDS" == true ]]; then
-  echo -e "  ${GREEN}✓${NC} commands/ (3 slash commands: /setup, /plan, /continue)"
+  echo -e "  ${GREEN}✓${NC} commands/ (4 slash commands: /setup, /plan, /continue, /delegate)"
 fi
 
 if [[ "$INSTALL_AGENTS" == true ]]; then
