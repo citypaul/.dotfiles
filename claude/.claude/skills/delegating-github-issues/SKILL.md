@@ -45,8 +45,8 @@ A comment **needs an answer** when all five hold:
 
 1. `gh issue list --label <label> --state open --json number,title,labels,createdAt --limit 100`.
 2. Sort: issues with the first rank label, then the second, then unranked; oldest `createdAt` first within each group.
-3. Take the first. Continue at **Work** with that number.
-4. If the list is empty, say so and stop. Do not widen the search.
+3. Take the first issue that is not waiting on the human, as **Work** step 3 defines it. The list carries no comments, so read each candidate's with `gh issue view <n> --json body,comments` in sort order and stop at the first one that is not waiting. Continue at **Work** with that number.
+4. If the list is empty, or every issue is waiting, say so and stop. Do not widen the search.
 
 ### Work `#N`
 
@@ -59,26 +59,50 @@ A comment **needs an answer** when all five hold:
 
    > Delegation paused: <k> delegated worktrees active (limit <max_worktrees>) and <m> open PRs (limit <max_open_prs>). Retry when one closes.
 
-3. **Acceptance criteria.** Read the body. Acceptance criteria are present if the body has a heading matching `/acceptance criteria/i` followed by a numbered or bulleted list. If absent, derive 2–6 criteria from the body, each observable and testable, and post them as a comment:
+3. **Acceptance criteria.** Read the body. Acceptance criteria are present if the body has a heading matching `/acceptance criteria/i` followed by a numbered or bulleted list. Use them for the rest of the run.
 
-   > **Acceptance criteria (derived by the delegator; edit this comment to change them)**
+   If absent, read the issue's comments (`gh issue view N --json comments`). Only a reaction from the authenticated login (`gh api user -q .login`) counts, because anyone can react on a public repository. Read a comment's reactions with `gh api repos/<owner>/<repo>/issues/comments/<id>/reactions --jq '[.[] | select(.content == "+1") | .user.login]'`. The delegator never reacts, so that login's 👍 is the human's.
+   - **Confirmed.** A derived-criteria comment (it starts with `**Acceptance criteria (derived by the delegator`) carries that login's 👍. Use its current text, including any edits, for the rest of the run.
+   - **Waiting on the human.** A derived-criteria comment without that 👍, or a delegator question (it starts with `**Question before delegation**`) with no later comment from the human (one containing neither `<!-- delegator` nor the Claude Code footer). Say in chat that issue #N is waiting on the human, post nothing, and stop.
+
+   Otherwise derive the criteria and stop. First load `find-gaps` on the issue body and every human comment, including answers to earlier questions. If the intent has two plausible readings, or the gaps leave no observable outcome, post one question as a comment that starts with `**Question before delegation**`, names the readings or gaps, and ends with the delegator marker, then stop. Otherwise derive 2–6 criteria, each observable and testable, and post them as a comment ending with the delegator marker:
+
+   > **Acceptance criteria (derived by the delegator; edit this comment to change them, then react 👍 to confirm)**
    > 1. …
 
-   Use those criteria for the rest of the run.
+   Say in chat that issue #N awaits criteria confirmation, and stop. The run that follows the 👍 starts again at step 1.
 4. **Size check.** If the criteria cannot be met by one PR of the project's usual size (read two recent merged PRs with `gh pr list --state merged --limit 2 --json additions,deletions,changedFiles` for the norm), load `story-splitting`, post the split as an issue comment, work the first child, and file each remaining child as its own issue with the `follow-up` label and no `<label>`. Say so in the PR body under **Found on the way**.
 5. **Worktree.** `EnterWorktree` with a name derived from `N-<slug>`, based on `origin/<default branch>`. Rename the branch: `git branch -m <branch_prefix>N-<slug>`. Bootstrap the project the way its root CLAUDE.md says (for a pnpm monorepo: `pnpm install` then `pnpm build`). Keep the worktree until its PR merges; the **Reclaim** sub-step of the next run's budget check removes it then. Never remove a worktree whose PR has not merged.
 6. **Handoff.** Dispatch one subagent with `subagent_type: general-purpose`, `model: opus`, `run_in_background: false`. The brief must contain, verbatim from the sources: the issue title and body, the acceptance criteria, the worktree absolute path, the project's root and `.claude/` CLAUDE.md pointers to skills, and these instructions:
 
-   > Work only inside `<worktree path>`. Load the `tdd` and `testing` skills before any code change; RED before GREEN for every behaviour change. Run the project's pre-push self-check and the `<pre_pr_gate>` gate's steps 1–5 yourself, but do **not** open the PR and do **not** commit; leave the changes staged. Use `VITEST_MAX_WORKERS=2` for every test run. Never run the full test suite at the repo root. If the previous test run in this worktree was killed, run `pnpm test:db:clean` before the next one. Return: (a) the list of files changed, (b) for each acceptance criterion the test name that proves it, (c) the RED-before-GREEN evidence per the gate, (d) the mutation gate outcome or `N/A` with alternate evidence, (e) the exact commands you ran for verification and their last ten lines, (f) anything you noticed but did not fix.
+   > Work only inside `<worktree path>`. Load the `tdd` and `testing` skills before any code change; RED before GREEN for every behaviour change. Run the project's pre-push self-check and every quality-gate step of `<pre_pr_gate>` yourself, including any glossary or vocabulary check; stop short of its PR-creation steps. Do **not** open the PR and do **not** commit; leave the changes staged. Use `VITEST_MAX_WORKERS=2` for every test run. While working, run only the affected package's or file's tests. Where the self-check or gate requires the complete test suite, run it once, at the end, as a background task. Then wait for it to exit (Monitor or a polling loop, never a fixed sleep) and read its exit code and summary; do not return before it exits. Never run it in the foreground or pipe it through `tail`. If the previous test run in this worktree was killed, run `pnpm test:db:clean` before the next one. Return: (a) the list of files changed, (b) for each acceptance criterion the test name that proves it, (c) the RED-before-GREEN evidence per the gate, (d) the mutation gate outcome or `N/A` with alternate evidence, (e) the exact commands you ran for verification and their last ten lines, (f) anything you noticed but did not fix.
 
    If the subagent reports it cannot make the gate pass, go to **Blocked**.
-7. **Independent check.** Dispatch the project's `tdd-guardian` agent (default model) on the staged diff. If it reports a behaviour change without a preceding failing test, send the implementer subagent one message naming the gap and wait for its fix. One round only; a second failure goes to **Blocked**.
-8. **Walkthrough.** If `walkthrough` is on and `git diff --cached --name-only` contains a path under the project's UI root, load `browser-ux-walkthrough` with the project's stack skill. It returns the `## UX walkthrough` section text and a list of screenshot files. If it reports the stack could not boot, file a `follow-up` issue titled `Walkthrough blocked for #N: <reason>` and use `Walkthrough blocked: <reason> (see #<follow-up>)` as the section body.
-9. **Commit.** Ask the human for commit approval with the proposed message shown. On approval, `git commit -F <file>` with a conventional-commit subject that names the issue (`fix(web): … (#N)`) and the project's co-author trailer.
-10. **Evidence.** If there are screenshots, push them per the project's evidence rule (for Flow Canvas: the `ux-evidence` orphan branch, path `<pr-number>/<surface>-<theme>-<before|after>.png`; the PR number is known only after step 11, so push evidence after the PR is created and then edit the body with `gh pr edit --body-file`).
-11. **PR.** `git push -u origin <branch>` then `gh pr create --title "<subject>" --body-file <file>`; add `--draft` when `land` is on, so that the human's Ready-for-review click is the landing signal. The body follows the contract below. Then comment `Opened <PR URL> for this issue.` on the issue, ending with the delegator marker: `gh issue comment N --body-file <file>`.
-12. **Oracle.** If `oracle` is on, wait up to 20 minutes polling every 2 minutes for the sticky comment and apply the Preview oracle rule. Otherwise say the check will run on the next `Review`.
-13. Report the PR URL and stop.
+7. **Independent checks.** The implementer's returns are claims, not evidence. Dispatch these three read-only checks in parallel on the staged diff, each at its default model. None of them edits files.
+   - **Process.** The project's `tdd-guardian` agent.
+   - **Acceptance.** A `general-purpose` subagent that loads `acceptance-review`. It takes the step 3 criteria as the contract and the staged diff with its tests as the evidence, and returns a verdict for each criterion. The implementer's criterion-to-test mapping goes in as a claim to check, not as the evidence.
+   - **Whole diff.** The project's whole-PR review agent (`pr-reviewer` when the project defines it). Otherwise, a `general-purpose` subagent that runs `/code-review` at medium effort on the staged diff and returns its findings without applying them.
+8. **Walkthrough.** If `walkthrough` is on and `git diff --cached --name-only` contains a path under the project's UI root, load `browser-ux-walkthrough` with the project's stack skill. Grade the surfaces, but do **not** run its Fix step: you do not write production code. Stop the stack, and keep the grades and each `finding` for step 9. If it reports the stack could not boot, file a `follow-up` issue titled `Walkthrough blocked for #N: <reason>` and use `Walkthrough blocked: <reason> (see #<follow-up>)` as the section body.
+9. **Repair round.** Collect every blocking finding from steps 7 and 8:
+   - any `tdd-guardian` finding;
+   - any criterion that `acceptance-review` does not rate `Covered` (`Partial`, `Missing`, `Regressed` and `Unverified` all block);
+   - any `pr-reviewer` finding rated Critical or High Priority, or any `/code-review` correctness finding;
+   - any walkthrough `finding`.
+
+   Lesser review findings (`pr-reviewer` Suggestions, `/code-review` cleanups) go to the PR body's **Found on the way** section. If nothing blocks, skip to the last paragraph of this step.
+
+   Otherwise send the implementer subagent one message listing every blocking finding, and wait. It fixes them, re-runs the project's pre-push self-check and the gate's test and mutation steps for the files its fix touched, and returns (a)–(f) afresh; the PR body uses those returns, not the first ones. It may propose deferring a walkthrough or whole-diff finding with a one-line reason. You decide: accept a deferral only when the finding lies outside the acceptance criteria, and file each accepted one as a `follow-up` issue. Unmet criteria and `tdd-guardian` findings cannot be deferred.
+
+   Then re-run `tdd-guardian` and every check that reported a blocking finding. If the walkthrough had findings, boot and sign in per the Recipe, re-walk the affected surfaces in both themes for the `-after.png` shots, and stop the stack.
+
+   One round only. Any blocking finding that remains goes to **Blocked**, with the findings in the **Verification** section.
+
+   On every path out of this step except **Blocked**, write the `## UX walkthrough` section from the final grades, or `Not applicable: no UI files changed` when the walkthrough did not run.
+10. **Commit.** Ask the human for commit approval with the proposed message shown. On approval, `git commit -F <file>` with a conventional-commit subject that names the issue (`fix(web): … (#N)`) and the project's co-author trailer.
+11. **Evidence.** If there are screenshots, push them per the project's evidence rule (for Flow Canvas: the `ux-evidence` orphan branch, path `<pr-number>/<surface>-<theme>-<before|after>.png`; the PR number is known only after step 12, so push evidence after the PR is created and then edit the body with `gh pr edit --body-file`).
+12. **PR.** `git push -u origin <branch>` then `gh pr create --title "<subject>" --body-file <file>`; add `--draft` when `land` is on, so that the human's Ready-for-review click is the landing signal. The body follows the contract below. Then comment `Opened <PR URL> for this issue.` on the issue, ending with the delegator marker: `gh issue comment N --body-file <file>`.
+13. **Oracle.** If `oracle` is on, wait up to 20 minutes polling every 2 minutes for the sticky comment and apply the Preview oracle rule. Otherwise say the check will run on the next `Review`.
+14. Report the PR URL and stop.
 
 ### Review `#PR`
 
@@ -106,8 +130,8 @@ A comment **needs an answer** when all five hold:
    ```
 
    A comment that asks for findings as follow-ups needs no code. File each finding as its own issue with the `follow-up` label and no `<label>`, with acceptance criteria. Add each issue to the PR body's `## Found on the way, not fixed here` section (`gh pr edit <PR> --body-file <file>`), then reply naming the issues. The body is where **Land** learns which findings are accepted.
-5. Hand the actionable threads to the implementer subagent (same brief shape as **Work** step 6, with the thread bodies and paths in place of the issue), then run step 7's independent check and, if `walkthrough` is on and UI files changed, step 8.
-   When **Watch** or **Land** started this Review and the implementer cannot pass the gate, or `tdd-guardian` fails its one round, discard the staged changes (`git restore --staged --worktree .`), reply on each actionable thread or comment with the failure in one sentence, and stop; under Land, go to **Bail-out**. Never go to **Blocked** from **Watch** or **Land**.
+5. Hand the actionable threads to the implementer subagent (same brief shape as **Work** step 6, with the thread bodies and paths in place of the issue), then run **Work** steps 7–9. For the acceptance check, the contract is the actionable thread requests plus the PR body's acceptance criteria, which the fix must not break. Run the walkthrough only if `walkthrough` is on and UI files changed.
+   When **Watch** or **Land** started this Review and the implementer cannot pass the gate, or a blocking finding survives the repair round, discard the staged changes (`git restore --staged --worktree .`), reply on each actionable thread or comment with the failure in one sentence, and stop; under Land, go to **Bail-out**. Never go to **Blocked** from **Watch** or **Land**. When the human started this Review, the PR already exists, so **Blocked** does not apply: keep the staged changes, post the remaining findings as one PR comment ending with the delegator marker, and stop.
 6. Commit after approval; when **Watch** or **Land** started this Review, commit without asking. Push, then reply on each actionable thread or top-level comment with one sentence naming the commit and what changed, ending with the delegator marker (the `reply-to` form for a top-level comment). Do not resolve threads; the reviewer resolves.
 7. Apply the Preview oracle rule if `oracle` is on. Report and stop.
 
@@ -225,6 +249,6 @@ Use these eight headings, in this order, every time. A section that does not app
 - Mark a PR ready for review. `gh pr ready` runs only with `--undo`; only the human marks a PR ready.
 - Remove a worktree whose PR has not merged, or delete any branch other than the local `<branch_prefix>` branch of a worktree being reclaimed — and that one only with `git branch -d`.
 - Kill a process to free a worktree directory; report the leftover path instead.
-- Run the full test suite at the repository root.
+- Run the full test suite at the repository root in the foreground, or to check a single change.
 - Point a browser at a deployed preview URL.
 - Continue after an ambiguous review comment without the human's answer.

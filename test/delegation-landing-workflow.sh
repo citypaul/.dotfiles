@@ -120,6 +120,38 @@ require_text 'keep verified simplifications' "a bail-out on findings keeps verif
 require_text 'equals the PR'"'"'s `headRefOid`' "reclaim matches a squash-merged branch by head SHA"
 reject_regex 'and `git log origin/[^`]*` prints nothing' "reclaim never gates on ancestry"
 
+# Skill-graph review: nothing independent checked the acceptance criteria or
+# the whole diff before the human saw the PR, and the walkthrough's Fix step
+# had the delegator writing production code after tdd-guardian had run.
+require_text 'The implementer'"'"'s returns are claims, not evidence.' "the implementer's own report is not the evidence"
+require_text 'loads `acceptance-review`' "acceptance criteria are checked independently"
+require_text 'The project'"'"'s whole-PR review agent' "the whole diff is reviewed before the PR opens"
+require_text 'do **not** run its Fix step' "the delegator never applies walkthrough fixes itself"
+require_text 'Then re-run `tdd-guardian` and every check that reported a blocking finding.' "the repair round is re-checked"
+require_text 'edit this comment to change them, then react' "derived acceptance criteria wait for the human"
+require_text 'including any glossary or vocabulary check' "the gate's glossary step is not dropped"
+reject_regex 'gate'"'"'s steps 1–5' "the pre-PR gate is not truncated"
+
+# Second pass on the skill-graph changes: a waiting issue must not be
+# re-posted or jam Pick, only the human's own reaction confirms, the repair
+# round refreshes the gate evidence, and the verdict words match the checkers.
+require_text 'post nothing, and stop' "a waiting issue is never re-posted"
+require_text 'Take the first issue that is not waiting on the human' "Pick skips issues waiting on the human"
+require_text '`gh api user -q .login`' "only the authenticated login's reaction confirms"
+require_text 'does not rate `Covered`' "acceptance verdicts use acceptance-review's statuses"
+require_text 'rated Critical or High Priority' "whole-diff severity uses pr-reviewer's scale"
+require_text 'returns (a)–(f) afresh' "the repair round refreshes the gate evidence"
+require_text 'wait for it to exit' "the implementer waits for the background suite"
+require_text 'On every path out of this step except **Blocked**' "the UX walkthrough section is written with or without a repair"
+require_text 'the PR already exists, so **Blocked** does not apply' "a human-started Review never opens a second PR"
+
+WALKTHROUGH="$REPO_ROOT/claude/.claude/skills/browser-ux-walkthrough/SKILL.md"
+if grep -Fq -- 'A caller that must not write production code' "$WALKTHROUGH"; then
+  pass "the walkthrough lets a no-code caller skip its Fix step"
+else
+  fail "the walkthrough lets a no-code caller skip its Fix step"
+fi
+
 echo ""
 
 if [ "$FAILURES" -gt 0 ]; then
