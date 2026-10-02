@@ -1964,7 +1964,7 @@ Use `setup-dotfiles.sh` for your shell and application configuration; keep using
 `install-claude.sh` and its existing options for skills. The personal setup does
 not install or replace Claude, Codex or OpenCode settings or skills.
 
-### macOS
+### macOS (Apple Silicon)
 
 Install [Homebrew](https://brew.sh) first, then:
 
@@ -1988,16 +1988,31 @@ cd ~/.dotfiles
 The script detects macOS with `uname -s` and Ubuntu/Debian through
 `/etc/os-release`. Other systems are rejected before dependency installation.
 On Linux, run it as your normal user: it uses `sudo` for Apt when needed.
-On macOS, both Apple Silicon and Intel Homebrew locations are supported.
-Existing Homebrew packages are not upgraded. Intel Macs build new packages
-from source because some Homebrew binaries are no longer available; the first
-installation can therefore take longer.
+On Apple Silicon, existing Homebrew packages are not upgraded.
 
 Both paths install Git, GNU Stow, Zsh, tmux, GnuPG/Pinentry, Fzf, Jq, Bat,
 Python 3 and Zsh autosuggestions/syntax highlighting. Debian/Ubuntu also gets
 `python3-venv`. Package installation requires network access and may prompt
 for your sudo password. Then the script links the configuration and prints
 `exec zsh` to start using it. It does not change your login shell automatically.
+
+### Intel Macs
+
+[Homebrew has stopped building new Intel binaries](https://docs.brew.sh/Support-Tiers#future-macos-support).
+Automatic dependency installation is therefore supported on Apple Silicon,
+Ubuntu and Debian only. On Intel, install GNU Stow and Zsh first using your
+preferred package manager (macOS already includes Zsh), then run:
+
+```bash
+git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
+./setup-dotfiles.sh --skip-deps
+```
+
+For example, after [installing MacPorts](https://www.macports.org/install.php),
+`sudo port install stow` provides Stow. Install applications such as tmux, GnuPG
+and Fzf separately. CI verifies configuration installation on Intel using real
+Stow and Zsh; it does not test automatic dependency installation there.
 
 ### Existing machines and selected packages
 
@@ -2089,8 +2104,9 @@ python3 test/setup-dotfiles.py
 This uses temporary homes and a copied checkout with real Stow and Zsh. Package
 manager calls and optional completion generators are stubbed: it never installs
 software on your machine. CI runs on macOS Apple Silicon, macOS Intel,
-Ubuntu 24.04 and Debian 13. Each job also runs the real dependency installer in
-a temporary home and repeats the install. After each installation, assertions
+Ubuntu 24.04 and Debian 13. Apple Silicon and Linux jobs run the real dependency
+installer; Intel uses preinstalled tools with `--skip-deps`. Every job installs
+into a temporary home and repeats the install. After each installation, assertions
 verify all 12 shared config links (plus the macOS Ghostty override on Macs),
 their exact source targets, private GnuPG permissions, real runtime directories,
 and the absence of AI settings. Linux also asserts that no macOS `Library`

@@ -103,9 +103,6 @@ with tempfile.TemporaryDirectory(prefix="dotfiles-smoke-") as temporary:
 else
   printf 'brew %s\\n' "$*" >> "$TEST_LOG"
   [ "${HOMEBREW_NO_INSTALL_UPGRADE:-}" = 1 ] || { echo 'Unexpected upgrade of installed tools' >&2; exit 1; }
-  if [ "${TEST_ARCH:-arm64}" = x86_64 ]; then
-    case " $* " in *' --build-from-source '*) ;; *) echo 'No Intel bottle available' >&2; exit 1 ;; esac
-  fi
   exit "${TEST_PACKAGE_FAILURE:-0}"
 fi""")
     stub("apt-get", 'printf "apt-get %s\\n" "$*" >> "$TEST_LOG"; exit "${TEST_PACKAGE_FAILURE:-0}"')
@@ -126,11 +123,17 @@ fi""")
     def setup(env, *args, ok=True):
         return run(["/bin/bash", str(repo / "setup-dotfiles.sh"), *args], env, root, ok)
 
-    for arch in ["arm64", "x86_64"]:
-        mac_env = dict(environment("mac " + arch), TEST_PLATFORM="Darwin", TEST_ARCH=arch)
-        setup(mac_env, "tmux")
-        assert (Path(mac_env["HOME"]) / ".tmux.conf").resolve() == repo / "tmux/.tmux.conf"
-    print("PASS: macOS setup preserves installed versions and supports Intel source builds")
+    mac_env = dict(environment("mac arm64"), TEST_PLATFORM="Darwin", TEST_ARCH="arm64")
+    setup(mac_env, "tmux")
+    log = (root / "packages.log").read_text()
+    intel_env = dict(environment("mac x86_64"), TEST_PLATFORM="Darwin", TEST_ARCH="x86_64")
+    result = setup(intel_env, "tmux", ok=False)
+    assert "--skip-deps" in result.stderr, result.stderr
+    assert not list(Path(intel_env["HOME"]).iterdir())
+    assert (root / "packages.log").read_text() == log, "Intel setup attempted unsupported Homebrew installs"
+    setup(intel_env, "--skip-deps", "tmux")
+    assert (Path(intel_env["HOME"]) / ".tmux.conf").resolve() == repo / "tmux/.tmux.conf"
+    print("PASS: macOS preserves installed versions; Intel uses existing tools without package-manager changes")
 
     env = environment("fresh home")
     home = Path(env["HOME"])
