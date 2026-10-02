@@ -1959,183 +1959,143 @@ learning from completed work.
 
 ## 📦 Personal Dotfiles (The Original Purpose)
 
-While most visitors are here for CLAUDE.md, this repository's **original purpose** is managing my personal development environment. If you're interested in dotfiles, here's what's included and how to use them.
+Personal machine setup is separate from the public skills installer.
+Use `setup-dotfiles.sh` for your shell and application configuration; keep using
+`install-claude.sh` and its existing options for skills. The personal setup does
+not install or replace Claude, Codex or OpenCode settings or skills.
 
-### Git Aliases
+### macOS
 
-I have an extensive collection of git aliases that speed up common workflows. These are in `git/.gitconfig`.
-
-**Most useful aliases:**
-
-```bash
-# Pretty log with graph
-git lg          # One-line log with graph
-git lga         # All branches log with graph
-git lgp         # Log with patch (shows changes)
-
-# Status and diff shortcuts
-git st          # git status
-git di          # git diff
-git dc          # git diff --cached
-git ds          # git diff --stat
-
-# Commit shortcuts
-git ci          # git commit
-git ca          # git commit --amend
-git cane        # git commit --amend --no-edit
-
-# Branch management
-git co          # git checkout
-git cob         # git checkout -b (new branch)
-git br          # git branch
-git brd         # git branch -d (delete branch)
-
-# Working with remotes
-git pu          # git push
-git puf         # git push --force-with-lease (safer force push)
-git pl          # git pull
-git plo         # git pull origin
-
-# Stash shortcuts
-git sl          # git stash list
-git ss          # git stash save
-git sp          # git stash pop
-
-# Undo shortcuts
-git undo        # Undo last commit (keeps changes)
-git unstage     # Unstage files
-git uncommit    # Undo commit and unstage
-
-# Advanced workflows
-git wip         # Quick "work in progress" commit
-git unwip       # Undo WIP commit
-git squash      # Interactive rebase to squash commits
-```
-
-**Installation:**
+Install [Homebrew](https://brew.sh) first, then:
 
 ```bash
-# Install just the git config
-cd ~/.dotfiles
-stow git
-
-# Or manually copy specific aliases you want
-cat git/.gitconfig >> ~/.gitconfig
-```
-
-### Shell Configuration
-
-My shell setup (for bash/zsh) includes:
-
-- **Prompt customization** - Git status in prompt
-- **Useful functions** - Project navigation helpers
-- **PATH management** - Tool directories
-- **Environment variables** - Editor, pager, etc.
-
-**Files:**
-- `bash/.bashrc` - Bash configuration
-- `bash/.bash_profile` - Bash login shell
-- `zsh/.zshrc` - Zsh configuration (if you use zsh)
-
-**Installation:**
-
-```bash
-cd ~/.dotfiles
-stow bash  # or stow zsh
-```
-
-### Development Tools Configuration
-
-Configuration files for various development tools:
-
-- **`vim/.vimrc`** - Vim editor configuration
-- **`tmux/.tmux.conf`** - Terminal multiplexer settings
-- **`npm/.npmrc`** - npm configuration
-
-### Claude Code Settings
-
-The `claude/.claude/settings.json` file contains my personal Claude Code configuration including:
-
-- [claude-powerline](https://github.com/Owloops/claude-powerline) - vim-style statusline with usage tracking and git integration
-- [Official Anthropic plugins](https://github.com/anthropics/claude-code/tree/main/plugins) - feature-dev, frontend-design, hookify, learning-output-style, plugin-dev, security-guidance
-
-### Installing Everything
-
-**⚠️ Important:** This installs ALL personal dotfiles (git, shell, vim, etc.) **NOT just CLAUDE.md**
-
-**⚠️ Requires:** [GNU Stow](https://www.gnu.org/software/stow/) must be installed first
-
-For CLAUDE.md only (no stow needed), see [Option 3](#option-3-install-to-claude-global-personal-config) above.
-
-To install all dotfiles including my personal configurations:
-
-```bash
-# Install GNU Stow first (if not already installed)
-# macOS: brew install stow
-# Ubuntu/Debian: sudo apt-get install stow
-# Fedora: sudo dnf install stow
-
-# Clone the repository
+brew install git
 git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-
-# Run the installation script
-./install.sh
-
-# This uses GNU Stow to create symlinks for all configurations
+./setup-dotfiles.sh
 ```
 
-This will install:
-- ✅ CLAUDE.md + first-party skills plus external skill bundles + 9 agents (development guidelines)
-- ✅ Commands (/setup, /plan, /continue slash commands)
-- ✅ Claude Code settings.json (plugins, hooks, statusline)
-- ✅ OpenCode configuration (guidelines plus built-in LSP servers, including TypeScript)
-- ✅ Git aliases and configuration
-- ✅ Shell configuration (bash/zsh)
-- ✅ Vim, tmux, npm configs
-- ✅ All personal preferences
-
-### Installing Specific Dotfiles
-
-**⚠️ Requires:** GNU Stow (see installation commands above)
-
-Only want certain configurations? Install them individually:
+### Ubuntu or Debian
 
 ```bash
+sudo apt update
+sudo apt install git
+git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-
-# Install just git config
-stow git
-
-# Install just bash config
-stow bash
-
-# Install vim config
-stow vim
-
-# Install multiple at once
-stow git bash vim
+./setup-dotfiles.sh
 ```
 
-### How Stow Works
+The script detects macOS with `uname -s` and Ubuntu/Debian through
+`/etc/os-release`. Other systems are rejected before dependency installation.
+On Linux, run it as your normal user: it uses `sudo` for Apt when needed.
+On macOS, both Apple Silicon and Intel Homebrew locations are supported.
 
-This repository uses [GNU Stow](https://www.gnu.org/software/stow/) for dotfile management:
+Both paths install Git, GNU Stow, Zsh, tmux, GnuPG/Pinentry, Fzf, Jq, Bat,
+Python 3 and Zsh autosuggestions/syntax highlighting. Debian/Ubuntu also gets
+`python3-venv`. Package installation requires network access and may prompt
+for your sudo password. Then the script links the configuration and prints
+`exec zsh` to start using it. It does not change your login shell automatically.
 
-1. Each directory (`git/`, `bash/`, etc.) represents a "package"
-2. Files inside mirror your home directory structure
-3. `stow git` creates symlinks from `~/.gitconfig` → `~/.dotfiles/git/.gitconfig`
-4. Changes to files in `~/.dotfiles` are instantly reflected
-5. Uninstall with `stow -D git`
+### Existing machines and selected packages
 
-### Browsing the Dotfiles
+```bash
+# Dependencies already installed; just link the configurations
+./setup-dotfiles.sh --skip-deps
 
-Feel free to browse the repository and cherry-pick what's useful:
+# Only configure the shell and tmux
+./setup-dotfiles.sh --skip-deps zsh tmux
 
-- **[zsh/.zshrc](zsh/.zshrc)** - Zsh shell configuration
-- **[tmux/.tmux.conf](tmux/.tmux.conf)** - tmux configuration
-- **[alacritty/.alacritty.toml](alacritty/.alacritty.toml)** - Alacritty terminal configuration
+# List available packages and options
+./setup-dotfiles.sh --help
+```
 
-**Note:** These are my personal preferences. Review before installing - you may want to customize them for your workflow.
+The checkout can live anywhere; links always target your home directory.
+XDG application configurations honour `XDG_CONFIG_HOME` (default `~/.config`).
+Keep the checkout in place because the installed files are symlinks into it.
+Rerunning setup refreshes links without appending settings or completions.
+
+Setup checks every selected package for conflicts before linking any dotfiles.
+It never overwrites or automatically adopts existing configuration files. If
+Stow reports a conflict, move the named file to your own backup location and
+rerun. For example, if `.zshrc` conflicts:
+
+```bash
+# -i asks before overwriting an existing backup
+mv -i ~/.zshrc ~/.zshrc.before-dotfiles
+./setup-dotfiles.sh
+```
+
+A failed preflight may leave empty configuration directories, but does not move
+or replace your files. Existing links from another checkout also need to be
+removed or unstowed from that checkout before switching to this one.
+The older `install.sh` is retained unchanged for compatibility; use
+`setup-dotfiles.sh` for the supported macOS/Linux personal setup.
+
+### Included configurations
+
+| Package | Configuration |
+| --- | --- |
+| `zsh` | Shell aliases, completions and optional tool integrations |
+| `tmux` | Terminal multiplexer configuration |
+| `gnupg` | Shared GPG preferences, system Pinentry and passphrase caching |
+| `alacritty` | Terminal appearance and keybindings |
+| `zellij` | Terminal multiplexer keybindings and theme |
+| `ghostty` | Shared XDG configuration plus macOS preferences on Macs only |
+| `herdr` | Terminal workspace manager preferences |
+
+All seven packages are selected by default. Application configuration does not
+install the corresponding desktop application. Install Alacritty, Ghostty,
+Zellij or Herdr separately when you want to use them; Herdr agent integrations
+also need their own installation.
+
+Starship, Zoxide, Eza, Node/NVM, pnpm, editors and the development tools referenced
+by convenience aliases are optional. The shell keeps working without them;
+`ls` and `cat` use the system tools when replacements are unavailable, and
+Debian/Ubuntu's `batcat` command is recognised. Project/editor aliases still
+require their corresponding tools and directories.
+
+An existing Oh My Zsh installation is used, including the vendored
+`zsh-you-should-use` plugin at its standard location. Otherwise the shell uses
+Zsh's native completion and history with the packaged plugins. The setup does
+not download Oh My Zsh. Machine-specific overrides belong in `~/.zshrc.local`.
+
+NVM is loaded lazily from `$NVM_DIR/nvm.sh` (default `~/.nvm/nvm.sh`), with a
+fallback for existing Homebrew NVM installations. Existing `NVM_DIR` and
+`PNPM_HOME` values are preserved. Shell startup does not create or activate a
+Python environment: run `pyenv-activate` explicitly to use `~/pyenv`, or use
+project-specific environments. `pyenv-update` activates it before upgrading pip.
+
+GnuPG uses the installed system Pinentry instead of a hardcoded Mac executable;
+new installations keep `~/.gnupg` private and separate from the checkout.
+Ghostty reads shared appearance settings from the XDG location. Its existing
+macOS configuration location remains for Mac-specific preferences. Back up any
+conflicting files there too when migrating an existing installation.
+
+Alacritty references Hack Nerd Font and the Night Owl theme at
+`~/.config/alacritty/themes/themes/night_owl.toml`; install those separately for
+the intended appearance. Its macOS-specific window options do not provide the
+same decoration behaviour on Linux. Clipboard behaviour should be checked in
+your terminal/desktop session, particularly on Wayland or over SSH.
+
+### Testing personal setup
+
+```bash
+python3 test/setup-dotfiles.py
+```
+
+This uses temporary homes and a copied checkout with real Stow and Zsh. Package
+manager calls and optional completion generators are stubbed: it never installs
+software on your machine. CI runs on macOS Apple Silicon, macOS Intel,
+Ubuntu 24.04 and Debian 13. Each job also runs the real dependency installer in
+a temporary home and repeats the install. After each installation, assertions
+verify all 12 shared config links (plus the macOS Ghostty override on Macs),
+their exact source targets, private GnuPG permissions, real runtime directories,
+and the absence of AI settings. Linux also asserts that no macOS `Library`
+directory was created. A shell-startup check verifies Git completion without
+creating a Python environment.
+Run the CI workflow manually from GitHub Actions or open a pull request.
+Graphical applications and live GPG prompts still need a manual check on the
+target desktop.
 
 ---
 

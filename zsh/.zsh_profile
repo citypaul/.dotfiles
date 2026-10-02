@@ -1,12 +1,7 @@
-# Additional zsh completions (compinit already called by oh-my-zsh)
-if type brew &>/dev/null; then
-  FPATH="$HOMEBREW_PREFIX/share/zsh/site-functions:${FPATH}"
-fi
-
 # Prompt and navigation
 export STARSHIP_LOG="error"
-eval "$(starship init zsh)"
-eval "$(zoxide init zsh)"
+command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 
 # Editor aliases
 alias lvim=~/.local/bin/lvim
@@ -26,7 +21,9 @@ alias lg='lazygit'
 alias ld='lazydocker'
 
 # Browser
-alias nocors='open /Applications/Google\ Chrome.app --args --user-data-dir="/var/tmp/chrome-dev-disabled-security" --disable-web-security --disable-site-isolation-trials'
+if [[ "$OSTYPE" == darwin* ]]; then
+  alias nocors='open /Applications/Google\ Chrome.app --args --user-data-dir="/var/tmp/chrome-dev-disabled-security" --disable-web-security --disable-site-isolation-trials'
+fi
 
 # GitHub CLI
 alias ghc='gh pr create --web'
@@ -57,9 +54,17 @@ alias "??"='gh copilot suggest'
 alias "???"='gh copilot explain'
 
 # File listing (eza)
-alias ls="eza --icons --git"
-alias ll="eza -al --icons --git"
-alias cat="bat --theme='ansi'"
+if command -v eza >/dev/null 2>&1; then
+  alias ls="eza --icons --git"
+  alias ll="eza -al --icons --git"
+else
+  alias ll='ls -al'
+fi
+if command -v bat >/dev/null 2>&1; then
+  alias cat="bat --theme='ansi'"
+elif command -v batcat >/dev/null 2>&1; then
+  alias cat="batcat --theme='ansi'"
+fi
 
 # Utilities
 alias ytd="yt-dlp"
@@ -71,8 +76,8 @@ alias zz="source ~/.zshrc"
 alias dcs='docker container stop $(docker container ps -aq)'
 alias dcd='docker container rm $(docker container ps -aq)'
 
-# Python (use Homebrew version)
-alias python=/opt/homebrew/bin/python3
+# Respect the active virtual environment and the system PATH.
+command -v python >/dev/null 2>&1 || alias python=python3
 
 # Package manager shortcuts
 alias pn="pnpm"
@@ -138,14 +143,18 @@ sync_dirs() {
 }
 
 # Lazy-load NVM (only initialize when needed)
-source $HOME/.nvm_setup
-
-# Custom completions
-fpath=(~/.zsh_autocomplete $fpath)
+source "$HOME/.nvm_setup"
 
 # PNPM
-export PNPM_HOME="$HOME/Library/pnpm"
-export PATH="$PNPM_HOME:$PATH"
+if [[ -z "$PNPM_HOME" ]]; then
+  if [[ "$OSTYPE" == darwin* ]]; then
+    PNPM_HOME="$HOME/Library/pnpm"
+  else
+    PNPM_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/pnpm"
+  fi
+fi
+export PNPM_HOME
+path=("$PNPM_HOME" $path)
 
-# Python virtual environment (lazy activation)
-source $HOME/.pyenv_setup.sh
+# Optional Python environment; activate explicitly with pyenv-activate.
+source "$HOME/.pyenv_setup.sh"
