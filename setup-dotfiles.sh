@@ -12,9 +12,8 @@ for arg in "$@"; do
       cat <<'EOF'
 Usage: ./setup-dotfiles.sh [--skip-deps] [PACKAGE ...]
 
-Install personal dotfiles on macOS or Ubuntu/Debian. Apple Silicon dependency
-installation requires Homebrew; Linux uses sudo when needed. Intel Macs must
-provide their own tools and use --skip-deps.
+Install personal dotfiles on Apple Silicon macOS or Ubuntu/Debian. Homebrew
+must already be installed on macOS; Linux uses sudo when needed.
 Default packages: zsh tmux gnupg alacritty zellij ghostty herdr
 --skip-deps links configuration using tools you have already installed.
 
@@ -49,10 +48,6 @@ esac
 
 if [[ "$install_deps" == true ]]; then
   if [[ "$platform" == Darwin ]]; then
-    if [[ "$(uname -m)" == x86_64 ]]; then
-      echo 'Homebrew no longer supports new Intel Mac binaries. Install Stow and Zsh separately, then run ./setup-dotfiles.sh --skip-deps.' >&2
-      exit 1
-    fi
     if ! command -v brew >/dev/null 2>&1; then
       for brew_path in /opt/homebrew/bin/brew /usr/local/bin/brew; do
         if [[ -x "$brew_path" ]]; then

@@ -97,7 +97,7 @@ with tempfile.TemporaryDirectory(prefix="dotfiles-smoke-") as temporary:
         path.write_text("#!/bin/sh\n" + body + "\n")
         path.chmod(0o755)
 
-    stub("uname", 'if [ "$1" = -m ]; then echo "${TEST_ARCH:-arm64}"; else echo "$TEST_PLATFORM"; fi')
+    stub("uname", 'printf "%s\\n" "$TEST_PLATFORM"')
     stub("brew", """if [ "$1" = shellenv ]; then
   printf 'export HOMEBREW_PREFIX="%s"\\n' "$TEST_BREW_PREFIX"
 else
@@ -123,17 +123,10 @@ fi""")
     def setup(env, *args, ok=True):
         return run(["/bin/bash", str(repo / "setup-dotfiles.sh"), *args], env, root, ok)
 
-    mac_env = dict(environment("mac arm64"), TEST_PLATFORM="Darwin", TEST_ARCH="arm64")
+    mac_env = dict(environment("mac dependencies"), TEST_PLATFORM="Darwin")
     setup(mac_env, "tmux")
-    log = (root / "packages.log").read_text()
-    intel_env = dict(environment("mac x86_64"), TEST_PLATFORM="Darwin", TEST_ARCH="x86_64")
-    result = setup(intel_env, "tmux", ok=False)
-    assert "--skip-deps" in result.stderr, result.stderr
-    assert not list(Path(intel_env["HOME"]).iterdir())
-    assert (root / "packages.log").read_text() == log, "Intel setup attempted unsupported Homebrew installs"
-    setup(intel_env, "--skip-deps", "tmux")
-    assert (Path(intel_env["HOME"]) / ".tmux.conf").resolve() == repo / "tmux/.tmux.conf"
-    print("PASS: macOS preserves installed versions; Intel uses existing tools without package-manager changes")
+    assert (Path(mac_env["HOME"]) / ".tmux.conf").resolve() == repo / "tmux/.tmux.conf"
+    print("PASS: macOS dependency installation preserves installed versions")
 
     env = environment("fresh home")
     home = Path(env["HOME"])

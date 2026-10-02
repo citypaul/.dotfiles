@@ -15,9 +15,6 @@ jobs:
         include:
           - name: macOS Apple Silicon
             runner: macos-15
-          - name: macOS Intel (preinstalled tools)
-            runner: macos-15-intel
-            setup_args: --skip-deps
           - name: Ubuntu 24.04
             runner: ubuntu-24.04
           - name: Debian 13
@@ -35,16 +32,11 @@ jobs:
           apt-get update
           apt-get install -y git ca-certificates
       - uses: actions/checkout@v4
-      - name: Prepare Intel configuration test tools
-        if: matrix.setup_args == '--skip-deps'
-        # These formulae still have Intel/all-platform bottles. Other applications
-        # are user-provided on Intel; do not imply full Homebrew bootstrap coverage.
-        run: brew install stow zsh-autosuggestions zsh-syntax-highlighting
       - name: Configure a fresh home and assert installation
         run: |
           test_home="$(mktemp -d)"
           trap 'rm -rf "$test_home"' EXIT
-          env HOME="$test_home" XDG_CONFIG_HOME="$test_home/.config" ./setup-dotfiles.sh ${{ matrix.setup_args }}
+          env HOME="$test_home" XDG_CONFIG_HOME="$test_home/.config" ./setup-dotfiles.sh
           python3 test/setup-dotfiles.py --verify-installed "$test_home"
           env HOME="$test_home" XDG_CONFIG_HOME="$test_home/.config" ./setup-dotfiles.sh --skip-deps
           python3 test/setup-dotfiles.py --verify-installed "$test_home"

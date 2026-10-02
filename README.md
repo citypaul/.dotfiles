@@ -1973,6 +1973,7 @@ brew install git
 git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ./setup-dotfiles.sh
+exec zsh
 ```
 
 ### Ubuntu or Debian
@@ -1983,6 +1984,7 @@ sudo apt install git
 git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ./setup-dotfiles.sh
+exec zsh
 ```
 
 The script detects macOS with `uname -s` and Ubuntu/Debian through
@@ -1996,25 +1998,18 @@ Python 3 and Zsh autosuggestions/syntax highlighting. Debian/Ubuntu also gets
 for your sudo password. Then the script links the configuration and prints
 `exec zsh` to start using it. It does not change your login shell automatically.
 
-### Intel Macs
+### Existing machines and selected packages
 
-[Homebrew has stopped building new Intel binaries](https://docs.brew.sh/Support-Tiers#future-macos-support).
-Automatic dependency installation is therefore supported on Apple Silicon,
-Ubuntu and Debian only. On Intel, install GNU Stow and Zsh first using your
-preferred package manager (macOS already includes Zsh), then run:
+If you already have this checkout, update it instead of cloning again:
 
 ```bash
-git clone https://github.com/citypaul/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-./setup-dotfiles.sh --skip-deps
+git pull --ff-only
+./setup-dotfiles.sh
+exec zsh
 ```
 
-For example, after [installing MacPorts](https://www.macports.org/install.php),
-`sudo port install stow` provides Stow. Install applications such as tmux, GnuPG
-and Fzf separately. CI verifies configuration installation on Intel using real
-Stow and Zsh; it does not test automatic dependency installation there.
-
-### Existing machines and selected packages
+To skip dependency installation or select individual configurations:
 
 ```bash
 # Dependencies already installed; just link the configurations
@@ -2103,10 +2098,9 @@ python3 test/setup-dotfiles.py
 
 This uses temporary homes and a copied checkout with real Stow and Zsh. Package
 manager calls and optional completion generators are stubbed: it never installs
-software on your machine. CI runs on macOS Apple Silicon, macOS Intel,
-Ubuntu 24.04 and Debian 13. Apple Silicon and Linux jobs run the real dependency
-installer; Intel uses preinstalled tools with `--skip-deps`. Every job installs
-into a temporary home and repeats the install. After each installation, assertions
+software on your machine. CI runs on macOS Apple Silicon, Ubuntu 24.04 and
+Debian 13. Every job runs the real dependency installer in a temporary home
+and repeats the install. After each installation, assertions
 verify all 12 shared config links (plus the macOS Ghostty override on Macs),
 their exact source targets, private GnuPG permissions, real runtime directories,
 and the absence of AI settings. Linux also asserts that no macOS `Library`
