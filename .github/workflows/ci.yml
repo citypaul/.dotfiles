@@ -1,11 +1,63 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
 
 jobs:
+  dotfiles:
+    name: Personal dotfiles (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            runner: macos-15
+          - name: Ubuntu 24.04
+            runner: ubuntu-24.04
+          - name: Debian 13
+            runner: ubuntu-24.04
+            container: debian:13
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Prepare minimal Debian container
+        if: matrix.container != ''
+        run: |
+          apt-get update
+          apt-get install -y git ca-certificates
+      - uses: actions/checkout@v4
+      - name: Configure a fresh home and assert installation
+        run: |
+          test_home="$(mktemp -d)"
+          trap 'rm -rf "$test_home"' EXIT
+          env HOME="$test_home" XDG_CONFIG_HOME="$test_home/.config" ./setup-dotfiles.sh
+          python3 test/setup-dotfiles.py --verify-installed "$test_home"
+          env HOME="$test_home" XDG_CONFIG_HOME="$test_home/.config" ./setup-dotfiles.sh --skip-deps
+          python3 test/setup-dotfiles.py --verify-installed "$test_home"
+          # Expand HOME inside Zsh, after env selects the temporary home.
+          # shellcheck disable=SC2016
+          if ! env -i HOME="$test_home" PATH="$PATH" TERM=xterm-256color \
+            zsh -dfc 'source "$HOME/.zshrc"; [[ -n "${_comps[git]}" && ! -d "$HOME/pyenv" ]]' \
+            2> "$test_home/startup.stderr"; then
+            cat "$test_home/startup.stderr"
+            echo 'Zsh startup or completion assertion failed' >&2
+            exit 1
+          fi
+          if [ -s "$test_home/startup.stderr" ]; then
+            cat "$test_home/startup.stderr"
+            exit 1
+          fi
+          # Container workspace ownership can differ from the checkout user.
+          git -c safe.directory="$GITHUB_WORKSPACE" diff --exit-code
+      - name: Test conflicts, migrations and optional tools in isolated homes
+        run: python3 test/setup-dotfiles.py
+
   opencode-compat:
     name: OpenCode Compatibility
     runs-on: ubuntu-latest
@@ -21,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     # The automated "chore: version packages" PR consumes the changesets it
     # releases, so "no changesets found" is the expected state there.
-    if: github.head_ref != 'changeset-release/main'
+    if: github.event_name == 'pull_request' && github.head_ref != 'changeset-release/main'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
