@@ -1989,6 +1989,9 @@ The script detects macOS with `uname -s` and Ubuntu/Debian through
 `/etc/os-release`. Other systems are rejected before dependency installation.
 On Linux, run it as your normal user: it uses `sudo` for Apt when needed.
 On macOS, both Apple Silicon and Intel Homebrew locations are supported.
+Existing Homebrew packages are not upgraded. Intel Macs build new packages
+from source because some Homebrew binaries are no longer available; the first
+installation can therefore take longer.
 
 Both paths install Git, GNU Stow, Zsh, tmux, GnuPG/Pinentry, Fzf, Jq, Bat,
 Python 3 and Zsh autosuggestions/syntax highlighting. Debian/Ubuntu also gets

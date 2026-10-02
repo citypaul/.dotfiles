@@ -44,14 +44,19 @@ jobs:
           python3 test/setup-dotfiles.py --verify-installed "$test_home"
           # Expand HOME inside Zsh, after env selects the temporary home.
           # shellcheck disable=SC2016
-          env -i HOME="$test_home" PATH="$PATH" TERM=xterm-256color \
+          if ! env -i HOME="$test_home" PATH="$PATH" TERM=xterm-256color \
             zsh -dfc 'source "$HOME/.zshrc"; [[ -n "${_comps[git]}" && ! -d "$HOME/pyenv" ]]' \
-            2> "$test_home/startup.stderr"
+            2> "$test_home/startup.stderr"; then
+            cat "$test_home/startup.stderr"
+            echo 'Zsh startup or completion assertion failed' >&2
+            exit 1
+          fi
           if [ -s "$test_home/startup.stderr" ]; then
             cat "$test_home/startup.stderr"
             exit 1
           fi
-          git diff --exit-code
+          # Container workspace ownership can differ from the checkout user.
+          git -c safe.directory="$GITHUB_WORKSPACE" diff --exit-code
       - name: Test conflicts, migrations and optional tools in isolated homes
         run: python3 test/setup-dotfiles.py
 

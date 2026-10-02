@@ -29,7 +29,8 @@ if [[ -f "$ZSH/oh-my-zsh.sh" ]]; then
   source "$ZSH/oh-my-zsh.sh"
 else
   autoload -Uz compinit
-  compinit
+  # Ignore unsafe completion directories instead of prompting during startup.
+  compinit -i
   HISTFILE="$HOME/.zsh_history"
   HISTSIZE=10000
   SAVEHIST=10000

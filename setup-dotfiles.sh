@@ -60,7 +60,10 @@ if [[ "$install_deps" == true ]]; then
       echo 'Install Homebrew from https://brew.sh, then rerun setup.' >&2
       exit 1
     fi
-    brew install git stow zsh tmux gnupg pinentry fzf jq bat python3 \
+    brew_options=(--formula)
+    # Homebrew no longer provides bottles for every Intel formula.
+    if [[ "$(uname -m)" == x86_64 ]]; then brew_options+=(--build-from-source); fi
+    HOMEBREW_NO_INSTALL_UPGRADE=1 brew install "${brew_options[@]}" git stow zsh tmux gnupg pinentry fzf jq bat python3 \
       zsh-autosuggestions zsh-syntax-highlighting
   else
     as_root=()

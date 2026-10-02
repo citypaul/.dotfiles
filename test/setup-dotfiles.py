@@ -97,11 +97,15 @@ with tempfile.TemporaryDirectory(prefix="dotfiles-smoke-") as temporary:
         path.write_text("#!/bin/sh\n" + body + "\n")
         path.chmod(0o755)
 
-    stub("uname", 'printf "%s\\n" "$TEST_PLATFORM"')
+    stub("uname", 'if [ "$1" = -m ]; then echo "${TEST_ARCH:-arm64}"; else echo "$TEST_PLATFORM"; fi')
     stub("brew", """if [ "$1" = shellenv ]; then
   printf 'export HOMEBREW_PREFIX="%s"\\n' "$TEST_BREW_PREFIX"
 else
   printf 'brew %s\\n' "$*" >> "$TEST_LOG"
+  [ "${HOMEBREW_NO_INSTALL_UPGRADE:-}" = 1 ] || { echo 'Unexpected upgrade of installed tools' >&2; exit 1; }
+  if [ "${TEST_ARCH:-arm64}" = x86_64 ]; then
+    case " $* " in *' --build-from-source '*) ;; *) echo 'No Intel bottle available' >&2; exit 1 ;; esac
+  fi
   exit "${TEST_PACKAGE_FAILURE:-0}"
 fi""")
     stub("apt-get", 'printf "apt-get %s\\n" "$*" >> "$TEST_LOG"; exit "${TEST_PACKAGE_FAILURE:-0}"')
@@ -121,6 +125,12 @@ fi""")
 
     def setup(env, *args, ok=True):
         return run(["/bin/bash", str(repo / "setup-dotfiles.sh"), *args], env, root, ok)
+
+    for arch in ["arm64", "x86_64"]:
+        mac_env = dict(environment("mac " + arch), TEST_PLATFORM="Darwin", TEST_ARCH=arch)
+        setup(mac_env, "tmux")
+        assert (Path(mac_env["HOME"]) / ".tmux.conf").resolve() == repo / "tmux/.tmux.conf"
+    print("PASS: macOS setup preserves installed versions and supports Intel source builds")
 
     env = environment("fresh home")
     home = Path(env["HOME"])
@@ -160,6 +170,16 @@ fi""")
     assert "_zellij" in shell.stdout, shell.stdout
     assert not (home / "pyenv").exists()
     print("PASS: shell starts without Oh My Zsh, NVM or optional prompt tools; completions are registered")
+
+    unsafe = root / "unsafe completions"
+    unsafe.mkdir()
+    unsafe.chmod(0o777)
+    (unsafe / "_unsafe").write_text("#compdef unsafe\n")
+    shell = run([ZSH, "-dfc", 'fpath=("$UNSAFE_COMPLETIONS" $fpath); source "$HOME/.zshrc"; '
+                 '[[ -n "${_comps[git]}" && -z "${_comps[unsafe]}" ]]'],
+                dict(env, UNSAFE_COMPLETIONS=str(unsafe)), home)
+    assert not shell.stderr, shell.stderr
+    print("PASS: shell skips unsafe completions while retaining safe system completions")
 
     # A late XDG conflict must not leave earlier packages installed.
     conflict_env = environment("conflicts")
