@@ -314,12 +314,33 @@
     - { type: skill-used, value: diagrams }
     - { type: not-skill-used, value: render-code-shape }
 
-- description: technical-writing — rewrite the README
+- description: explain-clearly — rewrite the README
   metadata: { cluster: other }
   vars:
     request: "Rewrite README.md so a new developer can get productive in ten minutes."
   assert:
-    - { type: skill-used, value: technical-writing }
+    - { type: skill-used, value: explain-clearly }
+
+- description: explain-clearly — HTML explanation without naming a skill
+  metadata: { cluster: other }
+  vars:
+    request: "Create a beautiful standalone HTML page that explains cache hits and misses to a non-technical colleague."
+  assert:
+    - { type: skill-used, value: explain-clearly }
+
+- description: explain-clearly — preserve uncertainty in a plain-English rewrite
+  metadata: { cluster: other }
+  vars:
+    request: "Make this incident update easy for customers to understand: Retries may reduce transient failures. Operators should investigate repeated failures. No reduction has been measured yet."
+  assert:
+    - { type: skill-used, value: explain-clearly }
+
+- description: explain-clearly — a substantive explanation in chat
+  metadata: { cluster: other }
+  vars:
+    request: "Explain eventual consistency to a support colleague using an example, here in chat."
+  assert:
+    - { type: skill-used, value: explain-clearly }
 
 - description: panel-review — review through named lenses
   metadata: { cluster: other }

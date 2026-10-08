@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+# Tier B: artifact checks plus source-based judgements. Inspect rendered HTML separately.
+# Run with ./run-quality.sh explain-clearly --repeat 3.
+description: explain-clearly quality — faithful plain English and a useful offline explainer
+
+prompts:
+  - '{{request}}'
+
+x-agent: &agent
+  model: '{{env.SKILL_EVAL_MODEL}}'
+  apiKeyRequired: false
+  working_dir: '{{env.SKILL_EVAL_WORKSPACE}}'
+  append_allowed_tools: ['Write', 'Edit', 'MultiEdit', 'Bash']
+  permission_mode: acceptEdits
+  sandbox:
+    enabled: true
+    autoAllowBashIfSandboxed: true
+  web_search_enabled: false
+  max_turns: 50
+  persist_session: false
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: with-skills
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+  - id: anthropic:claude-agent-sdk
+    label: no-skills
+    config:
+      <<: *agent
+      setting_sources: []
+  - id: anthropic:claude-agent-sdk
+    label: skill-forced
+    config:
+      <<: *agent
+      setting_sources: ['project']
+      skills: 'all'
+      append_system_prompt: "Before doing anything else in this task, load the `explain-clearly` skill with the Skill tool and follow it."
+
+extensions:
+  - file://quality-hooks.js:extensionHook
+
+evaluateOptions:
+  maxConcurrency: 1
+  # In promptfoo 0.122.2, serial model grading otherwise defers afterEach until
+  # all generations finish. A per-case timeout keeps grading and the shared
+  # workspace reset together, so later arms cannot read earlier artifacts.
+  timeoutMs: 900000
+
+defaultTest:
+  options:
+    disableVarExpansion: true
+    transform: file://explain-clearly-output.js
+    # No project directory, tools, skills or project settings in the grader.
+    # apiKeyRequired:false uses the same local Claude login as the three arms.
+    provider:
+      id: anthropic:claude-agent-sdk
+      config:
+        model: '{{env.SKILL_EVAL_MODEL}}'
+        apiKeyRequired: false
+        setting_sources: []
+        skills: []
+        tools: []
+        custom_allowed_tools: []
+        web_search_enabled: false
+        max_turns: 2
+        persist_session: false
+  assert:
+    - { type: javascript, value: 'file://explain-clearly-assertions.js:artifactWritten', metric: artifact-written }
+    - { type: javascript, value: 'file://explain-clearly-assertions.js:literalFacts', metric: literal-facts }
+
+tests: file://tests/explain-clearly-quality.yaml

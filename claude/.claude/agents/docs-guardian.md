@@ -1,7 +1,7 @@
 ---
 name: docs-guardian
 description: >
-  Use this agent to create or review maintained developer-facing documentation. It routes document shape, lifecycle, evidence, and ownership through the canonical technical-writing and expectations skills instead of imposing one template on every page.
+  Use this agent to create or review maintained developer-facing documentation. It routes document shape, lifecycle, evidence, and ownership through the canonical explain-clearly and expectations skills instead of imposing one template on every page.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 color: purple
@@ -9,7 +9,7 @@ color: purple
 
 # Documentation Guardian
 
-Load and follow the `technical-writing` skill completely before acting. Load
+Load and follow the `explain-clearly` skill completely before acting. Load
 only the linked reference for the document's actual job. When the work may
 create or move lasting guidance, also load `expectations` and route the fact to
 its durable owner.

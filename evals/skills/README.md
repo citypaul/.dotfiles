@@ -132,7 +132,9 @@ not measuring the skill; make it harder or drop it.
 
 ### What is graded
 
-Everything is deterministic — no model grades a model. The graders read two sources:
+Implementation suites use deterministic graders. Document-producing suites can
+also use repeated `llm-rubric` judgements for meaning and reader usefulness;
+read their reasons alongside the artifacts. The deterministic graders read two sources:
 the ordered tool-call trail the Claude Agent SDK reports (what the agent did, in what
 order) and the workspace it left behind. Every rule graded is one the skill states as
 a rule.
@@ -147,6 +149,40 @@ Graders live in `tdd-assertions.js`, `hex-assertions.js` and `ddd-assertions.js`
 top of `quality-lib.js`; hidden tests live under `tests/<suite>/acceptance/`. Every
 hidden test and grader was proven against a reference implementation before the
 first agent run, so a failure points at the agent's work, not the harness.
+
+### Writing and explainer quality
+
+`explain-clearly` uses a raw engineering handover and two reader-facing tasks:
+a customer note and an offline interactive HTML explanation. It compares the
+same three arms as the implementation suites. Deterministic checks cover
+artifact presence, exact configuration literals, basic standalone markup, and
+control labels. Model rubrics compare the actual artifact with the source facts
+for meaning, uncertainty, obligations, plain English, and explanatory structure.
+
+The output transform preserves the artifact text in the results JSON so the
+grader judges the document rather than the agent's completion claim. Inspect
+rendered HTML separately for typography, layout, accessibility and working
+interaction; source checks and model rubrics do not establish visual quality.
+The suite's proof script exercises positive references and deliberately broken
+controls before any model comparison:
+
+```bash
+node tests/explain-clearly/prove-graders.js
+node tests/explain-clearly/prove-isolation.js
+node tests/explain-clearly/prove-rubric.js  # model calls: known good/bad text, twice
+./run-quality.sh explain-clearly --repeat 3
+./run.sh --filter-pattern '^explain-clearly' --repeat 3
+```
+
+Runs use the existing Claude login. If it has expired, refresh it with
+`claude auth login` before rerunning. Authentication failures are infrastructure
+errors, not evidence about skill quality or automatic selection.
+
+The suite sets a per-case timeout to keep grading and `afterEach` cleanup in
+order. With promptfoo 0.122.2, serial model grading otherwise batches generations
+before cleanup, allowing later arms to read earlier artifacts. The isolation
+proof uses fake providers and the real hooks to check this ordering, including
+a negative control with the timeout removed. It makes no model calls.
 
 ### Running a quality suite
 
@@ -206,7 +242,7 @@ reference, are the basis for the harness. Where and how each recommendation is m
 | Prefer deterministic assertions; `skill-used` over raw JavaScript | `skill-used` for routing; JavaScript only where the rule needs a path predicate (a test file edited before a source file) that `trajectory:*` cannot express |
 | Minimal permissions: read-only tools by default, sandbox Bash, no network | routing runs read-only; quality runs use `acceptEdits` with the SDK sandbox and `web_search_enabled: false`, and `pnpm install` runs before the eval |
 | Serial execution and reset between cases when agents write | `maxConcurrency: 1`; `quality-hooks.js` saves the diff and `git reset --hard` after each case |
-| Structured output when the answer itself is graded | not needed: nothing here grades the prose; the transform shows the routing decision instead |
+| Structured output when the answer itself is graded | routing transforms show skill decisions; document suites retain the artifact in structured output so rubrics judge its content |
 | `--repeat` for non-determinism; "if a prompt fails 50% of the time, fix the instructions" | re-run failures with `--repeat 3` before editing; `max` status in `COVERAGE.md` needs two consecutive clean runs |
 | `--no-cache` while iterating; `-o` and `view` for results | both runners; `results/` is gitignored |
 | `cost` / `latency` guards | not used: runs bill a Claude Code login, so cost is not reported; latency is dominated by the fixture, not the skill |

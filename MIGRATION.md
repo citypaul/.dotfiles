@@ -1,5 +1,29 @@
 # Migration Guide
 
+## Writing skills → `explain-clearly`
+
+`explain-clearly` is the single automatically selected skill for human-facing
+writing and explanations, including documentation, messages, reports, and HTML
+explainers. Its plain-English, teaching, typography, and accessibility guidance
+is self-contained. Additional resources inside the bundle load by output type.
+
+Update custom references from `technical-writing`, `simple-english`, or `clarity`
+to `explain-clearly`. The first-party installer now selects `explain-clearly`.
+After a successful installation, it moves those three old entry points, when
+present, to a sibling `skills.before-explain-clearly.*` archive for each selected
+agent destination. Local customisations remain recoverable there. Failed
+installs retain the old entry points, and unselected destinations are unchanged.
+Direct installation through the Skills CLI does not run this archive step.
+
+Automatic selection is enabled in the skill description and Codex invocation
+policy; the repository's `CLAUDE.md` also directs human-facing writing to it.
+Installed clients need the updated bundle and any applicable global guidance;
+an already-running chat may keep its earlier skill catalogue until refreshed.
+
+`writing-for-agents` still handles instructions consumed by agents. Product
+design and file-format tools retain their specialist roles; this consolidation
+removes the need to choose a separate prose or design skill for an explainer.
+
 ## `folder-structure` → `structure-codebase`
 
 `structure-codebase` replaces the former screaming-architecture-based `folder-structure` guidance. It selects a project-appropriate frontend or backend shape before generating folders and makes a hexagonal inside/outside boundary visible only for projects that have actually adopted ports and adapters.

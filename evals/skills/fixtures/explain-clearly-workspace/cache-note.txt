@@ -1,0 +1,14 @@
+Engineering handover: age-dependent eligibility of a stored response
+
+Let a be the age of the stored response, in seconds. Freshness holds for a < 60.
+For 60 <= a < 90, the response may be served stale while a refresh runs in the
+background. For a >= 90, a request must wait for a successful refresh or receive
+an error. A failed refresh does not extend either of these time limits.
+
+The literal configuration name is STALE_WINDOW_SECONDS. Its example value is 30.
+
+Serving stale data may reduce waiting time. No performance measurements are
+available. Operators should investigate repeated refresh failures; this is a
+recommendation, not a mandatory operational rule.
+
+No other product facts are supplied.

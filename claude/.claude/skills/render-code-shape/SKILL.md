@@ -13,7 +13,7 @@ Render the shape and collapse everything below the waterline to a single line of
 
 **A render is not a verdict.** It states what is visible in the render. Deciding whether a boundary is well-drawn belongs to `codebase-design`; deciding where files should live belongs to `structure-codebase`; ranking architecture investments belongs to `improve-codebase-architecture`.
 
-**Load alongside**: `planning` (a `[NEW]` render is an input to a slice plan, never a substitute for one), `codebase-design` and `structure-codebase` (judgments about the shape once it is visible), `finding-seams` (when the render exposes an untestable dependency), `characterisation-tests` (when the existing path has no behavior evidence), `diagrams` (when relationships are materially clearer drawn than listed), `technical-writing` (when the render becomes a durable document).
+**Load alongside**: `planning` (a `[NEW]` render is an input to a slice plan, never a substitute for one), `codebase-design` and `structure-codebase` (judgments about the shape once it is visible), `finding-seams` (when the render exposes an untestable dependency), `characterisation-tests` (when the existing path has no behavior evidence), `diagrams` (when relationships are materially clearer drawn than listed), `explain-clearly` (when the render becomes a durable document).
 
 ## 1. Frame the render
 

@@ -38,6 +38,13 @@ mkdir -p "$TMPDIR/bin" "$SKILLS_DIR" "$AGENTS_DIR/skills/linked-skill"
 cat > "$TMPDIR/bin/npx" <<'STUB'
 #!/usr/bin/env bash
 touch "$NPX_MARKER"
+if [[ "${SIMULATED_INSTALL_FAILURE:-}" == true ]]; then
+  exit 9
+fi
+if [[ -n "${SIMULATED_WRITING_SKILL:-}" ]]; then
+  mkdir -p "$SIMULATED_WRITING_SKILL"
+  echo 'name: explain-clearly' > "$SIMULATED_WRITING_SKILL/SKILL.md"
+fi
 if [[ -n "${NPX_ARGS:-}" ]]; then
   printf '%s\n' "$@" >> "$NPX_ARGS"
 fi
@@ -222,6 +229,55 @@ if grep -q '# installed' "$AGENTS_DIR/skills/tdd/SKILL.md" &&
   pass "unselected canonical skill content remains untouched"
 else
   fail "explicit copy mode must not mutate the unselected canonical store"
+fi
+
+# A successful upgrade consolidates old writing entry points in the selected
+# store only, retaining their full contents outside skill discovery.
+for skill in technical-writing simple-english clarity; do
+  mkdir -p "$AGENTS_DIR/skills/$skill/resources" "$SKILLS_DIR/$skill"
+  echo "original $skill" > "$AGENTS_DIR/skills/$skill/SKILL.md"
+  echo 'local customisation' > "$AGENTS_DIR/skills/$skill/resources/local.md"
+  echo "unselected $skill" > "$SKILLS_DIR/$skill/SKILL.md"
+done
+
+WRITING_OUTPUT=$(HOME="$HOME_DIR" PATH="$TMPDIR/bin:$PATH" \
+  NPX_MARKER="$TMPDIR/npx-called-writing" SIMULATED_DESTINATION='' \
+  SIMULATED_WRITING_SKILL="$AGENTS_DIR/skills/explain-clearly" \
+  "$REPO_ROOT/install-claude.sh" --skills-only --no-claude-code --agent codex \
+    --no-external --no-impeccable 2>&1)
+
+for skill in technical-writing simple-english clarity; do
+  if [[ ! -e "$AGENTS_DIR/skills/$skill" ]] &&
+     compgen -G "$AGENTS_DIR/skills.before-explain-clearly.*/$skill/resources/local.md" > /dev/null &&
+     grep -q 'local customisation' "$AGENTS_DIR"/skills.before-explain-clearly.*/"$skill"/resources/local.md; then
+    pass "$skill is retired with its custom contents recoverable"
+  else
+    fail "$skill must leave discovery only after a successful replacement and full archive"
+  fi
+  if grep -q "unselected $skill" "$SKILLS_DIR/$skill/SKILL.md"; then
+    pass "writing consolidation preserves unselected Claude $skill"
+  else
+    fail "writing consolidation must affect only selected agent destinations"
+  fi
+done
+
+# A failed upgrade must leave old entry points usable even if a previous
+# explain-clearly installation is already present.
+mkdir -p "$AGENTS_DIR/skills/technical-writing"
+echo 'keep on failure' > "$AGENTS_DIR/skills/technical-writing/SKILL.md"
+set +e
+HOME="$HOME_DIR" PATH="$TMPDIR/bin:$PATH" \
+  NPX_MARKER="$TMPDIR/npx-called-writing-failed" SIMULATED_DESTINATION='' \
+  SIMULATED_INSTALL_FAILURE=true \
+  "$REPO_ROOT/install-claude.sh" --skills-only --no-claude-code --agent codex \
+    --no-external --no-impeccable > "$TMPDIR/writing-failed.log" 2>&1
+WRITING_FAILED_STATUS=$?
+set -e
+if [[ $WRITING_FAILED_STATUS -ne 0 ]] &&
+   grep -q 'keep on failure' "$AGENTS_DIR/skills/technical-writing/SKILL.md"; then
+  pass "failed writing upgrade retains the prior skill"
+else
+  fail "failed writing upgrade must not retire the prior skill"
 fi
 
 echo ""

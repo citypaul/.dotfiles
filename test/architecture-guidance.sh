@@ -33,8 +33,8 @@ AGGREGATES="$SKILLS/domain-driven-design/resources/aggregate-design.md"
 DOMAIN_EVENTS="$SKILLS/domain-driven-design/resources/domain-events.md"
 DDD_TESTING="$SKILLS/domain-driven-design/resources/testing-by-layer.md"
 HEX_CONCERNS="$SKILLS/hexagonal-architecture/resources/cross-cutting-concerns.md"
-TECHNICAL_WRITING="$SKILLS/technical-writing/SKILL.md"
-DOCS_QUALITY="$SKILLS/technical-writing/resources/docs-quality.md"
+EXPLAIN_CLEARLY="$SKILLS/explain-clearly/SKILL.md"
+DOCS_QUALITY="$SKILLS/explain-clearly/resources/documentation.md"
 DIAGRAMS="$SKILLS/diagrams/SKILL.md"
 DIAGRAMS_NOTICE="$SKILLS/diagrams/NOTICE"
 DIAGRAMS_SOURCE="$SKILLS/diagrams/references/source-notes.md"
@@ -202,7 +202,7 @@ require_match "language guards require positive controls" \
 require_match "story splitting defers implementation policy" \
   'Defer implementation workflow, TDD, mutation timing, feature-flag policy' "$STORIES"
 require_match "documentation lifecycle is state-based" \
-  'Keep plans and specification workspaces only while their outcomes remain unfinished' "$TECHNICAL_WRITING"
+  'Keep plans and specification workspaces only while their outcomes remain unfinished' "$DOCS_QUALITY"
 require_match "documentation archaeology covers deleted paths" \
   'git log --all -- <path>' "$DOCS_QUALITY"
 require_match "architecture diagrams name audience question and owner" \
@@ -534,8 +534,8 @@ require_match "refactoring does not infer dead code from missing tests" \
   'Existing untested code is not proven speculative or dead' "$REFACTORING"
 require_match "one-off teaching permits direct explanation" \
   'Direct explanation is legitimate' "$TEACH_ME"
-require_match "technical-writing scopes receipts to material claims" \
-  'Material Claims Need Receipts' "$TECHNICAL_WRITING"
+require_match "explain-clearly scopes receipts to material claims" \
+  'Material Claims Need Receipts' "$EXPLAIN_CLEARLY"
 require_match "parity skill creation does not authorize app mutations" \
   'only when the user explicitly asked for parity fixes' "$PRODUCTION_PARITY"
 require_match "ordinary component props stay with in-process design" \
@@ -559,7 +559,7 @@ require_match "refactor scans treat nesting as a readability signal" \
 require_match "refactor scans permit contained local mutation" \
   'local mutation contained behind clear ownership' "$REFACTOR_SCAN"
 require_match "documentation agent delegates to canonical writing guidance" \
-  'Load and follow the `technical-writing` skill completely' "$DOCS_GUARDIAN"
+  'Load and follow the `explain-clearly` skill completely' "$DOCS_GUARDIAN"
 require_match "documentation shapes follow the actual page job" \
   'Select the lightest document shape that serves the page job' "$DOCS_GUARDIAN"
 require_match "learning agent delegates ownership to expectations" \
@@ -931,6 +931,6 @@ require_match "Anthropic skill-creator is pinned to a full commit" \
 require_match "the writing skill installs from the audited Pocock pin" \
   'MATTPOCOCK_SKILLS=\(grill-me writing-for-agents\)' "$INSTALLER"
 require_match "agent-facing and human-facing writing skills are routed apart" \
-  'technical-writing. owns human-facing prose' "$CLAUDE_POLICY"
+  'explain-clearly. owns human-facing prose' "$CLAUDE_POLICY"
 
 echo "Architecture guidance checks passed"

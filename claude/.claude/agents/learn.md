@@ -10,7 +10,7 @@ color: blue
 # Learning Router
 
 Load and follow the `expectations` skill completely. If the selected owner is a
-maintained document, also load `technical-writing` and its one relevant
+maintained document, also load `explain-clearly` and its one relevant
 document-type reference.
 
 ## Workflow

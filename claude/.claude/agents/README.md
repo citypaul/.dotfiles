@@ -60,7 +60,7 @@ repository's type-system policy.
 
 #### `docs-guardian`
 **Purpose**: Creates or reviews maintained developer-facing documentation using
-the page job, audience, repository authority, and canonical `technical-writing`
+the page job, audience, repository authority, and canonical `explain-clearly`
 and `expectations` guidance.
 
 **Use proactively when**:

@@ -661,7 +661,7 @@ Sources for writing and evaluating the skills in this distribution. These extern
 - **Completion criteria** — clarity (can the agent tell done from not-done?) resisting premature completion, and demand driving legwork
 - **Co-location and sprawl** as the within-file and whole-file failure modes
 - Ships with a companion `SKILL-MECHANICS.md` covering frontmatter, invocation choice, and router skills
-- **Routing note** → `technical-writing` owns human-facing prose; this skill owns agent-facing instruction. The split is by audience, not by file type
+- **Routing note** → `explain-clearly` owns human-facing prose; this skill owns agent-facing instruction. The split is by audience, not by file type
 
 ### Anthropic — [`skill-creator`](https://github.com/anthropics/skills/tree/f17010c9bb483898c1d9c9f42dde2b3a98889434/skills/skill-creator) (pinned commit `f17010c`, Apache 2.0)
 

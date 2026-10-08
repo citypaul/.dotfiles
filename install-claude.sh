@@ -80,7 +80,7 @@ FIRST_PARTY_SKILLS=(
   production-parity-skill-builder react-performance react-testing
   reduce-system-complexity refactoring render-code-shape
   secure-oauth-oidc specification stack-pull-requests
-  story-splitting storyboard structure-codebase tdd teach-me technical-writing
+  story-splitting storyboard structure-codebase tdd teach-me explain-clearly
   test-design-reviewer testing twelve-factor typescript-strict
   ubiquitous-language wtf xstate
 )
@@ -581,6 +581,30 @@ backup_selected_skills() {
 # single bad upstream source warns at the end instead of aborting setup.
 FAILED_SKILL_SOURCES=()
 
+# Consolidate the old writing entry points only after the first-party install
+# succeeds. Archives sit beside skills/, outside discovery, and retain local
+# customisations. Resolve only selected destinations, as with normal backups.
+archive_superseded_writing_skills() {
+  local agent dir skill archive
+  local checked_dirs=()
+  for agent in "${SKILL_AGENTS[@]}"; do
+    dir="$(global_skills_dir_for_agent "$agent")" || return 1
+    [[ " ${checked_dirs[*]} " == *" $dir "* ]] && continue
+    checked_dirs+=("$dir")
+    [[ -f "$dir/explain-clearly/SKILL.md" ]] || continue
+
+    archive=""
+    for skill in technical-writing simple-english clarity; do
+      [[ -e "$dir/$skill" || -L "$dir/$skill" ]] || continue
+      if [[ -z "$archive" ]]; then
+        archive="$(mktemp -d "$dir.before-explain-clearly.XXXXXXXX")" || return 1
+      fi
+      mv "$dir/$skill" "$archive/" || return 1
+      echo -e "${YELLOW}→${NC} Replaced $skill with explain-clearly; prior bundle saved to $archive/$skill"
+    done
+  done
+}
+
 validate_unique_skill_names() {
   local names=("$@") seen=() name prior
   for name in "${names[@]}"; do
@@ -806,6 +830,7 @@ if [[ "$INSTALL_SKILLS" == true ]]; then
   backup_selected_skills "${install_manifest[@]}"
 
   install_skills_from "$OWN_SKILLS_REPO" "own skills (citypaul/.dotfiles)" "" "${FIRST_PARTY_SKILLS[@]}"
+  archive_superseded_writing_skills
 
   if [[ "$INSTALL_EXTERNAL" == true ]]; then
     install_optional_skills_from "$WEB_QUALITY_SKILLS_REPO" "web quality skills (addyosmani/web-quality-skills)" "" "${WEB_QUALITY_SKILLS[@]}"

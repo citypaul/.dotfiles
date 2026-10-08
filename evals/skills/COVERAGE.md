@@ -54,7 +54,7 @@ one-liner); routing coverage only.
 | stack-pull-requests | B | todo | 6 | independent vs stacked decision, safe merge |
 | debugging | B | todo | 7 | evidence preserved, one hypothesis, fix only when asked |
 | ci-debugging | B | todo | 7 | hypothesis first, environment delta, local repro |
-| technical-writing | B | todo | 7 | reader-first, falsifiable claims, agent-readable |
+| explain-clearly | B | proven | 7 | 2 artifact cases; 18 offline grader checks, 2 lifecycle controls, and 8 repeated model-rubric calibration cases pass. Routing improved from 7/12 to 12/12, with 6/6 negative controls. Initial prose comparison exposed invented reassurance in all arms; after edits, forced prose scores 14/15 across three repeats (one reassurance miss). HTML browser review found working keyboard/boundary controls and no page overflow at 1280/320px, but misaligned numeric ticks and an unqualified conditional message; guidance strengthened, confirmation pending. Full three-arm HTML grading remains in progress. A contaminated run was discarded after proving and preventing promptfoo's deferred-cleanup behaviour. |
 | diagrams | B | todo | 7 | renderer-aware, validated, accessible text |
 | expectations | B | todo | 7 | routes each fact to its durable owner |
 | ubiquitous-language | B | todo | 7 | five-step protocol, glossary authority, safe rename |
@@ -82,7 +82,7 @@ one-liner); routing coverage only.
 | 4 | `skill-evals-batch-4` | [#258](https://github.com/citypaul/.dotfiles/pull/258) | api-design, cli-design, bff-entry-points, secure-oauth-oidc, twelve-factor, observability | forced arm at max for five (each confirmed twice); observability 19–20/20 with weak discrimination, open item; PR open |
 | 5 | — | — | structure-codebase, codebase-design, reduce-system-complexity, improve-codebase-architecture | todo |
 | 6 | — | — | planning, story-splitting, specification, find-gaps, acceptance-review, stack-pull-requests | todo |
-| 7 | — | — | debugging, ci-debugging, technical-writing, diagrams, expectations, ubiquitous-language | todo |
+| 7 | — | — | debugging, ci-debugging, explain-clearly, diagrams, expectations, ubiquitous-language | in progress — explain-clearly routing and grader calibration proven; quality iteration in progress |
 | 8 | — | — | render-code-shape, evaluate-existing-solutions, bff-design, test-design-reviewer, production-parity-skill-builder, teach-me | todo |
 | 9 | — | — | double-check, panel-review, graph-engineering, find-skills, storyboard | in progress — graph-engineering and find-skills proven offline; live baseline pending |
 
@@ -97,6 +97,6 @@ the one remaining partial.
 
 48 cases over 46 skills; 47/48 on the last full run (the miss: `functional` lost a
 mutation-bug request to `tdd` + `testing` in one of two runs). Two descriptions fixed
-in batch 1 (`expectations`, `technical-writing`). Known gap from the quality suites:
+in batch 1 (`expectations`, `technical-writing`, now `explain-clearly`). Known gap from the quality suites:
 `hexagonal-architecture` and `domain-driven-design` do not fire when only the
 repository's README/CLAUDE.md declares the practice — batch 1 fix target.

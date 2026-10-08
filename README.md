@@ -123,7 +123,8 @@ Unlike typical style guides, CLAUDE.md provides:
 | **Acceptance Review** | Read-only criterion-by-criterion proof of whether a PR, branch, diff, or implementation satisfies its authoritative requirement | [→ skills/acceptance-review](claude/.claude/skills/acceptance-review/SKILL.md) |
 | **WTF** | Explicitly re-explains the immediately previous model response in plain, precise UK English without starting new work. Invoke with `/wtf` in Claude Code or `$wtf` in Codex | [→ skills/wtf](claude/.claude/skills/wtf/SKILL.md) |
 | **Grill Me (optional external)** | One-question-at-a-time decision-tree interviews before story splitting, planning, or implementation; omitted by `--no-external`, with `specification` as the first-party fallback | [→ skills.sh/mattpocock/skills/grill-me](https://skills.sh/mattpocock/skills/grill-me) |
-| **Writing for Agents** | Writing documents an *agent* consumes — a SKILL.md, `CLAUDE.md`/`AGENTS.md`, a doc behind a pointer. Context pointers and trigger wording, the context/cognitive load split, the information hierarchy and progressive disclosure, and completion criteria that resist premature completion. Routes by audience: `technical-writing` owns human-facing prose | [→ mattpocock/skills/writing-for-agents](https://skills.sh/mattpocock/skills/writing-for-agents) |
+| **Explain Clearly** | One automatic skill for plain English, documentation, reports, messages, and beautiful HTML or interactive explainers. Combines explanation structure, typography, accessibility, and verification; replaces technical-writing and consolidates the separate simple-english and clarity workflows | [→ skills/explain-clearly](claude/.claude/skills/explain-clearly/SKILL.md) |
+| **Writing for Agents** | Writing documents an *agent* consumes — a SKILL.md, `CLAUDE.md`/`AGENTS.md`, a doc behind a pointer. Context pointers and trigger wording, the context/cognitive load split, the information hierarchy and progressive disclosure, and completion criteria that resist premature completion. Routes by audience: `explain-clearly` owns human-facing prose | [→ mattpocock/skills/writing-for-agents](https://skills.sh/mattpocock/skills/writing-for-agents) |
 | **Skill Creator** | Anthropic's own skill-authoring loop: draft, write test prompts, run evals, review results qualitatively and quantitatively, rewrite, and tune the description for trigger accuracy | [→ anthropics/skills/skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator) |
 | **Skill Doctor** | Scores recent local agent conversations for efficiency, code quality, and skill coverage, then drafts evidence-backed skill edits and a shareable local report. Supports Claude Code, Codex, and Warp without uploading transcripts | [→ Warp Skill Doctor](https://www.warp.dev/skill-doctor) |
 | **Next.js Skills** | Cache Components optimization and adoption workflows, version-matched with the framework | [→ vercel/next.js skills](https://github.com/vercel/next.js/tree/canary/skills) |
@@ -1277,7 +1278,7 @@ Claude Code: [Launches docs-guardian agent]
 ```
 
 **Output:**
-- Assessment against the canonical `technical-writing` guidance and page job
+- Assessment against the canonical `explain-clearly` guidance and page job
 - Critical issues (must fix) vs nice-to-haves
 - Specific improvement recommendations with examples
 - The smallest useful edit or restructuring for the owned document
