@@ -34,6 +34,7 @@ Keep conceptual diagrams visibly distinct from measured charts.
 For a quantitative visual, derive tick labels, regions, and moving markers from
 the same numerical scale. Check their rendered alignment at the boundaries;
 evenly spaced labels misrepresent uneven numeric intervals.
+Anchor endpoint labels inward so the text stays inside the figure at narrow widths.
 
 Apply Mayer's principles in context: highlight essential structure, remove
 irrelevant distractions, place corresponding words and pictures together,
@@ -88,6 +89,9 @@ together, then fix discovered problems in one batch and confirm the affected
 views. Check typography, whitespace, clipping, overlaps, diagram labels, long
 headings, code, tables, and source links. Use actual screenshots for visual
 judgment; DOM checks alone cannot establish that the design is beautiful.
+Use an existing browser/runtime; keep toolchain setup proportionate to a
+standalone document. If none is available, report the rendering gap and deliver
+the source-checked artifact instead of repeatedly attempting unavailable tools.
 
 Exercise meaningful states with mouse and keyboard: initial, changed, reset,
 and relevant boundary inputs. Check focus, labels, overflow, reduced motion,

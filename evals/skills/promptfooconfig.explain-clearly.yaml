@@ -16,7 +16,7 @@ x-agent: &agent
     enabled: true
     autoAllowBashIfSandboxed: true
   web_search_enabled: false
-  max_turns: 50
+  max_turns: 20
   persist_session: false
 
 providers:
@@ -40,14 +40,14 @@ providers:
       append_system_prompt: "Before doing anything else in this task, load the `explain-clearly` skill with the Skill tool and follow it."
 
 extensions:
-  - file://quality-hooks.js:extensionHook
+  - file://explain-clearly-hooks.js:extensionHook
 
 evaluateOptions:
   maxConcurrency: 1
   # In promptfoo 0.122.2, serial model grading otherwise defers afterEach until
   # all generations finish. A per-case timeout keeps grading and the shared
   # workspace reset together, so later arms cannot read earlier artifacts.
-  timeoutMs: 900000
+  timeoutMs: 420000
 
 defaultTest:
   options:

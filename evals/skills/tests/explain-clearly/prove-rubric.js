@@ -28,6 +28,7 @@ Operators should investigate repeated refresh failures. That is advice, not a
 mandatory operational rule.`;
 const probes = [
   { name: "faithful reference", content: reference, pass: true, rubrics: [possibility, faithfulness] },
+  { name: "purpose does not promise an outcome", content: reference.replace("A cache keeps a stored response.", "To help answer requests quickly, a cache keeps a stored response."), pass: true, rubrics: [possibility, faithfulness] },
   { name: "possibility turned into promise", content: reference.replace("it may be served stale", "it will always be served immediately"), pass: false, rubrics: [possibility] },
   { name: "example turned into default", content: reference.replace("configuration example", "universal default"), pass: false, rubrics: [faithfulness] },
   { name: "unsupported reassurance", content: reference + "\nFresh means fully up to date. A single failed refresh usually sorts itself out on the next attempt and is not a sign of bad configuration.", pass: false, rubrics: [faithfulness] },

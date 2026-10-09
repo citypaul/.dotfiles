@@ -14,7 +14,7 @@ const { evaluate } = require("promptfoo");
 const yaml = createRequire(require.resolve("promptfoo"))("js-yaml");
 const config = yaml.load(readFileSync(join(root, "promptfooconfig.explain-clearly.yaml"), "utf8"));
 
-async function check(timeoutMs) {
+async function check(timeoutMs, extensions = config.extensions, partialArtifact = false) {
   const workspace = mkdtempSync(join(scratch, "workspace-"));
   const artifact = join(workspace, "draft.md");
   process.env.SKILL_EVAL_WORKSPACE = workspace;
@@ -23,6 +23,7 @@ async function check(timeoutMs) {
   process.env.SKILL_EVAL_RUN_DIR = join(scratch, `diffs-${timeoutMs}`);
   execFileSync("git", ["init", "--quiet"], { cwd: workspace });
   execFileSync("git", ["-c", "user.name=eval", "-c", "user.email=eval@example.com", "-c", "commit.gpgsign=false", "commit", "--allow-empty", "--quiet", "-m", "fixture"], { cwd: workspace });
+  if (partialArtifact) writeFileSync(artifact, "partial artifact from a timed-out case");
   const sawEarlierDraft = [];
   let judgements = 0;
   const provider = (label) => ({
@@ -44,7 +45,7 @@ async function check(timeoutMs) {
   await evaluate({
     prompts: ["Write the draft"],
     providers: [provider("first"), provider("second")],
-    extensions: config.extensions.map((path) => path.replace("file://", `file://${root}/`)),
+    extensions: extensions.map((path) => path.replace("file://", `file://${root}/`)),
     tests: [{ description: "isolated draft", options: { provider: judge }, assert: [{ type: "llm-rubric", value: "Lifecycle probe only" }] }],
     // The extension lifecycle reads results from the database; keep that DB
     // entirely inside this disposable proof directory.
@@ -59,7 +60,9 @@ async function check(timeoutMs) {
   try {
     assert.deepEqual(await check(config.evaluateOptions.timeoutMs), [false, false]);
     console.log("PASS configured lifecycle isolates each generated draft");
-    assert.deepEqual(await check(0), [false, true]);
+    assert.deepEqual(await check(config.evaluateOptions.timeoutMs, config.extensions, true), [false, false]);
+    console.log("PASS partial artifact from a timed-out case cannot leak into the next arm");
+    assert.deepEqual(await check(0, ["file://quality-hooks.js:extensionHook"]), [false, true]);
     console.log("PASS negative control exposes contamination when serial grading is deferred");
   } finally { rmSync(scratch, { recursive: true, force: true }); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

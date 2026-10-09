@@ -182,7 +182,10 @@ The suite sets a per-case timeout to keep grading and `afterEach` cleanup in
 order. With promptfoo 0.122.2, serial model grading otherwise batches generations
 before cleanup, allowing later arms to read earlier artifacts. The isolation
 proof uses fake providers and the real hooks to check this ordering, including
-a negative control with the timeout removed. It makes no model calls.
+a negative control with the timeout removed. The suite also clears the disposable
+fixture before each case because timed-out cases bypass `afterEach`. A third
+control proves that a partial artifact cannot leak into the next arm. These
+lifecycle checks make no model calls.
 
 ### Running a quality suite
 
