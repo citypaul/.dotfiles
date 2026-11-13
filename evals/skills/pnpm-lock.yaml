@@ -2726,8 +2726,8 @@ packages:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
-  hono@4.13.5:
-    resolution: {integrity: sha512-O6+/eCYRkzzzy0rPWwKLiGBR1nFuUPZynnwjxN1MBA62NNqbT0wQEzQyK2gSO5yDIDB336sXQleAhOHrzlYyKw==}
+  hono@4.13.18:
+    resolution: {integrity: sha512-H9q/E1XizaWstJxUW881dmLxEj+t/TrGGnyxINkm4+sK0qUwsMtFdo2BWI9Vs3cIS19MU6b6iCijoUoEf4f3DA==}
     engines: {node: '>=16.9.0'}
 
   hookified@1.15.1:
@@ -4783,9 +4783,9 @@ snapshots:
       graphql: 17.0.2
     optional: true
 
-  '@hono/node-server@2.1.1(hono@4.13.5)':
+  '@hono/node-server@2.1.1(hono@4.13.18)':
     dependencies:
-      hono: 4.13.5
+      hono: 4.13.18
 
   '@huggingface/jinja@0.5.9':
     optional: true
@@ -5258,7 +5258,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)':
     dependencies:
-      '@hono/node-server': 2.1.1(hono@4.13.5)
+      '@hono/node-server': 2.1.1(hono@4.13.18)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -5268,7 +5268,7 @@ snapshots:
       eventsource-parser: 3.1.1
       express: 5.2.1
       express-rate-limit: 8.7.0(express@5.2.1)
-      hono: 4.13.5
+      hono: 4.13.18
       jose: 6.2.10
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -6975,7 +6975,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hono@4.13.5: {}
+  hono@4.13.18: {}
 
   hookified@1.15.1: {}
 
@@ -7807,7 +7807,7 @@ snapshots:
     dependencies:
       '@anthropic-ai/sdk': 0.117.1(zod@4.5.4)
       '@apidevtools/json-schema-ref-parser': 16.0.1(@types/json-schema@7.0.15)
-      '@hono/node-server': 2.1.1(hono@4.13.5)
+      '@hono/node-server': 2.1.1(hono@4.13.18)
       '@inquirer/checkbox': 5.2.3(@types/node@26.4.0)
       '@inquirer/confirm': 6.3.0(@types/node@26.4.0)
       '@inquirer/core': 11.2.1(@types/node@26.4.0)
@@ -7918,7 +7918,7 @@ snapshots:
       '@swc/core-linux-x64-musl': 1.16.1
       '@swc/core-win32-x64-msvc': 1.16.1
       google-auth-library: 11.0.2
-      hono: 4.13.5
+      hono: 4.13.18
       ibm-cloud-sdk-core: 5.6.0
       jks-js: 1.1.7
       natural: 8.1.1(@opentelemetry/api@1.9.1)(gcp-metadata@9.0.3)(socks@2.8.9)
