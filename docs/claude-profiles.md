@@ -81,6 +81,42 @@ The default lives in `~/.zshrc.local` and not in this repository, because the
 tracked shell files are shared: a default set there would give everyone who
 installs them an empty profile.
 
+## See what a profile has loaded
+
+First confirm which profile a command uses. An empty `CLAUDE_CONFIG_DIR` means
+the stock `~/.claude`:
+
+```sh
+echo $CLAUDE_CONFIG_DIR
+claude auth status             # the machine default; read "configDirectory"
+claude-profile work auth status
+claude-personal auth status
+```
+
+Then list the plugins each profile has installed:
+
+```sh
+claude plugin list             # the machine default
+claude-profile work plugin list
+claude-personal plugin list
+```
+
+`plugin list` shows plugins, not the skills inside them. To see what a session
+has actually loaded, start Claude Code in the profile and type one of these:
+
+| Type in the session | Shows |
+| --- | --- |
+| `/skills` | Every loaded skill and where it came from |
+| `/plugin` | Installed plugins and marketplaces, with enable and update controls |
+| `/agents` | Available subagents |
+| `/mcp` | Connected MCP servers |
+| `/memory` | The `CLAUDE.md` and memory files that are loaded |
+| `/context` | Everything in the context window, including skills |
+
+Skills that are not in a plugin are plain folders, so `ls ~/.claude/skills` and
+`ls ~/.claude-work/skills` list them. The second folder exists only if you put
+skills there by hand: a profile that gets all its skills from plugins has none.
+
 ## Limits
 
 - **Only shells see the default.** Applications that are not started from a
