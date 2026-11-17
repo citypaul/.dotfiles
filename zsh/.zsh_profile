@@ -142,6 +142,24 @@ sync_dirs() {
   done
 }
 
+# Claude Code profiles: one config directory per profile, so skills, plugins,
+# settings and memory never mix. See docs/claude-profiles.md in the checkout.
+# The machine's default profile is chosen in ~/.zshrc.local, never here.
+claude-profile() {
+  if [[ -z "$1" ]]; then
+    echo "Usage: claude-profile profile_name [claude arguments]" >&2
+    return 2
+  fi
+  local profile_name=$1
+  shift
+  CLAUDE_CONFIG_DIR="$HOME/.claude-$profile_name" command claude "$@"
+}
+
+# The stock ~/.claude profile, whatever default this machine has chosen.
+claude-personal() {
+  (unset CLAUDE_CONFIG_DIR; command claude "$@")
+}
+
 # Lazy-load NVM (only initialize when needed)
 source "$HOME/.nvm_setup"
 

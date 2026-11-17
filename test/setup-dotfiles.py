@@ -177,6 +177,25 @@ fi""")
     assert not shell.stderr, shell.stderr
     print("PASS: shell skips unsafe completions while retaining safe system completions")
 
+    # Claude Code profiles: nothing changes until a machine opts in.
+    stub("claude", 'printf "%s|%s\\n" "${CLAUDE_CONFIG_DIR-unset}" "$*"')
+    shell = run([ZSH, "-dfc", 'source "$HOME/.zshrc"; claude --version; '
+                 'claude-profile work plugin list; claude --version'], env, home)
+    assert not shell.stderr, shell.stderr
+    assert shell.stdout.splitlines() == [
+        "unset|--version", f"{home}/.claude-work|plugin list", "unset|--version"], shell.stdout
+    shell = run([ZSH, "-dfc", 'source "$HOME/.zshrc"; claude-profile'], env, home, ok=False)
+    assert "Usage: claude-profile" in shell.stderr and not shell.stdout, shell.stdout + shell.stderr
+    local_overrides = home / ".zshrc.local"
+    local_overrides.write_text('export CLAUDE_CONFIG_DIR="$HOME/.claude-work"\n')
+    shell = run([ZSH, "-dfc", 'source "$HOME/.zshrc"; claude --version; '
+                 'claude-personal --resume; claude --version'], env, home)
+    assert not shell.stderr, shell.stderr
+    assert shell.stdout.splitlines() == [
+        f"{home}/.claude-work|--version", "unset|--resume", f"{home}/.claude-work|--version"], shell.stdout
+    local_overrides.unlink()
+    print("PASS: Claude profiles are opt-in; a machine default and the personal override each reach Claude")
+
     # A late XDG conflict must not leave earlier packages installed.
     conflict_env = environment("conflicts")
     conflict_home = Path(conflict_env["HOME"])
