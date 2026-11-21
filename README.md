@@ -2057,6 +2057,7 @@ The older `install.sh` is retained unchanged for compatibility; use
 | Package | Configuration |
 | --- | --- |
 | `zsh` | Shell aliases, completions and optional tool integrations |
+| `rex` | [Rex](https://www.superlogical.com/rex) terminal configuration: the primary terminal, kept on Rex's default key bindings |
 | `tmux` | Terminal multiplexer configuration |
 | `gnupg` | Shared GPG preferences, system Pinentry and passphrase caching |
 | `alacritty` | Terminal appearance and keybindings |
@@ -2064,8 +2065,8 @@ The older `install.sh` is retained unchanged for compatibility; use
 | `ghostty` | Shared XDG configuration plus macOS preferences on Macs only |
 | `herdr` | Terminal workspace manager preferences |
 
-All seven packages are selected by default. Application configuration does not
-install the corresponding desktop application. Install Alacritty, Ghostty,
+All eight packages are selected by default. Application configuration does not
+install the corresponding desktop application. Install Rex, Alacritty, Ghostty,
 Zellij or Herdr separately when you want to use them; Herdr agent integrations
 also need their own installation.
 
@@ -2088,6 +2089,12 @@ project-specific environments. `pyenv-update` activates it before upgrading pip.
 
 GnuPG uses the installed system Pinentry instead of a hardcoded Mac executable;
 new installations keep `~/.gnupg` private and separate from the checkout.
+Rex is the primary terminal. Its `init.lua` deliberately binds nothing, so Rex's
+own defaults always win over the older tmux, Zellij, Alacritty and Ghostty
+bindings, which stay available but are not carried into Rex. Rex keeps its theme
+and font in its Settings window, not in `init.lua`. After editing the file, run
+`rex config check` and then `rex config reload` inside a Rex terminal.
+
 Ghostty reads shared appearance settings from the XDG location. Its existing
 macOS configuration location remains for Mac-specific preferences. Back up any
 conflicting files there too when migrating an existing installation.
@@ -2109,7 +2116,7 @@ manager calls and optional completion generators are stubbed: it never installs
 software on your machine. CI runs on macOS Apple Silicon, Ubuntu 24.04 and
 Debian 13. Every job runs the real dependency installer in a temporary home
 and repeats the install. After each installation, assertions
-verify all 12 shared config links (plus the macOS Ghostty override on Macs),
+verify all 13 shared config links (plus the macOS Ghostty override on Macs),
 their exact source targets, private GnuPG permissions, real runtime directories,
 and the absence of AI settings. Linux also asserts that no macOS `Library`
 directory was created. A shell-startup check verifies Git completion without

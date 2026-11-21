@@ -14,19 +14,19 @@ Usage: ./setup-dotfiles.sh [--skip-deps] [PACKAGE ...]
 
 Install personal dotfiles on Apple Silicon macOS or Ubuntu/Debian. Homebrew
 must already be installed on macOS; Linux uses sudo when needed.
-Default packages: zsh tmux gnupg alacritty zellij ghostty herdr
+Default packages: zsh rex tmux gnupg alacritty zellij ghostty herdr
 --skip-deps links configuration using tools you have already installed.
 
 Existing conflicting files are left untouched. Move them to a backup location
 and rerun. Desktop applications, Node runtimes and AI skills are installed separately.
 EOF
       exit 0 ;;
-    zsh|tmux|gnupg|alacritty|zellij|ghostty|herdr) packages+=("$arg") ;;
+    zsh|rex|tmux|gnupg|alacritty|zellij|ghostty|herdr) packages+=("$arg") ;;
     *) printf 'Unknown option or package: %s\n' "$arg" >&2; exit 1 ;;
   esac
 done
 if [[ ${#packages[@]} -eq 0 ]]; then
-  packages=(zsh tmux gnupg alacritty zellij ghostty herdr)
+  packages=(zsh rex tmux gnupg alacritty zellij ghostty herdr)
 fi
 
 platform="$(uname -s)"
