@@ -1,0 +1,9 @@
+-- Rex configuration (https://www.superlogical.com/rex).
+--
+-- Rex's default key bindings are used as shipped: nothing is carried over from
+-- tmux, zellij, Alacritty, Ghostty, Herdr or iTerm2. Add bindings here only for
+-- what Rex does not already do, for example:
+--
+--   rex.bind("cmd+d", "pane.split", { direction = "right" })
+--
+-- Check a change with `rex config check`, then apply it with `rex config reload`.

@@ -9,7 +9,7 @@ import sys
 import tempfile
 
 SOURCE = Path(__file__).resolve().parents[1]
-PACKAGES = "zsh tmux gnupg alacritty zellij ghostty herdr .oh-my-zsh".split()
+PACKAGES = "zsh rex tmux gnupg alacritty zellij ghostty herdr .oh-my-zsh".split()
 STOW = shutil.which("stow")
 ZSH = shutil.which("zsh")
 assert STOW and ZSH, "Install stow and zsh before running this test"
@@ -32,6 +32,7 @@ def verify_installation(home, repo, platform, config_home=None):
         home / ".gnupg/gpg.conf": repo / "gnupg/.gnupg/gpg.conf",
         home / ".gnupg/gpg-agent.conf": repo / "gnupg/.gnupg/gpg-agent.conf",
         home / ".alacritty.toml": repo / "alacritty/.alacritty.toml",
+        config_home / "rex/init.lua": repo / "rex/.config/rex/init.lua",
         config_home / "zellij/config.kdl": repo / "zellij/.config/zellij/config.kdl",
         config_home / "ghostty/config": repo / "ghostty/.config/ghostty/config",
         config_home / "herdr/config.toml": repo / "herdr/.config/herdr/config.toml",
@@ -49,7 +50,7 @@ def verify_installation(home, repo, platform, config_home=None):
         assert installed.resolve() == source.resolve(), f"Wrong config target: {installed}"
     # Runtime data must stay in the home, not inside a folded repository directory.
     for directory in [home / ".gnupg", config_home, config_home / "ghostty",
-                      config_home / "zellij", config_home / "herdr"]:
+                      config_home / "zellij", config_home / "herdr", config_home / "rex"]:
         assert directory.is_dir() and not directory.is_symlink(), f"Folded directory: {directory}"
     assert (home / ".gnupg").stat().st_mode & 0o777 == 0o700, "GnuPG directory is not private"
     assert not (home / "pyenv").exists(), "Setup eagerly created a Python environment"
@@ -221,6 +222,9 @@ fi""")
     assert not (selected_home / ".zshrc").exists()
     assert not (selected_home / ".config").exists()
     setup(selected_env, "--skip-deps", "ghostty")
+    setup(selected_env, "--skip-deps", "rex")
+    assert (Path(selected_env["XDG_CONFIG_HOME"]) / "rex/init.lua").resolve() == repo / "rex/.config/rex/init.lua"
+    assert not (selected_home / ".zshrc").exists()
     print("PASS: package selection and custom XDG location")
 
     failure_env = environment("failure")
