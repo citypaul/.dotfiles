@@ -1,5 +1,20 @@
 # Changelog
 
+## 4.19.0
+
+### Minor Changes
+
+- e031a1f: Add opt-in Claude Code profiles to the personal Zsh configuration. `claude-profile NAME` runs Claude Code with its own config directory at `~/.claude-NAME`, and `claude-personal` runs it with the stock `~/.claude` whatever default the machine has chosen, so one machine can keep a client's skills and your own apart. Nothing changes unless a machine sets a default in `~/.zshrc.local`. Documented in `docs/claude-profiles.md`; the skills installer and the README are unchanged.
+- cd4028d: Add a separate personal dotfiles setup for macOS and Ubuntu/Debian, with explicit Stow targets, conflict checks, package selection and repeatable completion generation. Keep both existing installer scripts unchanged, including the public skills installer.
+
+  Make shell startup tolerate missing optional tools, support standard NVM and Linux pnpm locations, and require explicit Python environment activation. Use system Pinentry and share Ghostty configuration across platforms. Document installation and add macOS Apple Silicon/Intel, Ubuntu and Debian CI coverage for both real dependency installation and isolated smoke checks.
+
+- 67d1b74: Add a `rex` package for the Rex terminal, selected by default in `setup-dotfiles.sh`. It links `~/.config/rex/init.lua`, which keeps Rex on its default key bindings rather than carrying over tmux, Zellij, Alacritty or Ghostty bindings.
+
+### Patch Changes
+
+- 015d20b: Document how to see what a Claude Code profile has loaded: which config directory a command uses, the plugins installed in each profile, and the in-session commands that list loaded skills, agents, MCP servers and memory files.
+
 ## 4.18.0
 
 ### Minor Changes
